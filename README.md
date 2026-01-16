@@ -30,6 +30,11 @@ npm install ts-summit-ast
 - ✅ Zero runtime dependencies
 - ✅ Source location tracking
 - ✅ Visitor pattern support
+- ✅ **Position-to-node mapping** - Find AST nodes at specific source positions
+- ✅ **Source code extraction** - Extract source text from AST nodes
+- ✅ **Comment-to-node mapping** - Map comments to associated AST nodes
+- ✅ **Rule matching** - XPath-like pattern matching for AST nodes
+- ✅ **Node metadata** - Comprehensive node information and path tracking
 
 ## Usage
 
@@ -118,6 +123,77 @@ if (isBinaryExpression(node)) {
 }
 ```
 
+### Position-to-Node Mapping
+
+```typescript
+import { findNodeAtPosition, getSourceText } from 'ts-summit-ast';
+
+// Find node at specific position
+const position = { line: 5, column: 20 };
+const result = findNodeAtPosition(ast, position);
+
+if (result) {
+  console.log('Node type:', result.nodeType);
+  console.log('Location:', result.location);
+  
+  // Extract source code for the node
+  const codeText = getSourceText(result.node, sourceCode);
+  console.log('Code:', codeText);
+}
+```
+
+### Comment-to-Node Mapping
+
+```typescript
+import { extractComments, findAssociatedNode } from 'ts-summit-ast';
+
+// Extract all comments with associated nodes
+const comments = extractComments(ast, sourceCode, {
+  associateNodes: true,
+});
+
+for (const comment of comments) {
+  if (comment.associatedNode) {
+    console.log(`Comment "${comment.text}" applies to: ${comment.associatedNode.kind}`);
+  }
+}
+```
+
+### Rule Matching
+
+```typescript
+import { wouldTriggerRule, findRuleMatches } from 'ts-summit-ast';
+
+// Check if a node matches a rule pattern
+const xpath = "//BinaryExpression[@operator='+']";
+const result = wouldTriggerRule(node, xpath);
+
+if (result.matches) {
+  console.log('Node matches rule pattern');
+}
+
+// Find all nodes matching a pattern
+const matches = findRuleMatches(ast, xpath);
+console.log(`Found ${matches.length} matches`);
+```
+
+### AST Traversal
+
+```typescript
+import { walkAST } from 'ts-summit-ast';
+
+// Walk AST with custom visitor
+walkAST(ast, {
+  enterNode: (node) => {
+    console.log('Entering:', node.kind);
+    // Return false to skip children
+  },
+  exitNode: (node) => {
+    console.log('Exiting:', node.kind);
+  },
+});
+```
+
 ### Visitor Pattern
 
 ```typescript
@@ -198,6 +274,32 @@ NodeFactory.createIfStatement(condition, thenBody, elseBody, options);
 NodeFactory.createBinaryExpression(operator, left, right, options);
 // ... and many more
 ```
+
+### Utility Functions
+
+#### Position and Node Finding
+
+- `findNodeAtPosition(ast, position, options)` - Find node at specific position
+- `findNodesInRange(ast, range, options)` - Find all nodes in a range
+- `getSourceText(node, source, options)` - Extract source code text
+- `getSourceRange(node)` - Get source location range
+
+#### Comment Mapping
+
+- `extractComments(ast, source, options)` - Extract all comments with node associations
+- `findAssociatedNode(ast, comment, source, options)` - Find node associated with a comment
+
+#### Rule Matching
+
+- `wouldTriggerRule(node, xpathExpression, options)` - Check if node matches rule
+- `findRuleMatches(ast, xpathExpression, options)` - Find all matching nodes
+
+#### Node Information
+
+- `getNodePath(node, root)` - Get path from root to node
+- `getNodeMetadata(node, source?)` - Get comprehensive node metadata
+- `walkAST(ast, visitor)` - Walk AST with visitor pattern
+- `isNodeType(node, nodeType)` - Type guard for specific node type
 
 ## Parser Integration
 
