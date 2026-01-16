@@ -8,7 +8,7 @@ export type { Position } from './position.js';
 
 // Traversal utilities
 export * from './traversal.js';
-export type { ASTVisitor } from './traversal.js';
+export type { ASTWalkVisitor } from './traversal.js';
 
 // Node finding utilities
 export * from './node-finder.js';
@@ -46,6 +46,9 @@ export type {
   FindRuleMatchesOptions,
 } from './rule-matching.js';
 
+// Re-export ASTVisitor from ast for convenience (the one from utils is ASTWalkVisitor)
+export type { ASTVisitor } from '../ast/visitor.js';
+
 // Apex parsing utilities
 export * from './apex-parser.js';
-export type { ParseError, ParseOptions, ParseResult } from './apex-parser.js';
+export type { ApexParseError, ApexParseOptions, ApexParseResult } from './apex-parser.js';

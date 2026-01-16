@@ -5,13 +5,13 @@
 import { describe, it, expect } from 'vitest';
 import { walkAST, getAncestors, buildParentMap } from '../../../src/utils/traversal.js';
 import { NodeFactory } from '../../../src/translator/NodeFactory.js';
-import type { ASTVisitor } from '../../../src/utils/traversal.js';
+import type { ASTWalkVisitor } from '../../../src/utils/traversal.js';
 
 describe('AST Traversal Utilities', () => {
   describe('walkAST', () => {
     it('should visit all nodes', () => {
       const visited: string[] = [];
-      const visitor: ASTVisitor = {
+      const visitor: ASTWalkVisitor = {
         enterNode: (node) => {
           visited.push(node.kind);
         },
@@ -30,7 +30,7 @@ describe('AST Traversal Utilities', () => {
     it('should call exitNode', () => {
       const entered: string[] = [];
       const exited: string[] = [];
-      const visitor: ASTVisitor = {
+      const visitor: ASTWalkVisitor = {
         enterNode: (node) => {
           entered.push(node.kind);
         },
@@ -47,7 +47,7 @@ describe('AST Traversal Utilities', () => {
 
     it('should skip children when enterNode returns false', () => {
       const visited: string[] = [];
-      const visitor: ASTVisitor = {
+      const visitor: ASTWalkVisitor = {
         enterNode: (node) => {
           visited.push(node.kind);
           if (node.kind === 'IfStatement') {

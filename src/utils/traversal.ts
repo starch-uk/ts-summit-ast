@@ -6,8 +6,10 @@ import type { ASTNode } from '../ast/base.js';
 
 /**
  * Visitor interface for AST traversal
+ * Note: This is different from ASTVisitor in ast/visitor.ts
+ * This one is for walkAST utility, the other is for the visitor pattern
  */
-export interface ASTVisitor {
+export interface ASTWalkVisitor {
   /**
    * Called when entering a node.
    * Return false to skip visiting children of this node.
@@ -23,7 +25,7 @@ export interface ASTVisitor {
 /**
  * Walk the AST tree with a visitor
  */
-export function walkAST(ast: ASTNode, visitor: ASTVisitor): void {
+export function walkAST(ast: ASTNode, visitor: ASTWalkVisitor): void {
   const shouldContinue = visitor.enterNode?.(ast);
   if (shouldContinue === false) {
     visitor.exitNode?.(ast);
@@ -39,7 +41,7 @@ export function walkAST(ast: ASTNode, visitor: ASTVisitor): void {
 /**
  * Visit children of a node
  */
-function visitChildren(node: ASTNode, visitor: ASTVisitor): void {
+function visitChildren(node: ASTNode, visitor: ASTWalkVisitor): void {
   // Extract children based on node type
   const children = getNodeChildren(node);
 

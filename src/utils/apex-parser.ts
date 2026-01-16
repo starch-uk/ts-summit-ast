@@ -13,9 +13,11 @@ import type { ExtractedComment } from './comment-mapping.js';
 import { extractComments } from './comment-mapping.js';
 
 /**
- * Parse error information
+ * Apex parse error information
+ * Note: This is different from ParseError in parser/ParseTreeTypes.ts
+ * This one is for Apex parsing results, the other is for parse tree errors
  */
-export interface ParseError {
+export interface ApexParseError {
   readonly message: string;
   readonly location?: {
     readonly start: { readonly line: number; readonly column: number };
@@ -27,11 +29,11 @@ export interface ParseError {
 /**
  * Options for parsing Apex code
  */
-export interface ParseOptions {
+export interface ApexParseOptions {
   readonly includeComments?: boolean;
   readonly includeLocation?: boolean;
   readonly includeSource?: boolean; // Include original source in result
-  readonly onError?: (error: ParseError) => void;
+  readonly onError?: (error: ApexParseError) => void;
   /**
    * Parser adapter function - converts source code to ParseTreeNode
    * This must be provided by the consumer since we don't include a parser runtime
@@ -40,12 +42,14 @@ export interface ParseOptions {
 }
 
 /**
- * Parse result
+ * Apex parse result
+ * Note: This is different from ParseResult in parser/ParseTreeTypes.ts
+ * This one is for Apex parsing results, the other is for parse tree results
  */
-export interface ParseResult {
+export interface ApexParseResult {
   readonly ast?: ASTNode;
   readonly source?: string;
-  readonly errors: ParseError[];
+  readonly errors: ApexParseError[];
   readonly comments?: ExtractedComment[];
 }
 
@@ -57,8 +61,8 @@ export interface ParseResult {
  */
 export function parseApexCode(
   source: string,
-  options: ParseOptions = {}
-): ParseResult {
+  options: ApexParseOptions = {}
+): ApexParseResult {
   const {
     includeComments = false,
     includeLocation = true,
@@ -66,7 +70,7 @@ export function parseApexCode(
     parseTreeAdapter,
   } = options;
 
-  const errors: ParseError[] = [];
+  const errors: ApexParseError[] = [];
 
   // Check if adapter is provided
   if (!parseTreeAdapter) {
