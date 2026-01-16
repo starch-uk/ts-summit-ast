@@ -13,6 +13,13 @@ import {
   isIdentifier,
   isStringLiteral,
   isClassDeclaration,
+  isApexDocComment,
+  isApexDocBlockTag,
+  isApexDocInlineTag,
+  isApexDocParamTag,
+  isApexDocReturnTag,
+  isApexDocGroupTag,
+  isApexDocCodeTag,
 } from '../../../src/ast/type-guards.js';
 import type { ASTNode } from '../../../src/ast/base.js';
 
@@ -114,6 +121,92 @@ describe('Type Guards', () => {
       };
 
       expect(isClassDeclaration(node)).toBe(true);
+    });
+  });
+
+  describe('ApexDoc Type Guards', () => {
+    it('isApexDocComment should identify ApexDoc comments', () => {
+      const node: ASTNode = {
+        kind: 'ApexDocComment',
+        mainDescription: 'Test',
+        blockTags: [],
+      };
+
+      expect(isApexDocComment(node)).toBe(true);
+    });
+
+    it('isApexDocBlockTag should identify block tags', () => {
+      const paramTag: ASTNode = {
+        kind: 'ApexDocParamTag',
+        paramName: 'x',
+        description: [],
+      };
+
+      expect(isApexDocBlockTag(paramTag)).toBe(true);
+
+      const returnTag: ASTNode = {
+        kind: 'ApexDocReturnTag',
+        description: [],
+      };
+
+      expect(isApexDocBlockTag(returnTag)).toBe(true);
+    });
+
+    it('isApexDocInlineTag should identify inline tags', () => {
+      const codeTag: ASTNode = {
+        kind: 'ApexDocCodeTag',
+        text: 'Integer x',
+      };
+
+      expect(isApexDocInlineTag(codeTag)).toBe(true);
+    });
+
+    it('isApexDocParamTag should identify param tags', () => {
+      const node: ASTNode = {
+        kind: 'ApexDocParamTag',
+        paramName: 'x',
+        description: [],
+      };
+
+      expect(isApexDocParamTag(node)).toBe(true);
+    });
+
+    it('isApexDocReturnTag should identify return tags', () => {
+      const node: ASTNode = {
+        kind: 'ApexDocReturnTag',
+        description: [],
+      };
+
+      expect(isApexDocReturnTag(node)).toBe(true);
+    });
+
+    it('isApexDocGroupTag should identify group tags', () => {
+      const node: ASTNode = {
+        kind: 'ApexDocGroupTag',
+        groupName: 'Utilities',
+        description: [],
+      };
+
+      expect(isApexDocGroupTag(node)).toBe(true);
+    });
+
+    it('isApexDocCodeTag should identify code tags', () => {
+      const node: ASTNode = {
+        kind: 'ApexDocCodeTag',
+        text: 'Integer x = 42;',
+      };
+
+      expect(isApexDocCodeTag(node)).toBe(true);
+    });
+
+    it('should reject non-ApexDoc nodes', () => {
+      const node: ASTNode = {
+        kind: 'Identifier',
+      };
+
+      expect(isApexDocComment(node)).toBe(false);
+      expect(isApexDocBlockTag(node)).toBe(false);
+      expect(isApexDocInlineTag(node)).toBe(false);
     });
   });
 });

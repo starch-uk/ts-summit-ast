@@ -52,3 +52,7 @@ export type { ASTVisitor } from '../ast/visitor.js';
 // Apex parsing utilities
 export * from './apex-parser.js';
 export type { ApexParseError, ApexParseOptions, ApexParseResult } from './apex-parser.js';
+
+// ApexDoc parsing utilities
+export * from './apexdoc-parser.js';
+export type { ApexDocParseOptions } from './apexdoc-parser.js';

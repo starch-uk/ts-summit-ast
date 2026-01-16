@@ -3,7 +3,11 @@
  */
 
 import type { ASTNode } from '../ast/base.js';
+import type { SourceRange } from '../ast/base.js';
 import type { Position } from './position.js';
+import type { ApexDocComment } from '../ast/nodes/ApexDoc.js';
+import type { ApexDocParseOptions } from './apexdoc-parser.js';
+import { parseApexDocComment, isApexDocCommentString as isApexDocComment } from './apexdoc-parser.js';
 import { findNodeAtPosition } from './node-finder.js';
 import { getDistanceToRange } from './position.js';
 import { getSourceRange } from './source-extraction.js';
@@ -184,6 +188,7 @@ function findFollowingNode(
 export interface ExtractedComment extends CommentInfo {
   readonly associatedNode?: ASTNode;
   readonly nodeRelationship?: 'preceding' | 'following' | 'attached' | 'enclosing';
+  readonly apexDocComment?: ApexDocComment; // Parsed ApexDoc comment if this is an ApexDoc comment
 }
 
 /**
@@ -193,6 +198,8 @@ export interface ExtractCommentsOptions {
   readonly includeBlockComments?: boolean;
   readonly includeLineComments?: boolean;
   readonly associateNodes?: boolean; // Find associated nodes for each comment
+  readonly parseApexDoc?: boolean; // Parse ApexDoc comments into AST
+  readonly apexDocParseOptions?: ApexDocParseOptions; // Options for parsing ApexDoc comments
 }
 
 /**
@@ -207,17 +214,26 @@ export function extractComments(
     includeBlockComments = true,
     includeLineComments = true,
     associateNodes = false,
+    parseApexDoc = false,
+    apexDocParseOptions,
   } = options;
 
   const comments: ExtractedComment[] = [];
   const lines = source.split(/\r?\n/);
+
+  // Track multi-line block comments
+  let inBlockComment = false;
+  let blockCommentStartLine = 0;
+  let blockCommentStartColumn = 0;
+  let blockCommentLines: string[] = [];
+  let blockCommentRawText = '';
 
   for (let lineNum = 0; lineNum < lines.length; lineNum++) {
     const line = lines[lineNum];
     const lineNumber = lineNum + 1;
 
     // Extract line comments
-    if (includeLineComments) {
+    if (includeLineComments && !inBlockComment) {
       const lineCommentMatch = line.match(/\/\/(.*)$/);
       if (lineCommentMatch) {
         const commentText = lineCommentMatch[1].trim();
@@ -243,35 +259,147 @@ export function extractComments(
       }
     }
 
-    // Extract block comments (simplified - doesn't handle multi-line block comments fully)
+    // Handle block comments (including multi-line)
     if (includeBlockComments) {
-      const blockCommentMatch = line.match(/\/\*([^*]|\*(?!\/))*\*\//);
-      if (blockCommentMatch) {
-        const commentText = blockCommentMatch[0]
-          .replace(/\/\*|\*\//g, '')
-          .trim();
-        const commentStart = line.indexOf('/*') + 1;
-        const column = commentStart + 1;
+      // Check for start of block comment
+      const blockStartMatch = line.match(/\/\*\*/); // ApexDoc comment
+      const blockStartMatch2 = line.match(/\/\*/); // Regular block comment
+      const blockEndMatch = line.match(/\*\//);
 
-        const comment: ExtractedComment = {
-          line: lineNumber,
-          column,
-          text: commentText,
-          type: 'block',
-        };
+      if (!inBlockComment && (blockStartMatch || blockStartMatch2)) {
+        // Start of a block comment
+        inBlockComment = true;
+        blockCommentStartLine = lineNumber;
+        blockCommentStartColumn = (blockStartMatch?.index ?? blockStartMatch2?.index ?? 0) + 1;
+        blockCommentLines = [line];
+        blockCommentRawText = line;
 
-        if (associateNodes) {
-          const associated = findAssociatedNode(ast, comment, source);
-          if (associated) {
-            (comment as any).associatedNode = associated.node;
-            (comment as any).nodeRelationship = associated.relationship;
+        // Check if it ends on the same line
+        if (blockEndMatch) {
+          // Single-line block comment
+          inBlockComment = false;
+          const commentText = blockCommentRawText
+            .replace(/\/\*|\*\//g, '')
+            .trim();
+          const fullCommentText = blockCommentRawText;
+
+          // Parse ApexDoc if requested
+          let apexDocComment: ApexDocComment | undefined;
+          if (parseApexDoc && isApexDocComment(fullCommentText)) {
+            const location = calculateCommentLocation(
+              source,
+              blockCommentStartLine,
+              blockCommentStartColumn,
+              fullCommentText
+            );
+            apexDocComment = parseApexDocComment(
+              fullCommentText,
+              location,
+              apexDocParseOptions
+            ) || undefined;
           }
-        }
 
-        comments.push(comment);
+          const comment: ExtractedComment = {
+            line: blockCommentStartLine,
+            column: blockCommentStartColumn,
+            text: commentText,
+            type: 'block',
+            ...(apexDocComment ? { apexDocComment } : {}),
+          };
+
+          if (associateNodes) {
+            const associated = findAssociatedNode(ast, comment, source);
+            if (associated) {
+              (comment as any).associatedNode = associated.node;
+              (comment as any).nodeRelationship = associated.relationship;
+            }
+          }
+
+          comments.push(comment);
+          blockCommentLines = [];
+          blockCommentRawText = '';
+        }
+      } else if (inBlockComment) {
+        // Continue block comment
+        blockCommentLines.push(line);
+        blockCommentRawText += '\n' + line;
+
+        // Check if comment ends on this line
+        if (blockEndMatch) {
+          // End of block comment
+          inBlockComment = false;
+          const commentText = blockCommentRawText
+            .replace(/\/\*\*?/, '')
+            .replace(/\*\//, '')
+            .replace(/^\s*\*\s?/gm, '') // Remove leading asterisks
+            .trim();
+          const fullCommentText = blockCommentRawText;
+
+          // Parse ApexDoc if requested
+          let apexDocComment: ApexDocComment | undefined;
+          if (parseApexDoc && isApexDocComment(fullCommentText)) {
+            const location = calculateCommentLocation(
+              source,
+              blockCommentStartLine,
+              blockCommentStartColumn,
+              fullCommentText
+            );
+            apexDocComment = parseApexDocComment(
+              fullCommentText,
+              location,
+              apexDocParseOptions
+            ) || undefined;
+          }
+
+          const comment: ExtractedComment = {
+            line: blockCommentStartLine,
+            column: blockCommentStartColumn,
+            text: commentText,
+            type: 'block',
+            ...(apexDocComment ? { apexDocComment } : {}),
+          };
+
+          if (associateNodes) {
+            const associated = findAssociatedNode(ast, comment, source);
+            if (associated) {
+              (comment as any).associatedNode = associated.node;
+              (comment as any).nodeRelationship = associated.relationship;
+            }
+          }
+
+          comments.push(comment);
+          blockCommentLines = [];
+          blockCommentRawText = '';
+        }
       }
     }
   }
 
   return comments;
+}
+
+/**
+ * Calculate location for a comment block
+ */
+function calculateCommentLocation(
+  _source: string,
+  startLine: number,
+  startColumn: number,
+  commentText: string
+): SourceRange {
+  const commentLines = commentText.split(/\r?\n/);
+  const endLine = startLine + commentLines.length - 1;
+  const endLineText = commentLines[commentLines.length - 1] || '';
+  const endColumn = startColumn + endLineText.length;
+
+  return {
+    start: {
+      line: startLine,
+      column: startColumn,
+    },
+    end: {
+      line: endLine,
+      column: endColumn,
+    },
+  };
 }

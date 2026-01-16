@@ -58,6 +58,15 @@ import type {
   InterfaceDeclaration,
 } from './nodes/Declaration.js';
 import type { Modifier } from './nodes/Modifier.js';
+import type {
+  ApexDocComment,
+  ApexDocBlockTag,
+  ApexDocInlineTag,
+  ApexDocParamTag,
+  ApexDocReturnTag,
+  ApexDocGroupTag,
+  ApexDocCodeTag,
+} from './nodes/ApexDoc.js';
 
 /**
  * Type guard for Statement nodes
@@ -337,4 +346,54 @@ export function isTernaryExpression(node: ASTNode): node is TernaryExpression {
 
 export function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpression {
   return 'kind' in node && node.kind === 'ParenthesizedExpression';
+}
+
+// ApexDoc type guards
+export function isApexDocComment(node: ASTNode): node is ApexDocComment {
+  return 'kind' in node && node.kind === 'ApexDocComment';
+}
+
+export function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
+  return (
+    'kind' in node &&
+    typeof node.kind === 'string' &&
+    [
+      'ApexDocParamTag',
+      'ApexDocReturnTag',
+      'ApexDocAuthorTag',
+      'ApexDocDeprecatedTag',
+      'ApexDocExampleTag',
+      'ApexDocGroupTag',
+      'ApexDocSeeTag',
+      'ApexDocSinceTag',
+      'ApexDocThrowsTag',
+      'ApexDocVersionTag',
+    ].includes(node.kind)
+  );
+}
+
+export function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
+  return (
+    'kind' in node &&
+    typeof node.kind === 'string' &&
+    ['ApexDocCodeTag', 'ApexDocHiddenTag', 'ApexDocLinkTag', 'ApexDocLiteralTag'].includes(
+      node.kind
+    )
+  );
+}
+
+export function isApexDocParamTag(node: ASTNode): node is ApexDocParamTag {
+  return 'kind' in node && node.kind === 'ApexDocParamTag';
+}
+
+export function isApexDocReturnTag(node: ASTNode): node is ApexDocReturnTag {
+  return 'kind' in node && node.kind === 'ApexDocReturnTag';
+}
+
+export function isApexDocGroupTag(node: ASTNode): node is ApexDocGroupTag {
+  return 'kind' in node && node.kind === 'ApexDocGroupTag';
+}
+
+export function isApexDocCodeTag(node: ASTNode): node is ApexDocCodeTag {
+  return 'kind' in node && node.kind === 'ApexDocCodeTag';
 }

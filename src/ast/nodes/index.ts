@@ -9,6 +9,7 @@ export * from './Type.js';
 export * from './Declaration.js';
 export * from './Modifier.js';
 export * from './Block.js';
+export * from './ApexDoc.js';
 
 /**
  * Union type for all AST node types
@@ -26,6 +27,13 @@ import type {
   AnnotationArgument,
   AnnotationMember,
 } from './Declaration.js';
+import type {
+  ApexDocComment,
+  ApexDocBlockTag,
+  ApexDocInlineTag,
+  ApexDocContent,
+  ApexDocText,
+} from './ApexDoc.js';
 
 export type AnyASTNode =
   | ASTNode
@@ -41,4 +49,9 @@ export type AnyASTNode =
   | Parameter
   | Annotation
   | AnnotationArgument
-  | AnnotationMember;
+  | AnnotationMember
+  | ApexDocComment
+  | ApexDocBlockTag
+  | ApexDocInlineTag
+  | ApexDocContent
+  | ApexDocText;
