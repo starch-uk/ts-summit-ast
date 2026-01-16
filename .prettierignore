@@ -1,0 +1,7 @@
+node_modules
+lib
+esm
+*.min.js
+coverage
+dist
+build
