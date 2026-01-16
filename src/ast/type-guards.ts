@@ -7,17 +7,35 @@ import type {
   Statement,
   IfStatement,
   ForStatement,
+  ForEachStatement,
   WhileStatement,
+  DoWhileStatement,
   ReturnStatement,
   Block,
   ExpressionStatement,
   VariableDeclarationStatement,
+  DmlStatement,
+  BreakStatement,
+  ContinueStatement,
+  ThrowStatement,
+  TryStatement,
 } from './nodes/Statement.js';
 import type {
   Expression,
   BinaryExpression,
   MethodCallExpression,
   Identifier,
+  SoqlQueryExpression,
+  SoslQueryExpression,
+  TriggerContextVariableExpression,
+  ThisExpression,
+  SuperExpression,
+  FieldAccessExpression,
+  ArrayAccessExpression,
+  NewExpression,
+  CastExpression,
+  TernaryExpression,
+  ParenthesizedExpression,
 } from './nodes/Expression.js';
 import type {
   Literal,
@@ -36,6 +54,8 @@ import type {
   ClassDeclaration,
   MethodDeclaration,
   VariableDeclaration,
+  EnumDeclaration,
+  InterfaceDeclaration,
 } from './nodes/Declaration.js';
 import type { Modifier } from './nodes/Modifier.js';
 
@@ -61,6 +81,7 @@ export function isStatement(node: ASTNode): node is Statement {
       'Block',
       'ExpressionStatement',
       'VariableDeclarationStatement',
+      'DmlStatement',
     ].includes(node.kind)
   );
 }
@@ -236,4 +257,84 @@ export function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
 
 export function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
   return 'kind' in node && node.kind === 'VariableDeclaration';
+}
+
+export function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
+  return 'kind' in node && node.kind === 'EnumDeclaration';
+}
+
+export function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
+  return 'kind' in node && node.kind === 'InterfaceDeclaration';
+}
+
+export function isDmlStatement(node: ASTNode): node is DmlStatement {
+  return 'kind' in node && node.kind === 'DmlStatement';
+}
+
+export function isBreakStatement(node: ASTNode): node is BreakStatement {
+  return 'kind' in node && node.kind === 'BreakStatement';
+}
+
+export function isContinueStatement(node: ASTNode): node is ContinueStatement {
+  return 'kind' in node && node.kind === 'ContinueStatement';
+}
+
+export function isThrowStatement(node: ASTNode): node is ThrowStatement {
+  return 'kind' in node && node.kind === 'ThrowStatement';
+}
+
+export function isTryStatement(node: ASTNode): node is TryStatement {
+  return 'kind' in node && node.kind === 'TryStatement';
+}
+
+export function isForEachStatement(node: ASTNode): node is ForEachStatement {
+  return 'kind' in node && node.kind === 'ForEachStatement';
+}
+
+export function isDoWhileStatement(node: ASTNode): node is DoWhileStatement {
+  return 'kind' in node && node.kind === 'DoWhileStatement';
+}
+
+export function isSoqlQueryExpression(node: ASTNode): node is SoqlQueryExpression {
+  return 'kind' in node && node.kind === 'SoqlQueryExpression';
+}
+
+export function isSoslQueryExpression(node: ASTNode): node is SoslQueryExpression {
+  return 'kind' in node && node.kind === 'SoslQueryExpression';
+}
+
+export function isTriggerContextVariableExpression(node: ASTNode): node is TriggerContextVariableExpression {
+  return 'kind' in node && node.kind === 'TriggerContextVariableExpression';
+}
+
+export function isThisExpression(node: ASTNode): node is ThisExpression {
+  return 'kind' in node && node.kind === 'ThisExpression';
+}
+
+export function isSuperExpression(node: ASTNode): node is SuperExpression {
+  return 'kind' in node && node.kind === 'SuperExpression';
+}
+
+export function isFieldAccessExpression(node: ASTNode): node is FieldAccessExpression {
+  return 'kind' in node && node.kind === 'FieldAccessExpression';
+}
+
+export function isArrayAccessExpression(node: ASTNode): node is ArrayAccessExpression {
+  return 'kind' in node && node.kind === 'ArrayAccessExpression';
+}
+
+export function isNewExpression(node: ASTNode): node is NewExpression {
+  return 'kind' in node && node.kind === 'NewExpression';
+}
+
+export function isCastExpression(node: ASTNode): node is CastExpression {
+  return 'kind' in node && node.kind === 'CastExpression';
+}
+
+export function isTernaryExpression(node: ASTNode): node is TernaryExpression {
+  return 'kind' in node && node.kind === 'TernaryExpression';
+}
+
+export function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpression {
+  return 'kind' in node && node.kind === 'ParenthesizedExpression';
 }

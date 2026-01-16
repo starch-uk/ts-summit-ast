@@ -183,12 +183,12 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): IfStatement {
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
-    const thenBody = this.deserializeNode(json.thenBody as JsonASTNode) as Statement;
-    const elseBody = json.elseBody
-      ? (this.deserializeNode(json.elseBody as JsonASTNode) as Statement)
+    const thenStatement = this.deserializeNode((json.thenStatement || json.thenBody) as JsonASTNode) as Statement;
+    const elseStatement = (json.elseStatement || json.elseBody)
+      ? (this.deserializeNode((json.elseStatement || json.elseBody) as JsonASTNode) as Statement)
       : undefined;
 
-    return NodeFactory.createIfStatement(condition, thenBody, elseBody, locationOption);
+    return NodeFactory.createIfStatement(condition, thenStatement, elseStatement, locationOption);
   }
 
   private deserializeForStatement(

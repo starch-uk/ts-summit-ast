@@ -11,6 +11,7 @@ import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
 import { ASTTranslator } from '../translator/ASTTranslator.js';
 import type { ExtractedComment } from './comment-mapping.js';
 import { extractComments } from './comment-mapping.js';
+import { parseApexSource } from '../parser/apex/index.js';
 
 /**
  * Apex parse error information
@@ -72,26 +73,30 @@ export function parseApexCode(
 
   const errors: ApexParseError[] = [];
 
-  // Check if adapter is provided
-  if (!parseTreeAdapter) {
-    errors.push({
-      message: 'No parseTreeAdapter provided. Please provide a parser adapter function.',
-      severity: 'error',
-    });
+  // Use provided adapter or default parser
+  let parseTree: ParseTreeNode | null = null;
 
-    return {
-      errors,
-      source: includeSource ? source : undefined,
-    };
+  if (parseTreeAdapter) {
+    parseTree = parseTreeAdapter(source);
+  } else {
+    // Use built-in parser
+    try {
+      parseTree = parseApexSource(source);
+    } catch (error) {
+      errors.push({
+        message: error instanceof Error ? error.message : 'Failed to parse source code',
+        severity: 'error',
+      });
+    }
   }
 
-  // Parse source to parse tree
-  const parseTree = parseTreeAdapter(source);
   if (!parseTree) {
-    errors.push({
-      message: 'Failed to parse source code',
-      severity: 'error',
-    });
+    if (errors.length === 0) {
+      errors.push({
+        message: 'Failed to parse source code',
+        severity: 'error',
+      });
+    }
 
     return {
       errors,

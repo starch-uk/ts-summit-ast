@@ -26,27 +26,27 @@ describe('AST Node Creation', () => {
   describe('Statement Nodes', () => {
     it('should create IfStatement with all properties', () => {
       const condition = NodeFactory.createBooleanLiteral(true);
-      const thenBody = NodeFactory.createReturnStatement();
-      const elseBody = NodeFactory.createReturnStatement(
+      const thenStatement = NodeFactory.createReturnStatement();
+      const elseStatement = NodeFactory.createReturnStatement(
         NodeFactory.createNumberLiteral(0, '0')
       );
 
-      const node = NodeFactory.createIfStatement(condition, thenBody, elseBody);
+      const node = NodeFactory.createIfStatement(condition, thenStatement, elseStatement);
 
       expect(isIfStatement(node)).toBe(true);
       expect(node.condition).toBe(condition);
-      expect(node.thenBody).toBe(thenBody);
-      expect(node.elseBody).toBe(elseBody);
+      expect(node.thenStatement).toBe(thenStatement);
+      expect(node.elseStatement).toBe(elseStatement);
     });
 
     it('should create IfStatement without else body', () => {
       const condition = NodeFactory.createBooleanLiteral(true);
-      const thenBody = NodeFactory.createReturnStatement();
+      const thenStatement = NodeFactory.createReturnStatement();
 
-      const node = NodeFactory.createIfStatement(condition, thenBody);
+      const node = NodeFactory.createIfStatement(condition, thenStatement);
 
       expect(isIfStatement(node)).toBe(true);
-      expect(node.elseBody).toBeUndefined();
+      expect(node.elseStatement).toBeUndefined();
     });
 
     it('should create ForStatement', () => {

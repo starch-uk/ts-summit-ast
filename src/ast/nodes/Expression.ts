@@ -38,7 +38,10 @@ export type ExpressionKind =
   | 'CharacterLiteral'
   | 'ThisExpression'
   | 'SuperExpression'
-  | 'ParenthesizedExpression';
+  | 'ParenthesizedExpression'
+  | 'SoqlQueryExpression'
+  | 'SoslQueryExpression'
+  | 'TriggerContextVariableExpression';
 
 /**
  * Binary expression: left operator right
@@ -235,6 +238,32 @@ export interface ParenthesizedExpression extends Expression {
 }
 
 /**
+ * SOQL query expression: [SELECT ... FROM ...]
+ */
+export interface SoqlQueryExpression extends Expression {
+  readonly kind: 'SoqlQueryExpression';
+  readonly query: string; // The raw query text within brackets
+  readonly boundExpressions?: Expression[]; // Bound expressions like :variableName
+}
+
+/**
+ * SOSL query expression: [FIND ... IN ... RETURNING ...]
+ */
+export interface SoslQueryExpression extends Expression {
+  readonly kind: 'SoslQueryExpression';
+  readonly query: string; // The raw query text within brackets
+  readonly boundExpressions?: Expression[]; // Bound expressions like :variableName
+}
+
+/**
+ * Trigger context variable expression: Trigger.new, Trigger.old, etc.
+ */
+export interface TriggerContextVariableExpression extends Expression {
+  readonly kind: 'TriggerContextVariableExpression';
+  readonly variableName: string; // e.g., "new", "old", "newMap", "oldMap", etc.
+}
+
+/**
  * Union type for all expression node types
  */
 export type ExpressionNode =
@@ -253,4 +282,7 @@ export type ExpressionNode =
   | Literal
   | ThisExpression
   | SuperExpression
-  | ParenthesizedExpression;
+  | ParenthesizedExpression
+  | SoqlQueryExpression
+  | SoslQueryExpression
+  | TriggerContextVariableExpression;

@@ -181,9 +181,9 @@ export class JsonSerializer {
 
   private serializeIfStatement(node: any, json: JsonASTNode): void {
     json.condition = this.serializeNode(node.condition);
-    json.thenBody = this.serializeNode(node.thenBody);
-    if (node.elseBody) {
-      json.elseBody = this.serializeNode(node.elseBody);
+    json.thenStatement = this.serializeNode(node.thenStatement);
+    if (node.elseStatement) {
+      json.elseStatement = this.serializeNode(node.elseStatement);
     }
   }
 

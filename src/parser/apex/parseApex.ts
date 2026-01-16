@@ -1,0 +1,14 @@
+/**
+ * Convenience function to parse Apex source code
+ */
+
+import { ApexParser } from './ApexParser.js';
+import type { ParseTreeNode } from '../ParseTreeTypes.js';
+
+/**
+ * Parse Apex source code into a parse tree
+ */
+export function parseApex(source: string): ParseTreeNode | null {
+  const parser = new ApexParser(source);
+  return parser.parse();
+}

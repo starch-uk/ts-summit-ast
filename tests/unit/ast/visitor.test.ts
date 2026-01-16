@@ -81,11 +81,11 @@ describe('Visitor Pattern', () => {
           if ('condition' in node && node.condition) {
             this.visit(node.condition as ASTNode);
           }
-          if ('thenBody' in node && node.thenBody) {
-            this.visit(node.thenBody as ASTNode);
+          if ('thenStatement' in node && node.thenStatement) {
+            this.visit(node.thenStatement as ASTNode);
           }
-          if ('elseBody' in node && node.elseBody) {
-            this.visit(node.elseBody as ASTNode);
+          if ('elseStatement' in node && node.elseStatement) {
+            this.visit(node.elseStatement as ASTNode);
           }
           if ('expression' in node && node.expression) {
             this.visit(node.expression as ASTNode);

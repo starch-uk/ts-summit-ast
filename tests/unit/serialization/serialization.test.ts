@@ -131,21 +131,21 @@ describe('JSON Serialization', () => {
 
     it('should serialize and deserialize if statement', () => {
       const condition = NodeFactory.createBooleanLiteral(true);
-      const thenBody = NodeFactory.createReturnStatement(
+      const thenStatement = NodeFactory.createReturnStatement(
         NodeFactory.createNumberLiteral(1, '1')
       );
-      const elseBody = NodeFactory.createReturnStatement(
+      const elseStatement = NodeFactory.createReturnStatement(
         NodeFactory.createNumberLiteral(0, '0')
       );
-      const node = NodeFactory.createIfStatement(condition, thenBody, elseBody);
+      const node = NodeFactory.createIfStatement(condition, thenStatement, elseStatement);
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
       expect(isIfStatement(deserialized)).toBe(true);
       if (isIfStatement(deserialized)) {
         expect(deserialized.condition).toBeDefined();
-        expect(deserialized.thenBody).toBeDefined();
-        expect(deserialized.elseBody).toBeDefined();
+        expect(deserialized.thenStatement).toBeDefined();
+        expect(deserialized.elseStatement).toBeDefined();
       }
     });
 
@@ -175,10 +175,10 @@ describe('JSON Serialization', () => {
         NodeFactory.createNumberLiteral(5, '5'),
         NodeFactory.createNumberLiteral(3, '3')
       );
-      const thenBody = NodeFactory.createBlock([
+      const thenStatement = NodeFactory.createBlock([
         NodeFactory.createReturnStatement(NodeFactory.createStringLiteral('success', '"success"')),
       ]);
-      const ifStmt = NodeFactory.createIfStatement(condition, thenBody);
+      const ifStmt = NodeFactory.createIfStatement(condition, thenStatement);
 
       // Serialize and deserialize
       const json = serializer.serialize(ifStmt);
@@ -188,7 +188,7 @@ describe('JSON Serialization', () => {
       expect(isIfStatement(deserialized)).toBe(true);
       if (isIfStatement(deserialized)) {
         expect(isBinaryExpression(deserialized.condition)).toBe(true);
-        expect(isBlock(deserialized.thenBody)).toBe(true);
+        expect(isBlock(deserialized.thenStatement)).toBe(true);
       }
     });
   });

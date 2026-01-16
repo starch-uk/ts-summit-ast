@@ -30,16 +30,17 @@ export type StatementKind =
   | 'ThrowStatement'
   | 'Block'
   | 'ExpressionStatement'
-  | 'VariableDeclarationStatement';
+  | 'VariableDeclarationStatement'
+  | 'DmlStatement';
 
 /**
- * If statement: if (condition) thenBody else elseBody
+ * If statement: if (condition) thenStatement else elseStatement
  */
 export interface IfStatement extends Statement {
   readonly kind: 'IfStatement';
   readonly condition: Expression;
-  readonly thenBody: Statement;
-  readonly elseBody?: Statement;
+  readonly thenStatement: Statement;
+  readonly elseStatement?: Statement;
 }
 
 /**
@@ -177,6 +178,20 @@ export interface VariableDeclarationStatement extends Statement {
 }
 
 /**
+ * DML statement: insert, update, delete, upsert, merge, undelete
+ */
+export interface DmlStatement extends Statement {
+  readonly kind: 'DmlStatement';
+  readonly operation: DmlOperation;
+  readonly target: Expression; // The sObject or list to operate on
+}
+
+/**
+ * DML operations
+ */
+export type DmlOperation = 'insert' | 'update' | 'delete' | 'upsert' | 'merge' | 'undelete';
+
+/**
  * Union type for all statement node types
  */
 export type StatementNode =
@@ -193,4 +208,5 @@ export type StatementNode =
   | ThrowStatement
   | Block
   | ExpressionStatement
-  | VariableDeclarationStatement;
+  | VariableDeclarationStatement
+  | DmlStatement;

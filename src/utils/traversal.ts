@@ -53,7 +53,7 @@ function visitChildren(node: ASTNode, visitor: ASTWalkVisitor): void {
 /**
  * Get all children of a node
  */
-function getNodeChildren(node: ASTNode): ASTNode[] {
+export function getNodeChildren(node: ASTNode): ASTNode[] {
   const children: ASTNode[] = [];
 
   // Handle different node types
@@ -62,8 +62,8 @@ function getNodeChildren(node: ASTNode): ASTNode[] {
     case 'IfStatement': {
       const stmt = node as any;
       if (stmt.condition) children.push(stmt.condition);
-      if (stmt.thenBody) children.push(stmt.thenBody);
-      if (stmt.elseBody) children.push(stmt.elseBody);
+      if (stmt.thenStatement) children.push(stmt.thenStatement);
+      if (stmt.elseStatement) children.push(stmt.elseStatement);
       break;
     }
     case 'ForStatement': {
@@ -102,6 +102,21 @@ function getNodeChildren(node: ASTNode): ASTNode[] {
       if (stmt.declaration) children.push(stmt.declaration);
       break;
     }
+    case 'BreakStatement':
+    case 'ContinueStatement': {
+      // Break and continue statements have no children (label is a string, not an AST node)
+      break;
+    }
+    case 'DmlStatement': {
+      const stmt = node as any;
+      if (stmt.target) children.push(stmt.target);
+      break;
+    }
+    case 'ThrowStatement': {
+      const stmt = node as any;
+      if (stmt.expression) children.push(stmt.expression);
+      break;
+    }
 
     // Expressions
     case 'BinaryExpression': {
@@ -119,6 +134,35 @@ function getNodeChildren(node: ASTNode): ASTNode[] {
       if (expr.typeArguments) {
         children.push(...expr.typeArguments);
       }
+      break;
+    }
+    case 'FieldAccessExpression': {
+      const expr = node as any;
+      if (expr.target) children.push(expr.target);
+      // fieldName is a string, not an AST node, so we don't add it
+      break;
+    }
+    case 'ArrayAccessExpression': {
+      const expr = node as any;
+      if (expr.array) children.push(expr.array);
+      if (expr.index) children.push(expr.index);
+      break;
+    }
+    case 'NewExpression': {
+      const expr = node as any;
+      if (expr.type) children.push(expr.type);
+      if (expr.arguments) {
+        children.push(...expr.arguments);
+      }
+      if (expr.arrayInitializer) {
+        children.push(...expr.arrayInitializer);
+      }
+      break;
+    }
+    case 'CastExpression': {
+      const expr = node as any;
+      if (expr.type) children.push(expr.type);
+      if (expr.expression) children.push(expr.expression);
       break;
     }
     case 'ParenthesizedExpression': {

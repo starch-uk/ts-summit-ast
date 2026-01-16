@@ -123,11 +123,11 @@ function getNodeChildren(node: ASTNode): ASTNode[] {
   if ('condition' in node && (node as any).condition) {
     children.push((node as any).condition);
   }
-  if ('thenBody' in node && (node as any).thenBody) {
-    children.push((node as any).thenBody);
+  if ('thenStatement' in node && (node as any).thenStatement) {
+    children.push((node as any).thenStatement);
   }
-  if ('elseBody' in node && (node as any).elseBody) {
-    children.push((node as any).elseBody);
+  if ('elseStatement' in node && (node as any).elseStatement) {
+    children.push((node as any).elseStatement);
   }
   if ('body' in node && (node as any).body) {
     children.push((node as any).body);
