@@ -9,6 +9,11 @@ export type { Position } from './position.js';
 // Traversal utilities
 export * from './traversal.js';
 export type { ASTWalkVisitor } from './traversal.js';
+export {
+  findNodesByType,
+  getParentNode,
+  getChildNodesByType,
+} from './traversal.js';
 
 // Node finding utilities
 export * from './node-finder.js';
@@ -22,6 +27,7 @@ export type {
 // Source extraction utilities
 export * from './source-extraction.js';
 export type { SourceTextOptions } from './source-extraction.js';
+export { getSourceTextForRange } from './source-extraction.js';
 
 // Comment mapping utilities
 export * from './comment-mapping.js';

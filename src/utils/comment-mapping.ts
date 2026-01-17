@@ -186,9 +186,51 @@ function findFollowingNode(
  * Extracted comment with node association
  */
 export interface ExtractedComment extends CommentInfo {
+  /**
+   * Full comment text including any description after the marker
+   * Example: "// ❌ Invalid field access" instead of just "// ❌"
+   */
+  readonly fullText?: string;
+
+  /**
+   * Just the marker portion (e.g., "// ❌" or "// ✅" or "/**")
+   * For line comments: "//"
+   * For block comments: "/*" or "/**"
+   */
+  readonly marker?: string;
+
+  /**
+   * Description text after the marker (if any)
+   * Example: "Invalid field access" from "// ❌ Invalid field access"
+   */
+  readonly description?: string;
+
+  /**
+   * The most specific AST node this comment applies to
+   * (e.g., the variable declaration, not the containing method)
+   */
   readonly associatedNode?: ASTNode;
-  readonly nodeRelationship?: 'preceding' | 'following' | 'attached' | 'enclosing';
-  readonly apexDocComment?: ApexDocComment; // Parsed ApexDoc comment if this is an ApexDoc comment
+
+  /**
+   * Relationship type indicating how the comment relates to the associated node
+   * - 'preceding': Comment appears before the node on the same line
+   * - 'following': Comment appears after the node on the same line or next line
+   * - 'attached': Comment is directly attached to a node (like ApexDoc)
+   * - 'enclosing': Comment encloses the node position
+   * - 'annotated': Comment directly annotates a node (most specific association)
+   */
+  readonly nodeRelationship?: 'preceding' | 'following' | 'attached' | 'enclosing' | 'annotated';
+
+  /**
+   * Confidence score (0-1) indicating how certain the association is
+   * Higher values indicate more confident associations
+   */
+  readonly associationConfidence?: number;
+
+  /**
+   * Parsed ApexDoc comment if this is an ApexDoc comment (starts with /**)
+   */
+  readonly apexDocComment?: ApexDocComment;
 }
 
 /**
@@ -203,7 +245,27 @@ export interface ExtractCommentsOptions {
 }
 
 /**
- * Extract all comments from source code with AST node associations
+ * Extracts all comments from Apex source code with AST node associations.
+ *
+ * This function extracts both line comments and block comments (including ApexDoc),
+ * and can optionally parse ApexDoc comments into structured AST nodes.
+ *
+ * @param ast - The parsed AST node (typically CompilationUnit or ApexFile)
+ * @param source - The original source code string
+ * @param options - Extraction options
+ * @param options.includeLineComments - Whether to include line style comments (default: true)
+ * @param options.includeBlockComments - Whether to include block style comments (default: true)
+ * @param options.associateNodes - Whether to find associated AST nodes for each comment (default: false)
+ * @param options.parseApexDoc - Whether to parse ApexDoc comments into AST (default: false)
+ * @param options.apexDocParseOptions - Options for parsing ApexDoc comments
+ * @returns Array of extracted comments with node associations
+ *
+ * @example
+ * const result = parseApexCode('public class Test { // comment }');
+ * const comments = extractComments(result.ast!, 'public class Test { // comment }', {
+ *   associateNodes: true,
+ *   parseApexDoc: true
+ * });
  */
 export function extractComments(
   ast: ASTNode,
@@ -236,14 +298,22 @@ export function extractComments(
     if (includeLineComments && !inBlockComment) {
       const lineCommentMatch = line.match(/\/\/(.*)$/);
       if (lineCommentMatch) {
+        const fullCommentText = lineCommentMatch[0]; // Full "// comment text"
         const commentText = lineCommentMatch[1].trim();
-        const commentStart = line.indexOf('//') + 1;
+        const commentStart = line.indexOf('//');
         const column = commentStart + 1;
+
+        // Extract marker and description
+        const marker = '//';
+        const description = commentText;
 
         const comment: ExtractedComment = {
           line: lineNumber,
           column,
           text: commentText,
+          fullText: fullCommentText,
+          marker,
+          description,
           type: 'line',
         };
 
@@ -252,6 +322,9 @@ export function extractComments(
           if (associated) {
             (comment as any).associatedNode = associated.node;
             (comment as any).nodeRelationship = associated.relationship;
+            // Calculate confidence based on distance (closer = more confident)
+            const confidence = associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
+            (comment as any).associationConfidence = confidence;
           }
         }
 
@@ -282,6 +355,8 @@ export function extractComments(
             .replace(/\/\*|\*\//g, '')
             .trim();
           const fullCommentText = blockCommentRawText;
+          const marker = blockStartMatch ? '/**' : '/*';
+          const description = commentText;
 
           // Parse ApexDoc if requested
           let apexDocComment: ApexDocComment | undefined;
@@ -303,6 +378,9 @@ export function extractComments(
             line: blockCommentStartLine,
             column: blockCommentStartColumn,
             text: commentText,
+            fullText: fullCommentText,
+            marker,
+            description,
             type: 'block',
             ...(apexDocComment ? { apexDocComment } : {}),
           };
@@ -312,6 +390,8 @@ export function extractComments(
             if (associated) {
               (comment as any).associatedNode = associated.node;
               (comment as any).nodeRelationship = associated.relationship;
+              const confidence = associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
+              (comment as any).associationConfidence = confidence;
             }
           }
 
@@ -334,6 +414,8 @@ export function extractComments(
             .replace(/^\s*\*\s?/gm, '') // Remove leading asterisks
             .trim();
           const fullCommentText = blockCommentRawText;
+          const marker = blockCommentRawText.trimStart().startsWith('/**') ? '/**' : '/*';
+          const description = commentText;
 
           // Parse ApexDoc if requested
           let apexDocComment: ApexDocComment | undefined;
@@ -355,6 +437,9 @@ export function extractComments(
             line: blockCommentStartLine,
             column: blockCommentStartColumn,
             text: commentText,
+            fullText: fullCommentText,
+            marker,
+            description,
             type: 'block',
             ...(apexDocComment ? { apexDocComment } : {}),
           };
@@ -364,6 +449,8 @@ export function extractComments(
             if (associated) {
               (comment as any).associatedNode = associated.node;
               (comment as any).nodeRelationship = associated.relationship;
+              const confidence = associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
+              (comment as any).associationConfidence = confidence;
             }
           }
 

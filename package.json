@@ -1,6 +1,6 @@
 {
   "name": "ts-summit-ast",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "TypeScript port of Summit-AST - Abstract Syntax Tree for Salesforce Apex source code",
   "main": "./lib/index.js",
   "module": "./esm/index.js",

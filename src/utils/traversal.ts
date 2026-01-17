@@ -300,3 +300,57 @@ export function getAncestors(
 
   return ancestors;
 }
+
+/**
+ * Find all nodes of a specific type in the AST
+ *
+ * @param ast - The root AST node to search from
+ * @param nodeType - The node kind to search for (e.g., 'MethodDeclaration', 'IfStatement')
+ * @returns Array of all nodes matching the specified type
+ *
+ * @example
+ * const methods = findNodesByType(ast, 'MethodDeclaration');
+ */
+export function findNodesByType(ast: ASTNode, nodeType: string): ASTNode[] {
+  const results: ASTNode[] = [];
+
+  walkAST(ast, {
+    enterNode: (node) => {
+      if (node.kind === nodeType) {
+        results.push(node);
+      }
+    },
+  });
+
+  return results;
+}
+
+/**
+ * Get parent node for a given node
+ *
+ * @param root - The root AST node
+ * @param node - The node to find the parent of
+ * @returns The parent node, or null if node is the root or not found
+ *
+ * @example
+ * const parent = getParentNode(ast, methodNode);
+ */
+export function getParentNode(root: ASTNode, node: ASTNode): ASTNode | null {
+  const parentMap = buildParentMap(root);
+  return parentMap.get(node) || null;
+}
+
+/**
+ * Get all child nodes of a specific type
+ *
+ * @param node - The parent node
+ * @param nodeType - The node kind to filter by (e.g., 'VariableDeclaration', 'MethodDeclaration')
+ * @returns Array of child nodes matching the specified type
+ *
+ * @example
+ * const methods = getChildNodesByType(classNode, 'MethodDeclaration');
+ */
+export function getChildNodesByType(node: ASTNode, nodeType: string): ASTNode[] {
+  const children = getNodeChildren(node);
+  return children.filter((child) => child.kind === nodeType);
+}

@@ -101,6 +101,55 @@ export function getSourceText(
 }
 
 /**
+ * Get source code text for a specific range.
+ * More efficient than getSourceText when you only need a portion of the source.
+ *
+ * @param source - The original source code string
+ * @param range - The source range to extract
+ * @returns The source text within the specified range
+ *
+ * @example
+ * const range = { start: { line: 1, column: 1 }, end: { line: 1, column: 10 } };
+ * const text = getSourceTextForRange(sourceCode, range);
+ */
+export function getSourceTextForRange(source: string, range: SourceRange): string {
+  const lines = source.split(/\r?\n/);
+  const { start, end } = range;
+
+  if (start.line < 1 || end.line > lines.length) {
+    return '';
+  }
+
+  if (start.line === end.line) {
+    // Single line
+    const line = lines[start.line - 1] || '';
+    const startCol = Math.max(0, start.column - 1);
+    const endCol = Math.min(line.length, end.column - 1);
+    return line.substring(startCol, endCol);
+  }
+
+  // Multi-line
+  const resultLines: string[] = [];
+  const startCol = Math.max(0, start.column - 1);
+  const endCol = Math.max(0, end.column - 1);
+
+  // First line
+  const firstLine = lines[start.line - 1] || '';
+  resultLines.push(firstLine.substring(startCol));
+
+  // Middle lines
+  for (let i = start.line; i < end.line - 1; i++) {
+    resultLines.push(lines[i] || '');
+  }
+
+  // Last line
+  const lastLine = lines[end.line - 1] || '';
+  resultLines.push(lastLine.substring(0, endCol));
+
+  return resultLines.join('\n');
+}
+
+/**
  * Get the source range for an AST node
  */
 export function getSourceRange(node: ASTNode): SourceRange | null {
