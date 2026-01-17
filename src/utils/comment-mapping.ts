@@ -183,31 +183,56 @@ function findFollowingNode(
 }
 
 /**
+ * Comment pattern configuration for recognizing special comment types
+ */
+export interface CommentPattern {
+  /**
+   * Pattern to match comments (e.g., /^\/\/\s*(TODO|FIXME):\s*(.+)$/i)
+   */
+  readonly pattern: RegExp;
+
+  /**
+   * Category/type identifier for matched comments
+   */
+  readonly type: string;
+
+  /**
+   * Extract description from pattern match (which capture group)
+   * Default: first capture group
+   */
+  readonly descriptionGroup?: number;
+}
+
+/**
  * Extracted comment with node association
  */
 export interface ExtractedComment extends CommentInfo {
   /**
    * Full comment text including any description after the marker
    * Example: "// ❌ Invalid field access" instead of just "// ❌"
+   * Always provided when comment is extracted
    */
-  readonly fullText?: string;
+  readonly fullText: string;
 
   /**
    * Just the marker portion (e.g., "// ❌" or "// ✅" or "/**")
    * For line comments: "//"
    * For block comments: "/*" or "/**"
+   * Always provided when comment is extracted
    */
-  readonly marker?: string;
+  readonly marker: string;
 
   /**
    * Description text after the marker (if any)
    * Example: "Invalid field access" from "// ❌ Invalid field access"
+   * Always provided when comment is extracted (may be empty string)
    */
-  readonly description?: string;
+  readonly description: string;
 
   /**
    * The most specific AST node this comment applies to
    * (e.g., the variable declaration, not the containing method)
+   * Only provided when associateNodes is true and a node is found
    */
   readonly associatedNode?: ASTNode;
 
@@ -218,12 +243,14 @@ export interface ExtractedComment extends CommentInfo {
    * - 'attached': Comment is directly attached to a node (like ApexDoc)
    * - 'enclosing': Comment encloses the node position
    * - 'annotated': Comment directly annotates a node (most specific association)
+   * Always provided when associateNodes is true and a node is found
    */
   readonly nodeRelationship?: 'preceding' | 'following' | 'attached' | 'enclosing' | 'annotated';
 
   /**
    * Confidence score (0-1) indicating how certain the association is
    * Higher values indicate more confident associations
+   * Always provided when associateNodes is true and a node is found
    */
   readonly associationConfidence?: number;
 
@@ -231,6 +258,21 @@ export interface ExtractedComment extends CommentInfo {
    * Parsed ApexDoc comment if this is an ApexDoc comment (starts with /**)
    */
   readonly apexDocComment?: ApexDocComment;
+
+  /**
+   * Comment type/category if matched by a pattern
+   * Set when comment matches one of the provided commentPatterns
+   */
+  readonly commentType?: string;
+
+  /**
+   * Extracted metadata from pattern match
+   * Set when comment matches one of the provided commentPatterns
+   */
+  readonly patternMetadata?: {
+    readonly type: string;
+    readonly matches: RegExpMatchArray;
+  };
 }
 
 /**
@@ -242,6 +284,36 @@ export interface ExtractCommentsOptions {
   readonly associateNodes?: boolean; // Find associated nodes for each comment
   readonly parseApexDoc?: boolean; // Parse ApexDoc comments into AST
   readonly apexDocParseOptions?: ApexDocParseOptions; // Options for parsing ApexDoc comments
+  /**
+   * Patterns to recognize special comment types
+   * When provided, comments matching these patterns are categorized accordingly
+   * Example: [{ pattern: /^\/\/\s*(TODO|FIXME):\s*(.+)$/i, type: 'todo' }]
+   */
+  readonly commentPatterns?: CommentPattern[];
+}
+
+/**
+ * Match a comment against provided patterns
+ */
+function matchCommentPattern(
+  commentText: string,
+  patterns?: CommentPattern[]
+): { type: string; matches: RegExpMatchArray } | null {
+  if (!patterns || patterns.length === 0) {
+    return null;
+  }
+
+  for (const patternConfig of patterns) {
+    const match = commentText.match(patternConfig.pattern);
+    if (match) {
+      return {
+        type: patternConfig.type,
+        matches: match,
+      };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -258,14 +330,20 @@ export interface ExtractCommentsOptions {
  * @param options.associateNodes - Whether to find associated AST nodes for each comment (default: false)
  * @param options.parseApexDoc - Whether to parse ApexDoc comments into AST (default: false)
  * @param options.apexDocParseOptions - Options for parsing ApexDoc comments
+ * @param options.commentPatterns - Patterns to recognize special comment types
  * @returns Array of extracted comments with node associations
  *
  * @example
+ * ```typescript
  * const result = parseApexCode('public class Test { // comment }');
  * const comments = extractComments(result.ast!, 'public class Test { // comment }', {
  *   associateNodes: true,
- *   parseApexDoc: true
+ *   includeLineComments: true,
+ *   commentPatterns: [
+ *     { pattern: /^\/\/\s*(TODO|FIXME):\s*(.+)$/i, type: 'todo' }
+ *   ]
  * });
+ * ```
  */
 export function extractComments(
   ast: ASTNode,
@@ -278,6 +356,7 @@ export function extractComments(
     associateNodes = false,
     parseApexDoc = false,
     apexDocParseOptions,
+    commentPatterns,
   } = options;
 
   const comments: ExtractedComment[] = [];
@@ -307,6 +386,9 @@ export function extractComments(
         const marker = '//';
         const description = commentText;
 
+        // Match comment against patterns
+        const patternMatch = matchCommentPattern(commentText, commentPatterns);
+
         const comment: ExtractedComment = {
           line: lineNumber,
           column,
@@ -315,6 +397,15 @@ export function extractComments(
           marker,
           description,
           type: 'line',
+          ...(patternMatch
+            ? {
+                commentType: patternMatch.type,
+                patternMetadata: {
+                  type: patternMatch.type,
+                  matches: patternMatch.matches,
+                },
+              }
+            : {}),
         };
 
         if (associateNodes) {
@@ -358,6 +449,9 @@ export function extractComments(
           const marker = blockStartMatch ? '/**' : '/*';
           const description = commentText;
 
+          // Match comment against patterns
+          const patternMatch = matchCommentPattern(commentText, commentPatterns);
+
           // Parse ApexDoc if requested
           let apexDocComment: ApexDocComment | undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
@@ -383,6 +477,15 @@ export function extractComments(
             description,
             type: 'block',
             ...(apexDocComment ? { apexDocComment } : {}),
+            ...(patternMatch
+              ? {
+                  commentType: patternMatch.type,
+                  patternMetadata: {
+                    type: patternMatch.type,
+                    matches: patternMatch.matches,
+                  },
+                }
+              : {}),
           };
 
           if (associateNodes) {
@@ -417,6 +520,9 @@ export function extractComments(
           const marker = blockCommentRawText.trimStart().startsWith('/**') ? '/**' : '/*';
           const description = commentText;
 
+          // Match comment against patterns
+          const patternMatch = matchCommentPattern(commentText, commentPatterns);
+
           // Parse ApexDoc if requested
           let apexDocComment: ApexDocComment | undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
@@ -442,6 +548,15 @@ export function extractComments(
             description,
             type: 'block',
             ...(apexDocComment ? { apexDocComment } : {}),
+            ...(patternMatch
+              ? {
+                  commentType: patternMatch.type,
+                  patternMetadata: {
+                    type: patternMatch.type,
+                    matches: patternMatch.matches,
+                  },
+                }
+              : {}),
           };
 
           if (associateNodes) {

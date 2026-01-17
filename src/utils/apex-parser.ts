@@ -23,8 +23,24 @@ export interface ApexParseError {
   readonly location?: {
     readonly start: { readonly line: number; readonly column: number };
     readonly end: { readonly line: number; readonly column: number };
+    /**
+     * Start line (for backward compatibility)
+     */
+    readonly startLine?: number;
+    /**
+     * End line (for backward compatibility)
+     */
+    readonly endLine?: number;
   };
   readonly severity?: 'error' | 'warning' | 'info';
+  /**
+   * Surrounding code snippet for context
+   */
+  readonly context?: string;
+  /**
+   * Suggested fix for the error (if available)
+   */
+  readonly suggestion?: string;
 }
 
 /**
@@ -40,6 +56,17 @@ export interface ApexParseOptions {
    * This must be provided by the consumer since we don't include a parser runtime
    */
   readonly parseTreeAdapter?: (source: string) => ParseTreeNode | null;
+  /**
+   * Enable AST caching (uses source hash as key)
+   * When enabled, repeated parsing of the same source will return cached results
+   * Default: false
+   */
+  readonly enableCache?: boolean;
+  /**
+   * Cache TTL in milliseconds (default: 5 minutes)
+   * Only used when enableCache is true
+   */
+  readonly cacheTTL?: number;
 }
 
 /**
@@ -70,6 +97,30 @@ export interface ApexParseResult {
 }
 
 /**
+ * Type guard for usable parse results.
+ * 
+ * When `isUsable` is true, the AST is guaranteed to be defined.
+ * Use this function to safely narrow the type before accessing the AST.
+ *
+ * @param result - The parse result to check
+ * @returns True if the parse result is usable and AST is defined
+ *
+ * @example
+ * ```typescript
+ * const result = parseApexCode('public class Test { }');
+ * if (isUsableParseResult(result)) {
+ *   // TypeScript now knows result.ast is defined
+ *   console.log(result.ast.kind);
+ * }
+ * ```
+ */
+export function isUsableParseResult(
+  result: ApexParseResult
+): result is ApexParseResult & { ast: NonNullable<ASTNode>; isUsable: true } {
+  return result.isUsable === true && result.ast !== undefined;
+}
+
+/**
  * Parses Apex source code into an AST.
  *
  * This function parses Apex source code using either a provided parseTreeAdapter
@@ -86,10 +137,13 @@ export interface ApexParseResult {
  * @returns Parse result containing AST, errors, warnings, and optionally comments
  *
  * @example
+ * ```typescript
  * const result = parseApexCode('public class Test { }');
- * if (result.ast && result.isUsable) {
+ * if (isUsableParseResult(result)) {
  *   console.log('Parsing successful');
+ *   // result.ast is guaranteed to be defined here
  * }
+ * ```
  */
 export function parseApexCode(
   source: string,

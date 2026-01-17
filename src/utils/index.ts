@@ -5,6 +5,7 @@
 // Position utilities
 export * from './position.js';
 export type { Position } from './position.js';
+export { isPositionInRange } from './position.js';
 
 // Traversal utilities
 export * from './traversal.js';
@@ -27,12 +28,13 @@ export type {
 // Source extraction utilities
 export * from './source-extraction.js';
 export type { SourceTextOptions } from './source-extraction.js';
-export { getSourceTextForRange } from './source-extraction.js';
+export { getSourceTextForRange, mergeSourceRanges } from './source-extraction.js';
 
 // Comment mapping utilities
 export * from './comment-mapping.js';
 export type {
   CommentInfo,
+  CommentPattern,
   AssociatedNodeResult,
   FindAssociatedNodeOptions,
   ExtractedComment,
@@ -50,7 +52,10 @@ export type {
   WouldTriggerRuleOptions,
   RuleMatch,
   FindRuleMatchesOptions,
+  XPathValidationResult,
+  XPathFeatureSupport,
 } from './rule-matching.js';
+export { validateXPath, getXPathFeatureSupport } from './rule-matching.js';
 
 // Re-export ASTVisitor from ast for convenience (the one from utils is ASTWalkVisitor)
 export type { ASTVisitor } from '../ast/visitor.js';
@@ -62,3 +67,16 @@ export type { ApexParseError, ApexParseOptions, ApexParseResult } from './apex-p
 // ApexDoc parsing utilities
 export * from './apexdoc-parser.js';
 export type { ApexDocParseOptions } from './apexdoc-parser.js';
+
+// Batch processing utilities
+export * from './batch-processing.js';
+export { parseMultipleFiles, extractCommentsBatch } from './batch-processing.js';
+
+// AST validation utilities
+export * from './ast-validation.js';
+export type {
+  ASTValidationResult,
+  ASTComparisonResult,
+  ASTStatistics,
+} from './ast-validation.js';
+export { validateAST, compareASTs, getASTStatistics } from './ast-validation.js';

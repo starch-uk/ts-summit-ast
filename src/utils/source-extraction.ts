@@ -305,3 +305,24 @@ export function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRan
     end: latestEnd,
   };
 }
+
+/**
+ * Merge multiple source ranges into one.
+ * 
+ * This is an alias for `spanOf` for API consistency.
+ * 
+ * @param ranges One or more source ranges to merge
+ * @returns A new SourceRange spanning all input ranges, or null if no valid ranges
+ *
+ * @example
+ * ```typescript
+ * const range1 = { start: { line: 1, column: 1 }, end: { line: 1, column: 10 } };
+ * const range2 = { start: { line: 2, column: 1 }, end: { line: 2, column: 10 } };
+ * const merged = mergeSourceRanges(range1, range2);
+ * // Returns: { start: { line: 1, column: 1 }, end: { line: 2, column: 10 } }
+ * ```
+ */
+export function mergeSourceRanges(...ranges: (SourceRange | null | undefined)[]): SourceRange | null {
+  const merged = spanOf(...ranges);
+  return isUnknownLocation(merged) ? null : merged;
+}
