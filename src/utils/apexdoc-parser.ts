@@ -31,7 +31,7 @@ import { parseApexCode } from './apex-parser.js';
 /**
  * Options for parsing ApexDoc comments.
  */
-export interface ApexDocParseOptions {
+interface ApexDocParseOptions {
   readonly includeLocation?: boolean;
 
   /**
@@ -52,7 +52,7 @@ export interface ApexDocParseOptions {
  * @param options - Parsing options.
  * @returns The parsed ApexDoc comment AST node, or null if parsing fails.
  */
-export function parseApexDocComment(
+function parseApexDocComment(
   commentText: string,
   location?: SourceRange,
   options: ApexDocParseOptions = {}
@@ -493,6 +493,9 @@ function parseInlineTag(
  * @param commentText - The comment text to check.
  * @returns True if the comment is an ApexDoc comment.
  */
-export function isApexDocCommentString(commentText: string): boolean {
+function isApexDocCommentString(commentText: string): boolean {
   return commentText.trimStart().startsWith('/**');
 }
+
+export type { ApexDocParseOptions };
+export { parseApexDocComment, isApexDocCommentString };

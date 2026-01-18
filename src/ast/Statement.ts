@@ -11,19 +11,19 @@ import type { VariableDeclaration } from './Declaration.js';
  * Alias for backward compatibility during migration.
  * @deprecated Use CompoundStatement instead.
  */
-export type Block = CompoundStatement;
+type Block = CompoundStatement;
 
 /**
  * Base interface for all statement nodes.
  */
-export interface Statement extends ASTNode {
+interface Statement extends ASTNode {
   readonly kind: StatementKind;
 }
 
 /**
  * Discriminated union type for all statement kinds.
  */
-export type StatementKind =
+type StatementKind =
   | 'BreakStatement'
   | 'CompoundStatement'
   | 'ContinueStatement'
@@ -43,7 +43,7 @@ export type StatementKind =
 /**
  * If statement: if (condition) thenStatement else elseStatement.
  */
-export interface IfStatement extends Statement {
+interface IfStatement extends Statement {
   readonly kind: 'IfStatement';
   readonly condition: Expression;
   readonly thenStatement: Statement;
@@ -53,7 +53,7 @@ export interface IfStatement extends Statement {
 /**
  * For loop: for (init; condition; update) body.
  */
-export interface ForLoopStatement extends Statement {
+interface ForLoopStatement extends Statement {
   readonly kind: 'ForLoopStatement';
   readonly init?: ExpressionStatement | VariableDeclarationStatement;
   readonly condition?: Expression;
@@ -64,7 +64,7 @@ export interface ForLoopStatement extends Statement {
 /**
  * For-each loop: for (Type variable : iterable) body.
  */
-export interface EnhancedForLoopStatement extends Statement {
+interface EnhancedForLoopStatement extends Statement {
   readonly kind: 'EnhancedForLoopStatement';
   readonly variable: VariableDeclaration;
   readonly iterable: Expression;
@@ -74,7 +74,7 @@ export interface EnhancedForLoopStatement extends Statement {
 /**
  * While loop: while (condition) body.
  */
-export interface WhileLoopStatement extends Statement {
+interface WhileLoopStatement extends Statement {
   readonly kind: 'WhileLoopStatement';
   readonly condition: Expression;
   readonly body: Statement;
@@ -83,7 +83,7 @@ export interface WhileLoopStatement extends Statement {
 /**
  * Do-while loop: do body while (condition).
  */
-export interface DoWhileLoopStatement extends Statement {
+interface DoWhileLoopStatement extends Statement {
   readonly kind: 'DoWhileLoopStatement';
   readonly body: Statement;
   readonly condition: Expression;
@@ -92,7 +92,7 @@ export interface DoWhileLoopStatement extends Statement {
 /**
  * Switch statement: switch (expression) { cases }.
  */
-export interface SwitchStatement extends Statement {
+interface SwitchStatement extends Statement {
   readonly kind: 'SwitchStatement';
   readonly expression: Expression;
   readonly cases: SwitchCase[];
@@ -104,7 +104,7 @@ export interface SwitchStatement extends Statement {
  * In summit-ast, When extends Node() (not NodeWithSourceLocation).
  * This is simplified from summit-ast's When structure which has WhenValue, WhenType, and WhenElse subtypes.
  */
-export interface SwitchCase extends ASTNode {
+interface SwitchCase extends ASTNode {
   readonly kind: 'SwitchCase';
 
   /**
@@ -117,7 +117,7 @@ export interface SwitchCase extends ASTNode {
 /**
  * Try-catch-finally statement.
  */
-export interface TryStatement extends Statement {
+interface TryStatement extends Statement {
   readonly kind: 'TryStatement';
   readonly tryBlock: CompoundStatement;
   readonly catchClauses: CatchClause[];
@@ -127,7 +127,7 @@ export interface TryStatement extends Statement {
 /**
  * Catch clause: catch (ExceptionType variable) { statements }.
  */
-export interface CatchClause extends ASTNode {
+interface CatchClause extends ASTNode {
   readonly kind: 'CatchClause';
   readonly exceptionType?: Expression; /**
    * Type expression.
@@ -139,7 +139,7 @@ export interface CatchClause extends ASTNode {
 /**
  * Return statement: return expression;.
  */
-export interface ReturnStatement extends Statement {
+interface ReturnStatement extends Statement {
   readonly kind: 'ReturnStatement';
   readonly expression?: Expression;
 }
@@ -147,7 +147,7 @@ export interface ReturnStatement extends Statement {
 /**
  * Break statement: break;.
  */
-export interface BreakStatement extends Statement {
+interface BreakStatement extends Statement {
   readonly kind: 'BreakStatement';
   readonly label?: string;
 }
@@ -155,7 +155,7 @@ export interface BreakStatement extends Statement {
 /**
  * Continue statement: continue;.
  */
-export interface ContinueStatement extends Statement {
+interface ContinueStatement extends Statement {
   readonly kind: 'ContinueStatement';
   readonly label?: string;
 }
@@ -163,7 +163,7 @@ export interface ContinueStatement extends Statement {
 /**
  * Throw statement: throw expression;.
  */
-export interface ThrowStatement extends Statement {
+interface ThrowStatement extends Statement {
   readonly kind: 'ThrowStatement';
   readonly expression: Expression;
 }
@@ -171,7 +171,7 @@ export interface ThrowStatement extends Statement {
 /**
  * Compound statement: { statements }.
  */
-export interface CompoundStatement extends Statement {
+interface CompoundStatement extends Statement {
   readonly kind: 'CompoundStatement';
   readonly statements: Statement[];
 }
@@ -179,7 +179,7 @@ export interface CompoundStatement extends Statement {
 /**
  * Expression statement: expression;.
  */
-export interface ExpressionStatement extends Statement {
+interface ExpressionStatement extends Statement {
   readonly kind: 'ExpressionStatement';
   readonly expression: Expression;
 }
@@ -187,7 +187,7 @@ export interface ExpressionStatement extends Statement {
 /**
  * Variable declaration statement: Type variable = value;.
  */
-export interface VariableDeclarationStatement extends Statement {
+interface VariableDeclarationStatement extends Statement {
   readonly kind: 'VariableDeclarationStatement';
   readonly declaration: VariableDeclaration;
 }
@@ -195,7 +195,7 @@ export interface VariableDeclarationStatement extends Statement {
 /**
  * DML statement: insert, update, delete, upsert, merge, undelete.
  */
-export interface DmlStatement extends Statement {
+interface DmlStatement extends Statement {
   readonly kind: 'DmlStatement';
   readonly operation: DmlOperation;
 
@@ -208,12 +208,12 @@ export interface DmlStatement extends Statement {
 /**
  * DML operations.
  */
-export type DmlOperation = 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert';
+type DmlOperation = 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert';
 
 /**
  * Union type for all statement node types.
  */
-export type StatementNode =
+type StatementNode =
   | BreakStatement
   | CompoundStatement
   | ContinueStatement
@@ -229,3 +229,28 @@ export type StatementNode =
   | TryStatement
   | VariableDeclarationStatement
   | WhileLoopStatement;
+
+export type {
+  Block,
+  Statement,
+  StatementKind,
+  IfStatement,
+  ForLoopStatement,
+  EnhancedForLoopStatement,
+  WhileLoopStatement,
+  DoWhileLoopStatement,
+  SwitchStatement,
+  SwitchCase,
+  TryStatement,
+  CatchClause,
+  ReturnStatement,
+  BreakStatement,
+  ContinueStatement,
+  ThrowStatement,
+  CompoundStatement,
+  ExpressionStatement,
+  VariableDeclarationStatement,
+  DmlStatement,
+  DmlOperation,
+  StatementNode,
+};

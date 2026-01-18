@@ -16,7 +16,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  * Factory for creating Initializer AST nodes.
  */
 export class InitializerFactory {
-  static createConstructorInitializer(
+  public static createConstructorInitializer(
     type: TypeRef,
     args: Expression[] = [],
     options?: NodeFactoryOptions
@@ -29,7 +29,7 @@ export class InitializerFactory {
     };
   }
 
-  static createValuesInitializer(
+  public static createValuesInitializer(
     type: TypeRef,
     values: Expression[] = [],
     options?: NodeFactoryOptions
@@ -42,7 +42,7 @@ export class InitializerFactory {
     };
   }
 
-  static createSizedArrayInitializer(
+  public static createSizedArrayInitializer(
     type: TypeRef,
     size: Expression,
     options?: NodeFactoryOptions
@@ -55,7 +55,7 @@ export class InitializerFactory {
     };
   }
 
-  static createMapInitializer(
+  public static createMapInitializer(
     type: TypeRef,
     pairs: { key: Expression; value: Expression }[],
     options?: NodeFactoryOptions

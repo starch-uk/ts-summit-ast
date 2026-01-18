@@ -96,7 +96,7 @@ export class NodeFactory {
    * @param elseStatement
    * @param options
    */
-  static createIfStatement(
+  public static createIfStatement(
     condition: Expression,
     thenStatement: Statement,
     elseStatement?: Statement,
@@ -105,7 +105,7 @@ export class NodeFactory {
     return StatementFactory.createIfStatement(condition, thenStatement, elseStatement, options);
   }
 
-  static createForLoopStatement(
+  public static createForLoopStatement(
     body: Statement,
     init?: ExpressionStatement | VariableDeclarationStatement,
     condition?: Expression,
@@ -115,7 +115,7 @@ export class NodeFactory {
     return StatementFactory.createForLoopStatement(body, init, condition, update, options);
   }
 
-  static createWhileLoopStatement(
+  public static createWhileLoopStatement(
     condition: Expression,
     body: Statement,
     options?: NodeFactoryOptions
@@ -131,7 +131,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createForLoopStatement instead.
    */
-  static createForStatement(
+  public static createForStatement(
     body: Statement,
     init?: ExpressionStatement | VariableDeclarationStatement,
     condition?: Expression,
@@ -147,7 +147,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createWhileLoopStatement instead.
    */
-  static createWhileStatement(
+  public static createWhileStatement(
     condition: Expression,
     body: Statement,
     options?: NodeFactoryOptions
@@ -155,14 +155,14 @@ export class NodeFactory {
     return this.createWhileLoopStatement(condition, body, options);
   }
 
-  static createReturnStatement(
+  public static createReturnStatement(
     expression?: Expression,
     options?: NodeFactoryOptions
   ): ReturnStatement {
     return StatementFactory.createReturnStatement(expression, options);
   }
 
-  static createCompoundStatement(
+  public static createCompoundStatement(
     statements: Statement[],
     options?: NodeFactoryOptions
   ): CompoundStatement {
@@ -174,25 +174,28 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createCompoundStatement instead.
    */
-  static createBlock(statements: Statement[], options?: NodeFactoryOptions): CompoundStatement {
+  public static createBlock(
+    statements: Statement[],
+    options?: NodeFactoryOptions
+  ): CompoundStatement {
     return this.createCompoundStatement(statements, options);
   }
 
-  static createExpressionStatement(
+  public static createExpressionStatement(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ExpressionStatement {
     return StatementFactory.createExpressionStatement(expression, options);
   }
 
-  static createVariableDeclarationStatement(
+  public static createVariableDeclarationStatement(
     declaration: VariableDeclaration,
     options?: NodeFactoryOptions
   ): VariableDeclarationStatement {
     return StatementFactory.createVariableDeclarationStatement(declaration, options);
   }
 
-  static createEnhancedForLoopStatement(
+  public static createEnhancedForLoopStatement(
     variable: VariableDeclaration,
     iterable: Expression,
     body: Statement,
@@ -201,7 +204,7 @@ export class NodeFactory {
     return StatementFactory.createEnhancedForLoopStatement(variable, iterable, body, options);
   }
 
-  static createDoWhileLoopStatement(
+  public static createDoWhileLoopStatement(
     body: Statement,
     condition: Expression,
     options?: NodeFactoryOptions
@@ -216,7 +219,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createEnhancedForLoopStatement instead.
    */
-  static createForEachStatement(
+  public static createForEachStatement(
     variable: VariableDeclaration,
     iterable: Expression,
     body: Statement,
@@ -231,7 +234,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createDoWhileLoopStatement instead.
    */
-  static createDoWhileStatement(
+  public static createDoWhileStatement(
     body: Statement,
     condition: Expression,
     options?: NodeFactoryOptions
@@ -239,7 +242,7 @@ export class NodeFactory {
     return this.createDoWhileLoopStatement(body, condition, options);
   }
 
-  static createSwitchStatement(
+  public static createSwitchStatement(
     expression: Expression,
     cases: any[],
     defaultCase?: any,
@@ -248,7 +251,7 @@ export class NodeFactory {
     return StatementFactory.createSwitchStatement(expression, cases, defaultCase, options);
   }
 
-  static createTryStatement(
+  public static createTryStatement(
     tryBlock: CompoundStatement,
     catchClauses: any[],
     finallyBlock?: CompoundStatement,
@@ -257,22 +260,25 @@ export class NodeFactory {
     return StatementFactory.createTryStatement(tryBlock, catchClauses, finallyBlock, options);
   }
 
-  static createBreakStatement(label?: string, options?: NodeFactoryOptions): BreakStatement {
+  public static createBreakStatement(label?: string, options?: NodeFactoryOptions): BreakStatement {
     return StatementFactory.createBreakStatement(label, options);
   }
 
-  static createContinueStatement(label?: string, options?: NodeFactoryOptions): ContinueStatement {
+  public static createContinueStatement(
+    label?: string,
+    options?: NodeFactoryOptions
+  ): ContinueStatement {
     return StatementFactory.createContinueStatement(label, options);
   }
 
-  static createThrowStatement(
+  public static createThrowStatement(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ThrowStatement {
     return StatementFactory.createThrowStatement(expression, options);
   }
 
-  static createDmlStatement(
+  public static createDmlStatement(
     operation: DmlOperation,
     target: Expression,
     options?: NodeFactoryOptions
@@ -287,7 +293,7 @@ export class NodeFactory {
    * @param right
    * @param options
    */
-  static createBinaryExpression(
+  public static createBinaryExpression(
     operator: BinaryExpression['operator'],
     left: Expression,
     right: Expression,
@@ -296,7 +302,7 @@ export class NodeFactory {
     return ExpressionFactory.createBinaryExpression(operator, left, right, options);
   }
 
-  static createCallExpression(
+  public static createCallExpression(
     methodName: string,
     args: Expression[] = [],
     target?: Expression,
@@ -306,14 +312,14 @@ export class NodeFactory {
     return ExpressionFactory.createCallExpression(methodName, args, target, typeArguments, options);
   }
 
-  static createVariableExpression(
+  public static createVariableExpression(
     id: Identifier,
     options?: NodeFactoryOptions
   ): VariableExpression {
     return ExpressionFactory.createVariableExpression(id, options);
   }
 
-  static createIdentifier(name: string, options?: NodeFactoryOptions): Identifier {
+  public static createIdentifier(name: string, options?: NodeFactoryOptions): Identifier {
     return {
       kind: 'Identifier',
       location: options?.location,
@@ -329,7 +335,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createCallExpression instead.
    */
-  static createMethodCallExpression(
+  public static createMethodCallExpression(
     methodName: string,
     args: Expression[] = [],
     target?: Expression,
@@ -339,7 +345,7 @@ export class NodeFactory {
     return this.createCallExpression(methodName, args, target, typeArguments, options);
   }
 
-  static createUnaryExpression(
+  public static createUnaryExpression(
     operator: UnaryExpression['operator'],
     operand: Expression,
     prefix: boolean,
@@ -348,7 +354,7 @@ export class NodeFactory {
     return ExpressionFactory.createUnaryExpression(operator, operand, prefix, options);
   }
 
-  static createAssignExpression(
+  public static createAssignExpression(
     operator: AssignExpression['operator'],
     left: Expression,
     right: Expression,
@@ -357,7 +363,7 @@ export class NodeFactory {
     return ExpressionFactory.createAssignExpression(operator, left, right, options);
   }
 
-  static createFieldExpression(
+  public static createFieldExpression(
     fieldName: string,
     target?: Expression,
     options?: NodeFactoryOptions
@@ -365,7 +371,7 @@ export class NodeFactory {
     return ExpressionFactory.createFieldExpression(fieldName, target, options);
   }
 
-  static createArrayExpression(
+  public static createArrayExpression(
     array: Expression,
     index: Expression,
     options?: NodeFactoryOptions
@@ -380,7 +386,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createAssignExpression instead.
    */
-  static createAssignmentExpression(
+  public static createAssignmentExpression(
     operator: AssignExpression['operator'],
     left: Expression,
     right: Expression,
@@ -395,7 +401,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createFieldExpression instead.
    */
-  static createFieldAccessExpression(
+  public static createFieldAccessExpression(
     fieldName: string,
     target?: Expression,
     options?: NodeFactoryOptions
@@ -409,7 +415,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createArrayExpression instead.
    */
-  static createArrayAccessExpression(
+  public static createArrayAccessExpression(
     array: Expression,
     index: Expression,
     options?: NodeFactoryOptions
@@ -417,7 +423,7 @@ export class NodeFactory {
     return this.createArrayExpression(array, index, options);
   }
 
-  static createTernaryExpression(
+  public static createTernaryExpression(
     condition: Expression,
     thenExpression: Expression,
     elseExpression: Expression,
@@ -431,7 +437,7 @@ export class NodeFactory {
     );
   }
 
-  static createCastExpression(
+  public static createCastExpression(
     type: TypeRef,
     expression: Expression,
     options?: NodeFactoryOptions
@@ -439,7 +445,7 @@ export class NodeFactory {
     return ExpressionFactory.createCastExpression(type, expression, options);
   }
 
-  static createInstanceOfExpression(
+  public static createInstanceOfExpression(
     expression: Expression,
     type: TypeRef,
     options?: NodeFactoryOptions
@@ -447,7 +453,7 @@ export class NodeFactory {
     return ExpressionFactory.createInstanceOfExpression(expression, type, options);
   }
 
-  static createNewExpression(
+  public static createNewExpression(
     initializer: Initializer,
     options?: NodeFactoryOptions
   ): NewExpression {
@@ -460,7 +466,7 @@ export class NodeFactory {
    * @param args
    * @param options
    */
-  static createConstructorInitializer(
+  public static createConstructorInitializer(
     type: TypeRef,
     args: Expression[] = [],
     options?: NodeFactoryOptions
@@ -468,7 +474,7 @@ export class NodeFactory {
     return InitializerFactory.createConstructorInitializer(type, args, options);
   }
 
-  static createValuesInitializer(
+  public static createValuesInitializer(
     type: TypeRef,
     values: Expression[] = [],
     options?: NodeFactoryOptions
@@ -476,7 +482,7 @@ export class NodeFactory {
     return InitializerFactory.createValuesInitializer(type, values, options);
   }
 
-  static createSizedArrayInitializer(
+  public static createSizedArrayInitializer(
     type: TypeRef,
     size: Expression,
     options?: NodeFactoryOptions
@@ -484,7 +490,7 @@ export class NodeFactory {
     return InitializerFactory.createSizedArrayInitializer(type, size, options);
   }
 
-  static createMapInitializer(
+  public static createMapInitializer(
     type: TypeRef,
     pairs: { key: Expression; value: Expression }[],
     options?: NodeFactoryOptions
@@ -497,28 +503,28 @@ export class NodeFactory {
    * @param value
    * @param options
    */
-  static createExpressionElementValue(
+  public static createExpressionElementValue(
     value: Expression,
     options?: NodeFactoryOptions
   ): import('../ast/ElementValue.js').ExpressionElementValue {
     return ElementValueFactory.createExpressionElementValue(value, options);
   }
 
-  static createAnnotationElementValue(
+  public static createAnnotationElementValue(
     value: import('../ast/Declaration.js').Annotation,
     options?: NodeFactoryOptions
   ): import('../ast/ElementValue.js').AnnotationElementValue {
     return ElementValueFactory.createAnnotationElementValue(value, options);
   }
 
-  static createArrayElementValue(
+  public static createArrayElementValue(
     values: import('../ast/ElementValue.js').ElementValue[],
     options?: NodeFactoryOptions
   ): import('../ast/ElementValue.js').ArrayElementValue {
     return ElementValueFactory.createArrayElementValue(values, options);
   }
 
-  static createNewArrayExpression(
+  public static createNewArrayExpression(
     type: TypeRef,
     size: Expression,
     options?: NodeFactoryOptions
@@ -528,7 +534,7 @@ export class NodeFactory {
     return ExpressionFactory.createNewExpression(initializer, options);
   }
 
-  static createLambdaExpression(
+  public static createLambdaExpression(
     parameters: any[],
     body: Expression | Statement,
     options?: NodeFactoryOptions
@@ -536,22 +542,22 @@ export class NodeFactory {
     return ExpressionFactory.createLambdaExpression(parameters, body, options);
   }
 
-  static createThisExpression(options?: NodeFactoryOptions): ThisExpression {
+  public static createThisExpression(options?: NodeFactoryOptions): ThisExpression {
     return ExpressionFactory.createThisExpression(options);
   }
 
-  static createSuperExpression(options?: NodeFactoryOptions): SuperExpression {
+  public static createSuperExpression(options?: NodeFactoryOptions): SuperExpression {
     return ExpressionFactory.createSuperExpression(options);
   }
 
-  static createParenthesizedExpression(
+  public static createParenthesizedExpression(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ParenthesizedExpression {
     return ExpressionFactory.createParenthesizedExpression(expression, options);
   }
 
-  static createSoqlExpression(
+  public static createSoqlExpression(
     query: string,
     bindings: import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
     options?: NodeFactoryOptions
@@ -559,7 +565,7 @@ export class NodeFactory {
     return ExpressionFactory.createSoqlExpression(query, bindings, options);
   }
 
-  static createSoslExpression(
+  public static createSoslExpression(
     query: string,
     bindings: import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
     options?: NodeFactoryOptions
@@ -567,7 +573,7 @@ export class NodeFactory {
     return ExpressionFactory.createSoslExpression(query, bindings, options);
   }
 
-  static createSoqlOrSoslBinding(
+  public static createSoqlOrSoslBinding(
     expr: Expression,
     options?: NodeFactoryOptions
   ): import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding {
@@ -580,7 +586,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createSoqlExpression instead.
    */
-  static createSoqlQueryExpression(
+  public static createSoqlQueryExpression(
     query: string,
     boundExpressions?: Expression[],
     options?: NodeFactoryOptions
@@ -598,7 +604,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createSoslExpression instead.
    */
-  static createSoslQueryExpression(
+  public static createSoslQueryExpression(
     query: string,
     boundExpressions?: Expression[],
     options?: NodeFactoryOptions
@@ -610,7 +616,7 @@ export class NodeFactory {
     return this.createSoslExpression(query, bindings, options);
   }
 
-  static createTriggerContextVariableExpression(
+  public static createTriggerContextVariableExpression(
     variableName: string,
     options?: NodeFactoryOptions
   ): TriggerContextVariableExpression {
@@ -623,31 +629,47 @@ export class NodeFactory {
    * @param raw
    * @param options
    */
-  static createStringVal(value: string, raw?: string, options?: NodeFactoryOptions): StringVal {
+  public static createStringVal(
+    value: string,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): StringVal {
     return LiteralFactory.createStringVal(value, raw, options);
   }
 
-  static createIntegerVal(value: number, raw?: string, options?: NodeFactoryOptions): IntegerVal {
+  public static createIntegerVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): IntegerVal {
     return LiteralFactory.createIntegerVal(value, raw, options);
   }
 
-  static createDoubleVal(value: number, raw?: string, options?: NodeFactoryOptions): DoubleVal {
+  public static createDoubleVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): DoubleVal {
     return LiteralFactory.createDoubleVal(value, raw, options);
   }
 
-  static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
+  public static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
     return LiteralFactory.createLongVal(value, raw, options);
   }
 
-  static createDecimalVal(value: number, raw?: string, options?: NodeFactoryOptions): DecimalVal {
+  public static createDecimalVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): DecimalVal {
     return LiteralFactory.createDecimalVal(value, raw, options);
   }
 
-  static createBooleanVal(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+  public static createBooleanVal(value: boolean, options?: NodeFactoryOptions): BooleanVal {
     return LiteralFactory.createBooleanVal(value, options);
   }
 
-  static createNullVal(options?: NodeFactoryOptions): NullVal {
+  public static createNullVal(options?: NodeFactoryOptions): NullVal {
     return LiteralFactory.createNullVal(options);
   }
 
@@ -657,7 +679,11 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createStringVal instead.
    */
-  static createStringLiteral(value: string, raw?: string, options?: NodeFactoryOptions): StringVal {
+  public static createStringLiteral(
+    value: string,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): StringVal {
     return this.createStringVal(value, raw, options);
   }
 
@@ -667,7 +693,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createIntegerVal, createDoubleVal, createLongVal, or createDecimalVal instead.
    */
-  static createNumberLiteral(
+  public static createNumberLiteral(
     value: number,
     raw?: string,
     options?: NodeFactoryOptions
@@ -680,7 +706,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createBooleanVal instead.
    */
-  static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+  public static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
     return this.createBooleanVal(value, options);
   }
 
@@ -688,7 +714,7 @@ export class NodeFactory {
    * @param options
    * @deprecated Use createNullVal instead.
    */
-  static createNullLiteral(options?: NodeFactoryOptions): NullVal {
+  public static createNullLiteral(options?: NodeFactoryOptions): NullVal {
     return this.createNullVal(options);
   }
 
@@ -699,7 +725,7 @@ export class NodeFactory {
    * @param arrayNesting
    * @param options
    */
-  static createTypeRef(
+  public static createTypeRef(
     components: { id: Identifier; args?: TypeRef[] }[],
     arrayNesting = 0,
     options?: NodeFactoryOptions
@@ -715,7 +741,7 @@ export class NodeFactory {
     };
   }
 
-  static createSimpleTypeRef(
+  public static createSimpleTypeRef(
     name: string,
     arrayNesting = 0,
     options?: NodeFactoryOptions
@@ -741,7 +767,7 @@ export class NodeFactory {
    * @param modifiers
    * @param options
    */
-  static createVariableDeclaration(
+  public static createVariableDeclaration(
     name: string,
     type: TypeRef,
     initializer?: Expression,
@@ -757,7 +783,7 @@ export class NodeFactory {
     );
   }
 
-  static createClassDeclaration(
+  public static createClassDeclaration(
     name: string,
     members: any[],
     modifiers: Modifier[] = [],
@@ -779,7 +805,7 @@ export class NodeFactory {
     );
   }
 
-  static createInterfaceDeclaration(
+  public static createInterfaceDeclaration(
     name: string,
     members: any[],
     modifiers: Modifier[] = [],
@@ -797,7 +823,7 @@ export class NodeFactory {
     );
   }
 
-  static createMethodDeclaration(
+  public static createMethodDeclaration(
     name: string,
     returnType: TypeRef,
     parameters: any[] = [],
@@ -821,7 +847,7 @@ export class NodeFactory {
     );
   }
 
-  static createPropertyDeclaration(
+  public static createPropertyDeclaration(
     name: string,
     type: TypeRef,
     modifiers: Modifier[] = [],
@@ -841,7 +867,7 @@ export class NodeFactory {
     );
   }
 
-  static createEnumDeclaration(
+  public static createEnumDeclaration(
     name: string,
     values: EnumValue[],
     modifiers: Modifier[] = [],
@@ -851,11 +877,11 @@ export class NodeFactory {
     return DeclarationFactory.createEnumDeclaration(name, values, modifiers, members, options);
   }
 
-  static createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
+  public static createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
     return DeclarationFactory.createEnumValue(id, options);
   }
 
-  static createTypeParameter(
+  public static createTypeParameter(
     name: string,
     extendsBound?: TypeRef,
     options?: NodeFactoryOptions

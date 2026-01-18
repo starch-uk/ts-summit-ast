@@ -4,8 +4,8 @@
  */
 
 export type * from './ParseTreeTypes.js';
+export type { Token } from './TokenTypes.js';
 export { ApexLexer } from './ApexLexer.js';
 export { TokenType } from './TokenTypes.js';
-export type { Token } from './TokenTypes.js';
 export { ApexParser } from './ApexParser.js';
 export { parseApex as parseApexSource } from './parseApex.js';

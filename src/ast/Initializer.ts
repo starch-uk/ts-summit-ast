@@ -12,7 +12,7 @@ import type { Expression } from './Expression.js';
  * Base type for all initializer nodes.
  * An initializer is an action that occurs after object allocation to setup its initial state.
  */
-export type Initializer =
+type Initializer =
   | ConstructorInitializer
   | MapInitializer
   | SizedArrayInitializer
@@ -21,7 +21,7 @@ export type Initializer =
 /**
  * Object initializer via a constructor call.
  */
-export interface ConstructorInitializer extends ASTNode {
+interface ConstructorInitializer extends ASTNode {
   readonly kind: 'ConstructorInitializer';
   readonly type: TypeRef;
   readonly args: Expression[];
@@ -32,7 +32,7 @@ export interface ConstructorInitializer extends ASTNode {
  * Object initializer for lists, sets, or arrays via a list of values.
  * An empty set of values may also be used to initialize maps.
  */
-export interface ValuesInitializer extends ASTNode {
+interface ValuesInitializer extends ASTNode {
   readonly kind: 'ValuesInitializer';
   readonly type: TypeRef;
   readonly values: Expression[];
@@ -42,7 +42,7 @@ export interface ValuesInitializer extends ASTNode {
 /**
  * Object initializer for sized arrays.
  */
-export interface SizedArrayInitializer extends ASTNode {
+interface SizedArrayInitializer extends ASTNode {
   readonly kind: 'SizedArrayInitializer';
   readonly type: TypeRef;
   readonly size: Expression;
@@ -52,9 +52,17 @@ export interface SizedArrayInitializer extends ASTNode {
 /**
  * Object initializer for maps via a list of key-value pairs.
  */
-export interface MapInitializer extends ASTNode {
+interface MapInitializer extends ASTNode {
   readonly kind: 'MapInitializer';
   readonly type: TypeRef;
   readonly pairs: { key: Expression; value: Expression }[];
   readonly location?: SourceRange;
 }
+
+export type {
+  Initializer,
+  ConstructorInitializer,
+  ValuesInitializer,
+  SizedArrayInitializer,
+  MapInitializer,
+};

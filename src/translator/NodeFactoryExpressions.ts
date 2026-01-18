@@ -22,6 +22,7 @@ import type {
   SoqlExpression,
   SoslExpression,
   TriggerContextVariableExpression,
+  LambdaParameter,
 } from '../ast/Expression.js';
 import type { Expression, Statement } from '../ast/index.js';
 import type { TypeRef } from '../ast/Type.js';
@@ -39,7 +40,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  * Factory for expression nodes.
  */
 export class ExpressionFactory {
-  static createBinaryExpression(
+  public static createBinaryExpression(
     operator: BinaryExpression['operator'],
     left: Expression,
     right: Expression,
@@ -54,7 +55,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createCallExpression(
+  public static createCallExpression(
     methodName: string,
     args: Expression[] = [],
     target?: Expression,
@@ -71,7 +72,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createVariableExpression(
+  public static createVariableExpression(
     id: Identifier,
     options?: NodeFactoryOptions
   ): VariableExpression {
@@ -90,7 +91,7 @@ export class ExpressionFactory {
    * @param options
    * @deprecated Use createCallExpression instead.
    */
-  static createMethodCallExpression(
+  public static createMethodCallExpression(
     methodName: string,
     args: Expression[] = [],
     target?: Expression,
@@ -100,7 +101,7 @@ export class ExpressionFactory {
     return this.createCallExpression(methodName, args, target, typeArguments, options);
   }
 
-  static createUnaryExpression(
+  public static createUnaryExpression(
     operator: UnaryExpression['operator'],
     operand: Expression,
     prefix: boolean,
@@ -115,7 +116,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createAssignExpression(
+  public static createAssignExpression(
     operator: AssignExpression['operator'],
     left: Expression,
     right: Expression,
@@ -130,7 +131,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createFieldExpression(
+  public static createFieldExpression(
     fieldName: string,
     target?: Expression,
     options?: NodeFactoryOptions
@@ -143,7 +144,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createArrayExpression(
+  public static createArrayExpression(
     array: Expression,
     index: Expression,
     options?: NodeFactoryOptions
@@ -163,7 +164,7 @@ export class ExpressionFactory {
    * @param options
    * @deprecated Use createAssignExpression instead.
    */
-  static createAssignmentExpression(
+  public static createAssignmentExpression(
     operator: AssignExpression['operator'],
     left: Expression,
     right: Expression,
@@ -178,7 +179,7 @@ export class ExpressionFactory {
    * @param options
    * @deprecated Use createFieldExpression instead.
    */
-  static createFieldAccessExpression(
+  public static createFieldAccessExpression(
     fieldName: string,
     target?: Expression,
     options?: NodeFactoryOptions
@@ -192,7 +193,7 @@ export class ExpressionFactory {
    * @param options
    * @deprecated Use createArrayExpression instead.
    */
-  static createArrayAccessExpression(
+  public static createArrayAccessExpression(
     array: Expression,
     index: Expression,
     options?: NodeFactoryOptions
@@ -200,7 +201,7 @@ export class ExpressionFactory {
     return this.createArrayExpression(array, index, options);
   }
 
-  static createTernaryExpression(
+  public static createTernaryExpression(
     condition: Expression,
     thenExpression: Expression,
     elseExpression: Expression,
@@ -215,7 +216,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createCastExpression(
+  public static createCastExpression(
     type: TypeRef,
     expression: Expression,
     options?: NodeFactoryOptions
@@ -228,7 +229,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createInstanceOfExpression(
+  public static createInstanceOfExpression(
     expression: Expression,
     type: TypeRef,
     options?: NodeFactoryOptions
@@ -241,7 +242,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createNewExpression(
+  public static createNewExpression(
     initializer: Initializer,
     options?: NodeFactoryOptions
   ): NewExpression {
@@ -249,11 +250,11 @@ export class ExpressionFactory {
       initializer,
       kind: 'NewExpression',
       location: options?.location,
-      type: (initializer as any).type,
+      type: initializer.type,
     };
   }
 
-  static createNewArrayExpression(
+  public static createNewArrayExpression(
     type: TypeRef,
     size: Expression,
     options?: NodeFactoryOptions
@@ -263,8 +264,8 @@ export class ExpressionFactory {
     return this.createNewExpression(initializer, options);
   }
 
-  static createLambdaExpression(
-    parameters: any[],
+  public static createLambdaExpression(
+    parameters: LambdaParameter[],
     body: Expression | Statement,
     options?: NodeFactoryOptions
   ): LambdaExpression {
@@ -276,21 +277,21 @@ export class ExpressionFactory {
     };
   }
 
-  static createThisExpression(options?: NodeFactoryOptions): ThisExpression {
+  public static createThisExpression(options?: NodeFactoryOptions): ThisExpression {
     return {
       kind: 'ThisExpression',
       location: options?.location,
     };
   }
 
-  static createSuperExpression(options?: NodeFactoryOptions): SuperExpression {
+  public static createSuperExpression(options?: NodeFactoryOptions): SuperExpression {
     return {
       kind: 'SuperExpression',
       location: options?.location,
     };
   }
 
-  static createParenthesizedExpression(
+  public static createParenthesizedExpression(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ParenthesizedExpression {
@@ -301,7 +302,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createSoqlExpression(
+  public static createSoqlExpression(
     query: string,
     bindings: import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
     options?: NodeFactoryOptions
@@ -314,7 +315,7 @@ export class ExpressionFactory {
     };
   }
 
-  static createSoslExpression(
+  public static createSoslExpression(
     query: string,
     bindings: import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
     options?: NodeFactoryOptions
@@ -333,13 +334,13 @@ export class ExpressionFactory {
    * @param options
    * @deprecated Use createSoqlExpression instead.
    */
-  static createSoqlQueryExpression(
+  public static createSoqlQueryExpression(
     query: string,
     boundExpressions?: Expression[],
     options?: NodeFactoryOptions
   ): SoqlExpression {
     // Convert boundExpressions to bindings for backward compatibility
-    const bindings = (boundExpressions || []).map((expr) =>
+    const bindings = (boundExpressions ?? []).map((expr) =>
       SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options)
     );
     return this.createSoqlExpression(query, bindings, options);
@@ -351,19 +352,19 @@ export class ExpressionFactory {
    * @param options
    * @deprecated Use createSoslExpression instead.
    */
-  static createSoslQueryExpression(
+  public static createSoslQueryExpression(
     query: string,
     boundExpressions?: Expression[],
     options?: NodeFactoryOptions
   ): SoslExpression {
     // Convert boundExpressions to bindings for backward compatibility
-    const bindings = (boundExpressions || []).map((expr) =>
+    const bindings = (boundExpressions ?? []).map((expr) =>
       SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options)
     );
     return this.createSoslExpression(query, bindings, options);
   }
 
-  static createTriggerContextVariableExpression(
+  public static createTriggerContextVariableExpression(
     variableName: string,
     options?: NodeFactoryOptions
   ): TriggerContextVariableExpression {

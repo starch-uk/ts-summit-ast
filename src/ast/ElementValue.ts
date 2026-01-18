@@ -12,12 +12,12 @@ import type { Annotation } from './Declaration.js';
  * Base type for all element value nodes.
  * A value that can be assigned to an annotation element.
  */
-export type ElementValue = AnnotationElementValue | ArrayElementValue | ExpressionElementValue;
+type ElementValue = AnnotationElementValue | ArrayElementValue | ExpressionElementValue;
 
 /**
  * An element value that is an Expression.
  */
-export interface ExpressionElementValue extends ASTNode {
+interface ExpressionElementValue extends ASTNode {
   readonly kind: 'ExpressionElementValue';
   readonly value: Expression;
   readonly location?: SourceRange;
@@ -28,7 +28,7 @@ export interface ExpressionElementValue extends ASTNode {
  * In summit-ast, this contains an AnnotationModifier (which extends Modifier).
  * In ts-summit-ast, we use Annotation directly.
  */
-export interface AnnotationElementValue extends ASTNode {
+interface AnnotationElementValue extends ASTNode {
   readonly kind: 'AnnotationElementValue';
   readonly value: Annotation;
   readonly location?: SourceRange;
@@ -37,8 +37,10 @@ export interface AnnotationElementValue extends ASTNode {
 /**
  * An element value that is an array of ElementValues.
  */
-export interface ArrayElementValue extends ASTNode {
+interface ArrayElementValue extends ASTNode {
   readonly kind: 'ArrayElementValue';
   readonly values: ElementValue[];
   readonly location?: SourceRange;
 }
+
+export type { ElementValue, ExpressionElementValue, AnnotationElementValue, ArrayElementValue };

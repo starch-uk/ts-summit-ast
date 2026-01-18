@@ -13,7 +13,7 @@ import type { Identifier } from './Identifier.js';
  *
  * In summit-ast, TypeRef extends Node(), so it IS an AST node.
  */
-export interface TypeRef extends ASTNode {
+interface TypeRef extends ASTNode {
   readonly kind: 'TypeRef';
 
   /**
@@ -39,7 +39,7 @@ export interface TypeRef extends ASTNode {
  * A sequence of Components delimited by dot constitutes a type reference.
  * An example TypeRef with multiple Components is an inner class.
  */
-export interface TypeRefComponent {
+interface TypeRefComponent {
   /**
    * The type identifier.
    */
@@ -55,14 +55,14 @@ export interface TypeRefComponent {
  * Type alias for backward compatibility during migration.
  * @deprecated Use TypeRef instead.
  */
-export type Type = TypeRef;
+type Type = TypeRef;
 
 /**
  * Converts a TypeRef to its source-like string (e.g. "A[][]", "Map<String>").
  * Equivalent to asCodeString in Kotlin summit-ast.
  * @param typeRef
  */
-export function typeRefToCodeString(typeRef: TypeRef): string {
+function typeRefToCodeString(typeRef: TypeRef): string {
   if (!typeRef.components || typeRef.components.length === 0) {
     return 'void';
   }
@@ -77,3 +77,6 @@ export function typeRefToCodeString(typeRef: TypeRef): string {
     .join('.');
   return typeString + '[]'.repeat(typeRef.arrayNesting || 0);
 }
+
+export type { TypeRef, TypeRefComponent, Type };
+export { typeRefToCodeString };

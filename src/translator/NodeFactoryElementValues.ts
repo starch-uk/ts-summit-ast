@@ -16,7 +16,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  * Factory for creating ElementValue AST nodes.
  */
 export class ElementValueFactory {
-  static createExpressionElementValue(
+  public static createExpressionElementValue(
     value: Expression,
     options?: NodeFactoryOptions
   ): ExpressionElementValue {
@@ -27,7 +27,7 @@ export class ElementValueFactory {
     };
   }
 
-  static createAnnotationElementValue(
+  public static createAnnotationElementValue(
     value: Annotation,
     options?: NodeFactoryOptions
   ): AnnotationElementValue {
@@ -38,7 +38,7 @@ export class ElementValueFactory {
     };
   }
 
-  static createArrayElementValue(
+  public static createArrayElementValue(
     values: ElementValue[],
     options?: NodeFactoryOptions
   ): ArrayElementValue {

@@ -49,7 +49,7 @@ export interface FindNodeAtPositionOptions {
  * @param options - Options for finding nodes.
  * @returns The node at the position, or null if not found.
  */
-export function findNodeAtPosition(
+function findNodeAtPosition(
   ast: ASTNode,
   position: Position,
   options: FindNodeAtPositionOptions = {}
@@ -180,7 +180,7 @@ function doRangesOverlap(range1: SourceRange, range2: SourceRange): boolean {
  * @param options - Options for finding nodes.
  * @returns Result containing all overlapping nodes.
  */
-export function findNodesInRange(
+function findNodesInRange(
   ast: ASTNode,
   range: SourceRange,
   options: FindNodesInRangeOptions = {}
@@ -248,7 +248,7 @@ export interface NodePath {
  * @param root - The root AST node.
  * @returns The path from root to node, or null if node is not in tree.
  */
-export function getNodePath(node: ASTNode, root: ASTNode): NodePath | null {
+function getNodePath(node: ASTNode, root: ASTNode): NodePath | null {
   const ancestors = getAncestors(node, root);
 
   if (ancestors.length === 0) {
@@ -290,7 +290,7 @@ export interface NodeMetadata {
  * @param source - Optional source code to extract text from.
  * @returns Metadata about the node.
  */
-export function getNodeMetadata(node: ASTNode, source?: string): NodeMetadata {
+function getNodeMetadata(node: ASTNode, source?: string): NodeMetadata {
   // Build parent map to find parent and siblings
   // We need to find the root first - this is a limitation
   // In practice, you'd pass the root separately
@@ -373,7 +373,7 @@ function getNodeChildren(node: ASTNode): ASTNode[] {
     children.push((node as { body: ASTNode }).body);
   }
   if ('statements' in node && Array.isArray((node as { statements?: ASTNode[] }).statements)) {
-    const statements = (node as { statements: ASTNode[] }).statements;
+    const { statements } = node as { statements: ASTNode[] };
     children.push(...statements);
   }
   if ('expression' in node && (node as { expression?: ASTNode }).expression != null) {
@@ -405,6 +405,8 @@ function getNodeChildren(node: ASTNode): ASTNode[] {
  * @param nodeType - The node type to check for.
  * @returns True if the node is of the specified type.
  */
-export function isNodeType(node: ASTNode, nodeType: string): boolean {
+function isNodeType(node: ASTNode, nodeType: string): boolean {
   return node.kind === nodeType;
 }
+
+export { findNodeAtPosition, findNodesInRange, getNodePath, getNodeMetadata, isNodeType };

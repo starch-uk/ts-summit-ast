@@ -12,7 +12,7 @@ import type { Identifier } from './Identifier.js';
 /**
  * Base interface for all expression nodes.
  */
-export interface Expression extends ASTNode {
+interface Expression extends ASTNode {
   readonly kind: ExpressionKind;
 }
 
@@ -20,7 +20,7 @@ export interface Expression extends ASTNode {
  * Discriminated union type for all expression kinds
  * Note: Literal kinds are included here since literals extend Expression.
  */
-export type ExpressionKind =
+type ExpressionKind =
   | 'ArrayExpression'
   | 'AssignExpression'
   | 'BinaryExpression'
@@ -51,7 +51,7 @@ export type ExpressionKind =
 /**
  * Binary expression: left operator right.
  */
-export interface BinaryExpression extends Expression {
+interface BinaryExpression extends Expression {
   readonly kind: 'BinaryExpression';
   readonly operator: BinaryOperator;
   readonly left: Expression;
@@ -61,7 +61,7 @@ export interface BinaryExpression extends Expression {
 /**
  * Binary operators.
  */
-export type BinaryOperator =
+type BinaryOperator =
   | '-'
   | '!='
   | '!=='
@@ -88,7 +88,7 @@ export type BinaryOperator =
 /**
  * Unary expression: operator operand or operand operator.
  */
-export interface UnaryExpression extends Expression {
+interface UnaryExpression extends Expression {
   readonly kind: 'UnaryExpression';
   readonly operator: UnaryOperator;
   readonly operand: Expression;
@@ -102,12 +102,12 @@ export interface UnaryExpression extends Expression {
 /**
  * Unary operators.
  */
-export type UnaryOperator = '--' | '-' | '!' | '+' | '++' | '~';
+type UnaryOperator = '--' | '-' | '!' | '+' | '++' | '~';
 
 /**
  * Assignment expression: left = right.
  */
-export interface AssignExpression extends Expression {
+interface AssignExpression extends Expression {
   readonly kind: 'AssignExpression';
   readonly operator: AssignmentOperator;
 
@@ -121,7 +121,7 @@ export interface AssignExpression extends Expression {
 /**
  * Assignment operators.
  */
-export type AssignmentOperator =
+type AssignmentOperator =
   | '-='
   | '*='
   | '/='
@@ -138,7 +138,7 @@ export type AssignmentOperator =
 /**
  * Call expression: target.method(args).
  */
-export interface CallExpression extends Expression {
+interface CallExpression extends Expression {
   readonly kind: 'CallExpression';
   readonly target?: Expression; /**
    * Undefined for static calls.
@@ -160,7 +160,7 @@ export interface CallExpression extends Expression {
 /**
  * Field access expression: target.field.
  */
-export interface FieldExpression extends Expression {
+interface FieldExpression extends Expression {
   readonly kind: 'FieldExpression';
   readonly target?: Expression; /**
    * Undefined for static access.
@@ -176,7 +176,7 @@ export interface FieldExpression extends Expression {
 /**
  * Array access expression: array[index].
  */
-export interface ArrayExpression extends Expression {
+interface ArrayExpression extends Expression {
   readonly kind: 'ArrayExpression';
   readonly array: Expression;
   readonly index: Expression;
@@ -185,7 +185,7 @@ export interface ArrayExpression extends Expression {
 /**
  * New expression: new Type(args) or new Type[]{...}.
  */
-export interface NewExpression extends Expression {
+interface NewExpression extends Expression {
   readonly kind: 'NewExpression';
   readonly initializer: import('./Initializer.js').Initializer;
 
@@ -208,7 +208,7 @@ export interface NewExpression extends Expression {
 /**
  * Cast expression: (Type) expression.
  */
-export interface CastExpression extends Expression {
+interface CastExpression extends Expression {
   readonly kind: 'CastExpression';
   readonly type: Type;
   readonly expression: Expression;
@@ -217,7 +217,7 @@ export interface CastExpression extends Expression {
 /**
  * Instance of expression: expression instanceof Type.
  */
-export interface InstanceOfExpression extends Expression {
+interface InstanceOfExpression extends Expression {
   readonly kind: 'InstanceOfExpression';
   readonly expression: Expression;
   readonly type: Type;
@@ -226,7 +226,7 @@ export interface InstanceOfExpression extends Expression {
 /**
  * Ternary expression: condition ? ThenExpr : elseExpr.
  */
-export interface TernaryExpression extends Expression {
+interface TernaryExpression extends Expression {
   readonly kind: 'TernaryExpression';
   readonly condition: Expression;
   readonly thenExpression: Expression;
@@ -236,7 +236,7 @@ export interface TernaryExpression extends Expression {
 /**
  * Lambda expression: (params) => body.
  */
-export interface LambdaExpression extends Expression {
+interface LambdaExpression extends Expression {
   readonly kind: 'LambdaExpression';
   readonly parameters: LambdaParameter[];
   readonly body: Expression | Statement;
@@ -245,7 +245,7 @@ export interface LambdaExpression extends Expression {
 /**
  * Lambda parameter.
  */
-export interface LambdaParameter extends ASTNode {
+interface LambdaParameter extends ASTNode {
   readonly kind: 'LambdaParameter';
   readonly name: string;
   readonly type?: Type;
@@ -254,7 +254,7 @@ export interface LambdaParameter extends ASTNode {
 /**
  * Variable expression: a reference to a variable or parameter.
  */
-export interface VariableExpression extends Expression {
+interface VariableExpression extends Expression {
   readonly kind: 'VariableExpression';
   readonly id: Identifier;
 }
@@ -262,21 +262,21 @@ export interface VariableExpression extends Expression {
 /**
  * This expression: this.
  */
-export interface ThisExpression extends Expression {
+interface ThisExpression extends Expression {
   readonly kind: 'ThisExpression';
 }
 
 /**
  * Super expression: super.
  */
-export interface SuperExpression extends Expression {
+interface SuperExpression extends Expression {
   readonly kind: 'SuperExpression';
 }
 
 /**
  * Parenthesized expression: (expression).
  */
-export interface ParenthesizedExpression extends Expression {
+interface ParenthesizedExpression extends Expression {
   readonly kind: 'ParenthesizedExpression';
   readonly expression: Expression;
 }
@@ -284,7 +284,7 @@ export interface ParenthesizedExpression extends Expression {
 /**
  * SOQL query expression: [SELECT ... FROM ...].
  */
-export interface SoqlExpression extends Expression {
+interface SoqlExpression extends Expression {
   readonly kind: 'SoqlExpression';
   readonly query: string; /**
    * The raw query text within brackets.
@@ -300,7 +300,7 @@ export interface SoqlExpression extends Expression {
 /**
  * SOSL query expression: [FIND ... IN ... RETURNING ...].
  */
-export interface SoslExpression extends Expression {
+interface SoslExpression extends Expression {
   readonly kind: 'SoslExpression';
   readonly query: string; /**
    * The raw query text within brackets.
@@ -316,7 +316,7 @@ export interface SoslExpression extends Expression {
 /**
  * Trigger context variable expression: Trigger.new, Trigger.old, etc.
  */
-export interface TriggerContextVariableExpression extends Expression {
+interface TriggerContextVariableExpression extends Expression {
   readonly kind: 'TriggerContextVariableExpression';
 
   /**
@@ -328,7 +328,7 @@ export interface TriggerContextVariableExpression extends Expression {
 /**
  * Union type for all expression node types.
  */
-export type ExpressionNode =
+type ExpressionNode =
   | ArrayExpression
   | AssignExpression
   | BinaryExpression
@@ -348,3 +348,31 @@ export type ExpressionNode =
   | TriggerContextVariableExpression
   | UnaryExpression
   | VariableExpression;
+
+export type {
+  Expression,
+  ExpressionKind,
+  BinaryExpression,
+  BinaryOperator,
+  UnaryExpression,
+  UnaryOperator,
+  AssignExpression,
+  AssignmentOperator,
+  CallExpression,
+  FieldExpression,
+  ArrayExpression,
+  NewExpression,
+  CastExpression,
+  InstanceOfExpression,
+  TernaryExpression,
+  LambdaExpression,
+  LambdaParameter,
+  VariableExpression,
+  ThisExpression,
+  SuperExpression,
+  ParenthesizedExpression,
+  SoqlExpression,
+  SoslExpression,
+  TriggerContextVariableExpression,
+  ExpressionNode,
+};

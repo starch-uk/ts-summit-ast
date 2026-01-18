@@ -65,7 +65,7 @@ export interface FindAssociatedNodeOptions {
  * @param options - Options for finding the associated node.
  * @returns The associated node result, or null if not found.
  */
-export function findAssociatedNode(
+function findAssociatedNode(
   ast: ASTNode,
   comment: CommentInfo,
   source: string,
@@ -179,11 +179,7 @@ function findFollowingNode(
 
     if (result) {
       const nodeRange = getSourceRange(result.node);
-      if (
-        nodeRange != null &&
-        nodeRange.start.line === position.line &&
-        nodeRange.start.column > position.column
-      ) {
+      if (nodeRange?.start.line === position.line && nodeRange.start.column > position.column) {
         const distance = nodeRange.start.column - position.column;
         if (distance <= maxDistance) {
           return {
@@ -405,7 +401,7 @@ function matchCommentPattern(
  * });
  * ```
  */
-export function extractComments(
+function extractComments(
   ast: ASTNode,
   source: string,
   options: ExtractCommentsOptions = {}
@@ -474,12 +470,13 @@ export function extractComments(
         if (associateNodes) {
           const associated = findAssociatedNode(ast, comment, source);
           if (associated) {
-            (comment as any).associatedNode = associated.node;
-            (comment as any).nodeRelationship = associated.relationship;
+            const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
+            (commentWithAssociation as any).associatedNode = associated.node;
+            (commentWithAssociation as any).nodeRelationship = associated.relationship;
             // Calculate confidence based on distance (closer = more confident)
             const confidence =
               associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
-            (comment as any).associationConfidence = confidence;
+            (commentWithAssociation as any).associationConfidence = confidence;
           }
         }
 
@@ -558,11 +555,12 @@ export function extractComments(
           if (associateNodes) {
             const associated = findAssociatedNode(ast, comment, source);
             if (associated) {
-              (comment as any).associatedNode = associated.node;
-              (comment as any).nodeRelationship = associated.relationship;
+              const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
+              (commentWithAssociation as any).associatedNode = associated.node;
+              (commentWithAssociation as any).nodeRelationship = associated.relationship;
               const confidence =
                 associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
-              (comment as any).associationConfidence = confidence;
+              (commentWithAssociation as any).associationConfidence = confidence;
             }
           }
 
@@ -627,11 +625,12 @@ export function extractComments(
           if (associateNodes) {
             const associated = findAssociatedNode(ast, comment, source);
             if (associated) {
-              (comment as any).associatedNode = associated.node;
-              (comment as any).nodeRelationship = associated.relationship;
+              const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
+              (commentWithAssociation as any).associatedNode = associated.node;
+              (commentWithAssociation as any).nodeRelationship = associated.relationship;
               const confidence =
                 associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
-              (comment as any).associationConfidence = confidence;
+              (commentWithAssociation as any).associationConfidence = confidence;
             }
           }
 
@@ -676,3 +675,5 @@ function calculateCommentLocation(
     },
   };
 }
+
+export { findAssociatedNode, extractComments };

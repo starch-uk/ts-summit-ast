@@ -13,8 +13,16 @@ import type {
   DmlOperation,
   SwitchCase,
   CatchClause,
+  ExpressionStatement,
+  VariableDeclarationStatement,
 } from '../ast/Statement.js';
-import type { Expression, LambdaParameter } from '../ast/Expression.js';
+import type {
+  Expression,
+  LambdaParameter,
+  BinaryExpression,
+  UnaryExpression,
+  AssignExpression,
+} from '../ast/Expression.js';
 import type {
   Declaration,
   VariableDeclaration,
@@ -34,7 +42,7 @@ import { NodeFactory } from './NodeFactory.js';
 /**
  * Options for translation.
  */
-export interface TranslationOptions {
+interface TranslationOptions {
   /**
    * Whether to include source location information.
    */
@@ -54,7 +62,7 @@ export interface TranslationOptions {
 /**
  * Translation error.
  */
-export class TranslationError extends Error {
+class TranslationError extends Error {
   constructor(
     message: string,
     public readonly node?: ParseTreeNode,
@@ -68,7 +76,7 @@ export class TranslationError extends Error {
 /**
  * Result of translation.
  */
-export interface TranslationResult {
+interface TranslationResult {
   readonly ast?: ASTNode;
   readonly errors: TranslationError[];
 }
@@ -77,7 +85,7 @@ export interface TranslationResult {
  * AST Translator class
  * Converts parse trees to AST nodes.
  */
-export class ASTTranslator {
+class ASTTranslator {
   private readonly options: Required<TranslationOptions>;
   private currentClassName: string | undefined = undefined;
 
@@ -535,7 +543,7 @@ export class ASTTranslator {
 
     return NodeFactory.createForLoopStatement(
       body,
-      init as any, // Type assertion needed due to union type
+      init as ExpressionStatement | VariableDeclarationStatement | undefined,
       condition,
       update,
       this.getLocationOption(node)
@@ -684,7 +692,7 @@ export class ASTTranslator {
     let varDecl: VariableDeclaration | null = null;
     if (variable) {
       const decl = this.tryTranslateDeclaration(variable, variable.type.toLowerCase());
-      if (decl != null && decl.kind === 'VariableDeclaration') {
+      if (decl?.kind === 'VariableDeclaration') {
         varDecl = decl as VariableDeclaration;
       } else {
         // If translation failed, try to construct from children
@@ -886,7 +894,7 @@ export class ASTTranslator {
         const variable = this.getChild(catchNode, 'variable', 'name');
         if (variable) {
           const decl = this.tryTranslateDeclaration(variable, variable.type.toLowerCase());
-          if (decl != null && decl.kind === 'VariableDeclaration') {
+          if (decl?.kind === 'VariableDeclaration') {
             varDecl = decl as VariableDeclaration;
           }
         }
@@ -1006,7 +1014,7 @@ export class ASTTranslator {
       throw new TranslationError('Variable declaration statement requires a declaration', node);
     }
     const varDecl = this.tryTranslateDeclaration(declaration, declaration.type.toLowerCase());
-    if (varDecl == null || varDecl.kind !== 'VariableDeclaration') {
+    if (varDecl?.kind !== 'VariableDeclaration') {
       throw new TranslationError(
         'Variable declaration statement requires a variable declaration',
         declaration
@@ -1112,21 +1120,23 @@ export class ASTTranslator {
       ) {
         // Has target, first child is field access expression
         const fieldAccess = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
-        if (fieldAccess != null && fieldAccess.kind === 'FieldExpression') {
-          target = (fieldAccess as any).target;
-          methodName = (fieldAccess as any).fieldName;
-          isSafeFromTarget = (fieldAccess as any).isSafe;
+        if (fieldAccess?.kind === 'FieldExpression') {
+          const fieldExpr = fieldAccess as import('../ast/Expression.js').FieldExpression;
+          target = fieldExpr.target;
+          methodName = fieldExpr.fieldName;
+          isSafeFromTarget = fieldExpr.isSafe;
         }
       } else {
         // Try to translate as expression - might be a complex target
         const firstExpr = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
-        if (firstExpr != null && firstExpr.kind === 'FieldExpression') {
-          target = (firstExpr as any).target;
-          methodName = (firstExpr as any).fieldName;
-          isSafeFromTarget = (firstExpr as any).isSafe;
+        if (firstExpr?.kind === 'FieldExpression') {
+          const fieldExpr = firstExpr as import('../ast/Expression.js').FieldExpression;
+          target = fieldExpr.target;
+          methodName = fieldExpr.fieldName;
+          isSafeFromTarget = fieldExpr.isSafe;
         } else if (firstExpr && 'name' in firstExpr) {
           // Could be an Identifier node (not an expression)
-          methodName = (firstExpr as any).name;
+          methodName = (firstExpr as { name: string }).name;
         } else if (
           firstChild.type === 'super_expression' ||
           firstChild.type === 'this_expression'
@@ -1163,7 +1173,7 @@ export class ASTTranslator {
 
     // Check for safe navigation flag from parse tree, or from target when it's a FieldExpression (e.g. x?.method())
     const isSafe = this.getProperty<boolean>(node, 'isSafe') ?? isSafeFromTarget ?? false;
-    (callExpr as any).isSafe = isSafe;
+    (callExpr as { isSafe?: boolean }).isSafe = isSafe;
 
     return callExpr;
   }
@@ -1182,7 +1192,7 @@ export class ASTTranslator {
         const rightExpr = this.tryTranslateExpression(children[1], children[1].type.toLowerCase());
         if (leftExpr && rightExpr) {
           return NodeFactory.createBinaryExpression(
-            operator as any,
+            operator as BinaryExpression['operator'],
             leftExpr,
             rightExpr,
             this.getLocationOption(node)
@@ -1193,7 +1203,7 @@ export class ASTTranslator {
     }
 
     return NodeFactory.createBinaryExpression(
-      operator as any,
+      operator as BinaryExpression['operator'],
       left,
       right,
       this.getLocationOption(node)
@@ -1211,7 +1221,7 @@ export class ASTTranslator {
         const expr = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
         if (expr) {
           return NodeFactory.createUnaryExpression(
-            operator as any,
+            operator as UnaryExpression['operator'],
             expr,
             prefix,
             this.getLocationOption(node)
@@ -1222,7 +1232,7 @@ export class ASTTranslator {
     }
 
     return NodeFactory.createUnaryExpression(
-      operator as any,
+      operator as UnaryExpression['operator'],
       operand,
       prefix,
       this.getLocationOption(node)
@@ -1242,7 +1252,7 @@ export class ASTTranslator {
     }
 
     return NodeFactory.createAssignExpression(
-      operator as any,
+      operator as AssignExpression['operator'],
       left,
       right,
       this.getLocationOption(node)
@@ -1295,7 +1305,7 @@ export class ASTTranslator {
 
     // Check for safe navigation flag from parse tree
     const isSafe = this.getProperty<boolean>(node, 'isSafe') ?? false;
-    (fieldExpr as any).isSafe = isSafe;
+    (fieldExpr as { isSafe?: boolean }).isSafe = isSafe;
 
     return fieldExpr;
   }
@@ -1496,7 +1506,7 @@ export class ASTTranslator {
       );
       // For now, we'll check if we have pairs (even number of expressions that look like key-value)
       // A better approach would be to check the parse tree structure
-      if (hasMapEntries === true && arrayInit.length % 2 === 0) {
+      if (hasMapEntries && arrayInit.length % 2 === 0) {
         // Create MapInitializer with pairs
         const pairs: { key: Expression; value: Expression }[] = [];
         for (let i = 0; i < arrayInit.length; i += 2) {
@@ -1521,32 +1531,37 @@ export class ASTTranslator {
 
     // Add convenience properties for backward compatibility with tests
     // These properties provide direct access to initializer data
-    (newExpr as any).type = type; // Type is always available from the initializer
+    const exprWithProps = newExpr as import('../ast/Expression.js').NewExpression & {
+      type?: TypeRef;
+      arguments?: Expression[];
+      arrayInitializer?: Expression[];
+    };
+    exprWithProps.type = type; // Type is always available from the initializer
 
     if (initializer.kind === 'ConstructorInitializer') {
-      (newExpr as any).arguments = initializer.args;
+      exprWithProps.arguments = initializer.args;
     }
 
     // Set arrayInitializer for all initializer types that use it
     if (arrayInitNode !== null) {
       // For ValuesInitializer, MapInitializer - use the parsed arrayInit
-      (newExpr as any).arrayInitializer = arrayInit;
+      exprWithProps.arrayInitializer = arrayInit;
     } else if (initializer.kind === 'ValuesInitializer' || initializer.kind === 'MapInitializer') {
       // If we created a ValuesInitializer or MapInitializer but arrayInitNode was null,
       // use the values from the initializer
       if (initializer.kind === 'ValuesInitializer') {
-        (newExpr as any).arrayInitializer = initializer.values;
+        exprWithProps.arrayInitializer = initializer.values;
       } else if (initializer.kind === 'MapInitializer') {
         // For MapInitializer, flatten pairs into array
         const flattened: Expression[] = [];
         for (const pair of initializer.pairs) {
           flattened.push(pair.key, pair.value);
         }
-        (newExpr as any).arrayInitializer = flattened;
+        exprWithProps.arrayInitializer = flattened;
       }
     } else {
       // For ConstructorInitializer or other types, set empty array if not already set
-      (newExpr as any).arrayInitializer = [];
+      exprWithProps.arrayInitializer = [];
     }
 
     return newExpr;
@@ -2789,14 +2804,20 @@ export class ASTTranslator {
   ): ParseTreeNode[] {
     // Try named property first
     if (propertyName && propertyName in node) {
-      const value = (node as any)[propertyName];
-      return Array.isArray(value) ? value : [value];
+      const value = (node as unknown as Record<string, unknown>)[propertyName];
+      if (Array.isArray(value)) {
+        return value as ParseTreeNode[];
+      }
+      return value ? [value as ParseTreeNode] : [];
     }
 
     // Try alternate property name
     if (altPropertyName && altPropertyName in node) {
-      const value = (node as any)[altPropertyName];
-      return Array.isArray(value) ? value : [value];
+      const value = (node as unknown as Record<string, unknown>)[altPropertyName];
+      if (Array.isArray(value)) {
+        return value as ParseTreeNode[];
+      }
+      return value ? [value as ParseTreeNode] : [];
     }
 
     // Fall back to children array
@@ -2810,13 +2831,17 @@ export class ASTTranslator {
   ): ParseTreeNode | null {
     // First check if it's a direct property
     if (propertyName in node) {
-      const value = (node as any)[propertyName];
-      return value && typeof value === 'object' && 'type' in value ? value : null;
+      const value = (node as unknown as Record<string, unknown>)[propertyName];
+      return value && typeof value === 'object' && 'type' in value
+        ? (value as ParseTreeNode)
+        : null;
     }
 
     if (altPropertyName && altPropertyName in node) {
-      const value = (node as any)[altPropertyName];
-      return value && typeof value === 'object' && 'type' in value ? value : null;
+      const value = (node as unknown as Record<string, unknown>)[altPropertyName];
+      return value && typeof value === 'object' && 'type' in value
+        ? (value as ParseTreeNode)
+        : null;
     }
 
     // If not a property, search through children for matching type
@@ -2996,7 +3021,7 @@ export class ASTTranslator {
   private getProperty<T>(node: ParseTreeNode, ...names: string[]): T | undefined {
     for (const name of names) {
       if (name in node) {
-        return (node as any)[name] as T;
+        return (node as Record<string, unknown>)[name] as T;
       }
     }
     return undefined;
@@ -3202,3 +3227,6 @@ export class ASTTranslator {
     return null;
   }
 }
+
+export type { TranslationOptions, TranslationError, TranslationResult };
+export { ASTTranslator };

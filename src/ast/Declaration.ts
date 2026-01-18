@@ -16,7 +16,7 @@ import type { Identifier } from './Identifier.js';
 /**
  * Modifier keywords.
  */
-export type ModifierKeyword =
+type ModifierKeyword =
   | 'abstract'
   | 'deprecated'
   | 'final'
@@ -42,7 +42,7 @@ export type ModifierKeyword =
 /**
  * Modifier node.
  */
-export interface Modifier extends ASTNode {
+interface Modifier extends ASTNode {
   readonly kind: 'Modifier';
   readonly keyword: ModifierKeyword;
 }
@@ -50,14 +50,14 @@ export interface Modifier extends ASTNode {
 /**
  * Base interface for all declaration nodes.
  */
-export interface Declaration extends ASTNode {
+interface Declaration extends ASTNode {
   readonly kind: DeclarationKind;
 }
 
 /**
  * Discriminated union type for all declaration kinds.
  */
-export type DeclarationKind =
+type DeclarationKind =
   | 'ClassDeclaration'
   | 'EnumDeclaration'
   | 'InterfaceDeclaration'
@@ -68,7 +68,7 @@ export type DeclarationKind =
 /**
  * Class declaration.
  */
-export interface ClassDeclaration extends Declaration {
+interface ClassDeclaration extends Declaration {
   readonly kind: 'ClassDeclaration';
   readonly name: string;
   readonly modifiers: Modifier[];
@@ -88,7 +88,7 @@ export interface ClassDeclaration extends Declaration {
 /**
  * Interface declaration.
  */
-export interface InterfaceDeclaration extends Declaration {
+interface InterfaceDeclaration extends Declaration {
   readonly kind: 'InterfaceDeclaration';
   readonly name: string;
   readonly modifiers: Modifier[];
@@ -102,7 +102,7 @@ export interface InterfaceDeclaration extends Declaration {
 /**
  * Method declaration.
  */
-export interface MethodDeclaration extends Declaration {
+interface MethodDeclaration extends Declaration {
   readonly kind: 'MethodDeclaration';
   readonly name: string;
   readonly modifiers: Modifier[];
@@ -125,7 +125,7 @@ import type { SourceRange } from './base.js';
  * @deprecated Use MethodDeclaration with isConstructor: true instead (summit-ast compatibility).
  * This interface is kept for backward compatibility but is not part of DeclarationKind.
  */
-export interface ConstructorDeclaration {
+interface ConstructorDeclaration {
   readonly kind: 'ConstructorDeclaration';
   readonly modifiers: Modifier[];
   readonly parameters: Parameter[];
@@ -137,7 +137,7 @@ export interface ConstructorDeclaration {
 /**
  * Variable declaration.
  */
-export interface VariableDeclaration extends Declaration {
+interface VariableDeclaration extends Declaration {
   readonly kind: 'VariableDeclaration';
   readonly name: string;
   readonly type: Type;
@@ -149,7 +149,7 @@ export interface VariableDeclaration extends Declaration {
 /**
  * Property declaration (getter/setter).
  */
-export interface PropertyDeclaration extends Declaration {
+interface PropertyDeclaration extends Declaration {
   readonly kind: 'PropertyDeclaration';
   readonly name: string;
   readonly type: Type;
@@ -162,7 +162,7 @@ export interface PropertyDeclaration extends Declaration {
 /**
  * Enum declaration.
  */
-export interface EnumDeclaration extends Declaration {
+interface EnumDeclaration extends Declaration {
   readonly kind: 'EnumDeclaration';
   readonly name: string;
   readonly modifiers: Modifier[];
@@ -179,7 +179,7 @@ export interface EnumDeclaration extends Declaration {
  * In summit-ast, EnumValue extends Node() (not NodeWithSourceLocation),
  * but delegates getSourceLocation() to the identifier.
  */
-export interface EnumValue extends ASTNode {
+interface EnumValue extends ASTNode {
   readonly kind: 'EnumValue';
   readonly id: Identifier;
 }
@@ -187,7 +187,7 @@ export interface EnumValue extends ASTNode {
 /**
  * Type parameter: <T extends Bound>.
  */
-export interface TypeParameter extends ASTNode {
+interface TypeParameter extends ASTNode {
   readonly kind: 'TypeParameter';
   readonly name: string;
   readonly extendsBound?: Type;
@@ -196,7 +196,7 @@ export interface TypeParameter extends ASTNode {
 /**
  * Parameter: Type name.
  */
-export interface Parameter extends ASTNode {
+interface Parameter extends ASTNode {
   readonly kind: 'Parameter';
   readonly name: string;
   readonly type: Type;
@@ -208,7 +208,7 @@ export interface Parameter extends ASTNode {
 /**
  * Annotation: @AnnotationName(args).
  */
-export interface Annotation extends ASTNode {
+interface Annotation extends ASTNode {
   readonly kind: 'Annotation';
   readonly name: string;
   readonly arguments?: AnnotationArgument[];
@@ -218,7 +218,7 @@ export interface Annotation extends ASTNode {
  * Annotation argument: key = value or just value.
  * In summit-ast, ElementArgument extends NodeWithSourceLocation.
  */
-export interface AnnotationArgument extends ASTNode {
+interface AnnotationArgument extends ASTNode {
   readonly kind: 'AnnotationArgument';
   readonly name?: string; /**
    * Undefined for positional arguments (implicitly "value").
@@ -234,7 +234,7 @@ export interface AnnotationArgument extends ASTNode {
 /**
  * Class member (method, field, inner class, etc.).
  */
-export type ClassMember =
+type ClassMember =
   | ClassDeclaration
   | EnumDeclaration
   | InterfaceDeclaration
@@ -245,7 +245,7 @@ export type ClassMember =
 /**
  * Interface member (method, property, etc.).
  */
-export type InterfaceMember =
+type InterfaceMember =
   | ClassDeclaration
   | InterfaceDeclaration
   | MethodDeclaration
@@ -254,7 +254,7 @@ export type InterfaceMember =
 /**
  * Annotation member (method-like).
  */
-export interface AnnotationMember extends ASTNode {
+interface AnnotationMember extends ASTNode {
   readonly kind: 'AnnotationMember';
   readonly name: string;
   readonly type: Type;
@@ -264,10 +264,33 @@ export interface AnnotationMember extends ASTNode {
 /**
  * Union type for all declaration node types.
  */
-export type DeclarationNode =
+type DeclarationNode =
   | ClassDeclaration
   | EnumDeclaration
   | InterfaceDeclaration
   | MethodDeclaration
   | PropertyDeclaration
   | VariableDeclaration;
+
+export type {
+  ModifierKeyword,
+  Modifier,
+  Declaration,
+  DeclarationKind,
+  ClassDeclaration,
+  InterfaceDeclaration,
+  MethodDeclaration,
+  ConstructorDeclaration,
+  VariableDeclaration,
+  PropertyDeclaration,
+  EnumDeclaration,
+  EnumValue,
+  TypeParameter,
+  Parameter,
+  Annotation,
+  AnnotationArgument,
+  ClassMember,
+  InterfaceMember,
+  AnnotationMember,
+  DeclarationNode,
+};

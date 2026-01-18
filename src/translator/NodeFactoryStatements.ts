@@ -31,7 +31,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  * Factory for statement nodes.
  */
 export class StatementFactory {
-  static createIfStatement(
+  public static createIfStatement(
     condition: Expression,
     thenStatement: Statement,
     elseStatement?: Statement,
@@ -46,7 +46,7 @@ export class StatementFactory {
     };
   }
 
-  static createForLoopStatement(
+  public static createForLoopStatement(
     body: Statement,
     init?: ExpressionStatement | VariableDeclarationStatement,
     condition?: Expression,
@@ -63,7 +63,7 @@ export class StatementFactory {
     };
   }
 
-  static createWhileLoopStatement(
+  public static createWhileLoopStatement(
     condition: Expression,
     body: Statement,
     options?: NodeFactoryOptions
@@ -84,7 +84,7 @@ export class StatementFactory {
    * @param options
    * @deprecated Use createForLoopStatement instead.
    */
-  static createForStatement(
+  public static createForStatement(
     body: Statement,
     init?: ExpressionStatement | VariableDeclarationStatement,
     condition?: Expression,
@@ -100,7 +100,7 @@ export class StatementFactory {
    * @param options
    * @deprecated Use createWhileLoopStatement instead.
    */
-  static createWhileStatement(
+  public static createWhileStatement(
     condition: Expression,
     body: Statement,
     options?: NodeFactoryOptions
@@ -108,7 +108,7 @@ export class StatementFactory {
     return this.createWhileLoopStatement(condition, body, options);
   }
 
-  static createReturnStatement(
+  public static createReturnStatement(
     expression?: Expression,
     options?: NodeFactoryOptions
   ): ReturnStatement {
@@ -119,7 +119,7 @@ export class StatementFactory {
     };
   }
 
-  static createCompoundStatement(
+  public static createCompoundStatement(
     statements: Statement[],
     options?: NodeFactoryOptions
   ): CompoundStatement {
@@ -135,11 +135,14 @@ export class StatementFactory {
    * @param options
    * @deprecated Use createCompoundStatement instead.
    */
-  static createBlock(statements: Statement[], options?: NodeFactoryOptions): CompoundStatement {
+  public static createBlock(
+    statements: Statement[],
+    options?: NodeFactoryOptions
+  ): CompoundStatement {
     return this.createCompoundStatement(statements, options);
   }
 
-  static createExpressionStatement(
+  public static createExpressionStatement(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ExpressionStatement {
@@ -150,7 +153,7 @@ export class StatementFactory {
     };
   }
 
-  static createVariableDeclarationStatement(
+  public static createVariableDeclarationStatement(
     declaration: VariableDeclaration,
     options?: NodeFactoryOptions
   ): VariableDeclarationStatement {
@@ -161,7 +164,7 @@ export class StatementFactory {
     };
   }
 
-  static createEnhancedForLoopStatement(
+  public static createEnhancedForLoopStatement(
     variable: VariableDeclaration,
     iterable: Expression,
     body: Statement,
@@ -176,7 +179,7 @@ export class StatementFactory {
     };
   }
 
-  static createDoWhileLoopStatement(
+  public static createDoWhileLoopStatement(
     body: Statement,
     condition: Expression,
     options?: NodeFactoryOptions
@@ -196,7 +199,7 @@ export class StatementFactory {
    * @param options
    * @deprecated Use createEnhancedForLoopStatement instead.
    */
-  static createForEachStatement(
+  public static createForEachStatement(
     variable: VariableDeclaration,
     iterable: Expression,
     body: Statement,
@@ -211,7 +214,7 @@ export class StatementFactory {
    * @param options
    * @deprecated Use createDoWhileLoopStatement instead.
    */
-  static createDoWhileStatement(
+  public static createDoWhileStatement(
     body: Statement,
     condition: Expression,
     options?: NodeFactoryOptions
@@ -219,7 +222,7 @@ export class StatementFactory {
     return this.createDoWhileLoopStatement(body, condition, options);
   }
 
-  static createSwitchStatement(
+  public static createSwitchStatement(
     expression: Expression,
     cases: any[],
     defaultCase?: any,
@@ -234,7 +237,7 @@ export class StatementFactory {
     };
   }
 
-  static createTryStatement(
+  public static createTryStatement(
     tryBlock: CompoundStatement,
     catchClauses: any[],
     finallyBlock?: CompoundStatement,
@@ -249,7 +252,7 @@ export class StatementFactory {
     };
   }
 
-  static createBreakStatement(label?: string, options?: NodeFactoryOptions): BreakStatement {
+  public static createBreakStatement(label?: string, options?: NodeFactoryOptions): BreakStatement {
     return {
       kind: 'BreakStatement',
       label,
@@ -257,7 +260,10 @@ export class StatementFactory {
     };
   }
 
-  static createContinueStatement(label?: string, options?: NodeFactoryOptions): ContinueStatement {
+  public static createContinueStatement(
+    label?: string,
+    options?: NodeFactoryOptions
+  ): ContinueStatement {
     return {
       kind: 'ContinueStatement',
       label,
@@ -265,7 +271,7 @@ export class StatementFactory {
     };
   }
 
-  static createThrowStatement(
+  public static createThrowStatement(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ThrowStatement {
@@ -276,7 +282,7 @@ export class StatementFactory {
     };
   }
 
-  static createDmlStatement(
+  public static createDmlStatement(
     operation: DmlOperation,
     target: Expression,
     options?: NodeFactoryOptions

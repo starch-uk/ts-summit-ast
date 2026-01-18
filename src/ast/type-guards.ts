@@ -77,7 +77,7 @@ import type {
  * @param node - The AST node to check.
  * @returns True if the node is a Statement.
  */
-export function isStatement(node: ASTNode): node is Statement {
+function isStatement(node: ASTNode): node is Statement {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -106,7 +106,7 @@ export function isStatement(node: ASTNode): node is Statement {
  * @param node - The AST node to check.
  * @returns True if the node is an Expression.
  */
-export function isExpression(node: ASTNode): node is Expression {
+function isExpression(node: ASTNode): node is Expression {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -146,7 +146,7 @@ export function isExpression(node: ASTNode): node is Expression {
  * @param node - The AST node to check.
  * @returns True if the node is a Literal.
  */
-export function isLiteral(node: ASTNode): node is Literal {
+function isLiteral(node: ASTNode): node is Literal {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -169,7 +169,7 @@ export function isLiteral(node: ASTNode): node is Literal {
  * @param node - The AST node to check.
  * @returns True if the node is a TypeRef.
  */
-export function isTypeRef(node: ASTNode): node is import('./Type.js').TypeRef {
+function isTypeRef(node: ASTNode): node is import('./Type.js').TypeRef {
   return 'kind' in node && node.kind === 'TypeRef';
 }
 
@@ -178,7 +178,7 @@ export function isTypeRef(node: ASTNode): node is import('./Type.js').TypeRef {
  * @param node - The AST node to check.
  * @returns True if the node is a TypeRef.
  */
-export function isType(node: ASTNode): node is import('./Type.js').TypeRef {
+function isType(node: ASTNode): node is import('./Type.js').TypeRef {
   return isTypeRef(node);
 }
 
@@ -187,7 +187,7 @@ export function isType(node: ASTNode): node is import('./Type.js').TypeRef {
  * @param node - The AST node to check.
  * @returns True if the node is a Declaration.
  */
-export function isDeclaration(node: ASTNode): node is Declaration {
+function isDeclaration(node: ASTNode): node is Declaration {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -207,7 +207,7 @@ export function isDeclaration(node: ASTNode): node is Declaration {
  * @param node - The AST node to check.
  * @returns True if the node is a Modifier.
  */
-export function isModifier(node: ASTNode): node is Modifier {
+function isModifier(node: ASTNode): node is Modifier {
   return 'kind' in node && node.kind === 'Modifier';
 }
 
@@ -220,7 +220,7 @@ export function isModifier(node: ASTNode): node is Modifier {
  * @param node - The AST node to check.
  * @returns True if the node is an IfStatement.
  */
-export function isIfStatement(node: ASTNode): node is IfStatement {
+function isIfStatement(node: ASTNode): node is IfStatement {
   return 'kind' in node && node.kind === 'IfStatement';
 }
 
@@ -229,7 +229,7 @@ export function isIfStatement(node: ASTNode): node is IfStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ForLoopStatement.
  */
-export function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
+function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
   return 'kind' in node && node.kind === 'ForLoopStatement';
 }
 
@@ -238,7 +238,7 @@ export function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a WhileLoopStatement.
  */
-export function isWhileLoopStatement(node: ASTNode): node is WhileLoopStatement {
+function isWhileLoopStatement(node: ASTNode): node is WhileLoopStatement {
   return 'kind' in node && node.kind === 'WhileLoopStatement';
 }
 
@@ -248,7 +248,7 @@ export function isWhileLoopStatement(node: ASTNode): node is WhileLoopStatement 
  * @returns True if the node is a ForLoopStatement.
  * @deprecated Use isForLoopStatement instead.
  */
-export function isForStatement(node: ASTNode): node is ForLoopStatement {
+function isForStatement(node: ASTNode): node is ForLoopStatement {
   return isForLoopStatement(node);
 }
 
@@ -258,7 +258,7 @@ export function isForStatement(node: ASTNode): node is ForLoopStatement {
  * @returns True if the node is a WhileLoopStatement.
  * @deprecated Use isWhileLoopStatement instead.
  */
-export function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
+function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
   return isWhileLoopStatement(node);
 }
 
@@ -267,7 +267,7 @@ export function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a SwitchStatement.
  */
-export function isSwitchStatement(node: ASTNode): node is SwitchStatement {
+function isSwitchStatement(node: ASTNode): node is SwitchStatement {
   return 'kind' in node && node.kind === 'SwitchStatement';
 }
 
@@ -276,7 +276,7 @@ export function isSwitchStatement(node: ASTNode): node is SwitchStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ReturnStatement.
  */
-export function isReturnStatement(node: ASTNode): node is ReturnStatement {
+function isReturnStatement(node: ASTNode): node is ReturnStatement {
   return 'kind' in node && node.kind === 'ReturnStatement';
 }
 
@@ -285,7 +285,7 @@ export function isReturnStatement(node: ASTNode): node is ReturnStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a CompoundStatement.
  */
-export function isCompoundStatement(node: ASTNode): node is CompoundStatement {
+function isCompoundStatement(node: ASTNode): node is CompoundStatement {
   return 'kind' in node && node.kind === 'CompoundStatement';
 }
 
@@ -295,7 +295,7 @@ export function isCompoundStatement(node: ASTNode): node is CompoundStatement {
  * @returns True if the node is a CompoundStatement.
  * @deprecated Use isCompoundStatement instead.
  */
-export function isBlock(node: ASTNode): node is CompoundStatement {
+function isBlock(node: ASTNode): node is CompoundStatement {
   return isCompoundStatement(node);
 }
 
@@ -304,7 +304,7 @@ export function isBlock(node: ASTNode): node is CompoundStatement {
  * @param node - The AST node to check.
  * @returns True if the node is an ExpressionStatement.
  */
-export function isExpressionStatement(node: ASTNode): node is ExpressionStatement {
+function isExpressionStatement(node: ASTNode): node is ExpressionStatement {
   return 'kind' in node && node.kind === 'ExpressionStatement';
 }
 
@@ -313,9 +313,7 @@ export function isExpressionStatement(node: ASTNode): node is ExpressionStatemen
  * @param node - The AST node to check.
  * @returns True if the node is a VariableDeclarationStatement.
  */
-export function isVariableDeclarationStatement(
-  node: ASTNode
-): node is VariableDeclarationStatement {
+function isVariableDeclarationStatement(node: ASTNode): node is VariableDeclarationStatement {
   return 'kind' in node && node.kind === 'VariableDeclarationStatement';
 }
 
@@ -328,7 +326,7 @@ export function isVariableDeclarationStatement(
  * @param node - The AST node to check.
  * @returns True if the node is a BinaryExpression.
  */
-export function isBinaryExpression(node: ASTNode): node is BinaryExpression {
+function isBinaryExpression(node: ASTNode): node is BinaryExpression {
   return 'kind' in node && node.kind === 'BinaryExpression';
 }
 
@@ -337,7 +335,7 @@ export function isBinaryExpression(node: ASTNode): node is BinaryExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a UnaryExpression.
  */
-export function isUnaryExpression(node: ASTNode): node is UnaryExpression {
+function isUnaryExpression(node: ASTNode): node is UnaryExpression {
   return 'kind' in node && node.kind === 'UnaryExpression';
 }
 
@@ -346,7 +344,7 @@ export function isUnaryExpression(node: ASTNode): node is UnaryExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a CallExpression.
  */
-export function isCallExpression(node: ASTNode): node is CallExpression {
+function isCallExpression(node: ASTNode): node is CallExpression {
   return 'kind' in node && node.kind === 'CallExpression';
 }
 
@@ -356,7 +354,7 @@ export function isCallExpression(node: ASTNode): node is CallExpression {
  * @returns True if the node is a CallExpression.
  * @deprecated Use isCallExpression instead.
  */
-export function isMethodCallExpression(node: ASTNode): node is CallExpression {
+function isMethodCallExpression(node: ASTNode): node is CallExpression {
   return isCallExpression(node);
 }
 
@@ -365,7 +363,7 @@ export function isMethodCallExpression(node: ASTNode): node is CallExpression {
  * @param node - The AST node to check.
  * @returns True if the node is an Identifier.
  */
-export function isIdentifier(node: ASTNode): node is Identifier {
+function isIdentifier(node: ASTNode): node is Identifier {
   return 'kind' in node && node.kind === 'Identifier';
 }
 
@@ -378,7 +376,7 @@ export function isIdentifier(node: ASTNode): node is Identifier {
  * @param node - The AST node to check.
  * @returns True if the node is a StringVal.
  */
-export function isStringVal(node: ASTNode): node is StringVal {
+function isStringVal(node: ASTNode): node is StringVal {
   return 'kind' in node && node.kind === 'StringVal';
 }
 
@@ -387,7 +385,7 @@ export function isStringVal(node: ASTNode): node is StringVal {
  * @param node
  * @deprecated Use isStringVal instead.
  */
-export function isStringLiteral(node: ASTNode): node is StringVal {
+function isStringLiteral(node: ASTNode): node is StringVal {
   return isStringVal(node);
 }
 
@@ -396,7 +394,7 @@ export function isStringLiteral(node: ASTNode): node is StringVal {
  * @param node - The AST node to check.
  * @returns True if the node is an IntegerVal.
  */
-export function isIntegerVal(node: ASTNode): node is IntegerVal {
+function isIntegerVal(node: ASTNode): node is IntegerVal {
   return 'kind' in node && node.kind === 'IntegerVal';
 }
 
@@ -405,7 +403,7 @@ export function isIntegerVal(node: ASTNode): node is IntegerVal {
  * @param node
  * @deprecated Use isIntegerVal instead.
  */
-export function isIntegerLiteral(node: ASTNode): node is IntegerVal {
+function isIntegerLiteral(node: ASTNode): node is IntegerVal {
   return isIntegerVal(node);
 }
 
@@ -414,7 +412,7 @@ export function isIntegerLiteral(node: ASTNode): node is IntegerVal {
  * @param node - The AST node to check.
  * @returns True if the node is a DoubleVal.
  */
-export function isDoubleVal(node: ASTNode): node is DoubleVal {
+function isDoubleVal(node: ASTNode): node is DoubleVal {
   return 'kind' in node && node.kind === 'DoubleVal';
 }
 
@@ -423,7 +421,7 @@ export function isDoubleVal(node: ASTNode): node is DoubleVal {
  * @param node - The AST node to check.
  * @returns True if the node is a LongVal.
  */
-export function isLongVal(node: ASTNode): node is LongVal {
+function isLongVal(node: ASTNode): node is LongVal {
   return 'kind' in node && node.kind === 'LongVal';
 }
 
@@ -432,7 +430,7 @@ export function isLongVal(node: ASTNode): node is LongVal {
  * @param node
  * @deprecated Use isLongVal instead.
  */
-export function isLongLiteral(node: ASTNode): node is LongVal {
+function isLongLiteral(node: ASTNode): node is LongVal {
   return isLongVal(node);
 }
 
@@ -441,7 +439,7 @@ export function isLongLiteral(node: ASTNode): node is LongVal {
  * @param node - The AST node to check.
  * @returns True if the node is a DecimalVal.
  */
-export function isDecimalVal(node: ASTNode): node is DecimalVal {
+function isDecimalVal(node: ASTNode): node is DecimalVal {
   return 'kind' in node && node.kind === 'DecimalVal';
 }
 
@@ -450,9 +448,7 @@ export function isDecimalVal(node: ASTNode): node is DecimalVal {
  * @param node
  * @deprecated Use specific type guards (isIntegerVal, isDoubleVal, etc.) instead.
  */
-export function isNumberLiteral(
-  node: ASTNode
-): node is DecimalVal | DoubleVal | IntegerVal | LongVal {
+function isNumberLiteral(node: ASTNode): node is DecimalVal | DoubleVal | IntegerVal | LongVal {
   return (
     'kind' in node &&
     (node.kind === 'IntegerVal' ||
@@ -467,7 +463,7 @@ export function isNumberLiteral(
  * @param node - The AST node to check.
  * @returns True if the node is a BooleanVal.
  */
-export function isBooleanVal(node: ASTNode): node is BooleanVal {
+function isBooleanVal(node: ASTNode): node is BooleanVal {
   return 'kind' in node && node.kind === 'BooleanVal';
 }
 
@@ -476,7 +472,7 @@ export function isBooleanVal(node: ASTNode): node is BooleanVal {
  * @param node
  * @deprecated Use isBooleanVal instead.
  */
-export function isBooleanLiteral(node: ASTNode): node is BooleanVal {
+function isBooleanLiteral(node: ASTNode): node is BooleanVal {
   return isBooleanVal(node);
 }
 
@@ -485,7 +481,7 @@ export function isBooleanLiteral(node: ASTNode): node is BooleanVal {
  * @param node - The AST node to check.
  * @returns True if the node is a NullVal.
  */
-export function isNullVal(node: ASTNode): node is NullVal {
+function isNullVal(node: ASTNode): node is NullVal {
   return 'kind' in node && node.kind === 'NullVal';
 }
 
@@ -494,7 +490,7 @@ export function isNullVal(node: ASTNode): node is NullVal {
  * @param node
  * @deprecated Use isNullVal instead.
  */
-export function isNullLiteral(node: ASTNode): node is NullVal {
+function isNullLiteral(node: ASTNode): node is NullVal {
   return isNullVal(node);
 }
 
@@ -503,7 +499,7 @@ export function isNullLiteral(node: ASTNode): node is NullVal {
  * @param node - The AST node to check.
  * @returns True if the node is a VariableExpression.
  */
-export function isVariableExpression(node: ASTNode): node is VariableExpression {
+function isVariableExpression(node: ASTNode): node is VariableExpression {
   return 'kind' in node && node.kind === 'VariableExpression';
 }
 
@@ -516,7 +512,7 @@ export function isVariableExpression(node: ASTNode): node is VariableExpression 
  * @param node - The AST node to check.
  * @returns True if the node is a ClassDeclaration.
  */
-export function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
+function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
   return 'kind' in node && node.kind === 'ClassDeclaration';
 }
 
@@ -525,7 +521,7 @@ export function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
  * @param node - The AST node to check.
  * @returns True if the node is a MethodDeclaration.
  */
-export function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
+function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
   return 'kind' in node && node.kind === 'MethodDeclaration';
 }
 
@@ -534,7 +530,7 @@ export function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
  * @param node - The AST node to check.
  * @returns True if the node is a VariableDeclaration.
  */
-export function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
+function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
   return 'kind' in node && node.kind === 'VariableDeclaration';
 }
 
@@ -543,7 +539,7 @@ export function isVariableDeclaration(node: ASTNode): node is VariableDeclaratio
  * @param node - The AST node to check.
  * @returns True if the node is an EnumDeclaration.
  */
-export function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
+function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
   return 'kind' in node && node.kind === 'EnumDeclaration';
 }
 
@@ -552,7 +548,7 @@ export function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
  * @param node - The AST node to check.
  * @returns True if the node is an InterfaceDeclaration.
  */
-export function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
+function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
   return 'kind' in node && node.kind === 'InterfaceDeclaration';
 }
 
@@ -561,7 +557,7 @@ export function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclarat
  * @param node - The AST node to check.
  * @returns True if the node is a PropertyDeclaration.
  */
-export function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaration {
+function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaration {
   return 'kind' in node && node.kind === 'PropertyDeclaration';
 }
 
@@ -570,7 +566,7 @@ export function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaratio
  * @param node - The AST node to check.
  * @returns True if the node is a DmlStatement.
  */
-export function isDmlStatement(node: ASTNode): node is DmlStatement {
+function isDmlStatement(node: ASTNode): node is DmlStatement {
   return 'kind' in node && node.kind === 'DmlStatement';
 }
 
@@ -579,7 +575,7 @@ export function isDmlStatement(node: ASTNode): node is DmlStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a BreakStatement.
  */
-export function isBreakStatement(node: ASTNode): node is BreakStatement {
+function isBreakStatement(node: ASTNode): node is BreakStatement {
   return 'kind' in node && node.kind === 'BreakStatement';
 }
 
@@ -588,7 +584,7 @@ export function isBreakStatement(node: ASTNode): node is BreakStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ContinueStatement.
  */
-export function isContinueStatement(node: ASTNode): node is ContinueStatement {
+function isContinueStatement(node: ASTNode): node is ContinueStatement {
   return 'kind' in node && node.kind === 'ContinueStatement';
 }
 
@@ -597,7 +593,7 @@ export function isContinueStatement(node: ASTNode): node is ContinueStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ThrowStatement.
  */
-export function isThrowStatement(node: ASTNode): node is ThrowStatement {
+function isThrowStatement(node: ASTNode): node is ThrowStatement {
   return 'kind' in node && node.kind === 'ThrowStatement';
 }
 
@@ -606,7 +602,7 @@ export function isThrowStatement(node: ASTNode): node is ThrowStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a TryStatement.
  */
-export function isTryStatement(node: ASTNode): node is TryStatement {
+function isTryStatement(node: ASTNode): node is TryStatement {
   return 'kind' in node && node.kind === 'TryStatement';
 }
 
@@ -615,7 +611,7 @@ export function isTryStatement(node: ASTNode): node is TryStatement {
  * @param node - The AST node to check.
  * @returns True if the node is an EnhancedForLoopStatement.
  */
-export function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLoopStatement {
+function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLoopStatement {
   return 'kind' in node && node.kind === 'EnhancedForLoopStatement';
 }
 
@@ -624,7 +620,7 @@ export function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLo
  * @param node
  * @deprecated Use isEnhancedForLoopStatement instead.
  */
-export function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatement {
+function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatement {
   return isEnhancedForLoopStatement(node);
 }
 
@@ -633,7 +629,7 @@ export function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatem
  * @param node - The AST node to check.
  * @returns True if the node is a DoWhileLoopStatement.
  */
-export function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatement {
+function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatement {
   return 'kind' in node && node.kind === 'DoWhileLoopStatement';
 }
 
@@ -642,7 +638,7 @@ export function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatem
  * @param node
  * @deprecated Use isDoWhileLoopStatement instead.
  */
-export function isDoWhileStatement(node: ASTNode): node is DoWhileLoopStatement {
+function isDoWhileStatement(node: ASTNode): node is DoWhileLoopStatement {
   return isDoWhileLoopStatement(node);
 }
 
@@ -651,7 +647,7 @@ export function isDoWhileStatement(node: ASTNode): node is DoWhileLoopStatement 
  * @param node - The AST node to check.
  * @returns True if the node is a SoqlExpression.
  */
-export function isSoqlExpression(node: ASTNode): node is SoqlExpression {
+function isSoqlExpression(node: ASTNode): node is SoqlExpression {
   return 'kind' in node && node.kind === 'SoqlExpression';
 }
 
@@ -660,7 +656,7 @@ export function isSoqlExpression(node: ASTNode): node is SoqlExpression {
  * @param node
  * @deprecated Use isSoqlExpression instead.
  */
-export function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
+function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
   return isSoqlExpression(node);
 }
 
@@ -669,7 +665,7 @@ export function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a SoslExpression.
  */
-export function isSoslExpression(node: ASTNode): node is SoslExpression {
+function isSoslExpression(node: ASTNode): node is SoslExpression {
   return 'kind' in node && node.kind === 'SoslExpression';
 }
 
@@ -678,7 +674,7 @@ export function isSoslExpression(node: ASTNode): node is SoslExpression {
  * @param node
  * @deprecated Use isSoslExpression instead.
  */
-export function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
+function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
   return isSoslExpression(node);
 }
 
@@ -687,7 +683,7 @@ export function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a TriggerContextVariableExpression.
  */
-export function isTriggerContextVariableExpression(
+function isTriggerContextVariableExpression(
   node: ASTNode
 ): node is TriggerContextVariableExpression {
   return 'kind' in node && node.kind === 'TriggerContextVariableExpression';
@@ -698,7 +694,7 @@ export function isTriggerContextVariableExpression(
  * @param node - The AST node to check.
  * @returns True if the node is a ThisExpression.
  */
-export function isThisExpression(node: ASTNode): node is ThisExpression {
+function isThisExpression(node: ASTNode): node is ThisExpression {
   return 'kind' in node && node.kind === 'ThisExpression';
 }
 
@@ -707,7 +703,7 @@ export function isThisExpression(node: ASTNode): node is ThisExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a SuperExpression.
  */
-export function isSuperExpression(node: ASTNode): node is SuperExpression {
+function isSuperExpression(node: ASTNode): node is SuperExpression {
   return 'kind' in node && node.kind === 'SuperExpression';
 }
 
@@ -716,7 +712,7 @@ export function isSuperExpression(node: ASTNode): node is SuperExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a FieldExpression.
  */
-export function isFieldExpression(node: ASTNode): node is FieldExpression {
+function isFieldExpression(node: ASTNode): node is FieldExpression {
   return 'kind' in node && node.kind === 'FieldExpression';
 }
 
@@ -725,7 +721,7 @@ export function isFieldExpression(node: ASTNode): node is FieldExpression {
  * @param node
  * @deprecated Use isFieldExpression instead.
  */
-export function isFieldAccessExpression(node: ASTNode): node is FieldExpression {
+function isFieldAccessExpression(node: ASTNode): node is FieldExpression {
   return isFieldExpression(node);
 }
 
@@ -734,7 +730,7 @@ export function isFieldAccessExpression(node: ASTNode): node is FieldExpression 
  * @param node - The AST node to check.
  * @returns True if the node is an ArrayExpression.
  */
-export function isArrayExpression(node: ASTNode): node is ArrayExpression {
+function isArrayExpression(node: ASTNode): node is ArrayExpression {
   return 'kind' in node && node.kind === 'ArrayExpression';
 }
 
@@ -743,7 +739,7 @@ export function isArrayExpression(node: ASTNode): node is ArrayExpression {
  * @param node
  * @deprecated Use isArrayExpression instead.
  */
-export function isArrayAccessExpression(node: ASTNode): node is ArrayExpression {
+function isArrayAccessExpression(node: ASTNode): node is ArrayExpression {
   return isArrayExpression(node);
 }
 
@@ -752,7 +748,7 @@ export function isArrayAccessExpression(node: ASTNode): node is ArrayExpression 
  * @param node - The AST node to check.
  * @returns True if the node is a NewExpression.
  */
-export function isNewExpression(node: ASTNode): node is NewExpression {
+function isNewExpression(node: ASTNode): node is NewExpression {
   return 'kind' in node && node.kind === 'NewExpression';
 }
 
@@ -761,7 +757,7 @@ export function isNewExpression(node: ASTNode): node is NewExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a CastExpression.
  */
-export function isCastExpression(node: ASTNode): node is CastExpression {
+function isCastExpression(node: ASTNode): node is CastExpression {
   return 'kind' in node && node.kind === 'CastExpression';
 }
 
@@ -770,7 +766,7 @@ export function isCastExpression(node: ASTNode): node is CastExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a TernaryExpression.
  */
-export function isTernaryExpression(node: ASTNode): node is TernaryExpression {
+function isTernaryExpression(node: ASTNode): node is TernaryExpression {
   return 'kind' in node && node.kind === 'TernaryExpression';
 }
 
@@ -779,7 +775,7 @@ export function isTernaryExpression(node: ASTNode): node is TernaryExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a ParenthesizedExpression.
  */
-export function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpression {
+function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpression {
   return 'kind' in node && node.kind === 'ParenthesizedExpression';
 }
 
@@ -792,7 +788,7 @@ export function isParenthesizedExpression(node: ASTNode): node is ParenthesizedE
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocComment.
  */
-export function isApexDocComment(node: ASTNode): node is ApexDocComment {
+function isApexDocComment(node: ASTNode): node is ApexDocComment {
   return 'kind' in node && node.kind === 'ApexDocComment';
 }
 
@@ -801,7 +797,7 @@ export function isApexDocComment(node: ASTNode): node is ApexDocComment {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocBlockTag.
  */
-export function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
+function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -825,7 +821,7 @@ export function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocInlineTag.
  */
-export function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
+function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -838,7 +834,7 @@ export function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocParam.
  */
-export function isApexDocParam(node: ASTNode): node is ApexDocParam {
+function isApexDocParam(node: ASTNode): node is ApexDocParam {
   return 'kind' in node && node.kind === 'ApexDocParam';
 }
 
@@ -847,7 +843,7 @@ export function isApexDocParam(node: ASTNode): node is ApexDocParam {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocReturn.
  */
-export function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
+function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
   return 'kind' in node && node.kind === 'ApexDocReturn';
 }
 
@@ -856,7 +852,7 @@ export function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocGroup.
  */
-export function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
+function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
   return 'kind' in node && node.kind === 'ApexDocGroup';
 }
 
@@ -865,7 +861,7 @@ export function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocCode.
  */
-export function isApexDocCode(node: ASTNode): node is ApexDocCode {
+function isApexDocCode(node: ASTNode): node is ApexDocCode {
   return 'kind' in node && node.kind === 'ApexDocCode';
 }
 
@@ -874,7 +870,7 @@ export function isApexDocCode(node: ASTNode): node is ApexDocCode {
  * @param node - The AST node to check.
  * @returns True if the node is an EnumValue.
  */
-export function isEnumValue(node: ASTNode): node is EnumValue {
+function isEnumValue(node: ASTNode): node is EnumValue {
   return 'kind' in node && node.kind === 'EnumValue';
 }
 
@@ -883,7 +879,7 @@ export function isEnumValue(node: ASTNode): node is EnumValue {
  * @param node - The AST node to check.
  * @returns True if the node is an Initializer.
  */
-export function isInitializer(node: ASTNode): node is import('./Initializer.js').Initializer {
+function isInitializer(node: ASTNode): node is import('./Initializer.js').Initializer {
   return (
     'kind' in node &&
     (node.kind === 'ConstructorInitializer' ||
@@ -898,7 +894,7 @@ export function isInitializer(node: ASTNode): node is import('./Initializer.js')
  * @param node - The AST node to check.
  * @returns True if the node is a ConstructorInitializer.
  */
-export function isConstructorInitializer(
+function isConstructorInitializer(
   node: ASTNode
 ): node is import('./Initializer.js').ConstructorInitializer {
   return 'kind' in node && node.kind === 'ConstructorInitializer';
@@ -909,9 +905,7 @@ export function isConstructorInitializer(
  * @param node - The AST node to check.
  * @returns True if the node is a ValuesInitializer.
  */
-export function isValuesInitializer(
-  node: ASTNode
-): node is import('./Initializer.js').ValuesInitializer {
+function isValuesInitializer(node: ASTNode): node is import('./Initializer.js').ValuesInitializer {
   return 'kind' in node && node.kind === 'ValuesInitializer';
 }
 
@@ -920,7 +914,7 @@ export function isValuesInitializer(
  * @param node - The AST node to check.
  * @returns True if the node is a SizedArrayInitializer.
  */
-export function isSizedArrayInitializer(
+function isSizedArrayInitializer(
   node: ASTNode
 ): node is import('./Initializer.js').SizedArrayInitializer {
   return 'kind' in node && node.kind === 'SizedArrayInitializer';
@@ -931,7 +925,7 @@ export function isSizedArrayInitializer(
  * @param node - The AST node to check.
  * @returns True if the node is a MapInitializer.
  */
-export function isMapInitializer(node: ASTNode): node is import('./Initializer.js').MapInitializer {
+function isMapInitializer(node: ASTNode): node is import('./Initializer.js').MapInitializer {
   return 'kind' in node && node.kind === 'MapInitializer';
 }
 
@@ -940,7 +934,7 @@ export function isMapInitializer(node: ASTNode): node is import('./Initializer.j
  * @param node - The AST node to check.
  * @returns True if the node is an ElementValue.
  */
-export function isElementValue(node: ASTNode): node is import('./ElementValue.js').ElementValue {
+function isElementValue(node: ASTNode): node is import('./ElementValue.js').ElementValue {
   return (
     'kind' in node &&
     (node.kind === 'ExpressionElementValue' ||
@@ -954,7 +948,7 @@ export function isElementValue(node: ASTNode): node is import('./ElementValue.js
  * @param node - The AST node to check.
  * @returns True if the node is an ExpressionElementValue.
  */
-export function isExpressionElementValue(
+function isExpressionElementValue(
   node: ASTNode
 ): node is import('./ElementValue.js').ExpressionElementValue {
   return 'kind' in node && node.kind === 'ExpressionElementValue';
@@ -965,7 +959,7 @@ export function isExpressionElementValue(
  * @param node - The AST node to check.
  * @returns True if the node is an AnnotationElementValue.
  */
-export function isAnnotationElementValue(
+function isAnnotationElementValue(
   node: ASTNode
 ): node is import('./ElementValue.js').AnnotationElementValue {
   return 'kind' in node && node.kind === 'AnnotationElementValue';
@@ -976,9 +970,7 @@ export function isAnnotationElementValue(
  * @param node - The AST node to check.
  * @returns True if the node is an ArrayElementValue.
  */
-export function isArrayElementValue(
-  node: ASTNode
-): node is import('./ElementValue.js').ArrayElementValue {
+function isArrayElementValue(node: ASTNode): node is import('./ElementValue.js').ArrayElementValue {
   return 'kind' in node && node.kind === 'ArrayElementValue';
 }
 
@@ -987,8 +979,96 @@ export function isArrayElementValue(
  * @param node - The AST node to check.
  * @returns True if the node is a SoqlOrSoslBinding.
  */
-export function isSoqlOrSoslBinding(
+function isSoqlOrSoslBinding(
   node: ASTNode
 ): node is import('./SoqlOrSoslBinding.js').SoqlOrSoslBinding {
   return 'kind' in node && node.kind === 'SoqlOrSoslBinding';
 }
+
+export {
+  isStatement,
+  isExpression,
+  isLiteral,
+  isTypeRef,
+  isType,
+  isDeclaration,
+  isModifier,
+  isIfStatement,
+  isForLoopStatement,
+  isWhileLoopStatement,
+  isForStatement,
+  isWhileStatement,
+  isSwitchStatement,
+  isReturnStatement,
+  isCompoundStatement,
+  isBlock,
+  isExpressionStatement,
+  isVariableDeclarationStatement,
+  isBinaryExpression,
+  isUnaryExpression,
+  isCallExpression,
+  isMethodCallExpression,
+  isIdentifier,
+  isStringVal,
+  isStringLiteral,
+  isIntegerVal,
+  isIntegerLiteral,
+  isDoubleVal,
+  isLongVal,
+  isLongLiteral,
+  isDecimalVal,
+  isNumberLiteral,
+  isBooleanVal,
+  isBooleanLiteral,
+  isNullVal,
+  isNullLiteral,
+  isVariableExpression,
+  isClassDeclaration,
+  isMethodDeclaration,
+  isVariableDeclaration,
+  isEnumDeclaration,
+  isInterfaceDeclaration,
+  isPropertyDeclaration,
+  isDmlStatement,
+  isBreakStatement,
+  isContinueStatement,
+  isThrowStatement,
+  isTryStatement,
+  isEnhancedForLoopStatement,
+  isForEachStatement,
+  isDoWhileLoopStatement,
+  isDoWhileStatement,
+  isSoqlExpression,
+  isSoqlQueryExpression,
+  isSoslExpression,
+  isSoslQueryExpression,
+  isTriggerContextVariableExpression,
+  isThisExpression,
+  isSuperExpression,
+  isFieldExpression,
+  isFieldAccessExpression,
+  isArrayExpression,
+  isArrayAccessExpression,
+  isNewExpression,
+  isCastExpression,
+  isTernaryExpression,
+  isParenthesizedExpression,
+  isApexDocComment,
+  isApexDocBlockTag,
+  isApexDocInlineTag,
+  isApexDocParam,
+  isApexDocReturn,
+  isApexDocGroup,
+  isApexDocCode,
+  isEnumValue,
+  isInitializer,
+  isConstructorInitializer,
+  isValuesInitializer,
+  isSizedArrayInitializer,
+  isMapInitializer,
+  isElementValue,
+  isExpressionElementValue,
+  isAnnotationElementValue,
+  isArrayElementValue,
+  isSoqlOrSoslBinding,
+};

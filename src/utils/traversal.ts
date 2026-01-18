@@ -4,6 +4,50 @@
  */
 
 import type { ASTNode } from '../ast/base.js';
+import type {
+  IfStatement,
+  ForLoopStatement,
+  WhileLoopStatement,
+  ReturnStatement,
+  CompoundStatement,
+  ExpressionStatement,
+  VariableDeclarationStatement,
+  DmlStatement,
+  ThrowStatement,
+  SwitchStatement,
+  SwitchCase,
+} from '../ast/Statement.js';
+import type {
+  BinaryExpression,
+  CallExpression,
+  FieldExpression,
+  ArrayExpression,
+  NewExpression,
+  CastExpression,
+  ParenthesizedExpression,
+  TernaryExpression,
+  SoqlExpression,
+  SoslExpression,
+} from '../ast/Expression.js';
+import type {
+  VariableDeclaration,
+  ClassDeclaration,
+  MethodDeclaration,
+} from '../ast/Declaration.js';
+import type { TypeRef } from '../ast/Type.js';
+import type {
+  ConstructorInitializer,
+  ValuesInitializer,
+  SizedArrayInitializer,
+  MapInitializer,
+} from '../ast/Initializer.js';
+import type {
+  ExpressionElementValue,
+  AnnotationElementValue,
+  ArrayElementValue,
+} from '../ast/ElementValue.js';
+import type { AnnotationArgument } from '../ast/Declaration.js';
+import type { SoqlOrSoslBinding } from '../ast/SoqlOrSoslBinding.js';
 
 /**
  * Visitor interface for AST traversal
@@ -28,7 +72,7 @@ export interface ASTWalkVisitor {
  * @param ast - The AST node to walk.
  * @param visitor - The visitor to use for traversal.
  */
-export function walkAST(ast: ASTNode, visitor: ASTWalkVisitor): void {
+function walkAST(ast: ASTNode, visitor: ASTWalkVisitor): void {
   const shouldContinue = visitor.enterNode?.(ast);
   if (shouldContinue === false) {
     visitor.exitNode?.(ast);
@@ -60,53 +104,61 @@ function visitChildren(node: ASTNode, visitor: ASTWalkVisitor): void {
  * @param node - The AST node to get children from.
  * @returns An array of child AST nodes.
  */
-export function getNodeChildren(node: ASTNode): ASTNode[] {
+function getNodeChildren(node: ASTNode): ASTNode[] {
   const children: ASTNode[] = [];
 
   // Handle different node types
   switch (node.kind) {
     // Statements
     case 'IfStatement': {
-      const stmt = node as any;
-      if (stmt.condition) children.push(stmt.condition);
-      if (stmt.thenStatement) children.push(stmt.thenStatement);
-      if (stmt.elseStatement) children.push(stmt.elseStatement);
-      break;
-    }
-    case 'ForLoopStatement': {
-      const stmt = node as any;
-      if (stmt.init) children.push(stmt.init);
-      if (stmt.condition) children.push(stmt.condition);
-      if (stmt.update) children.push(stmt.update);
-      if (stmt.body) children.push(stmt.body);
-      break;
-    }
-    case 'WhileLoopStatement': {
-      const stmt = node as any;
-      if (stmt.condition) children.push(stmt.condition);
-      if (stmt.body) children.push(stmt.body);
-      break;
-    }
-    case 'ReturnStatement': {
-      const stmt = node as any;
-      if (stmt.expression) children.push(stmt.expression);
-      break;
-    }
-    case 'CompoundStatement': {
-      const stmt = node as any;
-      if (stmt.statements) {
-        children.push(...stmt.statements);
+      const stmt = node as IfStatement;
+      children.push(stmt.condition);
+      children.push(stmt.thenStatement);
+      if (stmt.elseStatement) {
+        children.push(stmt.elseStatement);
       }
       break;
     }
+    case 'ForLoopStatement': {
+      const stmt = node as ForLoopStatement;
+      if (stmt.init) {
+        children.push(stmt.init);
+      }
+      if (stmt.condition) {
+        children.push(stmt.condition);
+      }
+      if (stmt.update) {
+        children.push(stmt.update);
+      }
+      children.push(stmt.body);
+      break;
+    }
+    case 'WhileLoopStatement': {
+      const stmt = node as WhileLoopStatement;
+      children.push(stmt.condition);
+      children.push(stmt.body);
+      break;
+    }
+    case 'ReturnStatement': {
+      const stmt = node as ReturnStatement;
+      if (stmt.expression) {
+        children.push(stmt.expression);
+      }
+      break;
+    }
+    case 'CompoundStatement': {
+      const stmt = node as CompoundStatement;
+      children.push(...stmt.statements);
+      break;
+    }
     case 'ExpressionStatement': {
-      const stmt = node as any;
-      if (stmt.expression) children.push(stmt.expression);
+      const stmt = node as ExpressionStatement;
+      children.push(stmt.expression);
       break;
     }
     case 'VariableDeclarationStatement': {
-      const stmt = node as any;
-      if (stmt.declaration) children.push(stmt.declaration);
+      const stmt = node as VariableDeclarationStatement;
+      children.push(stmt.declaration);
       break;
     }
     case 'BreakStatement':
@@ -115,105 +167,113 @@ export function getNodeChildren(node: ASTNode): ASTNode[] {
       break;
     }
     case 'DmlStatement': {
-      const stmt = node as any;
-      if (stmt.target) children.push(stmt.target);
+      const stmt = node as DmlStatement;
+      children.push(stmt.target);
       break;
     }
     case 'ThrowStatement': {
-      const stmt = node as any;
-      if (stmt.expression) children.push(stmt.expression);
+      const stmt = node as ThrowStatement;
+      children.push(stmt.expression);
       break;
     }
     case 'SwitchStatement': {
-      const stmt = node as any;
-      if (stmt.expression) children.push(stmt.expression);
-      if (stmt.cases) children.push(...stmt.cases);
-      if (stmt.defaultCase) children.push(stmt.defaultCase);
+      const stmt = node as SwitchStatement;
+      children.push(stmt.expression);
+      children.push(...stmt.cases);
+      if (stmt.defaultCase) {
+        children.push(stmt.defaultCase);
+      }
       break;
     }
     case 'SwitchCase': {
-      const c = node as any;
-      if (c.value) children.push(c.value);
-      if (c.statements) children.push(...c.statements);
+      const c = node as SwitchCase;
+      if (c.value) {
+        children.push(c.value);
+      }
+      children.push(...c.statements);
       break;
     }
 
     // Expressions
     case 'BinaryExpression': {
-      const expr = node as any;
-      if (expr.left) children.push(expr.left);
-      if (expr.right) children.push(expr.right);
+      const expr = node as BinaryExpression;
+      children.push(expr.left);
+      children.push(expr.right);
       break;
     }
     case 'CallExpression': {
-      const expr = node as any;
-      if (expr.target) children.push(expr.target);
-      if (expr.arguments) {
-        children.push(...expr.arguments);
+      const expr = node as CallExpression;
+      if (expr.target) {
+        children.push(expr.target);
       }
+      children.push(...expr.arguments);
       // TypeRef is not a node type, so we don't traverse typeArguments
       break;
     }
     case 'FieldExpression': {
-      const expr = node as any;
-      if (expr.target) children.push(expr.target);
+      const expr = node as FieldExpression;
+      if (expr.target) {
+        children.push(expr.target);
+      }
       if (expr.fieldName != null) {
         children.push({ kind: 'Identifier', name: expr.fieldName } as ASTNode);
       }
       break;
     }
     case 'ArrayExpression': {
-      const expr = node as any;
-      if (expr.array) children.push(expr.array);
-      if (expr.index) children.push(expr.index);
+      const expr = node as ArrayExpression;
+      children.push(expr.array);
+      children.push(expr.index);
       break;
     }
     case 'NewExpression': {
-      const expr = node as any;
+      const expr = node as NewExpression;
       if (expr.initializer) {
         children.push(expr.initializer);
       }
       break;
     }
     case 'CastExpression': {
-      const expr = node as any;
-      if (expr.type) children.push(expr.type);
-      if (expr.expression) children.push(expr.expression);
+      const expr = node as CastExpression;
+      children.push(expr.type);
+      children.push(expr.expression);
       break;
     }
     case 'ParenthesizedExpression': {
-      const expr = node as any;
-      if (expr.expression) children.push(expr.expression);
+      const expr = node as ParenthesizedExpression;
+      children.push(expr.expression);
       break;
     }
     case 'TernaryExpression': {
-      const expr = node as any;
-      if (expr.condition) children.push(expr.condition);
-      if (expr.thenExpression) children.push(expr.thenExpression);
-      if (expr.elseExpression) children.push(expr.elseExpression);
+      const expr = node as TernaryExpression;
+      children.push(expr.condition);
+      children.push(expr.thenExpression);
+      children.push(expr.elseExpression);
       break;
     }
 
     // Declarations
     case 'VariableDeclaration': {
-      const decl = node as any;
+      const decl = node as VariableDeclaration;
       // TypeRef is not a node type, so we don't traverse it
       if (decl.modifiers && Array.isArray(decl.modifiers)) {
         children.push(...decl.modifiers);
       }
-      if (decl.annotations && Array.isArray(decl.annotations)) {
+      if (decl.annotations) {
         children.push(...decl.annotations);
       }
-      if (decl.initializer) children.push(decl.initializer);
+      if (decl.initializer) {
+        children.push(decl.initializer);
+      }
       break;
     }
     case 'ClassDeclaration': {
-      const decl = node as any;
+      const decl = node as ClassDeclaration;
       // TypeRef is not a node type, so we don't traverse extendsClause or implementsClause
       if (decl.modifiers && Array.isArray(decl.modifiers)) {
         children.push(...decl.modifiers);
       }
-      if (decl.annotations && Array.isArray(decl.annotations)) {
+      if (decl.annotations) {
         children.push(...decl.annotations);
       }
       if (decl.members) {
@@ -222,30 +282,28 @@ export function getNodeChildren(node: ASTNode): ASTNode[] {
       break;
     }
     case 'MethodDeclaration': {
-      const decl = node as any;
+      const decl = node as MethodDeclaration;
       if (decl.modifiers && Array.isArray(decl.modifiers)) {
         children.push(...decl.modifiers);
       }
-      if (decl.annotations && Array.isArray(decl.annotations)) {
+      if (decl.annotations) {
         children.push(...decl.annotations);
       }
-      if (decl.parameters) {
-        children.push(...decl.parameters);
+      children.push(...decl.parameters);
+      if (decl.body) {
+        children.push(decl.body);
       }
-      if (decl.body) children.push(decl.body);
       break;
     }
     case 'TypeRef': {
-      const typeRef = node as any;
+      const typeRef = node as TypeRef;
       // TypeRef children are: identifiers from all components + type arguments from all components
-      if (typeRef.components) {
-        for (const comp of typeRef.components) {
-          if (comp.id) children.push(comp.id);
-          if (comp.args) {
-            for (const arg of comp.args) {
-              if (arg && typeof arg === 'object' && 'kind' in arg) {
-                children.push(arg);
-              }
+      for (const comp of typeRef.components) {
+        children.push(comp.id);
+        if (comp.args) {
+          for (const arg of comp.args) {
+            if (arg && typeof arg === 'object' && 'kind' in arg) {
+              children.push(arg as ASTNode);
             }
           }
         }
@@ -253,71 +311,61 @@ export function getNodeChildren(node: ASTNode): ASTNode[] {
       break;
     }
     case 'ConstructorInitializer': {
-      const init = node as any;
-      if (init.type) children.push(init.type);
-      if (init.args) {
-        children.push(...init.args);
-      }
+      const init = node as ConstructorInitializer;
+      children.push(init.type);
+      children.push(...init.args);
       break;
     }
     case 'ValuesInitializer': {
-      const init = node as any;
-      if (init.type) children.push(init.type);
-      if (init.values) {
-        children.push(...init.values);
-      }
+      const init = node as ValuesInitializer;
+      children.push(init.type);
+      children.push(...init.values);
       break;
     }
     case 'SizedArrayInitializer': {
-      const init = node as any;
-      if (init.type) children.push(init.type);
-      if (init.size) children.push(init.size);
+      const init = node as SizedArrayInitializer;
+      children.push(init.type);
+      children.push(init.size);
       break;
     }
     case 'MapInitializer': {
-      const init = node as any;
-      if (init.type) children.push(init.type);
-      if (init.pairs) {
-        for (const pair of init.pairs) {
-          if (pair.key) children.push(pair.key);
-          if (pair.value) children.push(pair.value);
-        }
+      const init = node as MapInitializer;
+      children.push(init.type);
+      for (const pair of init.pairs) {
+        children.push(pair.key);
+        children.push(pair.value);
       }
       break;
     }
     case 'ExpressionElementValue': {
-      const elem = node as any;
-      if (elem.value) children.push(elem.value);
+      const elem = node as ExpressionElementValue;
+      children.push(elem.value);
       break;
     }
     case 'AnnotationElementValue': {
-      const elem = node as any;
-      if (elem.value) children.push(elem.value);
+      const elem = node as AnnotationElementValue;
+      children.push(elem.value);
       break;
     }
     case 'ArrayElementValue': {
-      const elem = node as any;
-      if (elem.values) {
-        children.push(...elem.values);
-      }
+      const elem = node as ArrayElementValue;
+      children.push(...elem.values);
       break;
     }
     case 'AnnotationArgument': {
-      const arg = node as any;
-      if (arg.value) children.push(arg.value);
+      const arg = node as AnnotationArgument;
+      children.push(arg.value);
       break;
     }
     case 'SoqlOrSoslBinding': {
-      const binding = node as any;
-      if (binding.expr) children.push(binding.expr);
+      const binding = node as SoqlOrSoslBinding;
+      children.push(binding.expr);
       break;
     }
     case 'SoqlExpression':
     case 'SoslExpression': {
-      const expr = node as any;
-      if (expr.bindings) {
-        children.push(...expr.bindings);
-      }
+      const expr = node as SoqlExpression | SoslExpression;
+      children.push(...expr.bindings);
       break;
     }
 
@@ -344,19 +392,19 @@ function findGenericChildren(node: ASTNode): ASTNode[] {
       continue;
     }
 
-    const value = (node as any)[key];
+    const value = (node as unknown as Record<string, unknown>)[key];
     if (!value) {
       continue;
     }
 
     if (value && typeof value === 'object' && 'kind' in value) {
       // It's an AST node
-      children.push(value);
+      children.push(value as ASTNode);
     } else if (Array.isArray(value)) {
       // It's an array - check if it contains AST nodes
       for (const item of value) {
         if (item && typeof item === 'object' && 'kind' in item) {
-          children.push(item);
+          children.push(item as ASTNode);
         }
       }
     }
@@ -370,7 +418,7 @@ function findGenericChildren(node: ASTNode): ASTNode[] {
  * @param root - The root AST node to build the parent map from.
  * @returns A map of child nodes to their parent nodes.
  */
-export function buildParentMap(root: ASTNode): Map<ASTNode, ASTNode | null> {
+function buildParentMap(root: ASTNode): Map<ASTNode, ASTNode | null> {
   const parentMap = new Map<ASTNode, ASTNode | null>();
   parentMap.set(root, null);
 
@@ -392,7 +440,7 @@ export function buildParentMap(root: ASTNode): Map<ASTNode, ASTNode | null> {
  * @param root - The root AST node.
  * @returns An array of ancestor AST nodes from root to parent.
  */
-export function getAncestors(node: ASTNode, root: ASTNode): ASTNode[] {
+function getAncestors(node: ASTNode, root: ASTNode): ASTNode[] {
   const parentMap = buildParentMap(root);
   const ancestors: ASTNode[] = [];
   let current: ASTNode | null | undefined = node;
@@ -413,7 +461,7 @@ export function getAncestors(node: ASTNode, root: ASTNode): ASTNode[] {
  * @example
  * const methods = findNodesByType(ast, 'MethodDeclaration');
  */
-export function findNodesByType(ast: ASTNode, nodeType: string): ASTNode[] {
+function findNodesByType(ast: ASTNode, nodeType: string): ASTNode[] {
   const results: ASTNode[] = [];
 
   walkAST(ast, {
@@ -435,7 +483,7 @@ export function findNodesByType(ast: ASTNode, nodeType: string): ASTNode[] {
  * @example
  * const parent = getParentNode(ast, methodNode);
  */
-export function getParentNode(root: ASTNode, node: ASTNode): ASTNode | null {
+function getParentNode(root: ASTNode, node: ASTNode): ASTNode | null {
   const parentMap = buildParentMap(root);
   return parentMap.get(node) || null;
 }
@@ -448,7 +496,17 @@ export function getParentNode(root: ASTNode, node: ASTNode): ASTNode | null {
  * @example
  * const methods = getChildNodesByType(classNode, 'MethodDeclaration');
  */
-export function getChildNodesByType(node: ASTNode, nodeType: string): ASTNode[] {
+function getChildNodesByType(node: ASTNode, nodeType: string): ASTNode[] {
   const children = getNodeChildren(node);
   return children.filter((child) => child.kind === nodeType);
 }
+
+export {
+  walkAST,
+  getNodeChildren,
+  buildParentMap,
+  getAncestors,
+  findNodesByType,
+  getParentNode,
+  getChildNodesByType,
+};

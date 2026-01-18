@@ -24,6 +24,7 @@ import type {
   CallExpression,
   NewExpression,
   VariableExpression,
+  FieldExpression,
 } from '../ast/Expression.js';
 import type {
   ConstructorInitializer,
@@ -110,7 +111,7 @@ export class JsonDeserializer {
       this.validateNode(json, nodeType);
     }
 
-    const location = this.deserializeLocation(json.location as unknown);
+    const location = this.deserializeLocation(json.location);
 
     return this.deserializeNodeByKind(json, nodeType, location);
   }
@@ -413,7 +414,7 @@ export class JsonDeserializer {
   private deserializeFieldExpression(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): any {
+  ): FieldExpression {
     const fieldName = json.fieldName as string;
     const target = json.target
       ? (this.deserializeNode(json.target as JsonASTNode) as Expression)
@@ -572,9 +573,9 @@ export class JsonDeserializer {
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
   ): ConstructorInitializer {
-    const type = this.deserializeTypeRef(json.type as any);
+    const type = this.deserializeTypeRef(json.type as JsonASTNode);
     const args = ((json.args as JsonASTNode[]) ?? []).map((arg) =>
-      this.deserializeNode(arg as JsonASTNode)
+      this.deserializeNode(arg)
     ) as Expression[];
 
     return NodeFactory.createConstructorInitializer(type, args, locationOption);
@@ -584,9 +585,9 @@ export class JsonDeserializer {
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
   ): ValuesInitializer {
-    const type = this.deserializeTypeRef(json.type as any);
+    const type = this.deserializeTypeRef(json.type as JsonASTNode);
     const values = ((json.values as JsonASTNode[]) ?? []).map((val) =>
-      this.deserializeNode(val as JsonASTNode)
+      this.deserializeNode(val)
     ) as Expression[];
 
     return NodeFactory.createValuesInitializer(type, values, locationOption);
@@ -596,7 +597,7 @@ export class JsonDeserializer {
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
   ): SizedArrayInitializer {
-    const type = this.deserializeTypeRef(json.type as any);
+    const type = this.deserializeTypeRef(json.type as JsonASTNode);
     const size = this.deserializeNode(json.size as JsonASTNode) as Expression;
 
     return NodeFactory.createSizedArrayInitializer(type, size, locationOption);
@@ -606,7 +607,7 @@ export class JsonDeserializer {
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
   ): MapInitializer {
-    const type = this.deserializeTypeRef(json.type as any);
+    const type = this.deserializeTypeRef(json.type as JsonASTNode);
     const pairs = ((json.pairs as JsonASTNode[]) ?? []).map((pair: JsonASTNode) => {
       const pairObj = pair as { key?: unknown; value?: unknown };
       return {
@@ -647,7 +648,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): ArrayElementValue {
     const values = ((json.values as JsonASTNode[]) ?? []).map((val) =>
-      this.deserializeNode(val as JsonASTNode)
+      this.deserializeNode(val)
     ) as import('../ast/ElementValue.js').ElementValue[];
     return NodeFactory.createArrayElementValue(values, locationOption);
   }
@@ -682,7 +683,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): VariableDeclaration {
     const name = json.name as string;
-    const type = this.deserializeTypeRef(json.type as any);
+    const type = this.deserializeTypeRef(json.type as JsonASTNode);
     const initializer = json.initializer
       ? (this.deserializeNode(json.initializer as JsonASTNode) as Expression)
       : undefined;

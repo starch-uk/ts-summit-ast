@@ -6,7 +6,7 @@
 /**
  * Source location information.
  */
-export interface SourceLocation {
+interface SourceLocation {
   readonly line: number;
   readonly column: number;
   readonly offset?: number;
@@ -15,7 +15,7 @@ export interface SourceLocation {
 /**
  * Source range (start and end positions).
  */
-export interface SourceRange {
+interface SourceRange {
   readonly start: SourceLocation;
   readonly end: SourceLocation;
 }
@@ -23,7 +23,7 @@ export interface SourceRange {
 /**
  * Base interface for all AST nodes.
  */
-export interface ASTNode {
+interface ASTNode {
   readonly kind: string;
   readonly location?: SourceRange;
 }
@@ -36,7 +36,7 @@ export interface ASTNode {
  * Base visitor interface for AST nodes.
  * @template T The return type of visit methods.
  */
-export interface ASTVisitor<T = void> {
+interface ASTVisitor<T = void> {
   /**
    * Visit any AST node (fallback for unknown node types).
    */
@@ -51,7 +51,7 @@ export interface ASTVisitor<T = void> {
 /**
  * Base interface for nodes that accept visitors.
  */
-export interface VisitableNode extends ASTNode {
+interface VisitableNode extends ASTNode {
   /**
    * Accept a visitor and return the result.
    */
@@ -61,7 +61,7 @@ export interface VisitableNode extends ASTNode {
 /**
  * Default visitor implementation that traverses the tree.
  */
-export class DefaultVisitor implements ASTVisitor {
+class DefaultVisitor implements ASTVisitor {
   visit(_node: ASTNode): void {
     // Default implementation does nothing
     // Override in subclasses for specific behavior
@@ -73,3 +73,6 @@ export class DefaultVisitor implements ASTVisitor {
     return [];
   }
 }
+
+export type { SourceLocation, SourceRange, ASTNode, ASTVisitor, VisitableNode };
+export { DefaultVisitor };

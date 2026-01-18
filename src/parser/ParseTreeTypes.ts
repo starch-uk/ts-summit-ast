@@ -11,7 +11,7 @@ import type { SourceRange } from '../ast/base.js';
  * Base interface for parse tree nodes
  * This is intentionally minimal to support various parser outputs.
  */
-export interface ParseTreeNode {
+interface ParseTreeNode {
   /**
    * Node type/kind identifier (e.g., "if_statement", "method_call", etc.)
    * The exact values depend on the parser, but should be consistent.
@@ -44,7 +44,7 @@ export interface ParseTreeNode {
 /**
  * Parse tree with named children (for parsers that use property-based children).
  */
-export interface NamedChildrenParseTree extends ParseTreeNode {
+interface NamedChildrenParseTree extends ParseTreeNode {
   /**
    * Named child properties
    * Example: { condition: node, thenBody: node, elseBody: node }.
@@ -55,7 +55,7 @@ export interface NamedChildrenParseTree extends ParseTreeNode {
 /**
  * Parse tree with positional children.
  */
-export interface PositionalChildrenParseTree extends ParseTreeNode {
+interface PositionalChildrenParseTree extends ParseTreeNode {
   /**
    * Array of child nodes in order.
    */
@@ -65,7 +65,7 @@ export interface PositionalChildrenParseTree extends ParseTreeNode {
 /**
  * Token information (for parsers that provide token-level details).
  */
-export interface Token {
+interface Token {
   readonly type: string;
   readonly text: string;
   readonly location?: SourceRange;
@@ -74,14 +74,14 @@ export interface Token {
 /**
  * Parse tree with token information.
  */
-export interface TokenizedParseTree extends ParseTreeNode {
+interface TokenizedParseTree extends ParseTreeNode {
   readonly tokens?: Token[];
 }
 
 /**
  * Error information from parsing.
  */
-export interface ParseError {
+interface ParseError {
   readonly message: string;
   readonly location?: SourceRange;
   readonly severity?: 'error' | 'info' | 'warning';
@@ -90,7 +90,7 @@ export interface ParseError {
 /**
  * Complete parse result.
  */
-export interface ParseResult {
+interface ParseResult {
   readonly tree?: ParseTreeNode;
   readonly errors?: ParseError[];
 
@@ -103,7 +103,7 @@ export interface ParseResult {
 /**
  * Adapter interface for converting parser-specific trees to our parse tree format.
  */
-export interface ParseTreeAdapter<T = unknown> {
+interface ParseTreeAdapter<T = unknown> {
   /**
    * Convert a parser-specific tree to our ParseTreeNode format.
    */
@@ -119,3 +119,14 @@ export interface ParseTreeAdapter<T = unknown> {
    */
   getText?: (node: T) => string | undefined;
 }
+
+export type {
+  ParseTreeNode,
+  NamedChildrenParseTree,
+  PositionalChildrenParseTree,
+  Token,
+  TokenizedParseTree,
+  ParseError,
+  ParseResult,
+  ParseTreeAdapter,
+};

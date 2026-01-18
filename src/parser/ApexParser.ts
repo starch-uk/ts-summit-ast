@@ -936,7 +936,7 @@ export class ApexParser {
     return {
       children,
       location: this.getLocation(start, this.current),
-      type: isConstructor === true ? 'constructor_declaration' : 'method_declaration',
+      type: isConstructor ? 'constructor_declaration' : 'method_declaration',
     };
   }
 
@@ -1005,11 +1005,7 @@ export class ApexParser {
 
     // Parse getter
     const peekToken = this.peek();
-    if (
-      this.check(TokenType.IDENTIFIER) &&
-      peekToken != null &&
-      peekToken.text.toLowerCase() === 'get'
-    ) {
+    if (this.check(TokenType.IDENTIFIER) && peekToken?.text.toLowerCase() === 'get') {
       this.advance(); // Consume 'get'
       this.skipWhitespaceAndComments();
       if (this.check(TokenType.LEFT_BRACE)) {
@@ -1023,11 +1019,7 @@ export class ApexParser {
 
     // Parse setter
     const setterPeekToken = this.peek();
-    if (
-      this.check(TokenType.IDENTIFIER) &&
-      setterPeekToken != null &&
-      setterPeekToken.text.toLowerCase() === 'set'
-    ) {
+    if (this.check(TokenType.IDENTIFIER) && setterPeekToken?.text.toLowerCase() === 'set') {
       this.advance(); // Consume 'set'
       this.skipWhitespaceAndComments();
       if (this.check(TokenType.LEFT_BRACE)) {
@@ -1196,13 +1188,7 @@ export class ApexParser {
             // For named arguments, whitespace can separate them
             // Check if next token is an identifier followed by = (named argument)
             const peekToken = this.peek(1);
-            if (
-              !(
-                this.check(TokenType.IDENTIFIER) &&
-                peekToken != null &&
-                peekToken.type === TokenType.ASSIGN
-              )
-            ) {
+            if (!(this.check(TokenType.IDENTIFIER) && peekToken?.type === TokenType.ASSIGN)) {
               // Not a named argument, must be end of arguments
               break;
             }
@@ -1296,11 +1282,7 @@ export class ApexParser {
       nextNonWhitespaceOffset++;
     }
     const nextNonWhitespaceToken = this.peek(nextNonWhitespaceOffset);
-    if (
-      this.check(TokenType.IDENTIFIER) &&
-      nextNonWhitespaceToken != null &&
-      nextNonWhitespaceToken.type === TokenType.ASSIGN
-    ) {
+    if (this.check(TokenType.IDENTIFIER) && nextNonWhitespaceToken?.type === TokenType.ASSIGN) {
       name = this.consume(TokenType.IDENTIFIER, 'Expected argument name');
       // Skip whitespace before ASSIGN
       while (
@@ -2624,7 +2606,7 @@ export class ApexParser {
     ) {
       const operator = this.previous();
       const right = this.parseAssignment();
-      if (right != null && expr != null && expr.location != null && right.location != null) {
+      if (right != null && expr?.location != null && right.location != null) {
         return {
           children: [expr, right],
           location: this.combineLocations(expr.location, right.location),
@@ -2648,7 +2630,7 @@ export class ApexParser {
     while (this.match(TokenType.NULL_COALESCING)) {
       const operator = this.previous();
       const right = this.parseTernary();
-      if (right != null && expr != null && expr.location != null && right.location != null) {
+      if (right != null && expr?.location != null && right.location != null) {
         expr = {
           children: [expr, right],
           location: this.combineLocations(expr.location, right.location),
@@ -2681,6 +2663,7 @@ export class ApexParser {
   /**
    * Parse OR expression.
    */
+
   /**
    * Parse logical OR expression.
    * @returns The parsed OR expression parse tree node, or null if parsing fails.
@@ -2691,7 +2674,7 @@ export class ApexParser {
     while (this.match(TokenType.OR)) {
       const operator = this.previous();
       const right = this.parseAnd();
-      if (right != null && expr != null && expr.location != null && right.location != null) {
+      if (right != null && expr?.location != null && right.location != null) {
         expr = {
           children: [expr, right],
           location: this.combineLocations(expr.location, right.location),
@@ -2707,6 +2690,7 @@ export class ApexParser {
   /**
    * Parse AND expression.
    */
+
   /**
    * Parse logical AND expression.
    * @returns The parsed AND expression parse tree node, or null if parsing fails.
@@ -2736,6 +2720,7 @@ export class ApexParser {
   /**
    * Parse equality expression.
    */
+
   /**
    * Parse equality expression (==, !=).
    * @returns The parsed equality expression parse tree node, or null if parsing fails.
@@ -2765,6 +2750,7 @@ export class ApexParser {
   /**
    * Parse comparison expression (includes instanceof).
    */
+
   /**
    * Parse comparison expression (<, >, <=, >=).
    * @returns The parsed comparison expression parse tree node, or null if parsing fails.
@@ -2820,6 +2806,7 @@ export class ApexParser {
   /**
    * Parse addition expression.
    */
+
   /**
    * Parse addition/subtraction expression (+, -).
    * @returns The parsed addition expression parse tree node, or null if parsing fails.
@@ -2849,6 +2836,7 @@ export class ApexParser {
   /**
    * Parse multiplication expression.
    */
+
   /**
    * Parse multiplication/division/modulo expression (*, /, %).
    * @returns The parsed multiplication expression parse tree node, or null if parsing fails.
@@ -3177,15 +3165,11 @@ export class ApexParser {
       // Save position before trying to parse type
       // const beforeTypePos = this.current; // Unused
       const potentialType = this.parseType();
-      if (
-        potentialType != null &&
-        potentialType.location != null &&
-        this.check(TokenType.RIGHT_PAREN)
-      ) {
+      if (potentialType?.location != null && this.check(TokenType.RIGHT_PAREN)) {
         // It's a cast: (Type) expression
         this.consume(TokenType.RIGHT_PAREN, 'Expected ) after cast type');
         const expr = this.parseUnary();
-        if (expr != null && expr.location != null) {
+        if (expr?.location != null) {
           return {
             children: [potentialType, expr],
             location: this.combineLocations(potentialType.location, expr.location),
@@ -3240,7 +3224,7 @@ export class ApexParser {
         // Trigger context variables can be keywords (new) or identifiers (old, isInsert, etc.)
         let triggerVar: Token;
         const nextToken = this.peek();
-        if (nextToken != null && nextToken.type === TokenType.NEW) {
+        if (nextToken?.type === TokenType.NEW) {
           // Consume NEW keyword token
           triggerVar = this.advance();
         } else {
@@ -3725,7 +3709,7 @@ export class ApexParser {
     let endLocation = endToken?.location ?? { column: 1, line: 1 };
 
     // If we're at EOF, check if source has trailing newline/whitespace
-    if (end >= this.tokens.length - 1 && endToken != null && endToken.type === TokenType.EOF) {
+    if (end >= this.tokens.length - 1 && endToken?.type === TokenType.EOF) {
       // Count lines in source
       const lines = this.source.split(/\r?\n/);
       const lastLineNum = lines.length;

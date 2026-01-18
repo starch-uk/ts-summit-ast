@@ -47,7 +47,7 @@ export interface ASTValidationResult {
  * }
  * ```
  */
-export function validateAST(ast: ASTNode): ASTValidationResult {
+function validateAST(ast: ASTNode): ASTValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -136,7 +136,7 @@ export interface ASTComparisonResult {
  * }
  * ```
  */
-export function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
+function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
   const differences: string[] = [];
   let typesMatch = true;
 
@@ -208,7 +208,7 @@ export interface ASTStatistics {
  * }
  * ```
  */
-export function getASTStatistics(ast: ASTNode): ASTStatistics {
+function getASTStatistics(ast: ASTNode): ASTStatistics {
   const nodeTypeCounts: Record<string, number> = {};
   let totalNodes = 0;
   let nodesWithLocation = 0;
@@ -274,3 +274,5 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
     totalNodes,
   };
 }
+
+export { validateAST, compareASTs, getASTStatistics };

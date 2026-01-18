@@ -22,7 +22,11 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  * Factory for literal nodes.
  */
 export class LiteralFactory {
-  static createStringVal(value: string, raw?: string, options?: NodeFactoryOptions): StringVal {
+  public static createStringVal(
+    value: string,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): StringVal {
     return {
       kind: 'StringVal',
       location: options?.location,
@@ -31,7 +35,11 @@ export class LiteralFactory {
     };
   }
 
-  static createIntegerVal(value: number, raw?: string, options?: NodeFactoryOptions): IntegerVal {
+  public static createIntegerVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): IntegerVal {
     return {
       kind: 'IntegerVal',
       location: options?.location,
@@ -40,7 +48,11 @@ export class LiteralFactory {
     };
   }
 
-  static createDoubleVal(value: number, raw?: string, options?: NodeFactoryOptions): DoubleVal {
+  public static createDoubleVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): DoubleVal {
     return {
       kind: 'DoubleVal',
       location: options?.location,
@@ -49,7 +61,7 @@ export class LiteralFactory {
     };
   }
 
-  static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
+  public static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
     return {
       kind: 'LongVal',
       location: options?.location,
@@ -58,7 +70,11 @@ export class LiteralFactory {
     };
   }
 
-  static createDecimalVal(value: number, raw?: string, options?: NodeFactoryOptions): DecimalVal {
+  public static createDecimalVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): DecimalVal {
     return {
       kind: 'DecimalVal',
       location: options?.location,
@@ -67,7 +83,7 @@ export class LiteralFactory {
     };
   }
 
-  static createBooleanVal(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+  public static createBooleanVal(value: boolean, options?: NodeFactoryOptions): BooleanVal {
     return {
       kind: 'BooleanVal',
       location: options?.location,
@@ -75,7 +91,7 @@ export class LiteralFactory {
     };
   }
 
-  static createNullVal(options?: NodeFactoryOptions): NullVal {
+  public static createNullVal(options?: NodeFactoryOptions): NullVal {
     return {
       kind: 'NullVal',
       location: options?.location,
@@ -88,7 +104,11 @@ export class LiteralFactory {
    * @param options
    * @deprecated Use createStringVal instead.
    */
-  static createStringLiteral(value: string, raw?: string, options?: NodeFactoryOptions): StringVal {
+  public static createStringLiteral(
+    value: string,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): StringVal {
     return this.createStringVal(value, raw, options);
   }
 
@@ -98,7 +118,7 @@ export class LiteralFactory {
    * @param options
    * @deprecated Use createIntegerVal, createDoubleVal, createLongVal, or createDecimalVal instead.
    */
-  static createNumberLiteral(
+  public static createNumberLiteral(
     value: number,
     raw?: string,
     options?: NodeFactoryOptions
@@ -111,7 +131,7 @@ export class LiteralFactory {
    * @param options
    * @deprecated Use createBooleanVal instead.
    */
-  static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+  public static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
     return this.createBooleanVal(value, options);
   }
 
@@ -119,7 +139,7 @@ export class LiteralFactory {
    * @param options
    * @deprecated Use createNullVal instead.
    */
-  static createNullLiteral(options?: NodeFactoryOptions): NullVal {
+  public static createNullLiteral(options?: NodeFactoryOptions): NullVal {
     return this.createNullVal(options);
   }
 }

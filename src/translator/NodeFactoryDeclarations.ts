@@ -14,6 +14,9 @@ import type {
   TypeParameter,
   Modifier,
   Annotation,
+  ClassMember,
+  InterfaceMember,
+  Parameter,
 } from '../ast/Declaration.js';
 import type { Expression } from '../ast/Expression.js';
 import type { TypeRef } from '../ast/Type.js';
@@ -29,7 +32,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  * Factory for declaration nodes.
  */
 export class DeclarationFactory {
-  static createVariableDeclaration(
+  public static createVariableDeclaration(
     name: string,
     type: TypeRef,
     initializer?: Expression,
@@ -46,13 +49,13 @@ export class DeclarationFactory {
     };
   }
 
-  static createClassDeclaration(
+  public static createClassDeclaration(
     name: string,
-    members: any[],
+    members: ClassMember[],
     modifiers: Modifier[] = [],
     extendsClause?: TypeRef,
     implementsClause?: TypeRef[],
-    typeParameters?: any[],
+    typeParameters?: TypeParameter[],
     options?: NodeFactoryOptions,
     annotations?: Annotation[]
   ): ClassDeclaration {
@@ -69,12 +72,12 @@ export class DeclarationFactory {
     };
   }
 
-  static createInterfaceDeclaration(
+  public static createInterfaceDeclaration(
     name: string,
-    members: any[],
+    members: InterfaceMember[],
     modifiers: Modifier[] = [],
     extendsClause?: TypeRef[],
-    typeParameters?: any[],
+    typeParameters?: TypeParameter[],
     options?: NodeFactoryOptions
   ): InterfaceDeclaration {
     return {
@@ -88,14 +91,14 @@ export class DeclarationFactory {
     };
   }
 
-  static createMethodDeclaration(
+  public static createMethodDeclaration(
     name: string,
     returnType: TypeRef,
-    parameters: any[] = [],
+    parameters: Parameter[] = [],
     body?: CompoundStatement,
     modifiers: Modifier[] = [],
-    typeParameters?: any[],
-    annotations?: any[],
+    typeParameters?: TypeParameter[],
+    annotations?: Annotation[],
     isConstructor = false,
     options?: NodeFactoryOptions
   ): MethodDeclaration {
@@ -113,13 +116,13 @@ export class DeclarationFactory {
     };
   }
 
-  static createPropertyDeclaration(
+  public static createPropertyDeclaration(
     name: string,
     type: TypeRef,
     modifiers: Modifier[] = [],
     getter?: CompoundStatement,
     setter?: CompoundStatement,
-    annotations?: any[],
+    annotations?: Annotation[],
     options?: NodeFactoryOptions
   ): PropertyDeclaration {
     return {
@@ -134,11 +137,11 @@ export class DeclarationFactory {
     };
   }
 
-  static createEnumDeclaration(
+  public static createEnumDeclaration(
     name: string,
     values: EnumValue[],
     modifiers: Modifier[] = [],
-    members?: any[],
+    members?: ClassMember[],
     options?: NodeFactoryOptions
   ): EnumDeclaration {
     return {
@@ -151,7 +154,7 @@ export class DeclarationFactory {
     };
   }
 
-  static createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
+  public static createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
     return {
       id,
       kind: 'EnumValue',
@@ -159,7 +162,7 @@ export class DeclarationFactory {
     };
   }
 
-  static createTypeParameter(
+  public static createTypeParameter(
     name: string,
     extendsBound?: TypeRef,
     options?: NodeFactoryOptions

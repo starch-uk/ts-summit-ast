@@ -51,7 +51,7 @@ export interface ProcessResult {
 /**
  * SummitTool class for processing Apex files.
  */
-export class SummitTool {
+class SummitTool {
   private readonly options: Required<Omit<SummitToolOptions, 'parseTreeAdapter'>> & {
     parseTreeAdapter?: SummitToolOptions['parseTreeAdapter'];
   };
@@ -255,3 +255,5 @@ export class SummitTool {
     }
   }
 }
+
+export { SummitTool };

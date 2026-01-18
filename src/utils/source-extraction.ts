@@ -8,7 +8,7 @@ import type { ASTNode, SourceRange } from '../ast/base.js';
 /**
  * Options for source text extraction.
  */
-export interface SourceTextOptions {
+interface SourceTextOptions {
   /**
    * Include associated comments.
    */
@@ -45,11 +45,7 @@ export interface SourceTextOptions {
  * @param options - Options for extraction.
  * @returns The source text for the node.
  */
-export function getSourceText(
-  node: ASTNode,
-  source: string,
-  options: SourceTextOptions = {}
-): string {
+function getSourceText(node: ASTNode, source: string, options: SourceTextOptions = {}): string {
   const range = getSourceRange(node);
   if (!range) {
     return '';
@@ -136,7 +132,7 @@ export function getSourceText(
  * const range = { start: { line: 1, column: 1 }, end: { line: 1, column: 10 } };
  * const text = getSourceTextForRange(sourceCode, range);
  */
-export function getSourceTextForRange(source: string, range: SourceRange): string {
+function getSourceTextForRange(source: string, range: SourceRange): string {
   const lines = source.split(/\r?\n/);
   const { start, end } = range;
 
@@ -178,7 +174,7 @@ export function getSourceTextForRange(source: string, range: SourceRange): strin
  * @param node - The AST node to get the range for.
  * @returns The source range, or null if not available.
  */
-export function getSourceRange(node: ASTNode): SourceRange | null {
+function getSourceRange(node: ASTNode): SourceRange | null {
   return node.location ?? null;
 }
 
@@ -197,7 +193,7 @@ interface LocalSourceLocation {
  * @param source - The source code string.
  * @returns The character offset in the source.
  */
-export function locationToOffset(location: LocalSourceLocation, source: string): number {
+function locationToOffset(location: LocalSourceLocation, source: string): number {
   const lines = source.split(/\r?\n/);
   let offset = 0;
 
@@ -218,7 +214,7 @@ export function locationToOffset(location: LocalSourceLocation, source: string):
  * @param source - The source code string.
  * @returns The source location (line and column).
  */
-export function offsetToLocation(offset: number, source: string): { line: number; column: number } {
+function offsetToLocation(offset: number, source: string): { line: number; column: number } {
   const lines = source.split(/\r?\n/);
   let currentOffset = 0;
   let line = 1;
@@ -243,7 +239,7 @@ export function offsetToLocation(offset: number, source: string): { line: number
 /**
  * UNKNOWN source location constant.
  */
-export const UNKNOWN_SOURCE_LOCATION: SourceRange = {
+const UNKNOWN_SOURCE_LOCATION: SourceRange = {
   end: { column: 0, line: 0 },
   start: { column: 0, line: 0 },
 };
@@ -253,7 +249,7 @@ export const UNKNOWN_SOURCE_LOCATION: SourceRange = {
  * @param range - The source range to check.
  * @returns True if the range is unknown (all zeros).
  */
-export function isUnknownLocation(range: SourceRange): boolean {
+function isUnknownLocation(range: SourceRange): boolean {
   return (
     range.start.line === 0 &&
     range.start.column === 0 &&
@@ -272,7 +268,7 @@ export function isUnknownLocation(range: SourceRange): boolean {
  * @param ranges - One or more source ranges to combine.
  * @returns A new SourceRange spanning all input ranges.
  */
-export function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRange {
+function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRange {
   // Filter out null/undefined and unknown locations
   const validRanges = ranges.filter(
     (r): r is SourceRange => r !== null && r !== undefined && !isUnknownLocation(r)
@@ -347,9 +343,7 @@ export function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRan
  * // Returns: { start: { line: 1, column: 1 }, end: { line: 2, column: 10 } }
  * ```
  */
-export function mergeSourceRanges(
-  ...ranges: (SourceRange | null | undefined)[]
-): SourceRange | null {
+function mergeSourceRanges(...ranges: (SourceRange | null | undefined)[]): SourceRange | null {
   const merged = spanOf(...ranges);
   return isUnknownLocation(merged) ? null : merged;
 }
@@ -361,7 +355,7 @@ export function mergeSourceRanges(
 /**
  * Position in source code (1-based).
  */
-export interface Position {
+interface Position {
   readonly line: number; /**
    * 1-based line number.
    */
@@ -378,7 +372,7 @@ export interface Position {
  * @param range - The source range to check against.
  * @returns True if the position is within the range.
  */
-export function isPositionInRange(position: Position, range: SourceRange): boolean {
+function isPositionInRange(position: Position, range: SourceRange): boolean {
   const { line, column } = position;
   const { start, end } = range;
 
@@ -406,7 +400,7 @@ export function isPositionInRange(position: Position, range: SourceRange): boole
  * @param range - The source range to check against.
  * @returns True if the position is before the range.
  */
-export function isPositionBefore(position: Position, range: SourceRange): boolean {
+function isPositionBefore(position: Position, range: SourceRange): boolean {
   if (position.line < range.start.line) {
     return true;
   }
@@ -422,7 +416,7 @@ export function isPositionBefore(position: Position, range: SourceRange): boolea
  * @param range - The source range to check against.
  * @returns True if the position is after the range.
  */
-export function isPositionAfter(position: Position, range: SourceRange): boolean {
+function isPositionAfter(position: Position, range: SourceRange): boolean {
   if (position.line > range.end.line) {
     return true;
   }
@@ -438,7 +432,7 @@ export function isPositionAfter(position: Position, range: SourceRange): boolean
  * @param range - The source range to calculate distance to.
  * @returns The distance in characters (0 if within range).
  */
-export function getDistanceToRange(position: Position, range: SourceRange): number {
+function getDistanceToRange(position: Position, range: SourceRange): number {
   if (isPositionInRange(position, range)) {
     return 0;
   }
@@ -458,3 +452,20 @@ export function getDistanceToRange(position: Position, range: SourceRange): numb
   }
   return (position.line - range.end.line) * 100 + (position.column - range.end.column);
 }
+
+export type { SourceTextOptions, Position };
+export {
+  getSourceText,
+  getSourceTextForRange,
+  getSourceRange,
+  locationToOffset,
+  offsetToLocation,
+  UNKNOWN_SOURCE_LOCATION,
+  isUnknownLocation,
+  spanOf,
+  mergeSourceRanges,
+  isPositionInRange,
+  isPositionBefore,
+  isPositionAfter,
+  getDistanceToRange,
+};

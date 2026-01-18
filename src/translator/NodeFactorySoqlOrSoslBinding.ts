@@ -10,7 +10,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  * Factory for creating SoqlOrSoslBinding AST nodes.
  */
 export class SoqlOrSoslBindingFactory {
-  static createSoqlOrSoslBinding(
+  public static createSoqlOrSoslBinding(
     expr: Expression,
     options?: NodeFactoryOptions
   ): SoqlOrSoslBinding {
@@ -18,7 +18,7 @@ export class SoqlOrSoslBindingFactory {
       expr,
       kind: 'SoqlOrSoslBinding',
       // Use the expression's location if available
-      location: options?.location || (expr as any).location,
+      location: options?.location ?? expr.location,
     };
   }
 }

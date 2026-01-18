@@ -126,7 +126,7 @@ export interface ApexParseResult {
  * }
  * ```
  */
-export function isUsableParseResult(
+function isUsableParseResult(
   result: ApexParseResult
 ): result is ApexParseResult & { ast: NonNullable<ASTNode>; isUsable: true } {
   return result.isUsable === true && result.ast !== undefined;
@@ -155,7 +155,7 @@ export function isUsableParseResult(
  * }
  * ```
  */
-export function parseApexCode(source: string, options: ApexParseOptions = {}): ApexParseResult {
+function parseApexCode(source: string, options: ApexParseOptions = {}): ApexParseResult {
   const {
     includeComments = false,
     includeLocation = true,
@@ -279,10 +279,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
  * }
  * ```
  */
-export function parseMultipleFiles(
-  sources: string[],
-  options: ApexParseOptions = {}
-): ApexParseResult[] {
+function parseMultipleFiles(sources: string[], options: ApexParseOptions = {}): ApexParseResult[] {
   return sources.map((source) => parseApexCode(source, options));
 }
 
@@ -307,7 +304,7 @@ export function parseMultipleFiles(
  * });
  * ```
  */
-export function extractCommentsBatch(
+function extractCommentsBatch(
   asts: ASTNode[],
   sources: string[],
   options: ExtractCommentsOptions = {}
@@ -318,3 +315,5 @@ export function extractCommentsBatch(
 
   return asts.map((ast, index) => extractComments(ast, sources[index], options));
 }
+
+export { isUsableParseResult, parseApexCode, parseMultipleFiles, extractCommentsBatch };

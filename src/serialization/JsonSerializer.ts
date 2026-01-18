@@ -27,8 +27,16 @@ import type {
 } from '../ast/Expression.js';
 import type { TypeRef } from '../ast/Type.js';
 import type { Modifier } from '../ast/Declaration.js';
-import type { IntegerVal, DoubleVal, LongVal, DecimalVal, BooleanVal } from '../ast/Literal.js';
 import type {
+  StringVal,
+  IntegerVal,
+  DoubleVal,
+  LongVal,
+  DecimalVal,
+  BooleanVal,
+} from '../ast/Literal.js';
+import type {
+  ConstructorInitializer,
   ValuesInitializer,
   SizedArrayInitializer,
   MapInitializer,
@@ -71,7 +79,7 @@ export interface SerializationOptions {
 /**
  * JSON Serializer for AST nodes.
  */
-export class JsonSerializer {
+class JsonSerializer {
   private readonly options: Required<SerializationOptions>;
 
   constructor(options: SerializationOptions = {}) {
@@ -139,25 +147,25 @@ export class JsonSerializer {
     switch (node.kind) {
       // Statement nodes
       case 'IfStatement':
-        this.serializeIfStatement(node as any, json);
+        this.serializeIfStatement(node as IfStatement, json);
         break;
       case 'ForLoopStatement':
-        this.serializeForLoopStatement(node as any, json);
+        this.serializeForLoopStatement(node as ForLoopStatement, json);
         break;
       case 'WhileLoopStatement':
-        this.serializeWhileLoopStatement(node as any, json);
+        this.serializeWhileLoopStatement(node as WhileLoopStatement, json);
         break;
       case 'ReturnStatement':
-        this.serializeReturnStatement(node as any, json);
+        this.serializeReturnStatement(node as ReturnStatement, json);
         break;
       case 'CompoundStatement':
-        this.serializeCompoundStatement(node as any, json);
+        this.serializeCompoundStatement(node as CompoundStatement, json);
         break;
       case 'ExpressionStatement':
-        this.serializeExpressionStatement(node as any, json);
+        this.serializeExpressionStatement(node as ExpressionStatement, json);
         break;
       case 'VariableDeclarationStatement':
-        this.serializeVariableDeclarationStatement(node as any, json);
+        this.serializeVariableDeclarationStatement(node as VariableDeclarationStatement, json);
         break;
       case 'EnhancedForLoopStatement':
       case 'DoWhileLoopStatement':
@@ -166,25 +174,25 @@ export class JsonSerializer {
 
       // Expression nodes
       case 'BinaryExpression':
-        this.serializeBinaryExpression(node as any, json);
+        this.serializeBinaryExpression(node as BinaryExpression, json);
         break;
       case 'CallExpression':
-        this.serializeCallExpression(node as any, json);
+        this.serializeCallExpression(node as CallExpression, json);
         break;
       case 'FieldExpression':
-        this.serializeFieldExpression(node as any, json);
+        this.serializeFieldExpression(node as FieldExpression, json);
         break;
       case 'ArrayExpression':
-        this.serializeArrayExpression(node as any, json);
+        this.serializeArrayExpression(node as ArrayExpression, json);
         break;
       case 'AssignExpression':
-        this.serializeAssignExpression(node as any, json);
+        this.serializeAssignExpression(node as AssignExpression, json);
         break;
       case 'NewExpression':
-        this.serializeNewExpression(node as any, json);
+        this.serializeNewExpression(node as NewExpression, json);
         break;
       case 'VariableExpression':
-        this.serializeVariableExpression(node as any, json);
+        this.serializeVariableExpression(node as VariableExpression, json);
         break;
       case 'SoqlExpression':
       case 'SoslExpression':
@@ -193,16 +201,16 @@ export class JsonSerializer {
 
       // Literal nodes
       case 'StringVal':
-        this.serializeStringVal(node as any, json);
+        this.serializeStringVal(node as StringVal, json);
         break;
       case 'IntegerVal':
       case 'DoubleVal':
       case 'LongVal':
       case 'DecimalVal':
-        this.serializeNumericLiteral(node as any, json);
+        this.serializeNumericLiteral(node as DecimalVal | DoubleVal | IntegerVal | LongVal, json);
         break;
       case 'BooleanVal':
-        this.serializeBooleanVal(node as any, json);
+        this.serializeBooleanVal(node as BooleanVal, json);
         break;
       case 'NullVal':
         // No additional properties
@@ -210,47 +218,47 @@ export class JsonSerializer {
 
       // Declaration nodes
       case 'VariableDeclaration':
-        this.serializeVariableDeclaration(node as any, json);
+        this.serializeVariableDeclaration(node as VariableDeclaration, json);
         break;
 
       // Modifier
       case 'Modifier':
-        this.serializeModifier(node as any, json);
+        this.serializeModifier(node as Modifier, json);
         break;
 
       // TypeRef (AST node in summit-ast)
       case 'TypeRef':
-        this.serializeTypeRefNode(node as any, json);
+        this.serializeTypeRefNode(node as TypeRef, json);
         break;
 
       // Initializer nodes
       case 'ConstructorInitializer':
-        this.serializeConstructorInitializer(node as any, json);
+        this.serializeConstructorInitializer(node as ConstructorInitializer, json);
         break;
       case 'ValuesInitializer':
-        this.serializeValuesInitializer(node as any, json);
+        this.serializeValuesInitializer(node as ValuesInitializer, json);
         break;
       case 'SizedArrayInitializer':
-        this.serializeSizedArrayInitializer(node as any, json);
+        this.serializeSizedArrayInitializer(node as SizedArrayInitializer, json);
         break;
       case 'MapInitializer':
-        this.serializeMapInitializer(node as any, json);
+        this.serializeMapInitializer(node as MapInitializer, json);
         break;
 
       // ElementValue nodes
       case 'ExpressionElementValue':
-        this.serializeExpressionElementValue(node as any, json);
+        this.serializeExpressionElementValue(node as ExpressionElementValue, json);
         break;
       case 'AnnotationElementValue':
-        this.serializeAnnotationElementValue(node as any, json);
+        this.serializeAnnotationElementValue(node as AnnotationElementValue, json);
         break;
       case 'ArrayElementValue':
-        this.serializeArrayElementValue(node as any, json);
+        this.serializeArrayElementValue(node as ArrayElementValue, json);
         break;
 
       // Declaration nodes
       case 'AnnotationArgument':
-        this.serializeAnnotationArgument(node as any, json);
+        this.serializeAnnotationArgument(node as AnnotationArgument, json);
         break;
 
       default:
@@ -355,13 +363,13 @@ export class JsonSerializer {
 
   // Literal serialization methods
 
-  private serializeStringVal(node: any, json: JsonASTNode): void {
+  private serializeStringVal(node: StringVal, json: JsonASTNode): void {
     json.value = node.value;
     json.raw = node.raw;
   }
 
   private serializeNumericLiteral(
-    node: IntegerVal | DoubleVal | LongVal | DecimalVal,
+    node: DecimalVal | DoubleVal | IntegerVal | LongVal,
     json: JsonASTNode
   ): void {
     json.value = node.value;
@@ -391,12 +399,12 @@ export class JsonSerializer {
 
   /**
    * Initializer serialization methods.
-   * @param node
-   * @param json
+   * @param node - The constructor initializer node.
+   * @param json - The JSON object to populate.
    */
-  private serializeConstructorInitializer(node: any, json: JsonASTNode): void {
+  private serializeConstructorInitializer(node: ConstructorInitializer, json: JsonASTNode): void {
     json.type = this.serializeTypeRef(node.type);
-    json.args = node.args.map((arg: any) => this.serializeNode(arg));
+    json.args = node.args.map((arg: Expression) => this.serializeNode(arg));
   }
 
   private serializeValuesInitializer(node: ValuesInitializer, json: JsonASTNode): void {
@@ -468,14 +476,14 @@ export class JsonSerializer {
 
   // Fallback for unknown node types
 
-  private serializeUnknownNode(node: any, json: JsonASTNode): void {
+  private serializeUnknownNode(node: ASTNode, json: JsonASTNode): void {
     // Try to serialize all enumerable properties
     for (const key in node) {
       if (key !== 'kind' && key !== 'location' && Object.prototype.hasOwnProperty.call(node, key)) {
-        const value = node[key];
+        const value = (node as unknown as Record<string, unknown>)[key];
         if (value && typeof value === 'object' && 'kind' in value) {
           // It's an AST node
-          json[key] = this.serializeNode(value);
+          json[key] = this.serializeNode(value as ASTNode);
         } else if (
           Array.isArray(value) &&
           value.length > 0 &&
@@ -499,7 +507,7 @@ export class JsonSerializer {
           'arrayNesting' in value
         ) {
           // It's a TypeRef
-          json[key] = this.serializeTypeRef(value);
+          json[key] = this.serializeTypeRef(value as import('../ast/Type.js').TypeRef);
         } else {
           // Primitive value
           json[key] = value;
@@ -508,3 +516,5 @@ export class JsonSerializer {
     }
   }
 }
+
+export { JsonSerializer };

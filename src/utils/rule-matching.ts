@@ -74,7 +74,7 @@ export interface XPathValidationResult {
  * }
  * ```
  */
-export function validateXPath(xpath: string): XPathValidationResult {
+function validateXPath(xpath: string): XPathValidationResult {
   const normalizedXPath = xpath.trim();
 
   if (!normalizedXPath) {
@@ -177,7 +177,7 @@ export function validateXPath(xpath: string): XPathValidationResult {
  * console.log('Unsupported features:', support.unsupportedFeatures);
  * ```
  */
-export function getXPathFeatureSupport(): XPathFeatureSupport {
+function getXPathFeatureSupport(): XPathFeatureSupport {
   // This implementation supports a simplified subset of XPath
   const supportedAxes: string[] = [
     'descendant-or-self', // //
@@ -254,7 +254,7 @@ export interface WouldTriggerRuleOptions {
  * @param options - Options for matching.
  * @returns Rule match result indicating if the node matches.
  */
-export function wouldTriggerRule(
+function wouldTriggerRule(
   node: ASTNode,
   xpathExpression: string,
   options: WouldTriggerRuleOptions = {}
@@ -279,7 +279,7 @@ export function wouldTriggerRule(
       if (attributeMatch) {
         const attrName = attributeMatch[1];
         const attrValue = attributeMatch[2];
-        const nodeValue = (node as any)[attrName];
+        const nodeValue = (node as unknown as Record<string, unknown>)[attrName];
 
         if (nodeValue === attrValue) {
           return {
@@ -422,7 +422,7 @@ export interface FindRuleMatchesOptions {
  * }
  * ```
  */
-export function findRuleMatches(
+function findRuleMatches(
   ast: ASTNode,
   xpathExpression: string,
   options: FindRuleMatchesOptions = {}
@@ -465,7 +465,7 @@ export function findRuleMatches(
           const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
           if (attributeMatch && matchedNode) {
             const attrName = attributeMatch[1];
-            const attrValue = (matchedNode as any)[attrName];
+            const attrValue = (matchedNode as unknown as Record<string, unknown>)[attrName];
             return attrValue !== undefined ? { [attrName]: attrValue } : undefined;
           }
           return undefined;
@@ -484,14 +484,15 @@ export function findRuleMatches(
                   .filter((n) => n !== matchedNode);
                 // Also check common child properties
                 const commonChildren: ASTNode[] = [];
-                if ((parentNode as any).statements) {
-                  commonChildren.push(...((parentNode as any).statements as ASTNode[]));
+                const parentRecord = parentNode as unknown as Record<string, unknown>;
+                if (Array.isArray(parentRecord.statements)) {
+                  commonChildren.push(...(parentRecord.statements as ASTNode[]));
                 }
-                if ((parentNode as any).members) {
-                  commonChildren.push(...((parentNode as any).members as ASTNode[]));
+                if (Array.isArray(parentRecord.members)) {
+                  commonChildren.push(...(parentRecord.members as ASTNode[]));
                 }
-                if ((parentNode as any).arguments) {
-                  commonChildren.push(...((parentNode as any).arguments as ASTNode[]));
+                if (Array.isArray(parentRecord.arguments)) {
+                  commonChildren.push(...(parentRecord.arguments as ASTNode[]));
                 }
                 return [...new Set([...parentChildren, ...commonChildren])].filter(
                   (n) => n !== matchedNode && n.location
@@ -524,3 +525,5 @@ export function findRuleMatches(
 
   return matches;
 }
+
+export { validateXPath, getXPathFeatureSupport, wouldTriggerRule, findRuleMatches };
