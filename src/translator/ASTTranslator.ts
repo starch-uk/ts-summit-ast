@@ -22,6 +22,7 @@ import type {
   UnaryExpression,
   AssignExpression,
   FieldExpression,
+  NewExpression,
 } from '../ast/Expression.js';
 import type {
   Declaration,
@@ -1898,7 +1899,7 @@ class ASTTranslator {
 
     // Add convenience properties for backward compatibility with tests
     // These properties provide direct access to initializer data
-    const exprWithProps = newExpr as import('../ast/Expression.js').NewExpression & {
+    const exprWithProps = newExpr as NewExpression & {
       type?: TypeRef;
       arguments?: Expression[];
       arrayInitializer?: Expression[];

@@ -27,7 +27,7 @@ import type {
   NewExpression,
   VariableExpression,
 } from '../ast/Expression.js';
-import type { TypeRef } from '../ast/Type.js';
+import type { TypeRef, TypeRefComponent } from '../ast/Type.js';
 import type { ElementValue } from '../ast/ElementValue.js';
 import type { Modifier } from '../ast/Declaration.js';
 import type {
@@ -460,12 +460,10 @@ export class JsonSerializer {
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeTypeRefNode(node: Readonly<TypeRef>, json: JsonASTNode): void {
-    json.components = node.components.map(
-      (comp: Readonly<import('../ast/Type.js').TypeRefComponent>) => ({
-        args: comp.args.map((arg: Readonly<TypeRef>) => this.serializeTypeRef(arg)),
-        id: this.serializeNode(comp.id),
-      })
-    );
+    json.components = node.components.map((comp: Readonly<TypeRefComponent>) => ({
+      args: comp.args.map((arg: Readonly<TypeRef>) => this.serializeTypeRef(arg)),
+      id: this.serializeNode(comp.id),
+    }));
     json.arrayNesting = node.arrayNesting;
   }
 
@@ -639,7 +637,7 @@ export class JsonSerializer {
         ) {
           // It's a TypeRef
           // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing to TypeRef
-          json[key] = this.serializeTypeRef(value as import('../ast/Type.js').TypeRef);
+          json[key] = this.serializeTypeRef(value as TypeRef);
         } else {
           // Primitive value
           json[key] = value;

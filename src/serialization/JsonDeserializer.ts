@@ -26,6 +26,7 @@ import type {
 } from '../ast/Expression.js';
 import type {
   ConstructorInitializer,
+  Initializer,
   ValuesInitializer,
   SizedArrayInitializer,
   MapInitializer,
@@ -34,6 +35,7 @@ import type {
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
+  ElementValue,
 } from '../ast/ElementValue.js';
 import type {
   StringVal,
@@ -44,8 +46,8 @@ import type {
   BooleanVal,
 } from '../ast/Literal.js';
 import type { TypeRef } from '../ast/Type.js';
-import type { VariableDeclaration } from '../ast/Declaration.js';
-import type { Modifier } from '../ast/Declaration.js';
+import type { AnnotationArgument, VariableDeclaration } from '../ast/Declaration.js';
+import type { Annotation, Modifier } from '../ast/Declaration.js';
 import type { Expression } from '../ast/Expression.js';
 import type { Statement } from '../ast/Statement.js';
 import type { Identifier } from '../ast/Identifier.js';
@@ -823,7 +825,7 @@ export class JsonDeserializer {
     const initializer = this.deserializeNode(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
       json.initializer as JsonASTNode
-    ) as import('../ast/Initializer.js').Initializer;
+    ) as Initializer;
 
     return NodeFactory.createNewExpression(initializer, locationOption);
   }
@@ -953,7 +955,7 @@ export class JsonDeserializer {
     const value = this.deserializeNode(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
       json.value as JsonASTNode
-    ) as import('../ast/Declaration.js').Annotation;
+    ) as Annotation;
     return NodeFactory.createAnnotationElementValue(value, locationOption);
   }
 
@@ -973,7 +975,7 @@ export class JsonDeserializer {
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
           ((json.values as JsonASTNode[]).map((val: Readonly<JsonASTNode>) =>
             this.deserializeNode(val)
-          ) as import('../ast/ElementValue.js').ElementValue[])
+          ) as ElementValue[])
         : [];
     return NodeFactory.createArrayElementValue(values, locationOption);
   }
@@ -988,7 +990,7 @@ export class JsonDeserializer {
   private deserializeAnnotationArgument(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
-  ): import('../ast/Declaration.js').AnnotationArgument {
+  ): AnnotationArgument {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const name = json.name as string | undefined;
@@ -996,7 +998,7 @@ export class JsonDeserializer {
     const value = this.deserializeNode(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
       json.value as JsonASTNode
-    ) as import('../ast/ElementValue.js').ElementValue;
+    ) as ElementValue;
 
     const isNameImplicit =
       (json.isNameImplicit as boolean) ?? (name === null || name === undefined || name === '');

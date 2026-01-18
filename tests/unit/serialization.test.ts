@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { JsonSerializer, JsonDeserializer } from '../../src/serialization/index.js';
 import { NodeFactory } from '../../src/translator/NodeFactory.js';
 import { parseAndTranslate } from '../translate-helpers.js';
+import type { Modifier } from '../../src/ast/Declaration.js';
 import { isVariableDeclarationStatement } from '../../src/ast/type-guards.js';
 import { findFirstNodeOfType } from '../translate-helpers.js';
 import {
@@ -987,7 +988,7 @@ describe('Comprehensive Serialization', () => {
     it('should deserialize VariableDeclaration with modifiers', () => {
       const serializer = new JsonSerializer();
       const deserializer = new JsonDeserializer();
-      const modifier: import('../../src/ast/Declaration.js').Modifier = {
+      const modifier: Modifier = {
         keyword: 'public',
         kind: 'Modifier',
       };
@@ -1153,7 +1154,7 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize VariableDeclaration with modifiers', () => {
       const serializer = new JsonSerializer();
-      const modifier: import('../../src/ast/Declaration.js').Modifier = {
+      const modifier: Modifier = {
         keyword: 'public',
         kind: 'Modifier',
       };

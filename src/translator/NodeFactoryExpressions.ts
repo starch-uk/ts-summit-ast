@@ -28,6 +28,7 @@ import type { Expression, Statement } from '../ast/index.js';
 import type { TypeRef } from '../ast/Type.js';
 import type { Identifier } from '../ast/Identifier.js';
 import type { Initializer } from '../ast/Initializer.js';
+import type { SoqlOrSoslBinding } from '../ast/SoqlOrSoslBinding.js';
 import { InitializerFactory } from './NodeFactoryInitializers.js';
 import { SoqlOrSoslBindingFactory } from './NodeFactorySoqlOrSoslBinding.js';
 import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
@@ -337,7 +338,7 @@ export class ExpressionFactory {
   public static createSoqlExpression(
     query: string,
 
-    bindings: readonly import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
+    bindings: readonly SoqlOrSoslBinding[] = [],
 
     options?: Readonly<NodeFactoryOptions>
   ): SoqlExpression {
@@ -352,7 +353,7 @@ export class ExpressionFactory {
   public static createSoslExpression(
     query: string,
 
-    bindings: readonly import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
+    bindings: readonly SoqlOrSoslBinding[] = [],
 
     options?: Readonly<NodeFactoryOptions>
   ): SoslExpression {

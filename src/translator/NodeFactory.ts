@@ -19,6 +19,8 @@ import type {
   ExpressionStatement,
   VariableDeclarationStatement,
   DmlStatement,
+  SwitchCase,
+  CatchClause,
 } from '../ast/Statement.js';
 import type {
   BinaryExpression,
@@ -32,6 +34,7 @@ import type {
   InstanceOfExpression,
   NewExpression,
   LambdaExpression,
+  LambdaParameter,
   VariableExpression,
   ThisExpression,
   SuperExpression,
@@ -73,6 +76,13 @@ import type {
 import type { Identifier } from '../ast/Identifier.js';
 import type { Expression } from '../ast/Expression.js';
 import type { Statement } from '../ast/Statement.js';
+import type {
+  ExpressionElementValue,
+  AnnotationElementValue,
+  ArrayElementValue,
+  ElementValue,
+} from '../ast/ElementValue.js';
+import type { SoqlOrSoslBinding } from '../ast/SoqlOrSoslBinding.js';
 import { StatementFactory } from './NodeFactoryStatements.js';
 import { ExpressionFactory } from './NodeFactoryExpressions.js';
 import { LiteralFactory } from './NodeFactoryLiterals.js';
@@ -254,8 +264,8 @@ export class NodeFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Switch statement requires 4 parameters
   public static createSwitchStatement(
     expression: Readonly<Expression>,
-    cases: readonly import('../ast/Statement.js').SwitchCase[],
-    defaultCase?: Readonly<import('../ast/Statement.js').SwitchCase>,
+    cases: readonly SwitchCase[],
+    defaultCase?: Readonly<SwitchCase>,
 
     options?: Readonly<NodeFactoryOptions>
   ): SwitchStatement {
@@ -265,7 +275,7 @@ export class NodeFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Try statement requires 4 parameters
   public static createTryStatement(
     tryBlock: Readonly<CompoundStatement>,
-    catchClauses: readonly import('../ast/Statement.js').CatchClause[],
+    catchClauses: readonly CatchClause[],
     finallyBlock?: Readonly<CompoundStatement>,
 
     options?: Readonly<NodeFactoryOptions>
@@ -539,22 +549,22 @@ export class NodeFactory {
   public static createExpressionElementValue(
     value: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
-  ): import('../ast/ElementValue.js').ExpressionElementValue {
+  ): ExpressionElementValue {
     return ElementValueFactory.createExpressionElementValue(value, options);
   }
 
   public static createAnnotationElementValue(
-    value: Readonly<import('../ast/Declaration.js').Annotation>,
+    value: Readonly<Annotation>,
 
     options?: Readonly<NodeFactoryOptions>
-  ): import('../ast/ElementValue.js').AnnotationElementValue {
+  ): AnnotationElementValue {
     return ElementValueFactory.createAnnotationElementValue(value, options);
   }
 
   public static createArrayElementValue(
-    values: readonly import('../ast/ElementValue.js').ElementValue[],
+    values: readonly ElementValue[],
     options?: Readonly<NodeFactoryOptions>
-  ): import('../ast/ElementValue.js').ArrayElementValue {
+  ): ArrayElementValue {
     return ElementValueFactory.createArrayElementValue([...values], options);
   }
 
@@ -571,7 +581,7 @@ export class NodeFactory {
   }
 
   public static createLambdaExpression(
-    parameters: readonly import('../ast/Expression.js').LambdaParameter[],
+    parameters: readonly LambdaParameter[],
 
     body: Readonly<Expression | Statement>,
 
@@ -598,7 +608,7 @@ export class NodeFactory {
   public static createSoqlExpression(
     query: string,
 
-    bindings: readonly import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
+    bindings: readonly SoqlOrSoslBinding[] = [],
     options?: Readonly<NodeFactoryOptions>
   ): SoqlExpression {
     return ExpressionFactory.createSoqlExpression(query, [...bindings], options);
@@ -607,7 +617,7 @@ export class NodeFactory {
   public static createSoslExpression(
     query: string,
 
-    bindings: readonly import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
+    bindings: readonly SoqlOrSoslBinding[] = [],
     options?: Readonly<NodeFactoryOptions>
   ): SoslExpression {
     return ExpressionFactory.createSoslExpression(query, [...bindings], options);
@@ -616,7 +626,7 @@ export class NodeFactory {
   public static createSoqlOrSoslBinding(
     expr: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
-  ): import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding {
+  ): SoqlOrSoslBinding {
     return SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options);
   }
 
@@ -934,7 +944,7 @@ export class NodeFactory {
     getter?: Readonly<CompoundStatement>,
     setter?: Readonly<CompoundStatement>,
 
-    annotations?: readonly import('../ast/Declaration.js').Annotation[],
+    annotations?: readonly Annotation[],
 
     options?: Readonly<NodeFactoryOptions>
   ): PropertyDeclaration {
