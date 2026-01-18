@@ -87,7 +87,6 @@ export class JsonDeserializer {
    * @returns The deserialized AST node.
    */
   public deserialize(json: string): ASTNode {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON.parse returns any, but we validate it
     const parsed: unknown = JSON.parse(
       json,
       this.options.reviver as (key: string, value: unknown) => unknown

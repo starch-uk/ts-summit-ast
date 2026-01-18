@@ -368,7 +368,11 @@ export interface ExtractCommentsOptions {
  * @param patterns - The patterns to match against.
  * @returns The match result, or null if no match.
  */
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Patterns array needs to be mutable for iteration
+
+/**
+ * @param commentText
+ * @param patterns
+ */
 function matchCommentPattern(
   commentText: Readonly<string>,
   patterns?: readonly Readonly<CommentPattern>[]

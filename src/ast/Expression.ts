@@ -20,7 +20,7 @@ interface Expression extends ASTNode {
  * Discriminated union type for all expression kinds
  * Note: Literal kinds are included here since literals extend Expression.
  */
-// eslint-disable-next-line @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure
+
 type ExpressionKind =
   | 'ArrayExpression'
   | 'AssignExpression'
@@ -48,7 +48,6 @@ type ExpressionKind =
   | 'TriggerContextVariableExpression'
   | 'UnaryExpression'
   | 'VariableExpression';
-/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Binary expression: left operator right.
@@ -168,6 +167,7 @@ interface FieldExpression extends Expression {
    * Undefined for static access.
    */
   readonly fieldName: string;
+
   /**
    * The field identifier node.
    */

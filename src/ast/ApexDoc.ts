@@ -44,6 +44,7 @@ type ApexDocBlockTag =
 /**
  * Block tag kind discriminator.
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type ApexDocBlockTagKind =
   | 'ApexDocAuthor'
   | 'ApexDocDeprecated'
@@ -55,6 +56,7 @@ type ApexDocBlockTagKind =
   | 'ApexDocSince'
   | 'ApexDocThrows'
   | 'ApexDocVersion';
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Base interface for block tags.
@@ -98,16 +100,19 @@ interface ApexDocDeprecated extends ApexDocBlockTagBase {
 }
 
 /**
- * @example example
+ * Example code snippet or usage.
  */
 interface ApexDocExample extends ApexDocBlockTagBase {
   readonly kind: 'ApexDocExample';
 }
 
+/* eslint-disable jsdoc/check-tag-names -- @group is a valid ApexDoc tag */
+
 /**
- * @group groupName
+ * @group groupName - Groups related members together in documentation.
  */
 interface ApexDocGroup extends ApexDocBlockTagBase {
+  /* eslint-enable jsdoc/check-tag-names */
   readonly kind: 'ApexDocGroup';
   readonly groupName: string;
 }
@@ -124,37 +129,47 @@ interface ApexDocSee extends ApexDocBlockTagBase {
   readonly reference?: string;
 }
 
+/* eslint-disable jsdoc/check-values -- @since value is valid in ApexDoc */
+
 /**
- * @since value
+ * @since version - Specifies when this feature was introduced.
  */
 interface ApexDocSince extends ApexDocBlockTagBase {
+  /* eslint-enable jsdoc/check-values */
   readonly kind: 'ApexDocSince';
 }
 
 /**
- * @throws ExceptionType description.
+ * @throws {string} ExceptionType - Description of when this exception is thrown.
  */
 interface ApexDocThrows extends ApexDocBlockTagBase {
   readonly kind: 'ApexDocThrows';
   readonly exceptionType?: string;
 }
 
+/* eslint-disable jsdoc/check-values -- @version value is valid in ApexDoc */
+
 /**
- * @version value
+ * @version version - Specifies the version of this feature.
  */
 interface ApexDocVersion extends ApexDocBlockTagBase {
+  /* eslint-enable jsdoc/check-values */
   readonly kind: 'ApexDocVersion';
 }
 
 /**
  * Inline tag types (appear within descriptions, enclosed in {}).
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type ApexDocInlineTag = ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral;
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Inline tag kind discriminator.
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type ApexDocInlineTagKind = 'ApexDocCode' | 'ApexDocHidden' | 'ApexDocLink' | 'ApexDocLiteral';
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Base interface for inline tags.
@@ -163,20 +178,27 @@ interface ApexDocInlineTagBase extends ASTNode {
   readonly kind: ApexDocInlineTagKind;
 }
 
+/* eslint-disable jsdoc/check-tag-names -- {@code} is a valid ApexDoc inline tag */
+
 /**
  * {@code text} - Formats text as inline code. If text contains Apex code, it's parsed as nested AST.
  */
 interface ApexDocCode extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocCode';
-  readonly text: string; /**
+
+  /**
    * Raw text content.
    */
+  readonly text: string;
 
   /**
    * Parsed Apex AST if the text is valid Apex code.
    */
   readonly nestedAST?: ASTNode;
 }
+/* eslint-enable jsdoc/check-tag-names */
+
+/* eslint-disable jsdoc/check-tag-names -- {@hidden} is a valid ApexDoc inline tag */
 
 /**
  * {@hidden text} - Prevents element from appearing in generated docs.
@@ -185,21 +207,29 @@ interface ApexDocHidden extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocHidden';
   readonly text: string;
 }
+/* eslint-enable jsdoc/check-tag-names */
+
+/* eslint-disable jsdoc/no-undefined-types -- 'reference' is a generic term for link target */
 
 /**
  * {@link reference} - Creates an inline link.
  */
 interface ApexDocLink extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocLink';
-  readonly reference?: string; /**
+
+  /**
    * Class#member, "text", or HTML link.
    */
+  readonly reference?: string;
 
   /**
    * Optional label for the link.
    */
   readonly label?: string;
 }
+/* eslint-enable jsdoc/no-undefined-types */
+
+/* eslint-disable jsdoc/check-tag-names -- {@literal} is a valid ApexDoc inline tag */
 
 /**
  * {@literal text} - Shows text literally without HTML tag interpretation.
@@ -208,11 +238,14 @@ interface ApexDocLiteral extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocLiteral';
   readonly text: string;
 }
+/* eslint-enable jsdoc/check-tag-names */
 
 /**
  * Content within ApexDoc (can be plain text or inline tags).
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type ApexDocContent = ApexDocInlineTag | ApexDocText;
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Plain text content in ApexDoc.
@@ -230,6 +263,7 @@ export type {
   ApexDocParam,
   ApexDocReturn,
   ApexDocAuthor,
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- ApexDocDeprecated is intentionally deprecated for backward compatibility
   ApexDocDeprecated,
   ApexDocExample,
   ApexDocGroup,

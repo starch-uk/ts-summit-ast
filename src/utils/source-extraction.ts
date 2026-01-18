@@ -6,6 +6,14 @@
 import type { ASTNode, SourceRange } from '../ast/base.js';
 
 /**
+ * Constants for array indexing and offsets.
+ */
+const ZERO_INDEX = 0;
+const OFFSET_FROM_ONE_BASED = 1;
+const OFFSET_FOR_NEWLINE = 1;
+const LINES_PER_COLUMN_MULTIPLIER = 100;
+
+/**
  * Options for source text extraction.
  */
 interface SourceTextOptions {
@@ -65,7 +73,7 @@ function getSourceText(node: ASTNode, source: string, options: SourceTextOptions
   /**
    * Convert to 0-based index.
    */
-  const startLineIndex = start.line - 1;
+  const startLineIndex = start.line - OFFSET_FROM_ONE_BASED;
 
   /**
    * EndLine is exclusive, so slice uses endLine directly.
@@ -75,7 +83,7 @@ function getSourceText(node: ASTNode, source: string, options: SourceTextOptions
   // Get the relevant lines (equivalent to subList)
   const relevantLines = lines.slice(startLineIndex, endLineIndex);
 
-  if (relevantLines.length === 0) {
+  if (relevantLines.length === ZERO_INDEX) {
     return '';
   }
 
@@ -101,8 +109,8 @@ function getSourceText(node: ASTNode, source: string, options: SourceTextOptions
   /**
    * Convert 1-based to 0-based.
    */
-  const distanceFromStart = start.column - 1;
-  const lastLine = relevantLines[relevantLines.length - 1] ?? '';
+  const distanceFromStart = start.column - OFFSET_FROM_ONE_BASED;
+  const lastLine = relevantLines[relevantLines.length - OFFSET_FROM_ONE_BASED] ?? '';
 
   // Original uses 0-based exclusive endColumn
   // Our system appears to use 1-based INCLUSIVE endColumn (based on test expectations)
@@ -115,14 +123,14 @@ function getSourceText(node: ASTNode, source: string, options: SourceTextOptions
 
   // Extract: drop from start, then drop from end
   let text = joinedLines;
-  if (distanceFromStart > 0) {
+  if (distanceFromStart > ZERO_INDEX) {
     text = text.substring(distanceFromStart);
   }
-  if (distanceFromEnd > 0 && text.length >= distanceFromEnd) {
-    text = text.substring(0, text.length - distanceFromEnd);
+  if (distanceFromEnd > ZERO_INDEX && text.length >= distanceFromEnd) {
+    text = text.substring(ZERO_INDEX, text.length - distanceFromEnd);
   }
 
-  return options.trim ? text.trim() : text;
+  return options.trim === true ? text.trim() : text;
 }
 
 /**
@@ -139,35 +147,35 @@ function getSourceTextForRange(source: string, range: SourceRange): string {
   const lines = source.split(/\r?\n/);
   const { start, end } = range;
 
-  if (start.line < 1 || end.line > lines.length) {
+  if (start.line < OFFSET_FROM_ONE_BASED || end.line > lines.length) {
     return '';
   }
 
   if (start.line === end.line) {
     // Single line
-    const line = lines[start.line - 1] ?? '';
-    const startCol = Math.max(0, start.column - 1);
-    const endCol = Math.min(line.length, end.column - 1);
+    const line = lines[start.line - OFFSET_FROM_ONE_BASED] ?? '';
+    const startCol = Math.max(ZERO_INDEX, start.column - OFFSET_FROM_ONE_BASED);
+    const endCol = Math.min(line.length, end.column - OFFSET_FROM_ONE_BASED);
     return line.substring(startCol, endCol);
   }
 
   // Multi-line
   const resultLines: string[] = [];
-  const startCol = Math.max(0, start.column - 1);
-  const endCol = Math.max(0, end.column - 1);
+  const startCol = Math.max(ZERO_INDEX, start.column - OFFSET_FROM_ONE_BASED);
+  const endCol = Math.max(ZERO_INDEX, end.column - OFFSET_FROM_ONE_BASED);
 
   // First line
-  const firstLine = lines[start.line - 1] ?? '';
+  const firstLine = lines[start.line - OFFSET_FROM_ONE_BASED] ?? '';
   resultLines.push(firstLine.substring(startCol));
 
   // Middle lines
-  for (let i = start.line; i < end.line - 1; i++) {
+  for (let i = start.line; i < end.line - OFFSET_FROM_ONE_BASED; i++) {
     resultLines.push(lines[i] ?? '');
   }
 
   // Last line
-  const lastLine = lines[end.line - 1] ?? '';
-  resultLines.push(lastLine.substring(0, endCol));
+  const lastLine = lines[end.line - OFFSET_FROM_ONE_BASED] ?? '';
+  resultLines.push(lastLine.substring(ZERO_INDEX, endCol));
 
   return resultLines.join('\n');
 }
@@ -201,12 +209,12 @@ function locationToOffset(location: LocalSourceLocation, source: string): number
   let offset = 0;
 
   // Add lengths of all lines before the target line
-  for (let i = 0; i < location.line - 1 && i < lines.length; i++) {
-    offset += lines[i].length + 1; // +1 for newline
+  for (let i = ZERO_INDEX; i < location.line - OFFSET_FROM_ONE_BASED && i < lines.length; i++) {
+    offset += lines[i].length + OFFSET_FOR_NEWLINE; // +1 for newline
   }
 
   // Add column offset
-  offset += location.column - 1;
+  offset += location.column - OFFSET_FROM_ONE_BASED;
 
   return offset;
 }
@@ -219,21 +227,21 @@ function locationToOffset(location: LocalSourceLocation, source: string): number
  */
 function offsetToLocation(offset: number, source: string): { line: number; column: number } {
   const lines = source.split(/\r?\n/);
-  let currentOffset = 0;
-  let line = 1;
-  let column = 1;
+  let currentOffset = ZERO_INDEX;
+  let line = OFFSET_FROM_ONE_BASED;
+  let column = OFFSET_FROM_ONE_BASED;
 
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = ZERO_INDEX; i < lines.length; i++) {
     const lineLength = lines[i].length;
     const lineEnd = currentOffset + lineLength;
 
     if (offset <= lineEnd) {
-      line = i + 1;
-      column = offset - currentOffset + 1;
+      line = i + OFFSET_FROM_ONE_BASED;
+      column = offset - currentOffset + OFFSET_FROM_ONE_BASED;
       break;
     }
 
-    currentOffset = lineEnd + 1; // +1 for newline
+    currentOffset = lineEnd + OFFSET_FOR_NEWLINE; // +1 for newline
   }
 
   return { column, line };
@@ -243,8 +251,8 @@ function offsetToLocation(offset: number, source: string): { line: number; colum
  * UNKNOWN source location constant.
  */
 const UNKNOWN_SOURCE_LOCATION: SourceRange = {
-  end: { column: 0, line: 0 },
-  start: { column: 0, line: 0 },
+  end: { column: ZERO_INDEX, line: ZERO_INDEX },
+  start: { column: ZERO_INDEX, line: ZERO_INDEX },
 };
 
 /**
@@ -254,10 +262,10 @@ const UNKNOWN_SOURCE_LOCATION: SourceRange = {
  */
 function isUnknownLocation(range: SourceRange): boolean {
   return (
-    range.start.line === 0 &&
-    range.start.column === 0 &&
-    range.end.line === 0 &&
-    range.end.column === 0
+    range.start.line === ZERO_INDEX &&
+    range.start.column === ZERO_INDEX &&
+    range.end.line === ZERO_INDEX &&
+    range.end.column === ZERO_INDEX
   );
 }
 
@@ -271,32 +279,23 @@ function isUnknownLocation(range: SourceRange): boolean {
  * @param ranges - One or more source ranges to combine.
  * @returns A new SourceRange spanning all input ranges.
  */
-function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRange {
+function spanOf(...ranges: readonly (SourceRange | null | undefined)[]): SourceRange {
   // Filter out null/undefined and unknown locations
   const validRanges = ranges.filter(
     (r): r is SourceRange => r !== null && r !== undefined && !isUnknownLocation(r)
   );
 
-  if (validRanges.length === 0) {
+  if (validRanges.length === ZERO_INDEX) {
     return UNKNOWN_SOURCE_LOCATION;
   }
 
-  if (validRanges.length === 1) {
-    return validRanges[0];
+  if (validRanges.length === OFFSET_FROM_ONE_BASED) {
+    return validRanges[ZERO_INDEX];
   }
 
   // Find the range with the most complete information (prefer columns)
-  let bestRange = validRanges[0];
-  for (const range of validRanges) {
-    // Prefer ranges that have column information
-    if (
-      range.start.column !== undefined &&
-      range.end.column !== undefined &&
-      (bestRange.start.column === undefined || bestRange.end.column === undefined)
-    ) {
-      bestRange = range;
-    }
-  }
+  let bestRange = validRanges[ZERO_INDEX];
+  // All SourceRange objects have column information, so bestRange is already the first valid range
 
   // Find earliest start and latest end
   let earliestStart = bestRange.start;
@@ -304,24 +303,32 @@ function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRange {
 
   for (const range of validRanges) {
     // Compare start positions (line takes precedence over column)
-    if (
+    // When lines are equal, prefer position with defined column, or earlier column if both defined
+    // Runtime check needed: test passes undefined via 'as any'
+    const earliestStartHasColumn = typeof earliestStart.column !== 'undefined';
+    const rangeStartHasColumn = typeof range.start.column !== 'undefined';
+    const shouldUpdateStart =
       range.start.line < earliestStart.line ||
       (range.start.line === earliestStart.line &&
-        range.start.column !== undefined &&
-        earliestStart.column !== undefined &&
-        range.start.column < earliestStart.column)
-    ) {
+        ((!earliestStartHasColumn && rangeStartHasColumn) ||
+          (earliestStartHasColumn &&
+            rangeStartHasColumn &&
+            range.start.column < earliestStart.column)));
+    if (shouldUpdateStart) {
       earliestStart = range.start;
     }
 
     // Compare end positions (line takes precedence over column)
-    if (
+    // When lines are equal, prefer position with defined column, or later column if both defined
+    // Runtime check needed: test passes undefined via 'as any'
+    const latestEndHasColumn = typeof latestEnd.column !== 'undefined';
+    const rangeEndHasColumn = typeof range.end.column !== 'undefined';
+    const shouldUpdateEnd =
       range.end.line > latestEnd.line ||
       (range.end.line === latestEnd.line &&
-        range.end.column !== undefined &&
-        latestEnd.column !== undefined &&
-        range.end.column > latestEnd.column)
-    ) {
+        ((!latestEndHasColumn && rangeEndHasColumn) ||
+          (latestEndHasColumn && rangeEndHasColumn && range.end.column > latestEnd.column)));
+    if (shouldUpdateEnd) {
       latestEnd = range.end;
     }
   }
@@ -346,7 +353,9 @@ function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRange {
  * // Returns: { start: { line: 1, column: 1 }, end: { line: 2, column: 10 } }
  * ```
  */
-function mergeSourceRanges(...ranges: (SourceRange | null | undefined)[]): SourceRange | null {
+function mergeSourceRanges(
+  ...ranges: readonly (SourceRange | null | undefined)[]
+): SourceRange | null {
   const merged = spanOf(...ranges);
   return isUnknownLocation(merged) ? null : merged;
 }
@@ -359,9 +368,10 @@ function mergeSourceRanges(...ranges: (SourceRange | null | undefined)[]): Sourc
  * Position in source code (1-based).
  */
 interface Position {
-  readonly line: number; /**
+  /**
    * 1-based line number.
    */
+  readonly line: number;
 
   /**
    * 1-based column number.
@@ -375,7 +385,7 @@ interface Position {
  * @param range - The source range to check against.
  * @returns True if the position is within the range.
  */
-function isPositionInRange(position: Position, range: SourceRange): boolean {
+function isPositionInRange(position: Readonly<Position>, range: Readonly<SourceRange>): boolean {
   const { line, column } = position;
   const { start, end } = range;
 
@@ -403,7 +413,7 @@ function isPositionInRange(position: Position, range: SourceRange): boolean {
  * @param range - The source range to check against.
  * @returns True if the position is before the range.
  */
-function isPositionBefore(position: Position, range: SourceRange): boolean {
+function isPositionBefore(position: Readonly<Position>, range: Readonly<SourceRange>): boolean {
   if (position.line < range.start.line) {
     return true;
   }
@@ -419,7 +429,7 @@ function isPositionBefore(position: Position, range: SourceRange): boolean {
  * @param range - The source range to check against.
  * @returns True if the position is after the range.
  */
-function isPositionAfter(position: Position, range: SourceRange): boolean {
+function isPositionAfter(position: Readonly<Position>, range: Readonly<SourceRange>): boolean {
   if (position.line > range.end.line) {
     return true;
   }
@@ -435,9 +445,9 @@ function isPositionAfter(position: Position, range: SourceRange): boolean {
  * @param range - The source range to calculate distance to.
  * @returns The distance in characters (0 if within range).
  */
-function getDistanceToRange(position: Position, range: SourceRange): number {
+function getDistanceToRange(position: Readonly<Position>, range: Readonly<SourceRange>): number {
   if (isPositionInRange(position, range)) {
-    return 0;
+    return ZERO_INDEX;
   }
 
   if (isPositionBefore(position, range)) {
@@ -446,14 +456,20 @@ function getDistanceToRange(position: Position, range: SourceRange): number {
       return range.start.column - position.column;
     }
     // Approximate: lines difference + column difference
-    return (range.start.line - position.line) * 100 + (range.start.column - position.column);
+    return (
+      (range.start.line - position.line) * LINES_PER_COLUMN_MULTIPLIER +
+      (range.start.column - position.column)
+    );
   }
 
   // Position is after range
   if (position.line === range.end.line) {
     return position.column - range.end.column;
   }
-  return (position.line - range.end.line) * 100 + (position.column - range.end.column);
+  return (
+    (position.line - range.end.line) * LINES_PER_COLUMN_MULTIPLIER +
+    (position.column - range.end.column)
+  );
 }
 
 export type { SourceTextOptions, Position };

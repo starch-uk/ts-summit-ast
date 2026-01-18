@@ -68,7 +68,6 @@ class DefaultVisitor implements ASTVisitor {
     // Override in subclasses for specific behavior
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- void[] is required by interface for default visitor
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Default implementation intentionally does nothing
   public visitChildren(_node: ASTNode): void[] {
     // Default implementation returns empty array

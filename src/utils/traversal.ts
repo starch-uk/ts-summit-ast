@@ -292,7 +292,6 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
         if (comp.args) {
           for (const arg of comp.args) {
             if (arg && typeof arg === 'object' && 'kind' in arg) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
               children.push(arg as ASTNode);
             }
           }

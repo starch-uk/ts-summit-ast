@@ -84,7 +84,7 @@ export function validateAST(ast: ASTNode): ASTValidationResult {
         }
 
         // Check for zero-based locations (should be 1-based)
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Zero is the invalid base value
+
         const zeroBase = 0;
         if (
           start.line === zeroBase ||

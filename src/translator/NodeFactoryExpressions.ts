@@ -140,7 +140,7 @@ export class ExpressionFactory {
     options?: NodeFactoryOptions
   ): FieldExpression {
     return {
-      field: { kind: 'Identifier', name: fieldName, location: options?.location },
+      field: { kind: 'Identifier', location: options?.location, name: fieldName },
       fieldName,
       kind: 'FieldExpression',
       location: options?.location,
