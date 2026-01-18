@@ -1,12 +1,16 @@
 #!/usr/bin/env node
+
 /**
- * CLI entry point for SummitTool
+ * @file CLI entry point for SummitTool.
+ * Command-line interface for the SummitTool.
  */
 
 import { SummitTool } from './SummitTool.js';
 
 /**
- * Parse command line arguments
+ * Parse command line arguments.
+ * @param args - Command line arguments.
+ * @returns Parsed arguments object.
  */
 function parseArgs(args: string[]): {
   files: string[];
@@ -43,11 +47,11 @@ function parseArgs(args: string[]): {
     }
   }
 
-  return { files, json, verbose, help };
+  return { files, help, json, verbose };
 }
 
 /**
- * Print help message
+ * Print help message.
  */
 function printHelp(): void {
   console.log(`
@@ -74,7 +78,8 @@ Note:
 }
 
 /**
- * Main CLI function
+ * Main CLI function.
+ * @returns Nothing.
  */
 function main(): void {
   const args = process.argv.slice(2);
@@ -100,9 +105,8 @@ function main(): void {
   // Create tool instance
   // Note: In a real implementation, users would provide their parse tree adapter
   const tool = new SummitTool({
-    json,
-    verbose,
     includeLocation: true,
+    json,
     parseTreeAdapter: (_source, filePath) => {
       // This is a placeholder - users need to provide their own parser
       console.error(
@@ -112,10 +116,11 @@ function main(): void {
       );
       return null;
     },
+    verbose,
   });
 
   // Process all files/directories
-  const allResults: Array<{ file: string; success: boolean; error?: string; ast?: unknown }> = [];
+  const allResults: { file: string; success: boolean; error?: string; ast?: unknown }[] = [];
   for (const file of files) {
     const results = tool.process(file);
     allResults.push(...results);

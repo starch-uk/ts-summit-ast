@@ -1,5 +1,6 @@
 /**
- * Parse tree to AST translation logic
+ * @file Parse tree to AST translation logic.
+ * Main export file for translator components.
  */
 
 export * from './ASTTranslator.js';

@@ -10,10 +10,6 @@ This library provides:
 - **JSON serialization/deserialization** of AST structures
 - **Zero runtime dependencies** - works with any parser that provides parse trees
 
-## Status
-
-🚧 **Work in Progress** - Core functionality is implemented and tested. This is an active port from the original Kotlin implementation.
-
 ## Installation
 
 ```bash
@@ -23,6 +19,7 @@ npm install ts-summit-ast
 ## Features
 
 - ✅ Complete AST type definitions for Apex language constructs
+- ✅ **Built-in Apex parser** - Direct parsing of Apex source code to AST
 - ✅ Parser-agnostic parse tree interface
 - ✅ AST translation from parse trees
 - ✅ JSON serialization/deserialization
@@ -33,12 +30,48 @@ npm install ts-summit-ast
 - ✅ **Position-to-node mapping** - Find AST nodes at specific source positions
 - ✅ **Source code extraction** - Extract source text from AST nodes
 - ✅ **Comment-to-node mapping** - Map comments to associated AST nodes
+- ✅ **ApexDoc parsing** - Parse ApexDoc comments into structured AST
 - ✅ **Rule matching** - XPath-like pattern matching for AST nodes
 - ✅ **Node metadata** - Comprehensive node information and path tracking
+- ✅ **AST validation** - Validate AST structure and compare AST nodes
+- ✅ **CLI tool** - Command-line interface for processing Apex files
 
 ## Usage
 
 ### Basic Example
+
+#### Using Built-in Parser (Recommended)
+
+```typescript
+import { parseApexCode } from 'ts-summit-ast';
+
+// Parse Apex source code directly to AST
+const sourceCode = `
+  public class Test {
+    public void method() {
+      if (x > 0) {
+        return "positive";
+      }
+    }
+  }
+`;
+
+const result = parseApexCode(sourceCode, {
+  includeLocation: true,
+  includeComments: true,
+});
+
+if (result.ast) {
+  console.log('AST kind:', result.ast.kind);
+  // Output: AST kind: ClassDeclaration
+}
+
+if (result.errors.length > 0) {
+  console.error('Parse errors:', result.errors);
+}
+```
+
+#### Using Parse Tree Translation (Parser-Agnostic)
 
 ```typescript
 import { ASTTranslator, NodeFactory } from 'ts-summit-ast';
@@ -74,18 +107,21 @@ if (result.ast) {
 ```typescript
 import { NodeFactory } from 'ts-summit-ast';
 
-// Create an identifier
+// Create an identifier (helper node)
 const identifier = NodeFactory.createIdentifier('myVariable');
 
+// Create a variable expression (for variable references in expressions)
+const varExpr = NodeFactory.createVariableExpression(identifier);
+
 // Create a binary expression
-const left = NodeFactory.createNumberLiteral(5, '5');
-const right = NodeFactory.createNumberLiteral(3, '3');
+const left = NodeFactory.createIntegerVal(5, '5');
+const right = NodeFactory.createIntegerVal(3, '3');
 const binaryExpr = NodeFactory.createBinaryExpression('+', left, right);
 
 // Create an if statement
-const condition = NodeFactory.createBooleanLiteral(true);
+const condition = NodeFactory.createBooleanVal(true);
 const thenBody = NodeFactory.createReturnStatement(
-  NodeFactory.createStringLiteral('success', '"success"')
+  NodeFactory.createStringVal('success', '"success"')
 );
 const ifStmt = NodeFactory.createIfStatement(condition, thenBody);
 ```
@@ -210,16 +246,124 @@ const visitor = new MyVisitor();
 // Traverse AST with visitor
 ```
 
+### ApexDoc Parsing
+
+```typescript
+import { parseApexDocComment, parseApexCode, extractComments } from 'ts-summit-ast';
+
+// Parse ApexDoc comment directly
+const apexDoc = `
+  /**
+   * This is a test method.
+   * @param value The value to test
+   * @return True if successful
+   */
+`;
+
+const docAst = parseApexDocComment(apexDoc); // location is optional
+if (docAst) {
+  console.log('Description:', docAst.description);
+  console.log('Params:', docAst.params);
+  console.log('Return:', docAst.returns);
+}
+
+// Or extract and parse ApexDoc comments from source code
+const result = parseApexCode(sourceCode, {
+  includeComments: true,
+});
+
+if (result.ast) {
+  const comments = extractComments(result.ast, sourceCode, {
+    parseApexDoc: true, // Parse ApexDoc comments into AST
+    associateNodes: true, // Associate comments with their nodes
+  });
+  
+  for (const comment of comments) {
+    if (comment.apexDoc) {
+      console.log('ApexDoc:', comment.apexDoc);
+    }
+  }
+}
+```
+
+### AST Validation
+
+```typescript
+import { validateAST, compareASTs, getASTStatistics } from 'ts-summit-ast';
+
+// Validate AST structure
+const validation = validateAST(ast);
+if (!validation.valid) {
+  console.error('Validation errors:', validation.errors);
+  console.warn('Warnings:', validation.warnings);
+}
+
+// Compare two ASTs
+const comparison = compareASTs(ast1, ast2);
+console.log('Are equal:', comparison.equal);
+if (!comparison.equal) {
+  console.log('Differences:', comparison.differences);
+}
+
+// Get AST statistics
+const stats = getASTStatistics(ast);
+console.log('Total nodes:', stats.totalNodes);
+console.log('Node counts:', stats.nodeCounts);
+console.log('Depth:', stats.maxDepth);
+```
+
+### Batch Processing
+
+```typescript
+import { parseMultipleFiles, extractCommentsBatch } from 'ts-summit-ast';
+
+// Parse multiple source files
+const sources = [
+  'public class Class1 { }',
+  'public class Class2 { }',
+  'public class Class3 { }',
+];
+
+const results = parseMultipleFiles(sources, {
+  includeLocation: true,
+});
+
+// Extract comments from multiple files
+const commentResults = extractCommentsBatch(
+  sources.map((s) => ({ source: s, ast: parseApexCode(s).ast! })),
+  {
+    associateNodes: true,
+  }
+);
+```
+
+### Command Line Interface
+
+```bash
+# Process a single file
+npx summit-tool path/to/file.cls
+
+# Process a directory
+npx summit-tool path/to/directory --json
+
+# Output JSON with location information
+npx summit-tool path/to/file.cls --json --include-location
+
+# Verbose output
+npx summit-tool path/to/file.cls --verbose
+```
+
 ## API Reference
 
 ### Core Types
 
 - **ASTNode** - Base interface for all AST nodes
-- **Statement** - Statement node types (If, For, While, Return, etc.)
-- **Expression** - Expression node types (Binary, MethodCall, Identifier, etc.)
+- **Statement** - Statement node types (If, ForLoop, WhileLoop, Return, etc.)
+- **Expression** - Expression node types (Binary, Call, VariableExpression, etc.)
 - **Declaration** - Declaration node types (Class, Method, Variable, etc.)
-- **Type** - Type node types (Primitive, Class, Array, etc.)
-- **Literal** - Literal node types (String, Number, Boolean, Null)
+- **TypeRef** - Type reference data structure (not a node type - used for type information)
+- **Literal** - Literal node types (StringVal, IntegerVal, DoubleVal, LongVal, DecimalVal, BooleanVal, NullVal)
+- **Identifier** - Helper node type (not an expression - used within other nodes)
 
 ### Main Classes
 
@@ -300,6 +444,94 @@ NodeFactory.createBinaryExpression(operator, left, right, options);
 - `getNodeMetadata(node, source?)` - Get comprehensive node metadata
 - `walkAST(ast, visitor)` - Walk AST with visitor pattern
 - `isNodeType(node, nodeType)` - Type guard for specific node type
+- `getParentNode(node, root)` - Get parent node of a given node
+- `getChildNodesByType(ast, nodeType)` - Find all child nodes of a specific type
+- `findNodesByType(ast, nodeType)` - Find all nodes of a specific type
+
+#### Apex Parsing
+
+- `parseApexCode(source, options)` - Parse Apex source code to AST
+- `parseApexSource(source)` - Parse Apex source code to parse tree
+- `parseMultipleFiles(sources, options)` - Parse multiple source files
+
+#### ApexDoc Parsing
+
+- `parseApexDocComment(comment, location, options)` - Parse ApexDoc comment to structured AST
+
+#### AST Validation
+
+- `validateAST(ast)` - Validate AST structure
+- `compareASTs(ast1, ast2)` - Compare two ASTs for equality
+- `getASTStatistics(ast)` - Get statistics about AST structure
+
+#### Batch Processing
+
+- `parseMultipleFiles(sources, options)` - Parse multiple source files
+- `extractCommentsBatch(fileData, options)` - Extract comments from multiple files
+
+## Command Line Tool
+
+The library includes a CLI tool (`summit-tool`) for processing Apex files from the command line.
+
+### Installation
+
+The CLI tool is available when you install the package:
+
+```bash
+npm install ts-summit-ast
+```
+
+Or use it directly with npx:
+
+```bash
+npx summit-tool [options] <file-or-directory>
+```
+
+### Usage
+
+```bash
+# Process a single file
+npx summit-tool path/to/file.cls
+
+# Process a directory recursively
+npx summit-tool path/to/directory
+
+# Output as JSON
+npx summit-tool path/to/file.cls --json
+
+# Include location information
+npx summit-tool path/to/file.cls --json --include-location
+
+# Verbose output
+npx summit-tool path/to/file.cls --verbose
+```
+
+### Options
+
+- `--json` - Output results as JSON
+- `--include-location` - Include source location information in output
+- `--verbose` - Enable verbose output
+- `--help` - Show help message
+
+### Programmatic Usage
+
+You can also use the SummitTool class programmatically:
+
+```typescript
+import { SummitTool } from 'ts-summit-ast';
+
+const tool = new SummitTool({
+  json: true,
+  includeLocation: true,
+  verbose: false,
+});
+
+// Process a file
+const result = await tool.processFile('path/to/file.cls');
+
+// Process a directory
+const results = await tool.processDirectory('path/to/directory');
+```
 
 ## Parser Integration
 
@@ -429,6 +661,18 @@ ts-summit-ast/
 │   ├── serialization/    # JSON serialization
 │   │   ├── JsonSerializer.ts
 │   │   └── JsonDeserializer.ts
+│   ├── tool/             # CLI tool
+│   │   ├── SummitTool.ts
+│   │   └── cli.ts
+│   ├── utils/            # Utility functions
+│   │   ├── apex-parser.ts
+│   │   ├── apexdoc-parser.ts
+│   │   ├── ast-validation.ts
+│   │   ├── comment-utils.ts
+│   │   ├── node-finder.ts
+│   │   ├── rule-matching.ts
+│   │   ├── source-extraction.ts
+│   │   └── traversal.ts
 │   └── index.ts          # Main entry point
 ├── tests/
 │   ├── unit/             # Unit tests
@@ -440,7 +684,7 @@ ts-summit-ast/
 
 ## Key Design Decisions
 
-- **Parser-agnostic**: No runtime parser dependencies. Consumers provide parse trees from their chosen parser.
+- **Parser-agnostic**: Works with any parser that provides parse trees. Includes built-in parser for convenience.
 - **Zero runtime dependencies**: Core library has no external runtime dependencies.
 - **Type-safe**: Full TypeScript type safety throughout with discriminated unions.
 - **Immutable**: AST nodes are immutable (readonly properties).
@@ -449,27 +693,30 @@ ts-summit-ast/
 ## Supported AST Node Types
 
 ### Statements
-- IfStatement, ForStatement, ForEachStatement, WhileStatement, DoWhileStatement
+- IfStatement, ForLoopStatement, EnhancedForLoopStatement, WhileLoopStatement, DoWhileLoopStatement
 - SwitchStatement, TryStatement
 - ReturnStatement, BreakStatement, ContinueStatement, ThrowStatement
-- Block, ExpressionStatement, VariableDeclarationStatement
+- CompoundStatement, ExpressionStatement, VariableDeclarationStatement
 
 ### Expressions
-- BinaryExpression, UnaryExpression, AssignmentExpression
-- MethodCallExpression, FieldAccessExpression, ArrayAccessExpression
+- BinaryExpression, UnaryExpression, AssignExpression
+- CallExpression, FieldExpression, ArrayExpression
 - NewExpression, CastExpression, InstanceOfExpression, TernaryExpression
-- LambdaExpression, Identifier, ThisExpression, SuperExpression
+- LambdaExpression, VariableExpression, ThisExpression, SuperExpression
 - ParenthesizedExpression
+- SoqlExpression, SoslExpression
+- TriggerContextVariableExpression
 
 ### Literals
-- StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral, CharacterLiteral
+- StringVal, IntegerVal, DoubleVal, LongVal, DecimalVal, BooleanVal, NullVal, CharacterLiteral
 
 ### Types
-- PrimitiveType, ClassType, InterfaceType, ArrayType, GenericType, VoidType, WildcardType
+- **TypeRef** - Data structure (not a node type) for type references with components and array nesting
 
 ### Declarations
-- ClassDeclaration, InterfaceDeclaration, MethodDeclaration, ConstructorDeclaration
-- VariableDeclaration, PropertyDeclaration, EnumDeclaration, AnnotationDeclaration
+- ClassDeclaration, InterfaceDeclaration, MethodDeclaration (with isConstructor flag for constructors)
+- VariableDeclaration, PropertyDeclaration, EnumDeclaration
+- EnumValue (not a declaration type - used within EnumDeclaration)
 
 ## JSON Schema
 

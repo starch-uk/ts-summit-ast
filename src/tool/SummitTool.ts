@@ -1,6 +1,6 @@
 /**
- * SummitTool - CLI tool for processing Apex files
- * 
+ * @file SummitTool - CLI tool for processing Apex files.
+ *
  * Note: This tool requires parse trees from an external parser.
  * It demonstrates how to use the AST library but does not include
  * a parser runtime dependency.
@@ -13,33 +13,33 @@ import { JsonSerializer } from '../serialization/JsonSerializer.js';
 import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
 
 /**
- * Options for SummitTool
+ * Options for SummitTool.
  */
 export interface SummitToolOptions {
   /**
-   * Whether to output JSON
+   * Whether to output JSON.
    */
   json?: boolean;
 
   /**
-   * Whether to include source location
+   * Whether to include source location.
    */
   includeLocation?: boolean;
 
   /**
-   * Whether to be verbose
+   * Whether to be verbose.
    */
   verbose?: boolean;
 
   /**
    * Custom parse tree adapter function
-   * This allows users to adapt their parser's output to ParseTreeNode format
+   * This allows users to adapt their parser's output to ParseTreeNode format.
    */
   parseTreeAdapter?: (source: string, filePath: string) => ParseTreeNode | null;
 }
 
 /**
- * Result of processing a file
+ * Result of processing a file.
  */
 export interface ProcessResult {
   readonly file: string;
@@ -49,7 +49,7 @@ export interface ProcessResult {
 }
 
 /**
- * SummitTool class for processing Apex files
+ * SummitTool class for processing Apex files.
  */
 export class SummitTool {
   private readonly options: Required<Omit<SummitToolOptions, 'parseTreeAdapter'>> & {
@@ -60,10 +60,10 @@ export class SummitTool {
 
   constructor(options: SummitToolOptions = {}) {
     this.options = {
-      json: options.json ?? false,
       includeLocation: options.includeLocation ?? true,
-      verbose: options.verbose ?? false,
+      json: options.json ?? false,
       parseTreeAdapter: options.parseTreeAdapter,
+      verbose: options.verbose ?? false,
     };
 
     this.translator = new ASTTranslator({
@@ -71,13 +71,15 @@ export class SummitTool {
     });
 
     this.serializer = new JsonSerializer({
-      includeLocation: this.options.includeLocation,
       compact: !this.options.verbose,
+      includeLocation: this.options.includeLocation,
     });
   }
 
   /**
-   * Process a single file or directory
+   * Process a single file or directory.
+   * @param input - The file or directory path to process.
+   * @returns Array of processing results.
    */
   process(input: string): ProcessResult[] {
     const results: ProcessResult[] = [];
@@ -94,16 +96,16 @@ export class SummitTool {
         }
       } else {
         results.push({
+          error: 'Input is neither a file nor a directory',
           file: input,
           success: false,
-          error: 'Input is neither a file nor a directory',
         });
       }
     } catch (error) {
       results.push({
+        error: error instanceof Error ? error.message : String(error),
         file: input,
         success: false,
-        error: error instanceof Error ? error.message : String(error),
       });
     }
 
@@ -111,7 +113,9 @@ export class SummitTool {
   }
 
   /**
-   * Process a directory recursively
+   * Process a directory recursively.
+   * @param dir - The directory path to process.
+   * @returns Array of processing results.
    */
   private processDirectory(dir: string): ProcessResult[] {
     const results: ProcessResult[] = [];
@@ -138,7 +142,9 @@ export class SummitTool {
   }
 
   /**
-   * Process a single file
+   * Process a single file.
+   * @param filePath - The file path to process.
+   * @returns Processing result, or null if skipped.
    */
   private processFile(filePath: string): ProcessResult | null {
     try {
@@ -147,18 +153,18 @@ export class SummitTool {
       // Get parse tree using adapter or throw error
       if (!this.options.parseTreeAdapter) {
         return {
+          error: 'No parse tree adapter provided. Please provide a parseTreeAdapter function.',
           file: filePath,
           success: false,
-          error: 'No parse tree adapter provided. Please provide a parseTreeAdapter function.',
         };
       }
 
       const parseTree = this.options.parseTreeAdapter(source, filePath);
       if (!parseTree) {
         return {
+          error: 'Failed to parse file',
           file: filePath,
           success: false,
-          error: 'Failed to parse file',
         };
       }
 
@@ -167,17 +173,17 @@ export class SummitTool {
 
       if (translationResult.errors.length > 0) {
         return {
+          error: `Translation errors: ${translationResult.errors.map((e) => e.message).join(', ')}`,
           file: filePath,
           success: false,
-          error: `Translation errors: ${translationResult.errors.map((e) => e.message).join(', ')}`,
         };
       }
 
       if (!translationResult.ast) {
         return {
+          error: 'Translation produced no AST',
           file: filePath,
           success: false,
-          error: 'Translation produced no AST',
         };
       }
 
@@ -187,21 +193,23 @@ export class SummitTool {
         : this.formatAST(translationResult.ast);
 
       return {
+        ast: this.options.json ? JSON.parse(output) : translationResult.ast,
         file: filePath,
         success: true,
-        ast: this.options.json ? JSON.parse(output) : translationResult.ast,
       };
     } catch (error) {
       return {
+        error: error instanceof Error ? error.message : String(error),
         file: filePath,
         success: false,
-        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
 
   /**
-   * Check if file is an Apex file
+   * Check if file is an Apex file.
+   * @param filePath - The file path to check.
+   * @returns True if the file has .cls or .trigger extension.
    */
   private isApexFile(filePath: string): boolean {
     const ext = extname(filePath).toLowerCase();
@@ -209,7 +217,9 @@ export class SummitTool {
   }
 
   /**
-   * Format AST for display
+   * Format AST for display.
+   * @param ast - The AST node to format.
+   * @returns Formatted string representation of the AST.
    */
   private formatAST(ast: unknown): string {
     if (this.options.verbose) {
@@ -225,7 +235,8 @@ export class SummitTool {
   }
 
   /**
-   * Print results to console
+   * Print results to console.
+   * @param results - The processing results to print.
    */
   printResults(results: ProcessResult[]): void {
     for (const result of results) {

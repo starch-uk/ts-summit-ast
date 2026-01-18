@@ -1,28 +1,38 @@
 /**
- * Source code extraction utilities
+ * @file Source code extraction utilities.
+ * Utilities for extracting source text, position calculations, and source range operations.
  */
 
 import type { ASTNode, SourceRange } from '../ast/base.js';
 
 /**
- * Options for source text extraction
+ * Options for source text extraction.
  */
 export interface SourceTextOptions {
-  readonly includeComments?: boolean; // Include associated comments
-  readonly includeWhitespace?: boolean; // Include leading/trailing whitespace
-  readonly trim?: boolean; // Trim whitespace from result
+  /**
+   * Include associated comments.
+   */
+  readonly includeComments?: boolean;
+  readonly includeWhitespace?: boolean; /**
+   * Include leading/trailing whitespace.
+   */
+
+  /**
+   * Trim whitespace from result.
+   */
+  readonly trim?: boolean;
 }
 
 /**
- * Get the source code text for an AST node
- * 
+ * Get the source code text for an AST node.
+ *
  * This follows the original summit-ast implementation:
  * - Columns in the original are 0-based, but our TypeScript uses 1-based
  * - The range is exclusive of the character at endLine/endColumn
  * - extractFrom uses: lines.subList(startLine-1, endLine), then drops startColumn from start
- *   and (lastLine.length - endColumn) from end
- * 
- * Original Kotlin code:
+ *   and (lastLine.length - endColumn) from end.
+ *
+ * Original Kotlin code:.
  * ```kotlin
  * val lines = source.lines().subList(startLine!! - 1, endLine!!)
  * val joinedLines = lines.joinToString(separator = "\n")
@@ -30,6 +40,10 @@ export interface SourceTextOptions {
  * val distanceFromEnd = lines.last().length - endColumn!!
  * return joinedLines.drop(distanceFromStart).dropLast(distanceFromEnd)
  * ```
+ * @param node - The AST node to extract source text for.
+ * @param source - The original source code string.
+ * @param options - Options for extraction.
+ * @returns The source text for the node.
  */
 export function getSourceText(
   node: ASTNode,
@@ -48,12 +62,20 @@ export function getSourceText(
   // This gets lines from index (startLine-1) to endLine (exclusive)
   // So if startLine=1, endLine=2, we get lines[0] (first line)
   // If startLine=1, endLine=3, we get lines[0] and lines[1]
-  const startLineIndex = start.line - 1; // Convert to 0-based index
-  const endLineIndex = end.line; // endLine is exclusive, so slice uses endLine directly
-  
+
+  /**
+   * Convert to 0-based index.
+   */
+  const startLineIndex = start.line - 1;
+
+  /**
+   * EndLine is exclusive, so slice uses endLine directly.
+   */
+  const endLineIndex = end.line;
+
   // Get the relevant lines (equivalent to subList)
   const relevantLines = lines.slice(startLineIndex, endLineIndex);
-  
+
   if (relevantLines.length === 0) {
     return '';
   }
@@ -76,9 +98,13 @@ export function getSourceText(
   // So if endColumn=25 (0-based exclusive), we include up to index 24, drop: lastLine.length - 25
   // In our system with endColumn=25 (1-based exclusive = 24 in 0-based exclusive):
   //   distanceFromEnd = lastLine.length - 24
-  const distanceFromStart = start.column - 1; // Convert 1-based to 0-based
+
+  /**
+   * Convert 1-based to 0-based.
+   */
+  const distanceFromStart = start.column - 1;
   const lastLine = relevantLines[relevantLines.length - 1] || '';
-  
+
   // Original uses 0-based exclusive endColumn
   // Our system appears to use 1-based INCLUSIVE endColumn (based on test expectations)
   // If endColumn=25 (1-based inclusive), we include up to index 24 (0-based)
@@ -103,11 +129,9 @@ export function getSourceText(
 /**
  * Get source code text for a specific range.
  * More efficient than getSourceText when you only need a portion of the source.
- *
- * @param source - The original source code string
- * @param range - The source range to extract
- * @returns The source text within the specified range
- *
+ * @param source - The original source code string.
+ * @param range - The source range to extract.
+ * @returns The source text within the specified range.
  * @example
  * const range = { start: { line: 1, column: 1 }, end: { line: 1, column: 10 } };
  * const text = getSourceTextForRange(sourceCode, range);
@@ -150,14 +174,16 @@ export function getSourceTextForRange(source: string, range: SourceRange): strin
 }
 
 /**
- * Get the source range for an AST node
+ * Get the source range for an AST node.
+ * @param node - The AST node to get the range for.
+ * @returns The source range, or null if not available.
  */
 export function getSourceRange(node: ASTNode): SourceRange | null {
   return node.location || null;
 }
 
 /**
- * Source location type (local interface for this module)
+ * Source location type (local interface for this module).
  */
 interface LocalSourceLocation {
   readonly line: number;
@@ -166,12 +192,12 @@ interface LocalSourceLocation {
 }
 
 /**
- * Convert source location to character offset
+ * Convert source location to character offset.
+ * @param location - The source location to convert.
+ * @param source - The source code string.
+ * @returns The character offset in the source.
  */
-export function locationToOffset(
-  location: LocalSourceLocation,
-  source: string
-): number {
+export function locationToOffset(location: LocalSourceLocation, source: string): number {
   const lines = source.split(/\r?\n/);
   let offset = 0;
 
@@ -187,12 +213,12 @@ export function locationToOffset(
 }
 
 /**
- * Convert character offset to source location
+ * Convert character offset to source location.
+ * @param offset - The character offset to convert.
+ * @param source - The source code string.
+ * @returns The source location (line and column).
  */
-export function offsetToLocation(
-  offset: number,
-  source: string
-): { line: number; column: number } {
+export function offsetToLocation(offset: number, source: string): { line: number; column: number } {
   const lines = source.split(/\r?\n/);
   let currentOffset = 0;
   let line = 1;
@@ -211,19 +237,21 @@ export function offsetToLocation(
     currentOffset = lineEnd + 1; // +1 for newline
   }
 
-  return { line, column };
+  return { column, line };
 }
 
 /**
- * UNKNOWN source location constant
+ * UNKNOWN source location constant.
  */
 export const UNKNOWN_SOURCE_LOCATION: SourceRange = {
-  start: { line: 0, column: 0 },
-  end: { line: 0, column: 0 },
+  end: { column: 0, line: 0 },
+  start: { column: 0, line: 0 },
 };
 
 /**
- * Check if a source range is unknown
+ * Check if a source range is unknown.
+ * @param range - The source range to check.
+ * @returns True if the range is unknown (all zeros).
  */
 export function isUnknownLocation(range: SourceRange): boolean {
   return (
@@ -236,14 +264,13 @@ export function isUnknownLocation(range: SourceRange): boolean {
 
 /**
  * Combine multiple source ranges into a single span.
- * 
+ *
  * This function chooses the most complete location information:
  * - Prefers ranges with both line and column over those with only lines
  * - Returns a new range from the earliest start to the latest end
- * - Handles unknown locations gracefully
- * 
- * @param ranges One or more source ranges to combine
- * @returns A new SourceRange spanning all input ranges
+ * - Handles unknown locations gracefully.
+ * @param ranges - One or more source ranges to combine.
+ * @returns A new SourceRange spanning all input ranges.
  */
 export function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRange {
   // Filter out null/undefined and unknown locations
@@ -301,19 +328,17 @@ export function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRan
   }
 
   return {
-    start: earliestStart,
     end: latestEnd,
+    start: earliestStart,
   };
 }
 
 /**
  * Merge multiple source ranges into one.
- * 
- * This is an alias for `spanOf` for API consistency.
- * 
- * @param ranges One or more source ranges to merge
- * @returns A new SourceRange spanning all input ranges, or null if no valid ranges
  *
+ * This is an alias for `spanOf` for API consistency.
+ * @param ranges - One or more source ranges to merge.
+ * @returns A new SourceRange spanning all input ranges, or null if no valid ranges.
  * @example
  * ```typescript
  * const range1 = { start: { line: 1, column: 1 }, end: { line: 1, column: 10 } };
@@ -322,7 +347,114 @@ export function spanOf(...ranges: (SourceRange | null | undefined)[]): SourceRan
  * // Returns: { start: { line: 1, column: 1 }, end: { line: 2, column: 10 } }
  * ```
  */
-export function mergeSourceRanges(...ranges: (SourceRange | null | undefined)[]): SourceRange | null {
+export function mergeSourceRanges(
+  ...ranges: (SourceRange | null | undefined)[]
+): SourceRange | null {
   const merged = spanOf(...ranges);
   return isUnknownLocation(merged) ? null : merged;
+}
+
+/**
+ * Source position utilities.
+ */
+
+/**
+ * Position in source code (1-based).
+ */
+export interface Position {
+  readonly line: number; /**
+   * 1-based line number.
+   */
+
+  /**
+   * 1-based column number.
+   */
+  readonly column: number;
+}
+
+/**
+ * Check if a position is within a source range.
+ * @param position - The position to check.
+ * @param range - The source range to check against.
+ * @returns True if the position is within the range.
+ */
+export function isPositionInRange(position: Position, range: SourceRange): boolean {
+  const { line, column } = position;
+  const { start, end } = range;
+
+  // Check if line is within range
+  if (line < start.line || line > end.line) {
+    return false;
+  }
+
+  // If on start line, check column
+  if (line === start.line && column < start.column) {
+    return false;
+  }
+
+  // If on end line, check column
+  if (line === end.line && column > end.column) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check if position is before a range.
+ * @param position - The position to check.
+ * @param range - The source range to check against.
+ * @returns True if the position is before the range.
+ */
+export function isPositionBefore(position: Position, range: SourceRange): boolean {
+  if (position.line < range.start.line) {
+    return true;
+  }
+  if (position.line === range.start.line && position.column < range.start.column) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if position is after a range.
+ * @param position - The position to check.
+ * @param range - The source range to check against.
+ * @returns True if the position is after the range.
+ */
+export function isPositionAfter(position: Position, range: SourceRange): boolean {
+  if (position.line > range.end.line) {
+    return true;
+  }
+  if (position.line === range.end.line && position.column > range.end.column) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Calculate character distance between position and range.
+ * @param position - The position to calculate distance from.
+ * @param range - The source range to calculate distance to.
+ * @returns The distance in characters (0 if within range).
+ */
+export function getDistanceToRange(position: Position, range: SourceRange): number {
+  if (isPositionInRange(position, range)) {
+    return 0;
+  }
+
+  if (isPositionBefore(position, range)) {
+    // Distance to start
+    if (position.line === range.start.line) {
+      return range.start.column - position.column;
+    }
+    // Approximate: lines difference + column difference
+    return (range.start.line - position.line) * 100 + (range.start.column - position.column);
+  }
+
+  // Position is after range
+  if (position.line === range.end.line) {
+    return position.column - range.end.column;
+  }
+  return (position.line - range.end.line) * 100 + (position.column - range.end.column);
 }

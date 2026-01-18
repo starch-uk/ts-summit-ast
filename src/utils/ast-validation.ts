@@ -1,24 +1,27 @@
 /**
- * AST validation and comparison utilities
+ * @file AST validation and comparison utilities.
+ * Utilities for validating AST structure and comparing AST nodes.
  */
 
 import type { ASTNode } from '../ast/base.js';
 import { walkAST, buildParentMap, getNodeChildren } from './traversal.js';
 
 /**
- * Result of AST validation
+ * Result of AST validation.
  */
 export interface ASTValidationResult {
   /**
-   * Whether the AST structure is valid
+   * Whether the AST structure is valid.
    */
   readonly valid: boolean;
+
   /**
-   * Array of validation errors (if any)
+   * Array of validation errors (if any).
    */
   readonly errors: string[];
+
   /**
-   * Array of validation warnings (if any)
+   * Array of validation warnings (if any).
    */
   readonly warnings: string[];
 }
@@ -29,11 +32,9 @@ export interface ASTValidationResult {
  * This function performs basic structural validation to ensure:
  * - Nodes have required properties
  * - Location information is consistent (if present)
- * - Node hierarchy is reasonable
- *
- * @param ast - The AST node to validate
- * @returns Validation result with any errors or warnings
- *
+ * - Node hierarchy is reasonable.
+ * @param ast - The AST node to validate.
+ * @returns Validation result with any errors or warnings.
  * @example
  * ```typescript
  * const result = parseApexCode('public class Test { }');
@@ -59,7 +60,7 @@ export function validateAST(ast: ASTNode): ASTValidationResult {
   walkAST(ast, {
     enterNode: (node) => {
       if (node.location) {
-        const location = node.location;
+        const { location } = node;
         const { start, end } = location;
 
         // Validate location ranges
@@ -86,26 +87,28 @@ export function validateAST(ast: ASTNode): ASTValidationResult {
   });
 
   return {
-    valid: errors.length === 0,
     errors,
+    valid: errors.length === 0,
     warnings,
   };
 }
 
 /**
- * Result of AST comparison
+ * Result of AST comparison.
  */
 export interface ASTComparisonResult {
   /**
-   * Whether the ASTs are structurally equal
+   * Whether the ASTs are structurally equal.
    */
   readonly equal: boolean;
+
   /**
-   * Differences found between the two ASTs
+   * Differences found between the two ASTs.
    */
   readonly differences: string[];
+
   /**
-   * Whether node types match
+   * Whether node types match.
    */
   readonly typesMatch: boolean;
 }
@@ -116,15 +119,13 @@ export interface ASTComparisonResult {
  * This function compares the structure of two ASTs, checking:
  * - Node types (kind)
  * - Node hierarchy
- * - Basic properties (ignoring location differences)
+ * - Basic properties (ignoring location differences).
  *
  * Note: This does not compare location information or source text,
  * only the structural properties of the AST.
- *
- * @param ast1 - First AST to compare
- * @param ast2 - Second AST to compare
- * @returns Comparison result with any differences found
- *
+ * @param ast1 - First AST to compare.
+ * @param ast2 - Second AST to compare.
+ * @returns Comparison result with any differences found.
  * @example
  * ```typescript
  * const ast1 = parseApexCode('public class Test { }').ast!;
@@ -150,34 +151,38 @@ export function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
   // and compare each corresponding node
 
   return {
-    equal: differences.length === 0 && typesMatch,
     differences,
+    equal: differences.length === 0 && typesMatch,
     typesMatch,
   };
 }
 
 /**
- * AST statistics information
+ * AST statistics information.
  */
 export interface ASTStatistics {
   /**
-   * Total number of nodes in the AST
+   * Total number of nodes in the AST.
    */
   readonly totalNodes: number;
+
   /**
-   * Count of each node type
+   * Count of each node type.
    */
   readonly nodeTypeCounts: Record<string, number>;
+
   /**
-   * Maximum depth of the AST
+   * Maximum depth of the AST.
    */
   readonly maxDepth: number;
+
   /**
-   * Average depth of leaf nodes
+   * Average depth of leaf nodes.
    */
   readonly averageDepth: number;
+
   /**
-   * Number of nodes with location information
+   * Number of nodes with location information.
    */
   readonly nodesWithLocation: number;
 }
@@ -189,11 +194,9 @@ export interface ASTStatistics {
  * - Total node count
  * - Node type distribution
  * - Tree depth information
- * - Location coverage
- *
- * @param ast - The AST node to analyze
- * @returns Statistics about the AST structure
- *
+ * - Location coverage.
+ * @param ast - The AST node to analyze.
+ * @returns Statistics about the AST structure.
  * @example
  * ```typescript
  * const result = parseApexCode('public class Test { public void method() { } }');
@@ -214,7 +217,11 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
   // Build parent map to calculate depths accurately
   const parentMap = buildParentMap(ast);
 
-  // Calculate depth for each node
+  /**
+   * Calculate depth for each node.
+   * @param node - The AST node to calculate depth for.
+   * @returns The depth of the node in the tree.
+   */
   function calculateNodeDepth(node: ASTNode): number {
     let depth = 1;
     let current: ASTNode | null | undefined = parentMap.get(node);
@@ -225,7 +232,11 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
     return depth;
   }
 
-  // Check if node is a leaf
+  /**
+   * Check if node is a leaf.
+   * @param node - The AST node to check.
+   * @returns True if the node has no children.
+   */
   function isLeafNode(node: ASTNode): boolean {
     const children = getNodeChildren(node);
     return children.length === 0;
@@ -256,10 +267,10 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
     depths.length > 0 ? depths.reduce((sum, d) => sum + d, 0) / depths.length : 1;
 
   return {
-    totalNodes,
-    nodeTypeCounts,
-    maxDepth,
     averageDepth,
+    maxDepth,
+    nodeTypeCounts,
     nodesWithLocation,
+    totalNodes,
   };
 }

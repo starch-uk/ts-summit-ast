@@ -1,0 +1,291 @@
+/**
+ * @file Factory for creating statement AST nodes.
+ * Specialized factory for creating statement node types.
+ */
+
+import type {
+  IfStatement,
+  ForLoopStatement,
+  EnhancedForLoopStatement,
+  WhileLoopStatement,
+  DoWhileLoopStatement,
+  SwitchStatement,
+  TryStatement,
+  ReturnStatement,
+  BreakStatement,
+  ContinueStatement,
+  ThrowStatement,
+  CompoundStatement,
+  ExpressionStatement,
+  VariableDeclarationStatement,
+  DmlStatement,
+  DmlOperation,
+} from '../ast/Statement.js';
+import type { Expression } from '../ast/Expression.js';
+import type { VariableDeclaration } from '../ast/Declaration.js';
+import type { Statement } from '../ast/Statement.js';
+
+import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
+
+/**
+ * Factory for statement nodes.
+ */
+export class StatementFactory {
+  static createIfStatement(
+    condition: Expression,
+    thenStatement: Statement,
+    elseStatement?: Statement,
+    options?: NodeFactoryOptions
+  ): IfStatement {
+    return {
+      condition,
+      elseStatement,
+      kind: 'IfStatement',
+      location: options?.location,
+      thenStatement,
+    };
+  }
+
+  static createForLoopStatement(
+    body: Statement,
+    init?: ExpressionStatement | VariableDeclarationStatement,
+    condition?: Expression,
+    update?: Expression,
+    options?: NodeFactoryOptions
+  ): ForLoopStatement {
+    return {
+      body,
+      condition,
+      init,
+      kind: 'ForLoopStatement',
+      location: options?.location,
+      update,
+    };
+  }
+
+  static createWhileLoopStatement(
+    condition: Expression,
+    body: Statement,
+    options?: NodeFactoryOptions
+  ): WhileLoopStatement {
+    return {
+      body,
+      condition,
+      kind: 'WhileLoopStatement',
+      location: options?.location,
+    };
+  }
+
+  /**
+   * @param body
+   * @param init
+   * @param condition
+   * @param update
+   * @param options
+   * @deprecated Use createForLoopStatement instead.
+   */
+  static createForStatement(
+    body: Statement,
+    init?: ExpressionStatement | VariableDeclarationStatement,
+    condition?: Expression,
+    update?: Expression,
+    options?: NodeFactoryOptions
+  ): ForLoopStatement {
+    return this.createForLoopStatement(body, init, condition, update, options);
+  }
+
+  /**
+   * @param condition
+   * @param body
+   * @param options
+   * @deprecated Use createWhileLoopStatement instead.
+   */
+  static createWhileStatement(
+    condition: Expression,
+    body: Statement,
+    options?: NodeFactoryOptions
+  ): WhileLoopStatement {
+    return this.createWhileLoopStatement(condition, body, options);
+  }
+
+  static createReturnStatement(
+    expression?: Expression,
+    options?: NodeFactoryOptions
+  ): ReturnStatement {
+    return {
+      expression,
+      kind: 'ReturnStatement',
+      location: options?.location,
+    };
+  }
+
+  static createCompoundStatement(
+    statements: Statement[],
+    options?: NodeFactoryOptions
+  ): CompoundStatement {
+    return {
+      kind: 'CompoundStatement',
+      location: options?.location,
+      statements,
+    };
+  }
+
+  /**
+   * @param statements
+   * @param options
+   * @deprecated Use createCompoundStatement instead.
+   */
+  static createBlock(statements: Statement[], options?: NodeFactoryOptions): CompoundStatement {
+    return this.createCompoundStatement(statements, options);
+  }
+
+  static createExpressionStatement(
+    expression: Expression,
+    options?: NodeFactoryOptions
+  ): ExpressionStatement {
+    return {
+      expression,
+      kind: 'ExpressionStatement',
+      location: options?.location,
+    };
+  }
+
+  static createVariableDeclarationStatement(
+    declaration: VariableDeclaration,
+    options?: NodeFactoryOptions
+  ): VariableDeclarationStatement {
+    return {
+      declaration,
+      kind: 'VariableDeclarationStatement',
+      location: options?.location,
+    };
+  }
+
+  static createEnhancedForLoopStatement(
+    variable: VariableDeclaration,
+    iterable: Expression,
+    body: Statement,
+    options?: NodeFactoryOptions
+  ): EnhancedForLoopStatement {
+    return {
+      body,
+      iterable,
+      kind: 'EnhancedForLoopStatement',
+      location: options?.location,
+      variable,
+    };
+  }
+
+  static createDoWhileLoopStatement(
+    body: Statement,
+    condition: Expression,
+    options?: NodeFactoryOptions
+  ): DoWhileLoopStatement {
+    return {
+      body,
+      condition,
+      kind: 'DoWhileLoopStatement',
+      location: options?.location,
+    };
+  }
+
+  /**
+   * @param variable
+   * @param iterable
+   * @param body
+   * @param options
+   * @deprecated Use createEnhancedForLoopStatement instead.
+   */
+  static createForEachStatement(
+    variable: VariableDeclaration,
+    iterable: Expression,
+    body: Statement,
+    options?: NodeFactoryOptions
+  ): EnhancedForLoopStatement {
+    return this.createEnhancedForLoopStatement(variable, iterable, body, options);
+  }
+
+  /**
+   * @param body
+   * @param condition
+   * @param options
+   * @deprecated Use createDoWhileLoopStatement instead.
+   */
+  static createDoWhileStatement(
+    body: Statement,
+    condition: Expression,
+    options?: NodeFactoryOptions
+  ): DoWhileLoopStatement {
+    return this.createDoWhileLoopStatement(body, condition, options);
+  }
+
+  static createSwitchStatement(
+    expression: Expression,
+    cases: any[],
+    defaultCase?: any,
+    options?: NodeFactoryOptions
+  ): SwitchStatement {
+    return {
+      cases,
+      defaultCase,
+      expression,
+      kind: 'SwitchStatement',
+      location: options?.location,
+    };
+  }
+
+  static createTryStatement(
+    tryBlock: CompoundStatement,
+    catchClauses: any[],
+    finallyBlock?: CompoundStatement,
+    options?: NodeFactoryOptions
+  ): TryStatement {
+    return {
+      catchClauses,
+      finallyBlock,
+      kind: 'TryStatement',
+      location: options?.location,
+      tryBlock,
+    };
+  }
+
+  static createBreakStatement(label?: string, options?: NodeFactoryOptions): BreakStatement {
+    return {
+      kind: 'BreakStatement',
+      label,
+      location: options?.location,
+    };
+  }
+
+  static createContinueStatement(label?: string, options?: NodeFactoryOptions): ContinueStatement {
+    return {
+      kind: 'ContinueStatement',
+      label,
+      location: options?.location,
+    };
+  }
+
+  static createThrowStatement(
+    expression: Expression,
+    options?: NodeFactoryOptions
+  ): ThrowStatement {
+    return {
+      expression,
+      kind: 'ThrowStatement',
+      location: options?.location,
+    };
+  }
+
+  static createDmlStatement(
+    operation: DmlOperation,
+    target: Expression,
+    options?: NodeFactoryOptions
+  ): DmlStatement {
+    return {
+      kind: 'DmlStatement',
+      location: options?.location,
+      operation,
+      target,
+    };
+  }
+}

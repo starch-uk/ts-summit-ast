@@ -1,55 +1,63 @@
 /**
- * ApexDoc parser utilities
- * Parses ApexDoc comments (starting with /**) into ApexDoc AST nodes
+ * @file ApexDoc parser utilities.
+ * Parses ApexDoc comments (starting with /**) into ApexDoc AST nodes.
  */
 
 import type { ASTNode } from '../ast/base.js';
 import type {
   ApexDocComment,
   ApexDocBlockTag,
-  ApexDocParamTag,
-  ApexDocReturnTag,
-  ApexDocAuthorTag,
-  ApexDocDeprecatedTag,
-  ApexDocExampleTag,
-  ApexDocGroupTag,
-  ApexDocSeeTag,
-  ApexDocSinceTag,
-  ApexDocThrowsTag,
-  ApexDocVersionTag,
+  ApexDocParam,
+  ApexDocReturn,
+  ApexDocAuthor,
+  ApexDocDeprecated,
+  ApexDocExample,
+  ApexDocGroup,
+  ApexDocSee,
+  ApexDocSince,
+  ApexDocThrows,
+  ApexDocVersion,
   ApexDocInlineTag,
-  ApexDocCodeTag,
-  ApexDocHiddenTag,
-  ApexDocLinkTag,
-  ApexDocLiteralTag,
+  ApexDocCode,
+  ApexDocHidden,
+  ApexDocLink,
+  ApexDocLiteral,
   ApexDocContent,
   ApexDocText,
-} from '../ast/nodes/ApexDoc.js';
+} from '../ast/ApexDoc.js';
 import type { SourceRange } from '../ast/base.js';
 import { parseApexCode } from './apex-parser.js';
 
 /**
- * Options for parsing ApexDoc comments
+ * Options for parsing ApexDoc comments.
  */
 export interface ApexDocParseOptions {
   readonly includeLocation?: boolean;
-  readonly parseCodeInCodeTag?: boolean; // Parse {@code} content as Apex AST
-  readonly parseTreeAdapter?: (source: string) => any; // For parsing nested code
+
+  /**
+   * Parse {@code} content as Apex AST.
+   */
+  readonly parseCodeInCodeTag?: boolean;
+
+  /**
+   * For parsing nested code.
+   */
+  readonly parseTreeAdapter?: (source: string) => any;
 }
 
 /**
- * Parse an ApexDoc comment into an AST node
+ * Parse an ApexDoc comment into an AST node.
+ * @param commentText - The ApexDoc comment text (including comment delimiters).
+ * @param location - Optional source location for the comment.
+ * @param options - Parsing options.
+ * @returns The parsed ApexDoc comment AST node, or null if parsing fails.
  */
 export function parseApexDocComment(
   commentText: string,
   location?: SourceRange,
   options: ApexDocParseOptions = {}
 ): ApexDocComment | null {
-  const {
-    includeLocation = true,
-    parseCodeInCodeTag = true,
-    parseTreeAdapter,
-  } = options;
+  const { includeLocation = true, parseCodeInCodeTag = true, parseTreeAdapter } = options;
 
   // Remove /** and */ delimiters and leading asterisks from each line
   const cleaned = cleanApexDocComment(commentText);
@@ -73,23 +81,27 @@ export function parseApexDocComment(
     }
   }
 
-  const mainDescriptionContent = parseContent(mainDescription, includeLocation ? location : undefined, {
-    parseCodeInCodeTag,
-    parseTreeAdapter,
-  });
-  
+  const mainDescriptionContent = parseContent(
+    mainDescription,
+    includeLocation ? location : undefined,
+    {
+      parseCodeInCodeTag,
+      parseTreeAdapter,
+    }
+  );
+
   // Extract text from all content nodes (text nodes and inline tag text)
   const mainDescriptionText = mainDescriptionContent
     .map((c) => {
       if (c.kind === 'ApexDocText') {
         return c.text;
-      } else if (c.kind === 'ApexDocCodeTag') {
+      } else if (c.kind === 'ApexDocCode') {
         return c.text;
-      } else if (c.kind === 'ApexDocLinkTag') {
+      } else if (c.kind === 'ApexDocLink') {
         return c.reference || c.label || '';
-      } else if (c.kind === 'ApexDocLiteralTag') {
+      } else if (c.kind === 'ApexDocLiteral') {
         return c.text;
-      } else if (c.kind === 'ApexDocHiddenTag') {
+      } else if (c.kind === 'ApexDocHidden') {
         return c.text;
       }
       return '';
@@ -97,9 +109,9 @@ export function parseApexDocComment(
     .join('');
 
   const result: ApexDocComment = {
+    blockTags,
     kind: 'ApexDocComment',
     mainDescription: mainDescriptionText,
-    blockTags,
     ...(includeLocation && location ? { location } : {}),
   };
 
@@ -107,7 +119,9 @@ export function parseApexDocComment(
 }
 
 /**
- * Clean ApexDoc comment by removing delimiters and leading asterisks
+ * Clean ApexDoc comment by removing delimiters and leading asterisks.
+ * @param commentText - The raw ApexDoc comment text.
+ * @returns The cleaned comment text, or null if invalid.
  */
 function cleanApexDocComment(commentText: string): string | null {
   // Remove /** at start
@@ -118,7 +132,7 @@ function cleanApexDocComment(commentText: string): string | null {
   // Split into lines and remove leading asterisks and whitespace
   const lines = cleaned.split(/\r?\n/).map((line) => {
     // Remove leading whitespace and asterisk
-    const match = line.match(/^\s*\*\s?(.*)$/);
+    const match = /^\s*\*\s?(.*)$/.exec(line);
     if (match) {
       return match[1];
     }
@@ -132,11 +146,14 @@ function cleanApexDocComment(commentText: string): string | null {
 }
 
 /**
- * Split comment into main description and block tag lines
+ * Split comment into main description and block tag lines.
+ * @param commentText - The cleaned comment text.
+ * @returns Object with main description and block tag lines.
  */
-function splitMainDescriptionAndTags(
-  commentText: string
-): { mainDescription: string; blockTagLines: string[] } {
+function splitMainDescriptionAndTags(commentText: string): {
+  mainDescription: string;
+  blockTagLines: string[];
+} {
   const lines = commentText.split(/\r?\n/);
   const blockTagLines: string[] = [];
   let mainDescriptionLines: string[] = [];
@@ -154,7 +171,7 @@ function splitMainDescriptionAndTags(
     }
 
     // Check if line starts with a block tag (@tag)
-    const blockTagMatch = line.match(/^@(\w+)\s*(.*)$/);
+    const blockTagMatch = /^@(\w+)\s*(.*)$/.exec(line);
     if (blockTagMatch) {
       inMainDescription = false;
       blockTagLines.push(line);
@@ -169,20 +186,24 @@ function splitMainDescriptionAndTags(
   }
 
   return {
-    mainDescription: mainDescriptionLines.join('\n'),
     blockTagLines,
+    mainDescription: mainDescriptionLines.join('\n'),
   };
 }
 
 /**
- * Parse a block tag line
+ * Parse a block tag line.
+ * @param tagLine - The block tag line to parse (e.g., "@param name description").
+ * @param location - Optional source location.
+ * @param options - Parsing options.
+ * @returns The parsed block tag, or null if parsing fails.
  */
 function parseBlockTag(
   tagLine: string,
   location: SourceRange | undefined,
   options: ApexDocParseOptions
 ): ApexDocBlockTag | null {
-  const match = tagLine.match(/^@(\w+)\s*(.*)$/);
+  const match = /^@(\w+)\s*(.*)$/.exec(tagLine);
   if (!match) {
     return null;
   }
@@ -204,58 +225,56 @@ function parseBlockTag(
   switch (tagName) {
     case 'param': {
       // @param paramName description
-      const paramMatch = content.match(/^(\w+)\s+(.*)$/);
+      const paramMatch = /^(\w+)\s+(.*)$/.exec(content);
       if (paramMatch) {
         const paramName = paramMatch[1];
         const desc = parseContent(paramMatch[2], location, options);
         return {
-          kind: 'ApexDocParamTag',
-          paramName,
           description: desc,
+          kind: 'ApexDocParam',
+          paramName,
           ...(location ? { location } : {}),
-        } as ApexDocParamTag;
+        } as ApexDocParam;
       }
       return null;
     }
 
     case 'return':
       return {
-        kind: 'ApexDocReturnTag',
+        kind: 'ApexDocReturn',
         ...baseTag,
-      } as ApexDocReturnTag;
+      } as ApexDocReturn;
 
     case 'author':
       return {
-        kind: 'ApexDocAuthorTag',
+        kind: 'ApexDocAuthor',
         ...baseTag,
-      } as ApexDocAuthorTag;
+      } as ApexDocAuthor;
 
     case 'deprecated':
       return {
-        kind: 'ApexDocDeprecatedTag',
+        kind: 'ApexDocDeprecated',
         ...baseTag,
-      } as ApexDocDeprecatedTag;
+      } as ApexDocDeprecated;
 
     case 'example':
       return {
-        kind: 'ApexDocExampleTag',
+        kind: 'ApexDocExample',
         ...baseTag,
-      } as ApexDocExampleTag;
+      } as ApexDocExample;
 
     case 'group': {
       // @group groupName
-      const groupMatch = content.match(/^(\w+)(?:\s+(.*))?$/);
+      const groupMatch = /^(\w+)(?:\s+(.*))?$/.exec(content);
       if (groupMatch) {
         const groupName = groupMatch[1];
-        const desc = groupMatch[2]
-          ? parseContent(groupMatch[2], location, options)
-          : [];
+        const desc = groupMatch[2] ? parseContent(groupMatch[2], location, options) : [];
         return {
-          kind: 'ApexDocGroupTag',
-          groupName,
           description: desc,
+          groupName,
+          kind: 'ApexDocGroup',
           ...(location ? { location } : {}),
-        } as ApexDocGroupTag;
+        } as ApexDocGroup;
       }
       return null;
     }
@@ -263,55 +282,57 @@ function parseBlockTag(
     case 'see': {
       // @see reference or @see description
       // Can be: class#member, "text", or <a href="url">label</a>
-      const seeMatch = content.match(/^(class#member|"[^"]*"|<a\s+href="[^"]*">[^<]*<\/a>)(?:\s+(.*))?$/);
+      const seeMatch = /^(class#member|"[^"]*"|<a\s+href="[^"]*">[^<]*<\/a>)(?:\s+(.*))?$/.exec(
+        content
+      );
       if (seeMatch) {
         return {
-          kind: 'ApexDocSeeTag',
-          reference: seeMatch[1],
           description: seeMatch[2] ? parseContent(seeMatch[2], location, options) : [],
+          kind: 'ApexDocSee',
+          reference: seeMatch[1],
           ...(location ? { location } : {}),
-        } as ApexDocSeeTag;
+        } as ApexDocSee;
       }
       // Just description
       return {
-        kind: 'ApexDocSeeTag',
         description,
+        kind: 'ApexDocSee',
         ...(location ? { location } : {}),
-      } as ApexDocSeeTag;
+      } as ApexDocSee;
     }
 
     case 'since':
       return {
-        kind: 'ApexDocSinceTag',
+        kind: 'ApexDocSince',
         ...baseTag,
-      } as ApexDocSinceTag;
+      } as ApexDocSince;
 
     case 'throws': {
       // @throws exceptionType description
-      const throwsMatch = content.match(/^(\w+(?:\.\w+)*)\s+(.*)$/);
+      const throwsMatch = /^(\w+(?:\.\w+)*)\s+(.*)$/.exec(content);
       if (throwsMatch) {
         const exceptionType = throwsMatch[1];
         const desc = parseContent(throwsMatch[2], location, options);
         return {
-          kind: 'ApexDocThrowsTag',
-          exceptionType,
           description: desc,
+          exceptionType,
+          kind: 'ApexDocThrows',
           ...(location ? { location } : {}),
-        } as ApexDocThrowsTag;
+        } as ApexDocThrows;
       }
       // Just description
       return {
-        kind: 'ApexDocThrowsTag',
         description,
+        kind: 'ApexDocThrows',
         ...(location ? { location } : {}),
-      } as ApexDocThrowsTag;
+      } as ApexDocThrows;
     }
 
     case 'version':
       return {
-        kind: 'ApexDocVersionTag',
+        kind: 'ApexDocVersion',
         ...baseTag,
-      } as ApexDocVersionTag;
+      } as ApexDocVersion;
 
     default:
       return null;
@@ -319,7 +340,11 @@ function parseBlockTag(
 }
 
 /**
- * Parse content that may contain inline tags
+ * Parse content that may contain inline tags.
+ * @param text - The text content to parse.
+ * @param location - Optional source location.
+ * @param options - Parsing options.
+ * @returns Array of content nodes (text and inline tags).
  */
 function parseContent(
   text: string,
@@ -383,7 +408,12 @@ function parseContent(
 }
 
 /**
- * Parse an inline tag
+ * Parse an inline tag.
+ * @param tagName - The inline tag name (e.g., "code", "link").
+ * @param content - The tag content.
+ * @param location - Optional source location.
+ * @param options - Parsing options.
+ * @returns The parsed inline tag, or null if parsing fails.
  */
 function parseInlineTag(
   tagName: string,
@@ -402,8 +432,8 @@ function parseInlineTag(
       if (parseCodeInCodeTag && content.trim()) {
         try {
           const parseResult = parseApexCode(content, {
-            parseTreeAdapter,
             includeLocation: false,
+            parseTreeAdapter,
           });
           if (parseResult.ast) {
             nestedAST = parseResult.ast;
@@ -414,44 +444,44 @@ function parseInlineTag(
       }
 
       return {
-        kind: 'ApexDocCodeTag',
+        kind: 'ApexDocCode',
         text: content,
         ...(nestedAST ? { nestedAST } : {}),
         ...baseTag,
-      } as ApexDocCodeTag;
+      } as ApexDocCode;
     }
 
     case 'hidden':
       return {
-        kind: 'ApexDocHiddenTag',
+        kind: 'ApexDocHidden',
         text: content,
         ...baseTag,
-      } as ApexDocHiddenTag;
+      } as ApexDocHidden;
 
     case 'link': {
       // {@link reference} or {@link "text"} or {@link <a href="url">label</a>}
-      const linkMatch = content.match(/^(class#member|"[^"]*"|<a\s+href="[^"]*">([^<]*)<\/a>)/);
+      const linkMatch = /^(class#member|"[^"]*"|<a\s+href="[^"]*">([^<]*)<\/a>)/.exec(content);
       if (linkMatch) {
         return {
-          kind: 'ApexDocLinkTag',
-          reference: linkMatch[1],
+          kind: 'ApexDocLink',
           label: linkMatch[2],
+          reference: linkMatch[1],
           ...baseTag,
-        } as ApexDocLinkTag;
+        } as ApexDocLink;
       }
       return {
-        kind: 'ApexDocLinkTag',
+        kind: 'ApexDocLink',
         reference: content || undefined,
         ...baseTag,
-      } as ApexDocLinkTag;
+      } as ApexDocLink;
     }
 
     case 'literal':
       return {
-        kind: 'ApexDocLiteralTag',
+        kind: 'ApexDocLiteral',
         text: content,
         ...baseTag,
-      } as ApexDocLiteralTag;
+      } as ApexDocLiteral;
 
     default:
       return null;
@@ -459,8 +489,10 @@ function parseInlineTag(
 }
 
 /**
- * Check if a comment string is an ApexDoc comment (starts with /**)
+ * Check if a comment string is an ApexDoc comment (starts with /**).
+ * @param commentText - The comment text to check.
+ * @returns True if the comment is an ApexDoc comment.
  */
 export function isApexDocCommentString(commentText: string): boolean {
-  return /^\/\*\*/.test(commentText.trimStart());
+  return commentText.trimStart().startsWith('/**');
 }

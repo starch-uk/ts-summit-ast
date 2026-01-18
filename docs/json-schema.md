@@ -5,14 +5,16 @@ This document describes the JSON schema used for serializing and deserializing A
 ## Overview
 
 The JSON representation of AST nodes follows a consistent structure:
-- Every node has a `kind` property indicating its type
+- Every node has an `@type` property indicating its type (matching summit-ast format)
 - Optional `location` property for source location information
 - Node-specific properties based on the node type
 
 ## Common Properties
 
-### `kind` (required)
-A string identifying the node type. Examples: `"IfStatement"`, `"BinaryExpression"`, `"Identifier"`, etc.
+### `@type` (required)
+A string identifying the node type. Examples: `"IfStatement"`, `"CallExpression"`, `"StringVal"`, etc.
+
+**Note**: This field is named `@type` to match the original summit-ast JSON format. The deserializer also supports `kind` for backward compatibility.
 
 ### `location` (optional)
 Source location information:
@@ -38,17 +40,17 @@ Source location information:
 #### IfStatement
 ```json
 {
-  "kind": "IfStatement",
+  "@type": "IfStatement",
   "condition": { /* Expression */ },
-  "thenBody": { /* Statement */ },
-  "elseBody": { /* Statement */ }  // optional
+  "thenStatement": { /* Statement */ },
+  "elseStatement": { /* Statement */ }  // optional
 }
 ```
 
-#### ForStatement
+#### ForLoopStatement
 ```json
 {
-  "kind": "ForStatement",
+  "@type": "ForLoopStatement",
   "init": { /* Statement */ },      // optional
   "condition": { /* Expression */ }, // optional
   "update": { /* Expression */ },    // optional
@@ -56,10 +58,10 @@ Source location information:
 }
 ```
 
-#### WhileStatement
+#### WhileLoopStatement
 ```json
 {
-  "kind": "WhileStatement",
+  "@type": "WhileLoopStatement",
   "condition": { /* Expression */ },
   "body": { /* Statement */ }
 }
@@ -68,15 +70,15 @@ Source location information:
 #### ReturnStatement
 ```json
 {
-  "kind": "ReturnStatement",
+  "@type": "ReturnStatement",
   "expression": { /* Expression */ }  // optional
 }
 ```
 
-#### Block
+#### CompoundStatement
 ```json
 {
-  "kind": "Block",
+  "@type": "CompoundStatement",
   "statements": [
     { /* Statement */ },
     { /* Statement */ }
@@ -87,7 +89,7 @@ Source location information:
 #### ExpressionStatement
 ```json
 {
-  "kind": "ExpressionStatement",
+  "@type": "ExpressionStatement",
   "expression": { /* Expression */ }
 }
 ```
@@ -95,7 +97,7 @@ Source location information:
 #### VariableDeclarationStatement
 ```json
 {
-  "kind": "VariableDeclarationStatement",
+  "@type": "VariableDeclarationStatement",
   "declaration": { /* VariableDeclaration */ }
 }
 ```
@@ -105,99 +107,152 @@ Source location information:
 #### BinaryExpression
 ```json
 {
-  "kind": "BinaryExpression",
+  "@type": "BinaryExpression",
   "operator": "+",  // or "-", "*", "/", "==", "!=", "<", ">", "&&", "||", etc.
   "left": { /* Expression */ },
   "right": { /* Expression */ }
 }
 ```
 
-#### MethodCallExpression
+#### CallExpression
 ```json
 {
-  "kind": "MethodCallExpression",
+  "@type": "CallExpression",
   "methodName": "doSomething",
   "target": { /* Expression */ },  // optional
   "arguments": [
     { /* Expression */ },
     { /* Expression */ }
   ],
-  "typeArguments": [  // optional
-    { /* Type */ }
+  "typeArguments": [  // optional (TypeRef data structures, not node types)
+    { /* TypeRef */ }
   ]
+}
+```
+
+#### VariableExpression
+```json
+{
+  "@type": "VariableExpression",
+  "id": { /* Identifier */ }
 }
 ```
 
 #### Identifier
 ```json
 {
-  "kind": "Identifier",
+  "@type": "Identifier",
   "name": "variableName"
 }
 ```
+**Note**: Identifier is a helper node type, not an expression type. Use VariableExpression for variable references in expressions.
 
 ### Literal Nodes
 
-#### StringLiteral
+#### StringVal
 ```json
 {
-  "kind": "StringLiteral",
+  "@type": "StringVal",
   "value": "hello world",
   "raw": "\"hello world\""
 }
 ```
 
-#### NumberLiteral
+#### IntegerVal
 ```json
 {
-  "kind": "NumberLiteral",
+  "@type": "IntegerVal",
   "value": 42,
   "raw": "42"
 }
 ```
 
-#### BooleanLiteral
+#### DoubleVal
 ```json
 {
-  "kind": "BooleanLiteral",
+  "@type": "DoubleVal",
+  "value": 3.14,
+  "raw": "3.14"
+}
+```
+
+#### LongVal
+```json
+{
+  "@type": "LongVal",
+  "value": 123,
+  "raw": "123L"
+}
+```
+
+#### DecimalVal
+```json
+{
+  "@type": "DecimalVal",
+  "value": 123.45,
+  "raw": "123.45d"
+}
+```
+
+#### BooleanVal
+```json
+{
+  "@type": "BooleanVal",
   "value": true
 }
 ```
 
-#### NullLiteral
+#### NullVal
 ```json
 {
-  "kind": "NullLiteral"
+  "@type": "NullVal"
 }
 ```
 
-### Type Nodes
+### Type References
 
-#### PrimitiveType
+**Note**: TypeRef is a data structure (not a node type), so it does NOT have an `@type` field.
+
+#### TypeRef
 ```json
 {
-  "kind": "PrimitiveType",
-  "name": "String"  // or "Integer", "Boolean", "Double", etc.
+  "components": [
+    {
+      "id": { /* Identifier */ },
+      "args": [ /* TypeRef[] */ ]  // optional type arguments
+    }
+  ],
+  "arrayNesting": 0  // number of array dimensions
 }
 ```
 
-#### ClassType
+Example:
 ```json
 {
-  "kind": "ClassType",
-  "name": "MyClass",
-  "packageName": "com.example"  // optional
+  "components": [
+    {
+      "id": { "@type": "Identifier", "name": "List" },
+      "args": [
+        {
+          "components": [{ "id": { "@type": "Identifier", "name": "String" }, "args": [] }],
+          "arrayNesting": 0
+        }
+      ]
+    }
+  ],
+  "arrayNesting": 1
 }
 ```
+This represents `List<String>[]`.
 
 ### Declaration Nodes
 
 #### VariableDeclaration
 ```json
 {
-  "kind": "VariableDeclaration",
+  "@type": "VariableDeclaration",
   "name": "myVariable",
-  "type": { /* Type */ },
+  "type": { /* TypeRef */ },  // TypeRef data structure, not a node type
   "initializer": { /* Expression */ },  // optional
   "modifiers": [  // optional
     { /* Modifier */ }
@@ -210,7 +265,7 @@ Source location information:
 #### Modifier
 ```json
 {
-  "kind": "Modifier",
+  "@type": "Modifier",
   "keyword": "public"  // or "private", "static", "final", etc.
 }
 ```
@@ -219,41 +274,44 @@ Source location information:
 
 ```json
 {
-  "kind": "IfStatement",
+  "@type": "IfStatement",
   "location": {
     "start": { "line": 10, "column": 5 },
     "end": { "line": 12, "column": 1 }
   },
   "condition": {
-    "kind": "BinaryExpression",
+    "@type": "BinaryExpression",
     "operator": ">",
     "left": {
-      "kind": "Identifier",
-      "name": "x"
+      "@type": "VariableExpression",
+      "id": {
+        "@type": "Identifier",
+        "name": "x"
+      }
     },
     "right": {
-      "kind": "NumberLiteral",
+      "@type": "IntegerVal",
       "value": 0,
       "raw": "0"
     }
   },
-  "thenBody": {
-    "kind": "Block",
+  "thenStatement": {
+    "@type": "CompoundStatement",
     "statements": [
       {
-        "kind": "ReturnStatement",
+        "@type": "ReturnStatement",
         "expression": {
-          "kind": "StringLiteral",
+          "@type": "StringVal",
           "value": "positive",
           "raw": "\"positive\""
         }
       }
     ]
   },
-  "elseBody": {
-    "kind": "ReturnStatement",
+  "elseStatement": {
+    "@type": "ReturnStatement",
     "expression": {
-      "kind": "StringLiteral",
+      "@type": "StringVal",
       "value": "non-positive",
       "raw": "\"non-positive\""
     }

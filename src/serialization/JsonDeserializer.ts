@@ -1,6 +1,6 @@
 /**
- * JSON deserializer for AST nodes
- * 
+ * @file JSON deserializer for AST nodes.
+ *
  * Converts JSON back to AST nodes.
  */
 
@@ -8,66 +8,77 @@ import type { ASTNode, SourceRange } from '../ast/base.js';
 import { NodeFactory } from '../translator/NodeFactory.js';
 import type {
   IfStatement,
-  ForStatement,
-  WhileStatement,
+  ForLoopStatement,
+  WhileLoopStatement,
   ReturnStatement,
-  Block,
+  CompoundStatement,
   ExpressionStatement,
   VariableDeclarationStatement,
-} from '../ast/nodes/Statement.js';
+} from '../ast/Statement.js';
 import type {
   BinaryExpression,
-  MethodCallExpression,
-  Identifier,
-} from '../ast/nodes/Expression.js';
+  CallExpression,
+  NewExpression,
+  VariableExpression,
+} from '../ast/Expression.js';
 import type {
-  StringLiteral,
-  NumberLiteral,
-  BooleanLiteral,
-} from '../ast/nodes/Literal.js';
+  ConstructorInitializer,
+  ValuesInitializer,
+  SizedArrayInitializer,
+  MapInitializer,
+} from '../ast/Initializer.js';
 import type {
-  PrimitiveType,
-  ClassType,
-} from '../ast/nodes/Type.js';
+  ExpressionElementValue,
+  AnnotationElementValue,
+  ArrayElementValue,
+} from '../ast/ElementValue.js';
 import type {
-  VariableDeclaration,
-} from '../ast/nodes/Declaration.js';
-import type { Modifier } from '../ast/nodes/Modifier.js';
-import type { Expression } from '../ast/nodes/Expression.js';
-import type { Statement } from '../ast/nodes/Statement.js';
-import type { Type } from '../ast/nodes/Type.js';
+  StringVal,
+  IntegerVal,
+  DoubleVal,
+  LongVal,
+  DecimalVal,
+  BooleanVal,
+} from '../ast/Literal.js';
+import type { TypeRef } from '../ast/Type.js';
+import type { VariableDeclaration } from '../ast/Declaration.js';
+import type { Modifier } from '../ast/Declaration.js';
+import type { Expression } from '../ast/Expression.js';
+import type { Statement } from '../ast/Statement.js';
+import type { Identifier } from '../ast/Identifier.js';
 import type { JsonASTNode } from './JsonSerializer.js';
 
 /**
- * Options for JSON deserialization
+ * Options for JSON deserialization.
  */
 export interface DeserializationOptions {
   /**
-   * Whether to validate the JSON structure
+   * Whether to validate the JSON structure.
    */
   validate?: boolean;
 
   /**
-   * Custom reviver function (similar to JSON.parse reviver)
+   * Custom reviver function (similar to JSON.parse reviver).
    */
   reviver?: (key: string, value: unknown) => unknown;
 }
 
 /**
- * JSON Deserializer for AST nodes
+ * JSON Deserializer for AST nodes.
  */
 export class JsonDeserializer {
   private readonly options: Required<DeserializationOptions>;
 
   constructor(options: DeserializationOptions = {}) {
     this.options = {
-      validate: options.validate ?? true,
       reviver: options.reviver ?? ((_key, value) => value),
+      validate: options.validate ?? true,
     };
   }
 
   /**
-   * Deserialize JSON string to AST node
+   * Deserialize JSON string to AST node.
+   * @param json
    */
   deserialize(json: string): ASTNode {
     const parsed = JSON.parse(json, this.options.reviver);
@@ -75,24 +86,34 @@ export class JsonDeserializer {
   }
 
   /**
-   * Deserialize JSON object to AST node
+   * Deserialize JSON object to AST node.
+   * @param json
    */
   deserializeNode(json: JsonASTNode): ASTNode {
-    if (!json || typeof json !== 'object' || !('kind' in json)) {
-      throw new Error('Invalid JSON AST node: missing kind property');
+    // Support both '@type' (summit-ast format) and 'kind' (backward compatibility)
+    const nodeType = (
+      '@type' in json && json['@type']
+        ? json['@type']
+        : 'kind' in json && json.kind
+          ? json.kind
+          : null
+    ) as string | null;
+    if (!json || typeof json !== 'object' || !nodeType) {
+      throw new Error('Invalid JSON AST node: missing @type or kind property');
     }
 
     if (this.options.validate) {
-      this.validateNode(json);
+      this.validateNode(json, nodeType);
     }
 
     const location = this.deserializeLocation(json.location as any);
 
-    return this.deserializeNodeByKind(json, location);
+    return this.deserializeNodeByKind(json, nodeType, location);
   }
 
   /**
-   * Deserialize source location
+   * Deserialize source location.
+   * @param location
    */
   private deserializeLocation(location: any): SourceRange | undefined {
     if (!location) {
@@ -100,68 +121,88 @@ export class JsonDeserializer {
     }
 
     return {
-      start: {
-        line: location.start?.line ?? 0,
-        column: location.start?.column ?? 0,
-        offset: location.start?.offset,
-      },
       end: {
-        line: location.end?.line ?? 0,
         column: location.end?.column ?? 0,
+        line: location.end?.line ?? 0,
         offset: location.end?.offset,
+      },
+      start: {
+        column: location.start?.column ?? 0,
+        line: location.start?.line ?? 0,
+        offset: location.start?.offset,
       },
     };
   }
 
   /**
-   * Deserialize node based on its kind
+   * Deserialize node based on its kind.
+   * @param json
+   * @param nodeType
+   * @param location
    */
   private deserializeNodeByKind(
     json: JsonASTNode,
+    nodeType: string,
     location?: SourceRange
   ): ASTNode {
     const locationOption = location ? { location } : undefined;
 
-    switch (json.kind) {
+    switch (nodeType) {
       // Statement nodes
       case 'IfStatement':
         return this.deserializeIfStatement(json, locationOption);
-      case 'ForStatement':
-        return this.deserializeForStatement(json, locationOption);
-      case 'WhileStatement':
-        return this.deserializeWhileStatement(json, locationOption);
+      case 'ForLoopStatement':
+        return this.deserializeForLoopStatement(json, locationOption);
+      case 'WhileLoopStatement':
+        return this.deserializeWhileLoopStatement(json, locationOption);
       case 'ReturnStatement':
         return this.deserializeReturnStatement(json, locationOption);
-      case 'Block':
-        return this.deserializeBlock(json, locationOption);
+      case 'CompoundStatement':
+        return this.deserializeCompoundStatement(json, locationOption);
       case 'ExpressionStatement':
         return this.deserializeExpressionStatement(json, locationOption);
       case 'VariableDeclarationStatement':
         return this.deserializeVariableDeclarationStatement(json, locationOption);
+      case 'EnhancedForLoopStatement':
+      case 'DoWhileLoopStatement':
+        // Use generic deserialization
+        throw new Error(`Deserialization for ${nodeType} not yet implemented`);
 
       // Expression nodes
       case 'BinaryExpression':
         return this.deserializeBinaryExpression(json, locationOption);
-      case 'MethodCallExpression':
-        return this.deserializeMethodCallExpression(json, locationOption);
-      case 'Identifier':
-        return this.deserializeIdentifier(json, locationOption);
+      case 'CallExpression':
+        return this.deserializeCallExpression(json, locationOption);
+      case 'FieldExpression':
+        return this.deserializeFieldExpression(json, locationOption);
+      case 'ArrayExpression':
+        return this.deserializeArrayExpression(json, locationOption);
+      case 'AssignExpression':
+        return this.deserializeAssignExpression(json, locationOption);
+      case 'NewExpression':
+        return this.deserializeNewExpression(json, locationOption);
+      case 'VariableExpression':
+        return this.deserializeVariableExpression(json, locationOption);
+      case 'SoqlExpression':
+      case 'SoslExpression':
+        // Use generic deserialization
+        throw new Error(`Deserialization for ${nodeType} not yet implemented`);
 
       // Literal nodes
-      case 'StringLiteral':
-        return this.deserializeStringLiteral(json, locationOption);
-      case 'NumberLiteral':
-        return this.deserializeNumberLiteral(json, locationOption);
-      case 'BooleanLiteral':
-        return this.deserializeBooleanLiteral(json, locationOption);
-      case 'NullLiteral':
-        return NodeFactory.createNullLiteral(locationOption);
-
-      // Type nodes
-      case 'PrimitiveType':
-        return this.deserializePrimitiveType(json, locationOption);
-      case 'ClassType':
-        return this.deserializeClassType(json, locationOption);
+      case 'StringVal':
+        return this.deserializeStringVal(json, locationOption);
+      case 'IntegerVal':
+        return this.deserializeIntegerVal(json, locationOption);
+      case 'DoubleVal':
+        return this.deserializeDoubleVal(json, locationOption);
+      case 'LongVal':
+        return this.deserializeLongVal(json, locationOption);
+      case 'DecimalVal':
+        return this.deserializeDecimalVal(json, locationOption);
+      case 'BooleanVal':
+        return this.deserializeBooleanVal(json, locationOption);
+      case 'NullVal':
+        return NodeFactory.createNullVal(locationOption);
 
       // Declaration nodes
       case 'VariableDeclaration':
@@ -171,8 +212,56 @@ export class JsonDeserializer {
       case 'Modifier':
         return this.deserializeModifier(json, locationOption);
 
+      // Backward compatibility
+      case 'ForStatement':
+        return this.deserializeForLoopStatement(json, locationOption);
+      case 'WhileStatement':
+        return this.deserializeWhileLoopStatement(json, locationOption);
+      case 'Block':
+        return this.deserializeCompoundStatement(json, locationOption);
+      case 'MethodCallExpression':
+        return this.deserializeCallExpression(json, locationOption);
+      case 'StringLiteral':
+        return this.deserializeStringVal(json, locationOption);
+      case 'NumberLiteral':
+        return this.deserializeIntegerVal(json, locationOption);
+      case 'BooleanLiteral':
+        return this.deserializeBooleanVal(json, locationOption);
+      case 'NullLiteral':
+        return NodeFactory.createNullVal(locationOption);
+
+      // Helper nodes
+      case 'Identifier':
+        return this.deserializeIdentifier(json, locationOption);
+
+      // TypeRef (AST node in summit-ast)
+      case 'TypeRef':
+        return this.deserializeTypeRefNode(json, locationOption);
+
+      // Initializer nodes
+      case 'ConstructorInitializer':
+        return this.deserializeConstructorInitializer(json, locationOption);
+      case 'ValuesInitializer':
+        return this.deserializeValuesInitializer(json, locationOption);
+      case 'SizedArrayInitializer':
+        return this.deserializeSizedArrayInitializer(json, locationOption);
+      case 'MapInitializer':
+        return this.deserializeMapInitializer(json, locationOption);
+
+      // ElementValue nodes
+      case 'ExpressionElementValue':
+        return this.deserializeExpressionElementValue(json, locationOption);
+      case 'AnnotationElementValue':
+        return this.deserializeAnnotationElementValue(json, locationOption);
+      case 'ArrayElementValue':
+        return this.deserializeArrayElementValue(json, locationOption);
+
+      // Declaration nodes
+      case 'AnnotationArgument':
+        return this.deserializeAnnotationArgument(json, locationOption);
+
       default:
-        throw new Error(`Unknown node kind: ${json.kind}`);
+        throw new Error(`Unknown node type: ${nodeType}`);
     }
   }
 
@@ -183,18 +272,21 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): IfStatement {
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
-    const thenStatement = this.deserializeNode((json.thenStatement || json.thenBody) as JsonASTNode) as Statement;
-    const elseStatement = (json.elseStatement || json.elseBody)
-      ? (this.deserializeNode((json.elseStatement || json.elseBody) as JsonASTNode) as Statement)
-      : undefined;
+    const thenStatement = this.deserializeNode(
+      (json.thenStatement || json.thenBody) as JsonASTNode
+    ) as Statement;
+    const elseStatement =
+      json.elseStatement || json.elseBody
+        ? (this.deserializeNode((json.elseStatement || json.elseBody) as JsonASTNode) as Statement)
+        : undefined;
 
     return NodeFactory.createIfStatement(condition, thenStatement, elseStatement, locationOption);
   }
 
-  private deserializeForStatement(
+  private deserializeForLoopStatement(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): ForStatement {
+  ): ForLoopStatement {
     const init = json.init
       ? (this.deserializeNode(json.init as JsonASTNode) as Statement)
       : undefined;
@@ -206,23 +298,17 @@ export class JsonDeserializer {
       : undefined;
     const body = this.deserializeNode(json.body as JsonASTNode) as Statement;
 
-    return NodeFactory.createForStatement(
-      body,
-      init as any,
-      condition,
-      update,
-      locationOption
-    );
+    return NodeFactory.createForLoopStatement(body, init as any, condition, update, locationOption);
   }
 
-  private deserializeWhileStatement(
+  private deserializeWhileLoopStatement(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): WhileStatement {
+  ): WhileLoopStatement {
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
     const body = this.deserializeNode(json.body as JsonASTNode) as Statement;
 
-    return NodeFactory.createWhileStatement(condition, body, locationOption);
+    return NodeFactory.createWhileLoopStatement(condition, body, locationOption);
   }
 
   private deserializeReturnStatement(
@@ -236,15 +322,15 @@ export class JsonDeserializer {
     return NodeFactory.createReturnStatement(expression, locationOption);
   }
 
-  private deserializeBlock(
+  private deserializeCompoundStatement(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): Block {
-    const statements = (json.statements as JsonASTNode[]).map((stmt) =>
-      this.deserializeNode(stmt) as Statement
+  ): CompoundStatement {
+    const statements = (json.statements as JsonASTNode[]).map(
+      (stmt) => this.deserializeNode(stmt) as Statement
     );
 
-    return NodeFactory.createBlock(statements, locationOption);
+    return NodeFactory.createCompoundStatement(statements, locationOption);
   }
 
   private deserializeExpressionStatement(
@@ -277,38 +363,73 @@ export class JsonDeserializer {
     const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
     const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
 
-    return NodeFactory.createBinaryExpression(
-      operator as any,
-      left,
-      right,
-      locationOption
-    );
+    return NodeFactory.createBinaryExpression(operator as any, left, right, locationOption);
   }
 
-  private deserializeMethodCallExpression(
+  private deserializeCallExpression(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): MethodCallExpression {
+  ): CallExpression {
     const methodName = json.methodName as string;
     const target = json.target
       ? (this.deserializeNode(json.target as JsonASTNode) as Expression)
       : undefined;
-    const args = (json.arguments as JsonASTNode[]).map((arg) =>
-      this.deserializeNode(arg) as Expression
+    const args = (json.arguments as JsonASTNode[]).map(
+      (arg) => this.deserializeNode(arg) as Expression
     );
     const typeArguments = json.typeArguments
-      ? ((json.typeArguments as JsonASTNode[]).map((type) =>
-          this.deserializeNode(type) as Type
-        ))
+      ? (json.typeArguments as any[]).map((type) => this.deserializeTypeRef(type))
       : undefined;
 
-    return NodeFactory.createMethodCallExpression(
+    return NodeFactory.createCallExpression(
       methodName,
       args,
       target,
       typeArguments,
       locationOption
     );
+  }
+
+  private deserializeFieldExpression(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): any {
+    const fieldName = json.fieldName as string;
+    const target = json.target
+      ? (this.deserializeNode(json.target as JsonASTNode) as Expression)
+      : undefined;
+
+    return NodeFactory.createFieldExpression(fieldName, target, locationOption);
+  }
+
+  private deserializeArrayExpression(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): any {
+    const array = this.deserializeNode(json.array as JsonASTNode) as Expression;
+    const index = this.deserializeNode(json.index as JsonASTNode) as Expression;
+
+    return NodeFactory.createArrayExpression(array, index, locationOption);
+  }
+
+  private deserializeAssignExpression(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): any {
+    const operator = json.operator as string;
+    const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
+    const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
+
+    return NodeFactory.createAssignExpression(operator as any, left, right, locationOption);
+  }
+
+  private deserializeVariableExpression(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): VariableExpression {
+    const id = this.deserializeNode(json.id as JsonASTNode) as Identifier;
+
+    return NodeFactory.createVariableExpression(id, locationOption);
   }
 
   private deserializeIdentifier(
@@ -322,71 +443,221 @@ export class JsonDeserializer {
 
   // Literal deserialization methods
 
-  private deserializeStringLiteral(
+  private deserializeStringVal(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): StringLiteral {
+  ): StringVal {
     const value = json.value as string;
     const raw = (json.raw as string) || `"${value}"`;
 
-    return NodeFactory.createStringLiteral(value, raw, locationOption);
+    return NodeFactory.createStringVal(value, raw, locationOption);
   }
 
-  private deserializeNumberLiteral(
+  private deserializeIntegerVal(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): NumberLiteral {
+  ): IntegerVal {
     const value = json.value as number;
     const raw = (json.raw as string) || String(value);
 
-    return NodeFactory.createNumberLiteral(value, raw, locationOption);
+    return NodeFactory.createIntegerVal(value, raw, locationOption);
   }
 
-  private deserializeBooleanLiteral(
+  private deserializeDoubleVal(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): BooleanLiteral {
+  ): DoubleVal {
+    const value = json.value as number;
+    const raw = (json.raw as string) || String(value);
+
+    return NodeFactory.createDoubleVal(value, raw, locationOption);
+  }
+
+  private deserializeLongVal(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): LongVal {
+    const value = json.value as number;
+    const raw = (json.raw as string) || String(value);
+
+    return NodeFactory.createLongVal(value, raw, locationOption);
+  }
+
+  private deserializeDecimalVal(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): DecimalVal {
+    const value = json.value as number;
+    const raw = (json.raw as string) || String(value);
+
+    return NodeFactory.createDecimalVal(value, raw, locationOption);
+  }
+
+  private deserializeBooleanVal(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): BooleanVal {
     const value = json.value as boolean;
 
-    return NodeFactory.createBooleanLiteral(value, locationOption);
+    return NodeFactory.createBooleanVal(value, locationOption);
   }
 
-  // Type deserialization methods
+  /**
+   * TypeRef deserialization (TypeRef is an AST node in summit-ast).
+   * @param typeRefJson
+   */
+  private deserializeTypeRef(typeRefJson: any): TypeRef {
+    return this.deserializeTypeRefNode(typeRefJson);
+  }
 
-  private deserializePrimitiveType(
+  private deserializeTypeRefNode(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): PrimitiveType {
-    const name = json.name as string;
+  ): TypeRef {
+    const componentsArray = json.components as any[] | undefined;
+    const components = (componentsArray || []).map((comp: any) => ({
+      args: (comp.args || []).map((arg: any) => this.deserializeTypeRef(arg)),
+      id: this.deserializeNode(comp.id) as Identifier,
+    }));
+    const arrayNesting = (json.arrayNesting as number) || 0;
 
-    return NodeFactory.createPrimitiveType(name, locationOption);
+    return NodeFactory.createTypeRef(components, arrayNesting, locationOption);
   }
 
-  private deserializeClassType(
+  /**
+   * Initializer deserialization methods.
+   * @param json
+   * @param locationOption
+   * @param locationOption.location
+   */
+  private deserializeNewExpression(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): ClassType {
-    const name = json.name as string;
-    const packageName = json.packageName as string | undefined;
+  ): NewExpression {
+    const initializer = this.deserializeNode(
+      json.initializer as JsonASTNode
+    ) as import('../ast/Initializer.js').Initializer;
 
-    return NodeFactory.createClassType(name, packageName, locationOption);
+    return NodeFactory.createNewExpression(initializer, locationOption);
   }
 
-  // Declaration deserialization methods
+  private deserializeConstructorInitializer(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): ConstructorInitializer {
+    const type = this.deserializeTypeRef(json.type as any);
+    const args = ((json.args as any[]) || []).map((arg) =>
+      this.deserializeNode(arg as JsonASTNode)
+    ) as Expression[];
+
+    return NodeFactory.createConstructorInitializer(type, args, locationOption);
+  }
+
+  private deserializeValuesInitializer(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): ValuesInitializer {
+    const type = this.deserializeTypeRef(json.type as any);
+    const values = ((json.values as any[]) || []).map((val) =>
+      this.deserializeNode(val as JsonASTNode)
+    ) as Expression[];
+
+    return NodeFactory.createValuesInitializer(type, values, locationOption);
+  }
+
+  private deserializeSizedArrayInitializer(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): SizedArrayInitializer {
+    const type = this.deserializeTypeRef(json.type as any);
+    const size = this.deserializeNode(json.size as JsonASTNode) as Expression;
+
+    return NodeFactory.createSizedArrayInitializer(type, size, locationOption);
+  }
+
+  private deserializeMapInitializer(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): MapInitializer {
+    const type = this.deserializeTypeRef(json.type as any);
+    const pairs = ((json.pairs as any[]) || []).map((pair) => ({
+      key: this.deserializeNode(pair.key as JsonASTNode) as Expression,
+      value: this.deserializeNode(pair.value as JsonASTNode) as Expression,
+    }));
+
+    return NodeFactory.createMapInitializer(type, pairs, locationOption);
+  }
+
+  /**
+   * ElementValue deserialization methods.
+   * @param json
+   * @param locationOption
+   * @param locationOption.location
+   */
+  private deserializeExpressionElementValue(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): ExpressionElementValue {
+    const value = this.deserializeNode(json.value as JsonASTNode) as Expression;
+    return NodeFactory.createExpressionElementValue(value, locationOption);
+  }
+
+  private deserializeAnnotationElementValue(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): AnnotationElementValue {
+    const value = this.deserializeNode(
+      json.value as JsonASTNode
+    ) as import('../ast/Declaration.js').Annotation;
+    return NodeFactory.createAnnotationElementValue(value, locationOption);
+  }
+
+  private deserializeArrayElementValue(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): ArrayElementValue {
+    const values = ((json.values as any[]) || []).map((val) =>
+      this.deserializeNode(val as JsonASTNode)
+    ) as import('../ast/ElementValue.js').ElementValue[];
+    return NodeFactory.createArrayElementValue(values, locationOption);
+  }
+
+  /**
+   * Declaration deserialization methods.
+   * @param json
+   * @param locationOption
+   * @param locationOption.location
+   */
+  private deserializeAnnotationArgument(
+    json: JsonASTNode,
+    locationOption?: { location: SourceRange }
+  ): import('../ast/Declaration.js').AnnotationArgument {
+    const name = json.name as string | undefined;
+    const value = this.deserializeNode(
+      json.value as JsonASTNode
+    ) as import('../ast/ElementValue.js').ElementValue;
+    const isNameImplicit = (json.isNameImplicit as boolean) || !name;
+
+    return {
+      isNameImplicit,
+      kind: 'AnnotationArgument',
+      location: locationOption?.location,
+      name,
+      value,
+    };
+  }
 
   private deserializeVariableDeclaration(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
   ): VariableDeclaration {
     const name = json.name as string;
-    const type = this.deserializeNode(json.type as JsonASTNode) as Type;
+    const type = this.deserializeTypeRef(json.type as any);
     const initializer = json.initializer
       ? (this.deserializeNode(json.initializer as JsonASTNode) as Expression)
       : undefined;
     const modifiers = json.modifiers
-      ? ((json.modifiers as JsonASTNode[]).map((mod) =>
-          this.deserializeNode(mod) as Modifier
-        ))
+      ? (json.modifiers as JsonASTNode[]).map((mod) => this.deserializeNode(mod) as Modifier)
       : undefined;
 
     return NodeFactory.createVariableDeclaration(
@@ -430,18 +701,21 @@ export class JsonDeserializer {
     }
 
     return {
-      kind: 'Modifier',
       keyword: keyword as Modifier['keyword'],
+      kind: 'Modifier',
       location: locationOption?.location,
     };
   }
 
   /**
-   * Validate JSON node structure
+   * Validate JSON node structure.
+   * @param json
+   * @param _json
+   * @param nodeType
    */
-  private validateNode(json: JsonASTNode): void {
-    if (!json.kind || typeof json.kind !== 'string') {
-      throw new Error('Invalid JSON AST node: kind must be a string');
+  private validateNode(_json: JsonASTNode, nodeType: string | null): void {
+    if (!nodeType || typeof nodeType !== 'string') {
+      throw new Error('Invalid JSON AST node: @type or kind must be a string');
     }
   }
 }

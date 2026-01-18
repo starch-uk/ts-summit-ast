@@ -1,5 +1,5 @@
 /**
- * Integration tests for AST translator
+ * Integration tests for AST translator.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -9,7 +9,7 @@ import {
   isIfStatement,
   isReturnStatement,
   isBlock,
-  isIdentifier,
+  isVariableExpression,
   isStringLiteral,
   isNumberLiteral,
   isBooleanLiteral,
@@ -24,23 +24,23 @@ describe('AST Translator', () => {
   describe('Expression translation', () => {
     it('should translate identifier', () => {
       const parseTree: ParseTreeNode = {
-        type: 'identifier',
         text: 'myVariable',
+        type: 'identifier',
       };
 
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
-      expect(isIdentifier(result.ast!)).toBe(true);
-      if (isIdentifier(result.ast!)) {
-        expect(result.ast.name).toBe('myVariable');
+      expect(isVariableExpression(result.ast!)).toBe(true);
+      if (isVariableExpression(result.ast!)) {
+        expect(result.ast.id.name).toBe('myVariable');
       }
     });
 
     it('should translate string literal', () => {
       const parseTree: ParseTreeNode = {
-        type: 'string_literal',
         text: '"hello world"',
+        type: 'string_literal',
       };
 
       const result = translator.translate(parseTree);
@@ -54,8 +54,8 @@ describe('AST Translator', () => {
 
     it('should translate number literal', () => {
       const parseTree: ParseTreeNode = {
-        type: 'number_literal',
         text: '42',
+        type: 'number_literal',
       };
 
       const result = translator.translate(parseTree);
@@ -69,8 +69,8 @@ describe('AST Translator', () => {
 
     it('should translate boolean literal', () => {
       const parseTree: ParseTreeNode = {
-        type: 'boolean_literal',
         text: 'true',
+        type: 'boolean_literal',
       };
 
       const result = translator.translate(parseTree);
@@ -95,16 +95,16 @@ describe('AST Translator', () => {
 
     it('should translate binary expression', () => {
       const parseTree: ParseTreeNode = {
-        type: 'binary_expression',
-        operator: '+',
         left: {
-          type: 'number_literal',
           text: '5',
-        },
-        right: {
           type: 'number_literal',
-          text: '3',
         },
+        operator: '+',
+        right: {
+          text: '3',
+          type: 'number_literal',
+        },
+        type: 'binary_expression',
       };
 
       const result = translator.translate(parseTree);
@@ -118,18 +118,18 @@ describe('AST Translator', () => {
 
     it('should translate method call', () => {
       const parseTree: ParseTreeNode = {
-        type: 'method_call',
-        methodName: 'doSomething',
         arguments: [
           {
-            type: 'string_literal',
             text: '"arg1"',
+            type: 'string_literal',
           },
           {
-            type: 'number_literal',
             text: '42',
+            type: 'number_literal',
           },
         ],
+        methodName: 'doSomething',
+        type: 'method_call',
       };
 
       const result = translator.translate(parseTree);
@@ -146,11 +146,11 @@ describe('AST Translator', () => {
   describe('Statement translation', () => {
     it('should translate return statement', () => {
       const parseTree: ParseTreeNode = {
-        type: 'return_statement',
         expression: {
-          type: 'number_literal',
           text: '42',
+          type: 'number_literal',
         },
+        type: 'return_statement',
       };
 
       const result = translator.translate(parseTree);
@@ -172,25 +172,25 @@ describe('AST Translator', () => {
 
     it('should translate if statement', () => {
       const parseTree: ParseTreeNode = {
-        type: 'if_statement',
         condition: {
-          type: 'boolean_literal',
           text: 'true',
-        },
-        thenBody: {
-          type: 'return_statement',
-          expression: {
-            type: 'number_literal',
-            text: '1',
-          },
+          type: 'boolean_literal',
         },
         elseBody: {
-          type: 'return_statement',
           expression: {
-            type: 'number_literal',
             text: '0',
+            type: 'number_literal',
           },
+          type: 'return_statement',
         },
+        thenBody: {
+          expression: {
+            text: '1',
+            type: 'number_literal',
+          },
+          type: 'return_statement',
+        },
+        type: 'if_statement',
       };
 
       const result = translator.translate(parseTree);
@@ -201,23 +201,23 @@ describe('AST Translator', () => {
 
     it('should translate block statement', () => {
       const parseTree: ParseTreeNode = {
-        type: 'block',
         children: [
           {
-            type: 'return_statement',
             expression: {
-              type: 'number_literal',
               text: '1',
+              type: 'number_literal',
             },
+            type: 'return_statement',
           },
           {
-            type: 'return_statement',
             expression: {
-              type: 'number_literal',
               text: '2',
+              type: 'number_literal',
             },
+            type: 'return_statement',
           },
         ],
+        type: 'block',
       };
 
       const result = translator.translate(parseTree);
@@ -255,12 +255,12 @@ describe('AST Translator', () => {
   describe('Source location preservation', () => {
     it('should preserve location information when provided', () => {
       const parseTree: ParseTreeNode = {
-        type: 'identifier',
-        text: 'test',
         location: {
-          start: { line: 10, column: 5 },
-          end: { line: 10, column: 9 },
+          end: { column: 9, line: 10 },
+          start: { column: 5, line: 10 },
         },
+        text: 'test',
+        type: 'identifier',
       };
 
       const result = translator.translate(parseTree);

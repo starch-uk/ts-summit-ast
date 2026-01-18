@@ -1,89 +1,100 @@
 /**
- * Factory for creating AST nodes
- * Provides helper functions to construct AST nodes with proper typing
+ * @file Factory for creating AST nodes.
+ * Provides a unified interface delegating to specialized factory classes.
  */
 
-import type { SourceRange } from '../ast/base.js';
 import type {
   IfStatement,
-  ForStatement,
-  ForEachStatement,
-  WhileStatement,
-  DoWhileStatement,
+  ForLoopStatement,
+  EnhancedForLoopStatement,
+  WhileLoopStatement,
+  DoWhileLoopStatement,
   SwitchStatement,
   TryStatement,
   ReturnStatement,
   BreakStatement,
   ContinueStatement,
   ThrowStatement,
-  Block,
+  CompoundStatement,
   ExpressionStatement,
   VariableDeclarationStatement,
   DmlStatement,
   DmlOperation,
-} from '../ast/nodes/Statement.js';
-import type { AnnotationDeclaration } from '../ast/nodes/Declaration.js';
+} from '../ast/Statement.js';
 import type {
   BinaryExpression,
   UnaryExpression,
-  AssignmentExpression,
-  MethodCallExpression,
-  FieldAccessExpression,
-  ArrayAccessExpression,
-  NewExpression,
+  AssignExpression,
+  CallExpression,
+  FieldExpression,
+  ArrayExpression,
+  TernaryExpression,
   CastExpression,
   InstanceOfExpression,
-  TernaryExpression,
+  NewExpression,
   LambdaExpression,
-  Identifier,
+  VariableExpression,
   ThisExpression,
   SuperExpression,
   ParenthesizedExpression,
-  SoqlQueryExpression,
-  SoslQueryExpression,
+  SoqlExpression,
+  SoslExpression,
   TriggerContextVariableExpression,
-} from '../ast/nodes/Expression.js';
+} from '../ast/Expression.js';
 import type {
-  StringLiteral,
-  NumberLiteral,
-  BooleanLiteral,
-  NullLiteral,
-} from '../ast/nodes/Literal.js';
-import type {
-  PrimitiveType,
-  ClassType,
-  ArrayType,
-  GenericType,
-} from '../ast/nodes/Type.js';
+  StringVal,
+  IntegerVal,
+  DoubleVal,
+  LongVal,
+  DecimalVal,
+  BooleanVal,
+  NullVal,
+} from '../ast/Literal.js';
+import type { TypeRef } from '../ast/Type.js';
 import type {
   VariableDeclaration,
   ClassDeclaration,
   InterfaceDeclaration,
   MethodDeclaration,
-  ConstructorDeclaration,
   PropertyDeclaration,
   EnumDeclaration,
-  EnumConstantDeclaration,
+  EnumValue,
   TypeParameter,
-} from '../ast/nodes/Declaration.js';
-import type { Modifier } from '../ast/nodes/Modifier.js';
-import type { Expression } from '../ast/nodes/Expression.js';
-import type { Statement } from '../ast/nodes/Statement.js';
-import type { Type } from '../ast/nodes/Type.js';
+  Modifier,
+  Annotation,
+} from '../ast/Declaration.js';
+import type {
+  Initializer,
+  ConstructorInitializer,
+  ValuesInitializer,
+  SizedArrayInitializer,
+  MapInitializer,
+} from '../ast/Initializer.js';
+import type { Identifier } from '../ast/Identifier.js';
+import type { Expression } from '../ast/Expression.js';
+import type { Statement } from '../ast/Statement.js';
+import { StatementFactory } from './NodeFactoryStatements.js';
+import { ExpressionFactory } from './NodeFactoryExpressions.js';
+import { LiteralFactory } from './NodeFactoryLiterals.js';
+import { DeclarationFactory } from './NodeFactoryDeclarations.js';
+import { InitializerFactory } from './NodeFactoryInitializers.js';
+import { ElementValueFactory } from './NodeFactoryElementValues.js';
+import { SoqlOrSoslBindingFactory } from './NodeFactorySoqlOrSoslBinding.js';
+import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
+
+export type { NodeFactoryOptions };
 
 /**
- * Options for creating AST nodes
- */
-export interface NodeFactoryOptions {
-  readonly location?: SourceRange;
-}
-
-/**
- * Factory class for creating AST nodes
+ * Unified factory class for creating AST nodes
+ * Delegates to specialized factory classes.
  */
 export class NodeFactory {
   /**
-   * Create an IfStatement node
+   * Statement factories.
+   * @param condition
+   * @param thenStatement
+   * @param elseStatement
+   * @param options
    */
   static createIfStatement(
     condition: Expression,
@@ -91,17 +102,34 @@ export class NodeFactory {
     elseStatement?: Statement,
     options?: NodeFactoryOptions
   ): IfStatement {
-    return {
-      kind: 'IfStatement',
-      condition,
-      thenStatement,
-      elseStatement,
-      location: options?.location,
-    };
+    return StatementFactory.createIfStatement(condition, thenStatement, elseStatement, options);
+  }
+
+  static createForLoopStatement(
+    body: Statement,
+    init?: ExpressionStatement | VariableDeclarationStatement,
+    condition?: Expression,
+    update?: Expression,
+    options?: NodeFactoryOptions
+  ): ForLoopStatement {
+    return StatementFactory.createForLoopStatement(body, init, condition, update, options);
+  }
+
+  static createWhileLoopStatement(
+    condition: Expression,
+    body: Statement,
+    options?: NodeFactoryOptions
+  ): WhileLoopStatement {
+    return StatementFactory.createWhileLoopStatement(condition, body, options);
   }
 
   /**
-   * Create a ForStatement node
+   * @param body
+   * @param init
+   * @param condition
+   * @param update
+   * @param options
+   * @deprecated Use createForLoopStatement instead.
    */
   static createForStatement(
     body: Statement,
@@ -109,77 +137,155 @@ export class NodeFactory {
     condition?: Expression,
     update?: Expression,
     options?: NodeFactoryOptions
-  ): ForStatement {
-    return {
-      kind: 'ForStatement',
-      init,
-      condition,
-      update,
-      body,
-      location: options?.location,
-    };
+  ): ForLoopStatement {
+    return this.createForLoopStatement(body, init, condition, update, options);
   }
 
   /**
-   * Create a WhileStatement node
+   * @param condition
+   * @param body
+   * @param options
+   * @deprecated Use createWhileLoopStatement instead.
    */
   static createWhileStatement(
     condition: Expression,
     body: Statement,
     options?: NodeFactoryOptions
-  ): WhileStatement {
-    return {
-      kind: 'WhileStatement',
-      condition,
-      body,
-      location: options?.location,
-    };
+  ): WhileLoopStatement {
+    return this.createWhileLoopStatement(condition, body, options);
   }
 
-  /**
-   * Create a ReturnStatement node
-   */
   static createReturnStatement(
     expression?: Expression,
     options?: NodeFactoryOptions
   ): ReturnStatement {
-    return {
-      kind: 'ReturnStatement',
-      expression,
-      location: options?.location,
-    };
+    return StatementFactory.createReturnStatement(expression, options);
   }
 
-  /**
-   * Create a Block node
-   */
-  static createBlock(
+  static createCompoundStatement(
     statements: Statement[],
     options?: NodeFactoryOptions
-  ): Block {
-    return {
-      kind: 'Block',
-      statements,
-      location: options?.location,
-    };
+  ): CompoundStatement {
+    return StatementFactory.createCompoundStatement(statements, options);
   }
 
   /**
-   * Create an ExpressionStatement node
+   * @param statements
+   * @param options
+   * @deprecated Use createCompoundStatement instead.
    */
+  static createBlock(statements: Statement[], options?: NodeFactoryOptions): CompoundStatement {
+    return this.createCompoundStatement(statements, options);
+  }
+
   static createExpressionStatement(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ExpressionStatement {
-    return {
-      kind: 'ExpressionStatement',
-      expression,
-      location: options?.location,
-    };
+    return StatementFactory.createExpressionStatement(expression, options);
+  }
+
+  static createVariableDeclarationStatement(
+    declaration: VariableDeclaration,
+    options?: NodeFactoryOptions
+  ): VariableDeclarationStatement {
+    return StatementFactory.createVariableDeclarationStatement(declaration, options);
+  }
+
+  static createEnhancedForLoopStatement(
+    variable: VariableDeclaration,
+    iterable: Expression,
+    body: Statement,
+    options?: NodeFactoryOptions
+  ): EnhancedForLoopStatement {
+    return StatementFactory.createEnhancedForLoopStatement(variable, iterable, body, options);
+  }
+
+  static createDoWhileLoopStatement(
+    body: Statement,
+    condition: Expression,
+    options?: NodeFactoryOptions
+  ): DoWhileLoopStatement {
+    return StatementFactory.createDoWhileLoopStatement(body, condition, options);
   }
 
   /**
-   * Create a BinaryExpression node
+   * @param variable
+   * @param iterable
+   * @param body
+   * @param options
+   * @deprecated Use createEnhancedForLoopStatement instead.
+   */
+  static createForEachStatement(
+    variable: VariableDeclaration,
+    iterable: Expression,
+    body: Statement,
+    options?: NodeFactoryOptions
+  ): EnhancedForLoopStatement {
+    return this.createEnhancedForLoopStatement(variable, iterable, body, options);
+  }
+
+  /**
+   * @param body
+   * @param condition
+   * @param options
+   * @deprecated Use createDoWhileLoopStatement instead.
+   */
+  static createDoWhileStatement(
+    body: Statement,
+    condition: Expression,
+    options?: NodeFactoryOptions
+  ): DoWhileLoopStatement {
+    return this.createDoWhileLoopStatement(body, condition, options);
+  }
+
+  static createSwitchStatement(
+    expression: Expression,
+    cases: any[],
+    defaultCase?: any,
+    options?: NodeFactoryOptions
+  ): SwitchStatement {
+    return StatementFactory.createSwitchStatement(expression, cases, defaultCase, options);
+  }
+
+  static createTryStatement(
+    tryBlock: CompoundStatement,
+    catchClauses: any[],
+    finallyBlock?: CompoundStatement,
+    options?: NodeFactoryOptions
+  ): TryStatement {
+    return StatementFactory.createTryStatement(tryBlock, catchClauses, finallyBlock, options);
+  }
+
+  static createBreakStatement(label?: string, options?: NodeFactoryOptions): BreakStatement {
+    return StatementFactory.createBreakStatement(label, options);
+  }
+
+  static createContinueStatement(label?: string, options?: NodeFactoryOptions): ContinueStatement {
+    return StatementFactory.createContinueStatement(label, options);
+  }
+
+  static createThrowStatement(
+    expression: Expression,
+    options?: NodeFactoryOptions
+  ): ThrowStatement {
+    return StatementFactory.createThrowStatement(expression, options);
+  }
+
+  static createDmlStatement(
+    operation: DmlOperation,
+    target: Expression,
+    options?: NodeFactoryOptions
+  ): DmlStatement {
+    return StatementFactory.createDmlStatement(operation, target, options);
+  }
+
+  /**
+   * Expression factories.
+   * @param operator
+   * @param left
+   * @param right
+   * @param options
    */
   static createBinaryExpression(
     operator: BinaryExpression['operator'],
@@ -187,763 +293,573 @@ export class NodeFactory {
     right: Expression,
     options?: NodeFactoryOptions
   ): BinaryExpression {
+    return ExpressionFactory.createBinaryExpression(operator, left, right, options);
+  }
+
+  static createCallExpression(
+    methodName: string,
+    args: Expression[] = [],
+    target?: Expression,
+    typeArguments?: TypeRef[],
+    options?: NodeFactoryOptions
+  ): CallExpression {
+    return ExpressionFactory.createCallExpression(methodName, args, target, typeArguments, options);
+  }
+
+  static createVariableExpression(
+    id: Identifier,
+    options?: NodeFactoryOptions
+  ): VariableExpression {
+    return ExpressionFactory.createVariableExpression(id, options);
+  }
+
+  static createIdentifier(name: string, options?: NodeFactoryOptions): Identifier {
     return {
-      kind: 'BinaryExpression',
-      operator,
-      left,
-      right,
+      kind: 'Identifier',
       location: options?.location,
+      name,
     };
   }
 
   /**
-   * Create a MethodCallExpression node
+   * @param methodName
+   * @param args
+   * @param target
+   * @param typeArguments
+   * @param options
+   * @deprecated Use createCallExpression instead.
    */
   static createMethodCallExpression(
     methodName: string,
     args: Expression[] = [],
     target?: Expression,
-    typeArguments?: Type[],
+    typeArguments?: TypeRef[],
     options?: NodeFactoryOptions
-  ): MethodCallExpression {
-    return {
-      kind: 'MethodCallExpression',
-      target,
-      methodName,
-      arguments: args,
-      typeArguments,
-      location: options?.location,
-    };
+  ): CallExpression {
+    return this.createCallExpression(methodName, args, target, typeArguments, options);
   }
 
-  /**
-   * Create an Identifier node
-   */
-  static createIdentifier(
-    name: string,
-    options?: NodeFactoryOptions
-  ): Identifier {
-    return {
-      kind: 'Identifier',
-      name,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a StringLiteral node
-   */
-  static createStringLiteral(
-    value: string,
-    raw?: string,
-    options?: NodeFactoryOptions
-  ): StringLiteral {
-    return {
-      kind: 'StringLiteral',
-      value,
-      raw: raw ?? `"${value}"`,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a NumberLiteral node
-   */
-  static createNumberLiteral(
-    value: number,
-    raw?: string,
-    options?: NodeFactoryOptions
-  ): NumberLiteral {
-    return {
-      kind: 'NumberLiteral',
-      value,
-      raw: raw ?? String(value),
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a BooleanLiteral node
-   */
-  static createBooleanLiteral(
-    value: boolean,
-    options?: NodeFactoryOptions
-  ): BooleanLiteral {
-    return {
-      kind: 'BooleanLiteral',
-      value,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a NullLiteral node
-   */
-  static createNullLiteral(options?: NodeFactoryOptions): NullLiteral {
-    return {
-      kind: 'NullLiteral',
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a PrimitiveType node
-   */
-  static createPrimitiveType(
-    name: string,
-    options?: NodeFactoryOptions
-  ): PrimitiveType {
-    return {
-      kind: 'PrimitiveType',
-      name,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a ClassType node
-   */
-  static createClassType(
-    name: string,
-    packageName?: string,
-    options?: NodeFactoryOptions
-  ): ClassType {
-    return {
-      kind: 'ClassType',
-      name,
-      packageName,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a VariableDeclaration node
-   */
-  static createVariableDeclaration(
-    name: string,
-    type: Type,
-    initializer?: Expression,
-    modifiers?: Modifier[],
-    options?: NodeFactoryOptions
-  ): VariableDeclaration {
-    return {
-      kind: 'VariableDeclaration',
-      name,
-      type,
-      modifiers,
-      initializer,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a VariableDeclarationStatement node
-   */
-  static createVariableDeclarationStatement(
-    declaration: VariableDeclaration,
-    options?: NodeFactoryOptions
-  ): VariableDeclarationStatement {
-    return {
-      kind: 'VariableDeclarationStatement',
-      declaration,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a ForEachStatement node
-   */
-  static createForEachStatement(
-    variable: VariableDeclaration,
-    iterable: Expression,
-    body: Statement,
-    options?: NodeFactoryOptions
-  ): ForEachStatement {
-    return {
-      kind: 'ForEachStatement',
-      variable,
-      iterable,
-      body,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a DoWhileStatement node
-   */
-  static createDoWhileStatement(
-    body: Statement,
-    condition: Expression,
-    options?: NodeFactoryOptions
-  ): DoWhileStatement {
-    return {
-      kind: 'DoWhileStatement',
-      body,
-      condition,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a SwitchStatement node
-   */
-  static createSwitchStatement(
-    expression: Expression,
-    cases: any[],
-    defaultCase?: any,
-    options?: NodeFactoryOptions
-  ): SwitchStatement {
-    return {
-      kind: 'SwitchStatement',
-      expression,
-      cases,
-      defaultCase,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a TryStatement node
-   */
-  static createTryStatement(
-    tryBlock: Block,
-    catchClauses: any[],
-    finallyBlock?: Block,
-    options?: NodeFactoryOptions
-  ): TryStatement {
-    return {
-      kind: 'TryStatement',
-      tryBlock,
-      catchClauses,
-      finallyBlock,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a BreakStatement node
-   */
-  static createBreakStatement(
-    label?: string,
-    options?: NodeFactoryOptions
-  ): BreakStatement {
-    return {
-      kind: 'BreakStatement',
-      label,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a ContinueStatement node
-   */
-  static createContinueStatement(
-    label?: string,
-    options?: NodeFactoryOptions
-  ): ContinueStatement {
-    return {
-      kind: 'ContinueStatement',
-      label,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a ThrowStatement node
-   */
-  static createThrowStatement(
-    expression: Expression,
-    options?: NodeFactoryOptions
-  ): ThrowStatement {
-    return {
-      kind: 'ThrowStatement',
-      expression,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create an UnaryExpression node
-   */
   static createUnaryExpression(
     operator: UnaryExpression['operator'],
     operand: Expression,
     prefix: boolean,
     options?: NodeFactoryOptions
   ): UnaryExpression {
-    return {
-      kind: 'UnaryExpression',
-      operator,
-      operand,
-      prefix,
-      location: options?.location,
-    };
+    return ExpressionFactory.createUnaryExpression(operator, operand, prefix, options);
   }
 
-  /**
-   * Create an AssignmentExpression node
-   */
-  static createAssignmentExpression(
-    operator: AssignmentExpression['operator'],
+  static createAssignExpression(
+    operator: AssignExpression['operator'],
     left: Expression,
     right: Expression,
     options?: NodeFactoryOptions
-  ): AssignmentExpression {
-    return {
-      kind: 'AssignmentExpression',
-      operator,
-      left,
-      right,
-      location: options?.location,
-    };
+  ): AssignExpression {
+    return ExpressionFactory.createAssignExpression(operator, left, right, options);
+  }
+
+  static createFieldExpression(
+    fieldName: string,
+    target?: Expression,
+    options?: NodeFactoryOptions
+  ): FieldExpression {
+    return ExpressionFactory.createFieldExpression(fieldName, target, options);
+  }
+
+  static createArrayExpression(
+    array: Expression,
+    index: Expression,
+    options?: NodeFactoryOptions
+  ): ArrayExpression {
+    return ExpressionFactory.createArrayExpression(array, index, options);
   }
 
   /**
-   * Create a FieldAccessExpression node
+   * @param operator
+   * @param left
+   * @param right
+   * @param options
+   * @deprecated Use createAssignExpression instead.
+   */
+  static createAssignmentExpression(
+    operator: AssignExpression['operator'],
+    left: Expression,
+    right: Expression,
+    options?: NodeFactoryOptions
+  ): AssignExpression {
+    return this.createAssignExpression(operator, left, right, options);
+  }
+
+  /**
+   * @param fieldName
+   * @param target
+   * @param options
+   * @deprecated Use createFieldExpression instead.
    */
   static createFieldAccessExpression(
     fieldName: string,
     target?: Expression,
     options?: NodeFactoryOptions
-  ): FieldAccessExpression {
-    return {
-      kind: 'FieldAccessExpression',
-      target,
-      fieldName,
-      location: options?.location,
-    };
+  ): FieldExpression {
+    return this.createFieldExpression(fieldName, target, options);
   }
 
   /**
-   * Create an ArrayAccessExpression node
+   * @param array
+   * @param index
+   * @param options
+   * @deprecated Use createArrayExpression instead.
    */
   static createArrayAccessExpression(
     array: Expression,
     index: Expression,
     options?: NodeFactoryOptions
-  ): ArrayAccessExpression {
-    return {
-      kind: 'ArrayAccessExpression',
-      array,
-      index,
-      location: options?.location,
-    };
+  ): ArrayExpression {
+    return this.createArrayExpression(array, index, options);
   }
 
-  /**
-   * Create a TernaryExpression node
-   */
   static createTernaryExpression(
     condition: Expression,
     thenExpression: Expression,
     elseExpression: Expression,
     options?: NodeFactoryOptions
   ): TernaryExpression {
-    return {
-      kind: 'TernaryExpression',
+    return ExpressionFactory.createTernaryExpression(
       condition,
       thenExpression,
       elseExpression,
-      location: options?.location,
-    };
+      options
+    );
   }
 
-  /**
-   * Create a CastExpression node
-   */
   static createCastExpression(
-    type: Type,
+    type: TypeRef,
     expression: Expression,
     options?: NodeFactoryOptions
   ): CastExpression {
-    return {
-      kind: 'CastExpression',
-      type,
-      expression,
-      location: options?.location,
-    };
+    return ExpressionFactory.createCastExpression(type, expression, options);
   }
 
-  /**
-   * Create an InstanceOfExpression node
-   */
   static createInstanceOfExpression(
     expression: Expression,
-    type: Type,
+    type: TypeRef,
     options?: NodeFactoryOptions
   ): InstanceOfExpression {
-    return {
-      kind: 'InstanceOfExpression',
-      expression,
-      type,
-      location: options?.location,
-    };
+    return ExpressionFactory.createInstanceOfExpression(expression, type, options);
   }
 
-  /**
-   * Create a NewExpression node
-   */
   static createNewExpression(
-    type: Type,
-    args?: Expression[],
-    arrayInitializer?: Expression[],
+    initializer: Initializer,
     options?: NodeFactoryOptions
   ): NewExpression {
-    return {
-      kind: 'NewExpression',
-      type,
-      arguments: args,
-      arrayInitializer,
-      location: options?.location,
-    };
+    return ExpressionFactory.createNewExpression(initializer, options);
   }
 
   /**
-   * Create a NewArrayExpression node (for new Type[size])
+   * Initializer factory methods.
+   * @param type
+   * @param args
+   * @param options
    */
+  static createConstructorInitializer(
+    type: TypeRef,
+    args: Expression[] = [],
+    options?: NodeFactoryOptions
+  ): ConstructorInitializer {
+    return InitializerFactory.createConstructorInitializer(type, args, options);
+  }
+
+  static createValuesInitializer(
+    type: TypeRef,
+    values: Expression[] = [],
+    options?: NodeFactoryOptions
+  ): ValuesInitializer {
+    return InitializerFactory.createValuesInitializer(type, values, options);
+  }
+
+  static createSizedArrayInitializer(
+    type: TypeRef,
+    size: Expression,
+    options?: NodeFactoryOptions
+  ): SizedArrayInitializer {
+    return InitializerFactory.createSizedArrayInitializer(type, size, options);
+  }
+
+  static createMapInitializer(
+    type: TypeRef,
+    pairs: { key: Expression; value: Expression }[],
+    options?: NodeFactoryOptions
+  ): MapInitializer {
+    return InitializerFactory.createMapInitializer(type, pairs, options);
+  }
+
+  /**
+   * ElementValue factory methods.
+   * @param value
+   * @param options
+   */
+  static createExpressionElementValue(
+    value: Expression,
+    options?: NodeFactoryOptions
+  ): import('../ast/ElementValue.js').ExpressionElementValue {
+    return ElementValueFactory.createExpressionElementValue(value, options);
+  }
+
+  static createAnnotationElementValue(
+    value: import('../ast/Declaration.js').Annotation,
+    options?: NodeFactoryOptions
+  ): import('../ast/ElementValue.js').AnnotationElementValue {
+    return ElementValueFactory.createAnnotationElementValue(value, options);
+  }
+
+  static createArrayElementValue(
+    values: import('../ast/ElementValue.js').ElementValue[],
+    options?: NodeFactoryOptions
+  ): import('../ast/ElementValue.js').ArrayElementValue {
+    return ElementValueFactory.createArrayElementValue(values, options);
+  }
+
   static createNewArrayExpression(
-    type: Type,
+    type: TypeRef,
     size: Expression,
     options?: NodeFactoryOptions
   ): NewExpression {
-    // NewArrayExpression is represented as NewExpression with arrayInitializer
-    return {
-      kind: 'NewExpression',
-      type,
-      arrayInitializer: [size],
-      location: options?.location,
-    };
+    // Create SizedArrayInitializer and wrap in NewExpression
+    const initializer = InitializerFactory.createSizedArrayInitializer(type, size, options);
+    return ExpressionFactory.createNewExpression(initializer, options);
   }
 
-  /**
-   * Create a LambdaExpression node
-   */
   static createLambdaExpression(
     parameters: any[],
     body: Expression | Statement,
     options?: NodeFactoryOptions
   ): LambdaExpression {
-    return {
-      kind: 'LambdaExpression',
-      parameters,
-      body,
-      location: options?.location,
-    };
+    return ExpressionFactory.createLambdaExpression(parameters, body, options);
   }
 
-  /**
-   * Create a ThisExpression node
-   */
   static createThisExpression(options?: NodeFactoryOptions): ThisExpression {
-    return {
-      kind: 'ThisExpression',
-      location: options?.location,
-    };
+    return ExpressionFactory.createThisExpression(options);
   }
 
-  /**
-   * Create a SuperExpression node
-   */
   static createSuperExpression(options?: NodeFactoryOptions): SuperExpression {
-    return {
-      kind: 'SuperExpression',
-      location: options?.location,
-    };
+    return ExpressionFactory.createSuperExpression(options);
   }
 
-  /**
-   * Create a ParenthesizedExpression node
-   */
   static createParenthesizedExpression(
     expression: Expression,
     options?: NodeFactoryOptions
   ): ParenthesizedExpression {
+    return ExpressionFactory.createParenthesizedExpression(expression, options);
+  }
+
+  static createSoqlExpression(
+    query: string,
+    bindings: import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
+    options?: NodeFactoryOptions
+  ): SoqlExpression {
+    return ExpressionFactory.createSoqlExpression(query, bindings, options);
+  }
+
+  static createSoslExpression(
+    query: string,
+    bindings: import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
+    options?: NodeFactoryOptions
+  ): SoslExpression {
+    return ExpressionFactory.createSoslExpression(query, bindings, options);
+  }
+
+  static createSoqlOrSoslBinding(
+    expr: Expression,
+    options?: NodeFactoryOptions
+  ): import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding {
+    return SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options);
+  }
+
+  /**
+   * @param query
+   * @param boundExpressions
+   * @param options
+   * @deprecated Use createSoqlExpression instead.
+   */
+  static createSoqlQueryExpression(
+    query: string,
+    boundExpressions?: Expression[],
+    options?: NodeFactoryOptions
+  ): SoqlExpression {
+    // Convert boundExpressions to bindings for backward compatibility
+    const bindings = (boundExpressions || []).map((expr) =>
+      this.createSoqlOrSoslBinding(expr, options)
+    );
+    return this.createSoqlExpression(query, bindings, options);
+  }
+
+  /**
+   * @param query
+   * @param boundExpressions
+   * @param options
+   * @deprecated Use createSoslExpression instead.
+   */
+  static createSoslQueryExpression(
+    query: string,
+    boundExpressions?: Expression[],
+    options?: NodeFactoryOptions
+  ): SoslExpression {
+    // Convert boundExpressions to bindings for backward compatibility
+    const bindings = (boundExpressions || []).map((expr) =>
+      this.createSoqlOrSoslBinding(expr, options)
+    );
+    return this.createSoslExpression(query, bindings, options);
+  }
+
+  static createTriggerContextVariableExpression(
+    variableName: string,
+    options?: NodeFactoryOptions
+  ): TriggerContextVariableExpression {
+    return ExpressionFactory.createTriggerContextVariableExpression(variableName, options);
+  }
+
+  /**
+   * Literal factories.
+   * @param value
+   * @param raw
+   * @param options
+   */
+  static createStringVal(value: string, raw?: string, options?: NodeFactoryOptions): StringVal {
+    return LiteralFactory.createStringVal(value, raw, options);
+  }
+
+  static createIntegerVal(value: number, raw?: string, options?: NodeFactoryOptions): IntegerVal {
+    return LiteralFactory.createIntegerVal(value, raw, options);
+  }
+
+  static createDoubleVal(value: number, raw?: string, options?: NodeFactoryOptions): DoubleVal {
+    return LiteralFactory.createDoubleVal(value, raw, options);
+  }
+
+  static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
+    return LiteralFactory.createLongVal(value, raw, options);
+  }
+
+  static createDecimalVal(value: number, raw?: string, options?: NodeFactoryOptions): DecimalVal {
+    return LiteralFactory.createDecimalVal(value, raw, options);
+  }
+
+  static createBooleanVal(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+    return LiteralFactory.createBooleanVal(value, options);
+  }
+
+  static createNullVal(options?: NodeFactoryOptions): NullVal {
+    return LiteralFactory.createNullVal(options);
+  }
+
+  /**
+   * @param value
+   * @param raw
+   * @param options
+   * @deprecated Use createStringVal instead.
+   */
+  static createStringLiteral(value: string, raw?: string, options?: NodeFactoryOptions): StringVal {
+    return this.createStringVal(value, raw, options);
+  }
+
+  /**
+   * @param value
+   * @param raw
+   * @param options
+   * @deprecated Use createIntegerVal, createDoubleVal, createLongVal, or createDecimalVal instead.
+   */
+  static createNumberLiteral(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): IntegerVal {
+    return this.createIntegerVal(value, raw, options);
+  }
+
+  /**
+   * @param value
+   * @param options
+   * @deprecated Use createBooleanVal instead.
+   */
+  static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+    return this.createBooleanVal(value, options);
+  }
+
+  /**
+   * @param options
+   * @deprecated Use createNullVal instead.
+   */
+  static createNullLiteral(options?: NodeFactoryOptions): NullVal {
+    return this.createNullVal(options);
+  }
+
+  /**
+   * TypeRef creation helpers.
+   * In summit-ast, TypeRef extends Node(), so it IS an AST node.
+   * @param components
+   * @param arrayNesting
+   * @param options
+   */
+  static createTypeRef(
+    components: { id: Identifier; args?: TypeRef[] }[],
+    arrayNesting = 0,
+    options?: NodeFactoryOptions
+  ): TypeRef {
     return {
-      kind: 'ParenthesizedExpression',
-      expression,
+      arrayNesting,
+      components: components.map((c) => ({
+        args: c.args || [],
+        id: c.id,
+      })),
+      kind: 'TypeRef',
+      location: options?.location,
+    };
+  }
+
+  static createSimpleTypeRef(
+    name: string,
+    arrayNesting = 0,
+    options?: NodeFactoryOptions
+  ): TypeRef {
+    return {
+      arrayNesting,
+      components: [
+        {
+          args: [],
+          id: this.createIdentifier(name, options),
+        },
+      ],
+      kind: 'TypeRef',
       location: options?.location,
     };
   }
 
   /**
-   * Create a ClassDeclaration node
+   * Declaration factories.
+   * @param name
+   * @param type
+   * @param initializer
+   * @param modifiers
+   * @param options
    */
+  static createVariableDeclaration(
+    name: string,
+    type: TypeRef,
+    initializer?: Expression,
+    modifiers?: Modifier[],
+    options?: NodeFactoryOptions
+  ): VariableDeclaration {
+    return DeclarationFactory.createVariableDeclaration(
+      name,
+      type,
+      initializer,
+      modifiers,
+      options
+    );
+  }
+
   static createClassDeclaration(
     name: string,
     members: any[],
     modifiers: Modifier[] = [],
-    extendsClause?: Type,
-    implementsClause?: Type[],
+    extendsClause?: TypeRef,
+    implementsClause?: TypeRef[],
     typeParameters?: any[],
-    options?: NodeFactoryOptions
+    options?: NodeFactoryOptions,
+    annotations?: Annotation[]
   ): ClassDeclaration {
-    return {
-      kind: 'ClassDeclaration',
+    return DeclarationFactory.createClassDeclaration(
       name,
+      members,
       modifiers,
-      typeParameters,
       extendsClause,
       implementsClause,
-      members,
-      location: options?.location,
-    };
+      typeParameters,
+      options,
+      annotations
+    );
   }
 
-  /**
-   * Create an InterfaceDeclaration node
-   */
   static createInterfaceDeclaration(
     name: string,
     members: any[],
     modifiers: Modifier[] = [],
-    extendsClause?: Type[],
+    extendsClause?: TypeRef[],
     typeParameters?: any[],
     options?: NodeFactoryOptions
   ): InterfaceDeclaration {
-    return {
-      kind: 'InterfaceDeclaration',
+    return DeclarationFactory.createInterfaceDeclaration(
       name,
-      modifiers,
-      typeParameters,
-      extendsClause,
       members,
-      location: options?.location,
-    };
+      modifiers,
+      extendsClause,
+      typeParameters,
+      options
+    );
   }
 
-  /**
-   * Create a MethodDeclaration node
-   */
   static createMethodDeclaration(
     name: string,
-    returnType: Type,
+    returnType: TypeRef,
     parameters: any[] = [],
-    body?: Block,
+    body?: CompoundStatement,
     modifiers: Modifier[] = [],
     typeParameters?: any[],
     annotations?: any[],
+    isConstructor = false,
     options?: NodeFactoryOptions
   ): MethodDeclaration {
-    return {
-      kind: 'MethodDeclaration',
+    return DeclarationFactory.createMethodDeclaration(
       name,
-      modifiers,
       returnType,
-      typeParameters,
       parameters,
       body,
-      annotations,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a ConstructorDeclaration node
-   */
-  static createConstructorDeclaration(
-    parameters: any[] = [],
-    body: Block,
-    modifiers: Modifier[] = [],
-    annotations?: any[],
-    options?: NodeFactoryOptions
-  ): ConstructorDeclaration {
-    return {
-      kind: 'ConstructorDeclaration',
       modifiers,
-      parameters,
-      body,
+      typeParameters,
       annotations,
-      location: options?.location,
-    };
+      isConstructor,
+      options
+    );
   }
 
-  /**
-   * Create a PropertyDeclaration node
-   */
   static createPropertyDeclaration(
     name: string,
-    type: Type,
+    type: TypeRef,
     modifiers: Modifier[] = [],
-    getter?: Block,
-    setter?: Block,
+    getter?: CompoundStatement,
+    setter?: CompoundStatement,
     annotations?: any[],
     options?: NodeFactoryOptions
   ): PropertyDeclaration {
-    return {
-      kind: 'PropertyDeclaration',
+    return DeclarationFactory.createPropertyDeclaration(
       name,
       type,
       modifiers,
       getter,
       setter,
       annotations,
-      location: options?.location,
-    };
+      options
+    );
   }
 
-  /**
-   * Create an EnumDeclaration node
-   */
   static createEnumDeclaration(
     name: string,
-    constants: EnumConstantDeclaration[],
+    values: EnumValue[],
     modifiers: Modifier[] = [],
     members?: any[],
     options?: NodeFactoryOptions
   ): EnumDeclaration {
-    return {
-      kind: 'EnumDeclaration',
-      name,
-      modifiers,
-      constants,
-      members,
-      location: options?.location,
-    };
+    return DeclarationFactory.createEnumDeclaration(name, values, modifiers, members, options);
   }
 
-  /**
-   * Create an EnumConstantDeclaration node
-   */
-  static createEnumConstantDeclaration(
-    name: string,
-    args?: Expression[],
-    body?: ClassDeclaration,
-    options?: NodeFactoryOptions
-  ): EnumConstantDeclaration {
-    return {
-      kind: 'EnumConstantDeclaration',
-      name,
-      arguments: args,
-      body,
-      location: options?.location,
-    };
+  static createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
+    return DeclarationFactory.createEnumValue(id, options);
   }
 
-  /**
-   * Create an ArrayType node
-   */
-  static createArrayType(
-    elementType: Type,
-    dimensions: number = 1,
-    options?: NodeFactoryOptions
-  ): ArrayType {
-    return {
-      kind: 'ArrayType',
-      elementType,
-      dimensions,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a GenericType node
-   */
-  static createGenericType(
-    baseType: Type,
-    typeArguments: Type[],
-    options?: NodeFactoryOptions
-  ): GenericType {
-    return {
-      kind: 'GenericType',
-      baseType,
-      typeArguments,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create an AnnotationDeclaration node
-   */
-  static createAnnotationDeclaration(
-    name: string,
-    members: any[],
-    modifiers: Modifier[] = [],
-    options?: NodeFactoryOptions
-  ): AnnotationDeclaration {
-    return {
-      kind: 'AnnotationDeclaration',
-      name,
-      modifiers,
-      members,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a TypeParameter node
-   */
   static createTypeParameter(
     name: string,
-    extendsBound?: Type,
+    extendsBound?: TypeRef,
     options?: NodeFactoryOptions
   ): TypeParameter {
-    return {
-      kind: 'TypeParameter',
-      name,
-      extendsBound,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a SoqlQueryExpression node
-   */
-  static createSoqlQueryExpression(
-    query: string,
-    boundExpressions?: Expression[],
-    options?: NodeFactoryOptions
-  ): SoqlQueryExpression {
-    return {
-      kind: 'SoqlQueryExpression',
-      query,
-      boundExpressions,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a SoslQueryExpression node
-   */
-  static createSoslQueryExpression(
-    query: string,
-    boundExpressions?: Expression[],
-    options?: NodeFactoryOptions
-  ): SoslQueryExpression {
-    return {
-      kind: 'SoslQueryExpression',
-      query,
-      boundExpressions,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a TriggerContextVariableExpression node
-   */
-  static createTriggerContextVariableExpression(
-    variableName: string,
-    options?: NodeFactoryOptions
-  ): TriggerContextVariableExpression {
-    return {
-      kind: 'TriggerContextVariableExpression',
-      variableName,
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Create a DmlStatement node
-   */
-  static createDmlStatement(
-    operation: DmlOperation,
-    target: Expression,
-    options?: NodeFactoryOptions
-  ): DmlStatement {
-    return {
-      kind: 'DmlStatement',
-      operation,
-      target,
-      location: options?.location,
-    };
+    return DeclarationFactory.createTypeParameter(name, extendsBound, options);
   }
 }
