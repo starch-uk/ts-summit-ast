@@ -16,6 +16,7 @@ import type { Identifier } from './Identifier.js';
 /**
  * Modifier keywords.
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type ModifierKeyword =
   | 'abstract'
   | 'deprecated'
@@ -38,6 +39,7 @@ type ModifierKeyword =
   | 'webservice'
   | 'with sharing'
   | 'without sharing';
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Modifier node.

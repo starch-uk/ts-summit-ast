@@ -5,6 +5,8 @@
  * would require a more sophisticated parser and matcher.
  */
 
+/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
+
 import type { ASTNode, SourceRange } from '../ast/base.js';
 import { walkAST, buildParentMap } from './traversal.js';
 import { getSourceRange } from './source-extraction.js';
@@ -35,7 +37,7 @@ export interface XPathFeatureSupport {
 }
 
 /**
- * Result of XPath validation.
+ * Contains the result of validating an XPath expression, including whether it's valid and any errors found.
  */
 export interface XPathValidationResult {
   /**
@@ -74,7 +76,7 @@ export interface XPathValidationResult {
  * }
  * ```
  */
-function validateXPath(xpath: string): XPathValidationResult {
+export function validateXPath(xpath: string): XPathValidationResult {
   const normalizedXPath = xpath.trim();
 
   if (!normalizedXPath) {
@@ -121,11 +123,13 @@ function validateXPath(xpath: string): XPathValidationResult {
   }
 
   // Basic syntax checks
-  const bracketCount = (normalizedXPath.match(/\[/g) || []).length;
-  const closeBracketCount = (normalizedXPath.match(/\]/g) || []).length;
+  const bracketCount = (normalizedXPath.match(/\[/g) ?? []).length;
+  const closeBracketCount = (normalizedXPath.match(/\]/g) ?? []).length;
   if (bracketCount !== closeBracketCount) {
+    const bracketCountStr = String(bracketCount);
+    const closeBracketCountStr = String(closeBracketCount);
     return {
-      error: `Mismatched brackets: ${bracketCount} opening brackets, ${closeBracketCount} closing brackets`,
+      error: `Mismatched brackets: ${bracketCountStr} opening brackets, ${closeBracketCountStr} closing brackets`,
       supportedFeatures,
       unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
       valid: false,
@@ -177,7 +181,7 @@ function validateXPath(xpath: string): XPathValidationResult {
  * console.log('Unsupported features:', support.unsupportedFeatures);
  * ```
  */
-function getXPathFeatureSupport(): XPathFeatureSupport {
+export function getXPathFeatureSupport(): XPathFeatureSupport {
   // This implementation supports a simplified subset of XPath
   const supportedAxes: string[] = [
     'descendant-or-self', // //
@@ -254,7 +258,7 @@ export interface WouldTriggerRuleOptions {
  * @param options - Options for matching.
  * @returns Rule match result indicating if the node matches.
  */
-function wouldTriggerRule(
+export function wouldTriggerRule(
   node: ASTNode,
   xpathExpression: string,
   options: WouldTriggerRuleOptions = {}
@@ -312,7 +316,7 @@ function wouldTriggerRule(
     let foundMatch: ASTNode | undefined;
 
     walkAST(node, {
-      enterNode: (child) => {
+      enterNode: (child): undefined => {
         if (child !== node) {
           const childResult = wouldTriggerRule(child, xpathExpression, {
             includeDescendants: false,
@@ -422,7 +426,7 @@ export interface FindRuleMatchesOptions {
  * }
  * ```
  */
-function findRuleMatches(
+export function findRuleMatches(
   ast: ASTNode,
   xpathExpression: string,
   options: FindRuleMatchesOptions = {}
@@ -525,5 +529,3 @@ function findRuleMatches(
 
   return matches;
 }
-
-export { validateXPath, getXPathFeatureSupport, wouldTriggerRule, findRuleMatches };

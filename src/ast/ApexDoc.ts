@@ -17,7 +17,7 @@ interface ApexDocComment extends ASTNode {
   readonly mainDescription: string;
 
   /**
-   * Block tags like @param, @return, etc.
+   * Block tags like `@param`, `@return`, etc.
    */
   readonly blockTags: ApexDocBlockTag[];
 }
@@ -25,6 +25,8 @@ interface ApexDocComment extends ASTNode {
 /**
  * Block tag types (appear on their own line after the main description).
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
+/* eslint-disable @typescript-eslint/no-deprecated -- ApexDocDeprecated is intentionally deprecated for backward compatibility */
 type ApexDocBlockTag =
   | ApexDocAuthor
   | ApexDocDeprecated
@@ -36,6 +38,8 @@ type ApexDocBlockTag =
   | ApexDocSince
   | ApexDocThrows
   | ApexDocVersion;
+/* eslint-enable @typescript-eslint/no-type-alias */
+/* eslint-enable @typescript-eslint/no-deprecated */
 
 /**
  * Block tag kind discriminator.

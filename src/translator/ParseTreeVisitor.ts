@@ -13,6 +13,7 @@ export interface ParseTreeVisitor<T = void> {
   /**
    * Visit a parse tree node.
    */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Visitor pattern may need mutable node
   visit: (node: ParseTreeNode) => T;
 
   /**

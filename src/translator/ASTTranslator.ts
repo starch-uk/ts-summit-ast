@@ -51,6 +51,7 @@ interface TranslationOptions {
   /**
    * Custom error handler.
    */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Error handler may need to modify error
   onError?: (error: TranslationError) => void;
 
   /**
@@ -60,7 +61,7 @@ interface TranslationOptions {
 }
 
 /**
- * Translation error.
+ * Error thrown during AST translation from parse tree to AST nodes.
  */
 class TranslationError extends Error {
   constructor(

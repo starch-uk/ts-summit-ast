@@ -88,13 +88,15 @@ export type { NodeFactoryOptions };
  * Unified factory class for creating AST nodes
  * Delegates to specialized factory classes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class NodeFactory {
   /**
-   * Statement factories.
-   * @param condition
-   * @param thenStatement
-   * @param elseStatement
-   * @param options
+   * Create an if statement node.
+   * @param condition - The condition expression.
+   * @param thenStatement - The then statement.
+   * @param elseStatement - The else statement (optional).
+   * @param options - Additional options.
+   * @returns The created IfStatement node.
    */
   public static createIfStatement(
     condition: Expression,

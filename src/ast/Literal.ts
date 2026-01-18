@@ -16,6 +16,7 @@ interface Literal extends Expression {
 /**
  * Discriminated union type for all literal kinds.
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type LiteralKind =
   | 'BooleanVal'
   | 'CharacterLiteral'
@@ -25,6 +26,7 @@ type LiteralKind =
   | 'LongVal'
   | 'NullVal'
   | 'StringVal';
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * String literal: "string" or 'string'.

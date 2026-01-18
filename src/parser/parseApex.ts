@@ -8,7 +8,8 @@ import type { ParseTreeNode } from './ParseTreeTypes.js';
 
 /**
  * Parse Apex source code into a parse tree.
- * @param source
+ * @param source - The Apex source code to parse.
+ * @returns The parse tree node, or null if parsing fails.
  */
 export function parseApex(source: string): ParseTreeNode | null {
   const parser = new ApexParser(source);

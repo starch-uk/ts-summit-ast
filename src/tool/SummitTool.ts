@@ -6,6 +6,8 @@
  * a parser runtime dependency.
  */
 
+/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
+
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { join, extname } from 'path';
 import { ASTTranslator } from '../translator/ASTTranslator.js';
@@ -51,14 +53,14 @@ export interface ProcessResult {
 /**
  * SummitTool class for processing Apex files.
  */
-class SummitTool {
+export class SummitTool {
   private readonly options: Required<Omit<SummitToolOptions, 'parseTreeAdapter'>> & {
     parseTreeAdapter?: SummitToolOptions['parseTreeAdapter'];
   };
   private readonly translator: ASTTranslator;
   private readonly serializer: JsonSerializer;
 
-  constructor(options: SummitToolOptions = {}) {
+  public constructor(options: Readonly<SummitToolOptions> = {}) {
     this.options = {
       includeLocation: options.includeLocation ?? true,
       json: options.json ?? false,
@@ -81,7 +83,7 @@ class SummitTool {
    * @param input - The file or directory path to process.
    * @returns Array of processing results.
    */
-  process(input: string): ProcessResult[] {
+  public process(input: string): ProcessResult[] {
     const results: ProcessResult[] = [];
 
     try {
@@ -255,5 +257,3 @@ class SummitTool {
     }
   }
 }
-
-export { SummitTool };

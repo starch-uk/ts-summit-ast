@@ -74,20 +74,25 @@ export interface DeserializationOptions {
 export class JsonDeserializer {
   private readonly options: Required<DeserializationOptions>;
 
-  constructor(options: DeserializationOptions = {}) {
+  public constructor(options: Readonly<DeserializationOptions> = {}) {
     this.options = {
-      reviver: options.reviver ?? ((_key, value) => value),
+      reviver: options.reviver ?? ((_key, value): unknown => value),
       validate: options.validate ?? true,
     };
   }
 
   /**
    * Deserialize JSON string to AST node.
-   * @param json
+   * @param json - The JSON string to deserialize.
+   * @returns The deserialized AST node.
    */
-  deserialize(json: string): ASTNode {
-    const parsed = JSON.parse(json, this.options.reviver);
-    return this.deserializeNode(parsed);
+  public deserialize(json: string): ASTNode {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON.parse returns any, but we validate it
+    const parsed: unknown = JSON.parse(
+      json,
+      this.options.reviver as (key: string, value: unknown) => unknown
+    );
+    return this.deserializeNode(parsed as JsonASTNode);
   }
 
   /**

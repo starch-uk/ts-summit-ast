@@ -21,6 +21,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for literal nodes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class LiteralFactory {
   public static createStringVal(
     value: string,
@@ -99,9 +100,11 @@ export class LiteralFactory {
   }
 
   /**
-   * @param value
-   * @param raw
-   * @param options
+   * Create a string literal node (deprecated).
+   * @param value - The string value.
+   * @param raw - The raw string value.
+   * @param options - Additional options.
+   * @returns The created string literal node.
    * @deprecated Use createStringVal instead.
    */
   public static createStringLiteral(

@@ -3,6 +3,8 @@
  * Utilities for validating AST structure and comparing AST nodes.
  */
 
+/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
+
 import type { ASTNode } from '../ast/base.js';
 import { walkAST, buildParentMap, getNodeChildren } from './traversal.js';
 
@@ -47,7 +49,7 @@ export interface ASTValidationResult {
  * }
  * ```
  */
-function validateAST(ast: ASTNode): ASTValidationResult {
+export function validateAST(ast: ASTNode): ASTValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -58,26 +60,38 @@ function validateAST(ast: ASTNode): ASTValidationResult {
 
   // Validate location information if present
   walkAST(ast, {
-    enterNode: (node) => {
+    enterNode: (node): undefined => {
       if (node.location) {
         const { location } = node;
         const { start, end } = location;
 
         // Validate location ranges
         if (start.line > end.line) {
+          const startLineStr = String(start.line);
+          const endLineStr = String(end.line);
           errors.push(
-            `Invalid location: start line (${start.line}) > end line (${end.line}) for node ${node.kind}`
+            `Invalid location: start line (${startLineStr}) > end line (${endLineStr}) for node ${node.kind}`
           );
         }
 
         if (start.line === end.line && start.column > end.column) {
+          const startColumnStr = String(start.column);
+          const endColumnStr = String(end.column);
+          const lineStr = String(start.line);
           errors.push(
-            `Invalid location: start column (${start.column}) > end column (${end.column}) for node ${node.kind} at line ${start.line}`
+            `Invalid location: start column (${startColumnStr}) > end column (${endColumnStr}) for node ${node.kind} at line ${lineStr}`
           );
         }
 
         // Check for zero-based locations (should be 1-based)
-        if (start.line === 0 || start.column === 0 || end.line === 0 || end.column === 0) {
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Zero is the invalid base value
+        const zeroBase = 0;
+        if (
+          start.line === zeroBase ||
+          start.column === zeroBase ||
+          end.line === zeroBase ||
+          end.column === zeroBase
+        ) {
           warnings.push(
             `Node ${node.kind} has zero-based location (line/column should be 1-based)`
           );
@@ -136,7 +150,7 @@ export interface ASTComparisonResult {
  * }
  * ```
  */
-function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
+export function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
   const differences: string[] = [];
   let typesMatch = true;
 
@@ -208,7 +222,7 @@ export interface ASTStatistics {
  * }
  * ```
  */
-function getASTStatistics(ast: ASTNode): ASTStatistics {
+export function getASTStatistics(ast: ASTNode): ASTStatistics {
   const nodeTypeCounts: Record<string, number> = {};
   let totalNodes = 0;
   let nodesWithLocation = 0;
@@ -244,7 +258,7 @@ function getASTStatistics(ast: ASTNode): ASTStatistics {
 
   // Walk AST and collect statistics
   walkAST(ast, {
-    enterNode: (node) => {
+    enterNode: (node): undefined => {
       totalNodes++;
       nodeTypeCounts[node.kind] = (nodeTypeCounts[node.kind] || 0) + 1;
 
@@ -274,5 +288,3 @@ function getASTStatistics(ast: ASTNode): ASTStatistics {
     totalNodes,
   };
 }
-
-export { validateAST, compareASTs, getASTStatistics };

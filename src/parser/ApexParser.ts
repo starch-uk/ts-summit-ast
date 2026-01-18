@@ -13,15 +13,19 @@ import type { ParseTreeNode } from './ParseTreeTypes.js';
  */
 export class ApexParser {
   private readonly tokens: Token[] = [];
-  private current = 0;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial index constant
+  private readonly initialIndex = 0;
+  private current = this.initialIndex;
   private readonly source: string = '';
 
   /**
    * Track pending > tokens from RIGHT_SHIFT.
    */
-  private pendingGreaterThan = 0;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial count constant
+  private readonly initialPendingCount = 0;
+  private pendingGreaterThan = this.initialPendingCount;
 
-  constructor(_source: string) {
+  public constructor(_source: string) {
     this.source = _source;
     const lexer = new ApexLexer(_source);
     this.tokens = lexer.tokenize();
@@ -31,7 +35,7 @@ export class ApexParser {
    * Parse the source code into a parse tree.
    * @returns The parse tree, or null if parsing fails.
    */
-  parse(): ParseTreeNode | null {
+  public parse(): ParseTreeNode | null {
     try {
       // Reset pendingGreaterThan at the start of parsing
       this.pendingGreaterThan = 0;
@@ -116,6 +120,7 @@ export class ApexParser {
 
     // Parse modifiers (public, private, etc.) that can come before class/interface/enum
     const modifiers: ParseTreeNode[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop pattern for parsing modifiers
     while (true) {
       const beforeMatch = this.current;
       let modifierText: string | null = null;
@@ -168,6 +173,7 @@ export class ApexParser {
           TokenType.TRANSIENT
         )
       ) {
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token index offset
         const prevToken = this.tokens[this.current - 1];
         modifierText = prevToken.text;
         modifierStart = this.current - 1;

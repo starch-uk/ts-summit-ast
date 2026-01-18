@@ -55,6 +55,7 @@ interface TypeRefComponent {
  * Type alias for backward compatibility during migration.
  * @deprecated Use TypeRef instead.
  */
+// eslint-disable-next-line @typescript-eslint/no-type-alias -- Type alias needed for backward compatibility
 type Type = TypeRef;
 
 /**

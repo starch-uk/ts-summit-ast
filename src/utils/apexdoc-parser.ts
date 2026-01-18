@@ -4,6 +4,7 @@
  */
 
 import type { ASTNode } from '../ast/base.js';
+import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
 import type {
   ApexDocComment,
   ApexDocBlockTag,
@@ -35,14 +36,14 @@ interface ApexDocParseOptions {
   readonly includeLocation?: boolean;
 
   /**
-   * Parse {@code} content as Apex AST.
+   * Parse code tag content as Apex AST.
    */
   readonly parseCodeInCodeTag?: boolean;
 
   /**
    * For parsing nested code.
    */
-  readonly parseTreeAdapter?: (source: string) => any;
+  readonly parseTreeAdapter?: (source: string) => ParseTreeNode | null;
 }
 
 /**
@@ -60,6 +61,7 @@ function parseApexDocComment(
   const { includeLocation = true, parseCodeInCodeTag = true, parseTreeAdapter } = options;
 
   // Remove /** and */ delimiters and leading asterisks from each line
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
   const cleaned = cleanApexDocComment(commentText);
   if (cleaned === null) {
     return null;

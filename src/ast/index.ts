@@ -43,6 +43,7 @@ import type { Initializer } from './Initializer.js';
 import type { ElementValue } from './ElementValue.js';
 import type { SoqlOrSoslBinding } from './SoqlOrSoslBinding.js';
 
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 export type AnyASTNode =
   | Annotation
   | AnnotationArgument
@@ -67,3 +68,4 @@ export type AnyASTNode =
   | StatementNode
   | SwitchCase
   | TypeParameter;
+/* eslint-enable @typescript-eslint/no-type-alias */

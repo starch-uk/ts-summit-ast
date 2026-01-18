@@ -25,7 +25,7 @@ import type {
   LambdaParameter,
 } from '../ast/Expression.js';
 import type { Expression, Statement } from '../ast/index.js';
-import type { TypeRef } from '../ast/Type.js';
+import type { TypeRef, Type } from '../ast/Type.js';
 import type { Identifier } from '../ast/Identifier.js';
 import type { Initializer } from '../ast/Initializer.js';
 import { InitializerFactory } from './NodeFactoryInitializers.js';
@@ -39,12 +39,14 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for expression nodes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class ExpressionFactory {
+  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   public static createBinaryExpression(
     operator: BinaryExpression['operator'],
-    left: Expression,
-    right: Expression,
-    options?: NodeFactoryOptions
+    left: Readonly<Expression>,
+    right: Readonly<Expression>,
+    options?: Readonly<NodeFactoryOptions>
   ): BinaryExpression {
     return {
       kind: 'BinaryExpression',
@@ -55,20 +57,21 @@ export class ExpressionFactory {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createCallExpression(
     methodName: string,
-    args: Expression[] = [],
-    target?: Expression,
-    typeArguments?: TypeRef[],
-    options?: NodeFactoryOptions
+    args: readonly Readonly<Expression>[] = [],
+    target?: Readonly<Expression>,
+    typeArguments?: readonly Readonly<TypeRef>[],
+    options?: Readonly<NodeFactoryOptions>
   ): CallExpression {
     return {
-      arguments: args,
+      arguments: [...args],
       kind: 'CallExpression',
       location: options?.location,
       methodName,
       target,
-      typeArguments,
+      typeArguments: (typeArguments as Type[] | undefined) ?? undefined,
     };
   }
 
@@ -137,6 +140,7 @@ export class ExpressionFactory {
     options?: NodeFactoryOptions
   ): FieldExpression {
     return {
+      field: { kind: 'Identifier', name: fieldName, location: options?.location },
       fieldName,
       kind: 'FieldExpression',
       location: options?.location,

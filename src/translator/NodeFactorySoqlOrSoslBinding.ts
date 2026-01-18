@@ -9,6 +9,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for creating SoqlOrSoslBinding AST nodes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class SoqlOrSoslBindingFactory {
   public static createSoqlOrSoslBinding(
     expr: Expression,

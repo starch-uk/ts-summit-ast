@@ -11,6 +11,7 @@ import type { VariableDeclaration } from './Declaration.js';
  * Alias for backward compatibility during migration.
  * @deprecated Use CompoundStatement instead.
  */
+// eslint-disable-next-line @typescript-eslint/no-type-alias -- Type alias needed for backward compatibility
 type Block = CompoundStatement;
 
 /**

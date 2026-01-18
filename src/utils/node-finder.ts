@@ -3,6 +3,8 @@
  * Functions for finding AST nodes at positions or within ranges.
  */
 
+/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
+
 import type { ASTNode, SourceRange } from '../ast/base.js';
 import type { Position } from './source-extraction.js';
 import { isPositionInRange } from './source-extraction.js';
@@ -31,9 +33,11 @@ export interface FindNodeAtPositionOptions {
    * Include comment nodes.
    */
   readonly includeComments?: boolean;
-  readonly includeWhitespace?: boolean; /**
+
+  /**
    * Include whitespace-only nodes.
    */
+  readonly includeWhitespace?: boolean;
 
   /**
    * Prefer leaf nodes over parent nodes.
@@ -49,10 +53,10 @@ export interface FindNodeAtPositionOptions {
  * @param options - Options for finding nodes.
  * @returns The node at the position, or null if not found.
  */
-function findNodeAtPosition(
-  ast: ASTNode,
-  position: Position,
-  options: FindNodeAtPositionOptions = {}
+export function findNodeAtPosition(
+  ast: Readonly<ASTNode>,
+  position: Readonly<Position>,
+  options: Readonly<FindNodeAtPositionOptions> = {}
 ): NodeAtPositionResult | null {
   const { preferLeaf = true } = options;
   const candidates: { node: ASTNode; depth: number }[] = [];
@@ -62,7 +66,7 @@ function findNodeAtPosition(
 
   // Walk AST and collect all nodes that contain the position
   walkAST(ast, {
-    enterNode: (node) => {
+    enterNode: (node: Readonly<ASTNode>): undefined => {
       if (!node.location) {
         return;
       }
@@ -81,29 +85,40 @@ function findNodeAtPosition(
     },
   });
 
-  if (candidates.length === 0) {
+  const emptyArrayLength = 0;
+  if (candidates.length === emptyArrayLength) {
     return null;
   }
 
   // Sort by depth (deeper nodes first if preferLeaf, otherwise shallower first)
-  candidates.sort((a, b) => {
-    if (preferLeaf) {
-      return b.depth - a.depth; // Deeper nodes first
+  candidates.sort(
+    (
+      a: Readonly<{ depth: number; node: ASTNode }>,
+      b: Readonly<{ depth: number; node: ASTNode }>
+    ) => {
+      if (preferLeaf) {
+        return b.depth - a.depth; // Deeper nodes first
+      }
+      return a.depth - b.depth; // Shallower nodes first
     }
-    return a.depth - b.depth; // Shallower nodes first
-  });
+  );
 
-  const bestMatch = candidates[0];
-  const { node } = bestMatch;
+  const [{ node }] = candidates;
   const ancestors = getAncestors(node, ast);
-  const parent = ancestors.length > 1 ? ancestors[ancestors.length - 2] : undefined;
+  const minAncestorsForParent = 2;
+  const parent =
+    ancestors.length >= minAncestorsForParent
+      ? ancestors[ancestors.length - minAncestorsForParent]
+      : undefined;
 
   if (!node.location) {
     return null;
   }
 
+  const sliceStartIndex = 0;
+  const excludeLastElement = -1;
   return {
-    ancestors: ancestors.slice(0, -1), // Exclude the node itself
+    ancestors: ancestors.slice(sliceStartIndex, excludeLastElement), // Exclude the node itself
     location: node.location,
     node,
     nodeType: node.kind,
@@ -116,9 +131,11 @@ function findNodeAtPosition(
  */
 export interface NodesInRangeResult {
   readonly nodes: ASTNode[];
-  readonly fullyContained: ASTNode[]; /**
+
+  /**
    * Nodes fully within the range.
    */
+  readonly fullyContained: ASTNode[];
 
   /**
    * Nodes that partially overlap.
@@ -130,9 +147,10 @@ export interface NodesInRangeResult {
  * Options for finding nodes in range.
  */
 export interface FindNodesInRangeOptions {
-  readonly includePartial?: boolean; /**
+  /**
    * Include partially overlapping nodes.
    */
+  readonly includePartial?: boolean;
 
   /**
    * Filter by specific node types.
@@ -146,7 +164,10 @@ export interface FindNodesInRangeOptions {
  * @param outer - The outer range to check against.
  * @returns True if inner is fully contained within outer.
  */
-function isRangeFullyContained(inner: SourceRange, outer: SourceRange): boolean {
+function isRangeFullyContained(
+  inner: Readonly<SourceRange>,
+  outer: Readonly<SourceRange>
+): boolean {
   return isPositionInRange(inner.start, outer) && isPositionInRange(inner.end, outer);
 }
 
@@ -156,7 +177,7 @@ function isRangeFullyContained(inner: SourceRange, outer: SourceRange): boolean 
  * @param range2 - The second range to check.
  * @returns True if the ranges overlap.
  */
-function doRangesOverlap(range1: SourceRange, range2: SourceRange): boolean {
+function doRangesOverlap(range1: Readonly<SourceRange>, range2: Readonly<SourceRange>): boolean {
   // Check if ranges don't overlap
   if (
     range1.end.line < range2.start.line ||
@@ -180,10 +201,11 @@ function doRangesOverlap(range1: SourceRange, range2: SourceRange): boolean {
  * @param options - Options for finding nodes.
  * @returns Result containing all overlapping nodes.
  */
-function findNodesInRange(
-  ast: ASTNode,
-  range: SourceRange,
-  options: FindNodesInRangeOptions = {}
+export function findNodesInRange(
+  ast: Readonly<ASTNode>,
+  range: Readonly<SourceRange>,
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default value is readonly-compatible
+  options: Readonly<FindNodesInRangeOptions> = {} as Readonly<FindNodesInRangeOptions>
 ): NodesInRangeResult {
   const { includePartial = true, nodeTypes } = options;
   const allNodes: ASTNode[] = [];
@@ -191,14 +213,14 @@ function findNodesInRange(
   const partiallyOverlapping: ASTNode[] = [];
 
   walkAST(ast, {
-    enterNode: (node) => {
+    enterNode: (node: Readonly<ASTNode>): undefined => {
       if (!node.location) {
-        return;
+        return undefined;
       }
 
       // Filter by node type if specified
       if (nodeTypes && !nodeTypes.includes(node.kind)) {
-        return;
+        return undefined;
       }
 
       const nodeRange = node.location;
@@ -207,7 +229,7 @@ function findNodesInRange(
       if (isRangeFullyContained(nodeRange, range)) {
         fullyContained.push(node);
         allNodes.push(node);
-        return;
+        return undefined;
       }
 
       // Check if partially overlapping
@@ -236,9 +258,11 @@ import { getSourceRange } from './source-extraction.js';
  */
 export interface NodePath {
   readonly nodes: ASTNode[];
-  readonly path: string[]; /**
+
+  /**
    * Array of node types: ["ClassDeclaration", "MethodDeclaration"].
    */
+  readonly path: string[];
   readonly depth: number;
 }
 
@@ -248,33 +272,37 @@ export interface NodePath {
  * @param root - The root AST node.
  * @returns The path from root to node, or null if node is not in tree.
  */
-function getNodePath(node: ASTNode, root: ASTNode): NodePath | null {
+export function getNodePath(node: Readonly<ASTNode>, root: Readonly<ASTNode>): NodePath | null {
   const ancestors = getAncestors(node, root);
 
-  if (ancestors.length === 0) {
+  const emptyArrayLength = 0;
+  if (ancestors.length === emptyArrayLength) {
     return null;
   }
 
   const path = ancestors.map((n) => n.kind);
+  const depthOffset = 1;
 
   return {
-    depth: ancestors.length - 1,
+    depth: ancestors.length - depthOffset,
     nodes: ancestors,
     path,
   };
 }
 
 /**
- * Node metadata.
+ * Comprehensive metadata about an AST node, including its location, relationships, and structure.
  */
 export interface NodeMetadata {
   readonly nodeType: string;
   readonly location: SourceRange | null;
   readonly parent?: ASTNode;
   readonly children: ASTNode[];
-  readonly siblings: ASTNode[]; /**
+
+  /**
    * Nodes at the same level.
    */
+  readonly siblings: ASTNode[];
   readonly depth: number;
   readonly isLeaf: boolean;
 
@@ -285,20 +313,108 @@ export interface NodeMetadata {
 }
 
 /**
+ * Find root node by traversing up the tree.
+ * @param node - The node to start from.
+ * @returns The root node (simplified - returns the node itself).
+ */
+function findRoot(node: Readonly<ASTNode>): ASTNode {
+  // This is a simplified approach - in practice, you'd track the root
+  // For now, we'll assume the node we're given might be the root
+  // In a real implementation, you'd pass the root separately
+  return node as ASTNode;
+}
+
+/**
+ * Get children of a node (simplified version).
+ * @param node - The AST node to get children for.
+ * @returns An array of child AST nodes.
+ */
+function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
+  const children: ASTNode[] = [];
+
+  // This is a simplified version - see traversal.ts for full implementation
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access requires type assertions
+  if ('condition' in node && (node as { condition?: ASTNode }).condition != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { condition: ASTNode }).condition);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('thenStatement' in node && (node as { thenStatement?: ASTNode }).thenStatement != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { thenStatement: ASTNode }).thenStatement);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('elseStatement' in node && (node as { elseStatement?: ASTNode }).elseStatement != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { elseStatement: ASTNode }).elseStatement);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('body' in node && (node as { body?: ASTNode }).body != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { body: ASTNode }).body);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('statements' in node && Array.isArray((node as { statements?: ASTNode[] }).statements)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const { statements } = node as { statements: ASTNode[] };
+    children.push(...statements);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('expression' in node && (node as { expression?: ASTNode }).expression != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { expression: ASTNode }).expression);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('left' in node && (node as { left?: ASTNode }).left != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { left: ASTNode }).left);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('right' in node && (node as { right?: ASTNode }).right != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { right: ASTNode }).right);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('arguments' in node && Array.isArray((node as { arguments?: ASTNode[] }).arguments)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const args = (node as { arguments: ASTNode[] }).arguments;
+    children.push(...args);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('type' in node && (node as { type?: ASTNode }).type != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { type: ASTNode }).type);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  if ('initializer' in node && (node as { initializer?: ASTNode }).initializer != null) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    children.push((node as { initializer: ASTNode }).initializer);
+  }
+
+  return children;
+}
+
+/**
  * Get comprehensive metadata about an AST node.
  * @param node - The AST node to get metadata for.
  * @param source - Optional source code to extract text from.
  * @returns Metadata about the node.
  */
-function getNodeMetadata(node: ASTNode, source?: string): NodeMetadata {
+export function getNodeMetadata(node: Readonly<ASTNode>, source?: string): NodeMetadata {
   // Build parent map to find parent and siblings
   // We need to find the root first - this is a limitation
   // In practice, you'd pass the root separately
   const root = findRoot(node);
   const ancestors = getAncestors(node, root);
 
-  const parent = ancestors.length > 1 ? ancestors[ancestors.length - 2] : undefined;
-  const depth = ancestors.length - 1;
+  const minAncestorsForParent = 2;
+  const parentIndexOffset = 2;
+  const depthOffset = 1;
+  const parent =
+    ancestors.length >= minAncestorsForParent
+      ? ancestors[ancestors.length - parentIndexOffset]
+      : undefined;
+  const depth = ancestors.length - depthOffset;
 
   // Get siblings (children of parent)
   const siblings: ASTNode[] = [];
@@ -309,17 +425,21 @@ function getNodeMetadata(node: ASTNode, source?: string): NodeMetadata {
 
   // Get children
   const children = getNodeChildren(node);
-  const isLeaf = children.length === 0;
+  const emptyArrayLength = 0;
+  const isLeaf = children.length === emptyArrayLength;
 
   // Get source text if source is provided
-  let sourceText: string | undefined;
-  if (source) {
+  let sourceText: string | undefined = undefined;
+  const emptyStringLength = 0;
+  if (source !== undefined && source.length > emptyStringLength) {
     const range = getSourceRange(node);
     if (range) {
       const lines = source.split(/\r?\n/);
       if (range.start.line === range.end.line) {
-        const line = lines[range.start.line - 1] ?? '';
-        sourceText = line.substring(range.start.column - 1, range.end.column);
+        const lineIndexOffset = 1;
+        const columnIndexOffset = 1;
+        const line = lines[range.start.line - lineIndexOffset] ?? '';
+        sourceText = line.substring(range.start.column - columnIndexOffset, range.end.column);
       } else {
         // Multi-line - simplified extraction
         sourceText = '[multi-line]';
@@ -340,73 +460,11 @@ function getNodeMetadata(node: ASTNode, source?: string): NodeMetadata {
 }
 
 /**
- * Find root node by traversing up the tree.
- * @param node - The node to start from.
- * @returns The root node (simplified - returns the node itself).
- */
-function findRoot(node: ASTNode): ASTNode {
-  // This is a simplified approach - in practice, you'd track the root
-  // For now, we'll assume the node we're given might be the root
-  // In a real implementation, you'd pass the root separately
-  return node;
-}
-
-/**
- * Get children of a node (simplified version).
- * @param node - The AST node to get children for.
- * @returns An array of child AST nodes.
- */
-function getNodeChildren(node: ASTNode): ASTNode[] {
-  const children: ASTNode[] = [];
-
-  // This is a simplified version - see traversal.ts for full implementation
-  if ('condition' in node && (node as { condition?: ASTNode }).condition != null) {
-    children.push((node as { condition: ASTNode }).condition);
-  }
-  if ('thenStatement' in node && (node as { thenStatement?: ASTNode }).thenStatement != null) {
-    children.push((node as { thenStatement: ASTNode }).thenStatement);
-  }
-  if ('elseStatement' in node && (node as { elseStatement?: ASTNode }).elseStatement != null) {
-    children.push((node as { elseStatement: ASTNode }).elseStatement);
-  }
-  if ('body' in node && (node as { body?: ASTNode }).body != null) {
-    children.push((node as { body: ASTNode }).body);
-  }
-  if ('statements' in node && Array.isArray((node as { statements?: ASTNode[] }).statements)) {
-    const { statements } = node as { statements: ASTNode[] };
-    children.push(...statements);
-  }
-  if ('expression' in node && (node as { expression?: ASTNode }).expression != null) {
-    children.push((node as { expression: ASTNode }).expression);
-  }
-  if ('left' in node && (node as { left?: ASTNode }).left != null) {
-    children.push((node as { left: ASTNode }).left);
-  }
-  if ('right' in node && (node as { right?: ASTNode }).right != null) {
-    children.push((node as { right: ASTNode }).right);
-  }
-  if ('arguments' in node && Array.isArray((node as { arguments?: ASTNode[] }).arguments)) {
-    const args = (node as { arguments: ASTNode[] }).arguments;
-    children.push(...args);
-  }
-  if ('type' in node && (node as { type?: ASTNode }).type != null) {
-    children.push((node as { type: ASTNode }).type);
-  }
-  if ('initializer' in node && (node as { initializer?: ASTNode }).initializer != null) {
-    children.push((node as { initializer: ASTNode }).initializer);
-  }
-
-  return children;
-}
-
-/**
  * Type guard to check if a node is of a specific type.
  * @param node - The AST node to check.
  * @param nodeType - The node type to check for.
  * @returns True if the node is of the specified type.
  */
-function isNodeType(node: ASTNode, nodeType: string): boolean {
+export function isNodeType(node: Readonly<ASTNode>, nodeType: string): boolean {
   return node.kind === nodeType;
 }
-
-export { findNodeAtPosition, findNodesInRange, getNodePath, getNodeMetadata, isNodeType };

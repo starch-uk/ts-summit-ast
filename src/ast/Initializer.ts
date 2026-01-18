@@ -12,11 +12,13 @@ import type { Expression } from './Expression.js';
  * Base type for all initializer nodes.
  * An initializer is an action that occurs after object allocation to setup its initial state.
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type Initializer =
   | ConstructorInitializer
   | MapInitializer
   | SizedArrayInitializer
   | ValuesInitializer;
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Object initializer via a constructor call.

@@ -15,6 +15,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for creating ElementValue AST nodes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class ElementValueFactory {
   public static createExpressionElementValue(
     value: Expression,
@@ -28,8 +29,8 @@ export class ElementValueFactory {
   }
 
   public static createAnnotationElementValue(
-    value: Annotation,
-    options?: NodeFactoryOptions
+    value: Readonly<Annotation>,
+    options?: Readonly<NodeFactoryOptions>
   ): AnnotationElementValue {
     return {
       kind: 'AnnotationElementValue',

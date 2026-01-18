@@ -55,19 +55,22 @@ interface VisitableNode extends ASTNode {
   /**
    * Accept a visitor and return the result.
    */
-  accept: <T>(visitor: ASTVisitor<T>) => T;
+  accept: <T>(visitor: Readonly<ASTVisitor<T>>) => T;
 }
 
 /**
  * Default visitor implementation that traverses the tree.
  */
 class DefaultVisitor implements ASTVisitor {
-  visit(_node: ASTNode): void {
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Default implementation intentionally does nothing
+  public visit(_node: ASTNode): void {
     // Default implementation does nothing
     // Override in subclasses for specific behavior
   }
 
-  visitChildren(_node: ASTNode): void[] {
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- void[] is required by interface for default visitor
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Default implementation intentionally does nothing
+  public visitChildren(_node: ASTNode): void[] {
     // Default implementation returns empty array
     // Subclasses should override to visit child nodes
     return [];

@@ -10,9 +10,15 @@ import { TokenType, type Token } from './TokenTypes.js';
  */
 export class ApexLexer {
   private readonly source: string;
-  private position = 0;
-  private line = 1;
-  private column = 1;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial position constant
+  private readonly initialPosition = 0;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial line constant
+  private readonly initialLine = 1;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial column constant
+  private readonly initialColumn = 1;
+  private position = this.initialPosition;
+  private line = this.initialLine;
+  private column = this.initialColumn;
   private tokens: Token[] = [];
 
   /**
@@ -79,14 +85,15 @@ export class ApexLexer {
     ['object', TokenType.OBJECT],
   ]);
 
-  constructor(source: string) {
+  public constructor(source: string) {
     this.source = source;
   }
 
   /**
    * Tokenize the source code.
+   * @returns Array of tokens.
    */
-  tokenize(): Token[] {
+  public tokenize(): Token[] {
     this.tokens = [];
     this.position = 0;
     this.line = 1;
@@ -111,6 +118,7 @@ export class ApexLexer {
 
   /**
    * Get next token.
+   * @returns The next token, or null if at end of source.
    */
   private nextToken(): Token | null {
     if (this.position >= this.source.length) {
@@ -127,11 +135,13 @@ export class ApexLexer {
     }
 
     // Line comment
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Character position for line comment check
     if (char === '/' && this.peek(1) === '/') {
       return this.readLineComment();
     }
 
     // Block comment
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Character position for block comment check
     if (char === '/' && this.peek(1) === '*') {
       return this.readBlockComment();
     }

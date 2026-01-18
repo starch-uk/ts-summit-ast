@@ -38,17 +38,20 @@ interface ParseTreeNode {
    * Additional properties that parsers may include
    * This allows for parser-specific data while maintaining compatibility.
    */
+  // eslint-disable-next-line @typescript-eslint/member-ordering -- Index signature must be last
   readonly [key: string]: unknown;
 }
 
 /**
  * Parse tree with named children (for parsers that use property-based children).
  */
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- Index signature needed for parser compatibility
 interface NamedChildrenParseTree extends ParseTreeNode {
   /**
    * Named child properties
    * Example: { condition: node, thenBody: node, elseBody: node }.
    */
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- Index signature needs to accept any value
   readonly [childName: string]: ParseTreeNode | ParseTreeNode[] | unknown;
 }
 
@@ -102,6 +105,7 @@ interface ParseResult {
 
 /**
  * Adapter interface for converting parser-specific trees to our parse tree format.
+ * @template T The type of the parser-specific tree.
  */
 interface ParseTreeAdapter<T = unknown> {
   /**

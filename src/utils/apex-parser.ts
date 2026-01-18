@@ -6,6 +6,8 @@
  * and this module provides a convenient interface.
  */
 
+/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
+
 import type { ASTNode } from '../ast/base.js';
 import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
 import { ASTTranslator } from '../translator/ASTTranslator.js';
@@ -126,8 +128,8 @@ export interface ApexParseResult {
  * }
  * ```
  */
-function isUsableParseResult(
-  result: ApexParseResult
+export function isUsableParseResult(
+  result: Readonly<ApexParseResult>
 ): result is ApexParseResult & { ast: NonNullable<ASTNode>; isUsable: true } {
   return result.isUsable === true && result.ast !== undefined;
 }
@@ -155,7 +157,7 @@ function isUsableParseResult(
  * }
  * ```
  */
-function parseApexCode(source: string, options: ApexParseOptions = {}): ApexParseResult {
+export function parseApexCode(source: string, options: ApexParseOptions = {}): ApexParseResult {
   const {
     includeComments = false,
     includeLocation = true,
@@ -279,7 +281,10 @@ function parseApexCode(source: string, options: ApexParseOptions = {}): ApexPars
  * }
  * ```
  */
-function parseMultipleFiles(sources: string[], options: ApexParseOptions = {}): ApexParseResult[] {
+export function parseMultipleFiles(
+  sources: string[],
+  options: ApexParseOptions = {}
+): ApexParseResult[] {
   return sources.map((source) => parseApexCode(source, options));
 }
 
@@ -304,7 +309,7 @@ function parseMultipleFiles(sources: string[], options: ApexParseOptions = {}): 
  * });
  * ```
  */
-function extractCommentsBatch(
+export function extractCommentsBatch(
   asts: ASTNode[],
   sources: string[],
   options: ExtractCommentsOptions = {}
@@ -315,5 +320,3 @@ function extractCommentsBatch(
 
   return asts.map((ast, index) => extractComments(ast, sources[index], options));
 }
-
-export { isUsableParseResult, parseApexCode, parseMultipleFiles, extractCommentsBatch };

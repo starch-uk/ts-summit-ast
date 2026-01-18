@@ -31,19 +31,21 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for declaration nodes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class DeclarationFactory {
+  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createVariableDeclaration(
     name: string,
-    type: TypeRef,
-    initializer?: Expression,
-    modifiers?: Modifier[],
-    options?: NodeFactoryOptions
+    type: Readonly<TypeRef>,
+    initializer?: Readonly<Expression>,
+    modifiers?: readonly Readonly<Modifier>[],
+    options?: Readonly<NodeFactoryOptions>
   ): VariableDeclaration {
     return {
       initializer,
       kind: 'VariableDeclaration',
       location: options?.location,
-      modifiers,
+      modifiers: modifiers ? [...modifiers] : undefined,
       name,
       type,
     };

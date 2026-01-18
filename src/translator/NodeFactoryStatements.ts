@@ -30,7 +30,9 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for statement nodes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class StatementFactory {
+  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   public static createIfStatement(
     condition: Expression,
     thenStatement: Statement,
@@ -46,12 +48,13 @@ export class StatementFactory {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createForLoopStatement(
-    body: Statement,
-    init?: ExpressionStatement | VariableDeclarationStatement,
-    condition?: Expression,
-    update?: Expression,
-    options?: NodeFactoryOptions
+    body: Readonly<Statement>,
+    init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
+    condition?: Readonly<Expression>,
+    update?: Readonly<Expression>,
+    options?: Readonly<NodeFactoryOptions>
   ): ForLoopStatement {
     return {
       body,

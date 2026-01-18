@@ -12,7 +12,7 @@ import { SummitTool } from './SummitTool.js';
  * @param args - Command line arguments.
  * @returns Parsed arguments object.
  */
-function parseArgs(args: string[]): {
+function parseArgs(args: readonly string[]): {
   files: string[];
   json: boolean;
   verbose: boolean;
@@ -23,9 +23,7 @@ function parseArgs(args: string[]): {
   let verbose = false;
   let help = false;
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
+  for (const arg of args) {
     switch (arg) {
       case '-json':
       case '--json':
@@ -79,9 +77,9 @@ Note:
 
 /**
  * Main CLI function.
- * @returns Nothing.
  */
 function main(): void {
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- process.argv.slice(2) is standard for CLI args
   const args = process.argv.slice(2);
 
   if (args.length === 0) {

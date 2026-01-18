@@ -15,14 +15,15 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for creating Initializer AST nodes.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class InitializerFactory {
   public static createConstructorInitializer(
-    type: TypeRef,
-    args: Expression[] = [],
-    options?: NodeFactoryOptions
+    type: Readonly<TypeRef>,
+    args: readonly Readonly<Expression>[] = [],
+    options?: Readonly<NodeFactoryOptions>
   ): ConstructorInitializer {
     return {
-      args,
+      args: [...args],
       kind: 'ConstructorInitializer',
       location: options?.location,
       type,

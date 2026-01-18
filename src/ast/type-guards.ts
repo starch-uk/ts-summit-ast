@@ -169,7 +169,14 @@ function isLiteral(node: ASTNode): node is Literal {
  * @param node - The AST node to check.
  * @returns True if the node is a TypeRef.
  */
-function isTypeRef(node: ASTNode): node is import('./Type.js').TypeRef {
+import type { TypeRef } from './Type.js';
+
+/**
+ * Type guard to check if a node is a TypeRef.
+ * @param node - The AST node to check.
+ * @returns True if the node is a TypeRef.
+ */
+function isTypeRef(node: ASTNode): node is TypeRef {
   return 'kind' in node && node.kind === 'TypeRef';
 }
 
@@ -178,7 +185,7 @@ function isTypeRef(node: ASTNode): node is import('./Type.js').TypeRef {
  * @param node - The AST node to check.
  * @returns True if the node is a TypeRef.
  */
-function isType(node: ASTNode): node is import('./Type.js').TypeRef {
+function isType(node: ASTNode): node is TypeRef {
   return isTypeRef(node);
 }
 
@@ -382,7 +389,8 @@ function isStringVal(node: ASTNode): node is StringVal {
 
 /**
  * Type guard for StringLiteral nodes (alias for StringVal).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a StringVal.
  * @deprecated Use isStringVal instead.
  */
 function isStringLiteral(node: ASTNode): node is StringVal {
@@ -400,7 +408,8 @@ function isIntegerVal(node: ASTNode): node is IntegerVal {
 
 /**
  * Type guard for IntegerVal nodes (alias for isIntegerVal).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is an IntegerVal.
  * @deprecated Use isIntegerVal instead.
  */
 function isIntegerLiteral(node: ASTNode): node is IntegerVal {
@@ -427,7 +436,8 @@ function isLongVal(node: ASTNode): node is LongVal {
 
 /**
  * Type guard for LongVal nodes (alias for isLongVal).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a LongVal.
  * @deprecated Use isLongVal instead.
  */
 function isLongLiteral(node: ASTNode): node is LongVal {
@@ -445,7 +455,8 @@ function isDecimalVal(node: ASTNode): node is DecimalVal {
 
 /**
  * Type guard for NumberLiteral nodes (alias - checks for any numeric literal).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a numeric literal.
  * @deprecated Use specific type guards (isIntegerVal, isDoubleVal, etc.) instead.
  */
 function isNumberLiteral(node: ASTNode): node is DecimalVal | DoubleVal | IntegerVal | LongVal {
@@ -469,7 +480,8 @@ function isBooleanVal(node: ASTNode): node is BooleanVal {
 
 /**
  * Type guard for BooleanLiteral nodes (alias for BooleanVal).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a BooleanVal.
  * @deprecated Use isBooleanVal instead.
  */
 function isBooleanLiteral(node: ASTNode): node is BooleanVal {

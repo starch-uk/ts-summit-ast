@@ -13,9 +13,11 @@ interface SourceTextOptions {
    * Include associated comments.
    */
   readonly includeComments?: boolean;
-  readonly includeWhitespace?: boolean; /**
+
+  /**
    * Include leading/trailing whitespace.
    */
+  readonly includeWhitespace?: boolean;
 
   /**
    * Trim whitespace from result.
@@ -30,7 +32,7 @@ interface SourceTextOptions {
  * - Columns in the original are 0-based, but our TypeScript uses 1-based
  * - The range is exclusive of the character at endLine/endColumn
  * - extractFrom uses: lines.subList(startLine-1, endLine), then drops startColumn from start
- *   and (lastLine.length - endColumn) from end.
+ * and (lastLine.length - endColumn) from end.
  *
  * Original Kotlin code:.
  * ```kotlin
@@ -46,6 +48,7 @@ interface SourceTextOptions {
  * @returns The source text for the node.
  */
 function getSourceText(node: ASTNode, source: string, options: SourceTextOptions = {}): string {
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
   const range = getSourceRange(node);
   if (!range) {
     return '';

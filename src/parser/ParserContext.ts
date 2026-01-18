@@ -21,7 +21,9 @@ export interface ParserContext {
   /**
    * Helper methods.
    */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Rest parameters cannot be readonly
   match: (...types: TokenType[]) => boolean;
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Rest parameters cannot be readonly
   check: (type: TokenType, ...types: TokenType[]) => boolean;
   advance: () => Token;
   isAtEnd: () => boolean;
