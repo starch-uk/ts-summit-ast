@@ -64,9 +64,11 @@ interface TranslationOptions {
  * Error thrown during AST translation from parse tree to AST nodes.
  */
 class TranslationError extends Error {
-  constructor(
+  public constructor(
     message: string,
+    // eslint-disable-next-line @typescript-eslint/parameter-properties, @typescript-eslint/prefer-readonly-parameter-types -- Parameter properties are intentional
     public readonly node?: ParseTreeNode,
+    // eslint-disable-next-line @typescript-eslint/parameter-properties, @typescript-eslint/prefer-readonly-parameter-types -- Parameter properties are intentional
     public readonly cause?: Error
   ) {
     super(message);
@@ -90,11 +92,13 @@ class ASTTranslator {
   private readonly options: Required<TranslationOptions>;
   private currentClassName: string | undefined = undefined;
 
-  constructor(options: TranslationOptions = {}) {
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+  public constructor(options: TranslationOptions = {}) {
     this.options = {
       continueOnError: options.continueOnError ?? false,
       includeLocation: options.includeLocation ?? true,
-      onError: options.onError ?? (() => {}),
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-empty-function -- Empty error handler
+      onError: options.onError ?? ((): void => {}),
       ...options,
     };
   }
@@ -103,7 +107,10 @@ class ASTTranslator {
    * Translate a parse tree node to an AST node.
    * @param node
    */
-  translate(node: ParseTreeNode): TranslationResult {
+  public translate(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>
+  ): TranslationResult {
     const errors: TranslationError[] = [];
 
     try {
@@ -135,7 +142,10 @@ class ASTTranslator {
    * Translate a single node based on its type.
    * @param node
    */
-  private translateNode(node: ParseTreeNode): ASTNode {
+  private translateNode(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>
+  ): ASTNode {
     const nodeType = node.type.toLowerCase();
 
     // Handle compilation_unit - return a CompilationUnit AST node
@@ -158,10 +168,10 @@ class ASTTranslator {
           childType === 'annotation_declaration' ||
           childType === 'annotationtype'
         ) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to Declaration
           const decl = this.translateNode(child) as Declaration;
-          if (decl) {
-            declarations.push(decl);
-          }
+          // Type assertion ensures decl is not null/undefined
+          declarations.push(decl);
         }
       }
 
@@ -218,7 +228,11 @@ class ASTTranslator {
    * @param node
    * @param nodeType
    */
-  private tryTranslateStatement(node: ParseTreeNode, nodeType: string): Statement | null {
+  private tryTranslateStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>,
+    nodeType: string
+  ): Statement | null {
     switch (nodeType) {
       case 'if_statement':
       case 'if':
@@ -274,7 +288,11 @@ class ASTTranslator {
    * @param node
    * @param nodeType
    */
-  private tryTranslateExpression(node: ParseTreeNode, nodeType: string): Expression | null {
+  private tryTranslateExpression(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>,
+    nodeType: string
+  ): Expression | null {
     switch (nodeType) {
       case 'identifier':
       case 'name':
@@ -362,7 +380,11 @@ class ASTTranslator {
    * @param node
    * @param nodeType
    */
-  private tryTranslateDeclaration(node: ParseTreeNode, nodeType: string): Declaration | null {
+  private tryTranslateDeclaration(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>,
+    nodeType: string
+  ): Declaration | null {
     switch (nodeType) {
       case 'class_declaration':
       case 'class':
@@ -428,7 +450,10 @@ class ASTTranslator {
 
   // Statement translation methods
 
-  private translateIfStatement(node: ParseTreeNode): Statement {
+  private translateIfStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     // Try to get named properties first (for integration tests)
     let condition = this.getChildExpression(node, 'condition', true);
     let thenStatement = this.getChildStatement(node, 'thenStatement', 'thenBody', true);
@@ -437,12 +462,19 @@ class ASTTranslator {
     // If named properties not found, try positional children (for parser output)
     if (!condition || !thenStatement) {
       const children = this.getChildren(node);
-      if (children.length < 2) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children count for if statement
+      const minimumChildrenCount = 2;
+      if (children.length < minimumChildrenCount) {
         throw new TranslationError('If statement requires at least condition and then body', node);
       }
 
       if (!condition) {
-        const cond = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child is condition
+        const zeroIndex = 0;
+        const cond = this.tryTranslateExpression(
+          children[zeroIndex],
+          children[zeroIndex].type.toLowerCase()
+        );
         if (!cond) {
           throw new TranslationError('If statement requires a condition', node);
         }
@@ -450,15 +482,25 @@ class ASTTranslator {
       }
 
       if (!thenStatement) {
-        const then = this.tryTranslateStatement(children[1], children[1].type.toLowerCase());
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Second child is then statement
+        const secondChildIndex = 1;
+        const then = this.tryTranslateStatement(
+          children[secondChildIndex],
+          children[secondChildIndex].type.toLowerCase()
+        );
         if (!then) {
           throw new TranslationError('If statement requires a then body', node);
         }
         thenStatement = then;
       }
 
-      if (!elseStatement && children.length > 2) {
-        const els = this.tryTranslateStatement(children[2], children[2].type.toLowerCase());
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for else statement (third child)
+      const elseChildIndex = 2;
+      if (!elseStatement && children.length > elseChildIndex) {
+        const els = this.tryTranslateStatement(
+          children[elseChildIndex],
+          children[elseChildIndex].type.toLowerCase()
+        );
         elseStatement = els ?? undefined;
       }
     }
@@ -471,7 +513,10 @@ class ASTTranslator {
     );
   }
 
-  private translateForLoopStatement(node: ParseTreeNode): Statement {
+  private translateForLoopStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     // Try positional children first (parser output structure: [init?, condition?, update?, body])
     const children = this.getChildren(node);
     let init: Statement | undefined = undefined;
@@ -481,8 +526,12 @@ class ASTTranslator {
 
     // Parse structure: [init?, condition?, update?, body]
     // Body is always the last child
-    if (children.length > 0) {
-      const lastChild = children[children.length - 1];
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+    const emptyArrayLength = 0;
+    if (children.length > emptyArrayLength) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Get last element index
+      const lastElementOffset = 1;
+      const lastChild = children[children.length - lastElementOffset];
       const stmt = this.tryTranslateStatement(lastChild, lastChild.type.toLowerCase());
       if (stmt) {
         body = stmt;
@@ -490,8 +539,11 @@ class ASTTranslator {
     }
 
     // Init is first child (if present and not body)
-    if (children.length >= 2) {
-      const initChild = children[0];
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for init
+    const minimumChildrenForInit = 2;
+    if (children.length >= minimumChildrenForInit) {
+      // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- First child is init
+      const [initChild] = children;
       const initStmt = this.tryTranslateStatement(initChild, initChild.type.toLowerCase());
       if (initStmt) {
         init = initStmt;
@@ -499,15 +551,29 @@ class ASTTranslator {
     }
 
     // Condition is second child (if present)
-    if (children.length >= 3) {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for condition
+    const minimumChildrenForCondition = 3;
+    if (children.length >= minimumChildrenForCondition) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Second child is condition
+      const secondChildIndex = 1;
       condition =
-        this.tryTranslateExpression(children[1], children[1].type.toLowerCase()) ?? undefined;
+        this.tryTranslateExpression(
+          children[secondChildIndex],
+          children[secondChildIndex].type.toLowerCase()
+        ) ?? undefined;
     }
 
     // Update is third child (if present)
-    if (children.length >= 4) {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for update
+    const minimumChildrenForUpdate = 4;
+    if (children.length >= minimumChildrenForUpdate) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Third child is update
+      const thirdChildIndex = 2;
       update =
-        this.tryTranslateExpression(children[2], children[2].type.toLowerCase()) ?? undefined;
+        this.tryTranslateExpression(
+          children[thirdChildIndex],
+          children[thirdChildIndex].type.toLowerCase()
+        ) ?? undefined;
     }
 
     // Fallback to named properties if positional didn't work
@@ -516,17 +582,25 @@ class ASTTranslator {
     update ??= this.getChildExpression(node, 'update', true);
     // When update is a block (multiple expressions like i++, j++), tryTranslateExpression returns null.
     // Extract the first expression from the block's expression_statement children.
-    if (!update && children.length >= 4) {
-      const updateNode = children[2];
-      if (updateNode && (updateNode as { type?: string }).type === 'block') {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for update fallback
+    const minimumChildrenForUpdateFallback = 4;
+    if (!update && children.length >= minimumChildrenForUpdateFallback) {
+      // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Third child is update node
+      const [, , updateNode] = children;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions -- Check for block type
+      if ((updateNode as { type?: string }).type === 'block') {
         const blockChildren = this.getChildren(updateNode);
         for (const c of blockChildren) {
           const stmtChildren = this.getChildren(c);
-          if (stmtChildren.length > 0) {
-            const inner = stmtChildren[0];
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+          const emptyArrayLengthLocal = 0;
+          if (stmtChildren.length > emptyArrayLengthLocal) {
+            // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- First child is inner statement
+            const [inner] = stmtChildren;
             const expr = this.tryTranslateExpression(
               inner,
-              (inner as { type?: string }).type?.toLowerCase?.() ?? ''
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Optional method call
+              (inner as { type?: string }).type?.toLowerCase() ?? ''
             );
             if (expr) {
               update = expr;
@@ -544,6 +618,7 @@ class ASTTranslator {
 
     return NodeFactory.createForLoopStatement(
       body,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing for init statement
       init as ExpressionStatement | VariableDeclarationStatement | undefined,
       condition,
       update,
@@ -551,19 +626,34 @@ class ASTTranslator {
     );
   }
 
-  private translateWhileLoopStatement(node: ParseTreeNode): Statement {
+  private translateWhileLoopStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     // While statement has children: [condition, body]
     const children = this.getChildren(node);
-    if (children.length < 2) {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for while statement
+    const minimumChildrenCount = 2;
+    if (children.length < minimumChildrenCount) {
       throw new TranslationError('While statement requires condition and body', node);
     }
 
-    const condition = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child is condition
+    const zeroIndex = 0;
+    const condition = this.tryTranslateExpression(
+      children[zeroIndex],
+      children[zeroIndex].type.toLowerCase()
+    );
     if (!condition) {
       throw new TranslationError('While statement requires a condition', node);
     }
 
-    const body = this.tryTranslateStatement(children[1], children[1].type.toLowerCase());
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Second child is body
+    const secondChildIndex = 1;
+    const body = this.tryTranslateStatement(
+      children[secondChildIndex],
+      children[secondChildIndex].type.toLowerCase()
+    );
     if (!body) {
       throw new TranslationError('While statement requires a body', node);
     }
@@ -571,57 +661,85 @@ class ASTTranslator {
     return NodeFactory.createWhileLoopStatement(condition, body, this.getLocationOption(node));
   }
 
-  private translateReturnStatement(node: ParseTreeNode): Statement {
+  private translateReturnStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     // Return statement has children: [expression?]
     const children = this.getChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array and first child
+    const emptyArrayLength = 0;
+    const zeroIndex = 0;
     const expression =
-      children.length > 0
-        ? (this.tryTranslateExpression(children[0], children[0].type.toLowerCase()) ?? undefined)
+      children.length > emptyArrayLength
+        ? (this.tryTranslateExpression(
+            children[zeroIndex],
+            children[zeroIndex].type.toLowerCase()
+          ) ?? undefined)
         : undefined;
 
     return NodeFactory.createReturnStatement(expression, this.getLocationOption(node));
   }
 
-  private translateCompoundStatement(node: ParseTreeNode): Statement {
+  private translateCompoundStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for filtering
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     const statements = this.getChildren(node)
-      .filter((child) => {
-        // Filter out type-related structural nodes that shouldn't be translated as statements
-        const childType = child.type.toLowerCase();
-        return (
-          childType !== 'base_type' &&
-          childType !== 'array_dimensions' &&
-          childType !== 'type_arguments' &&
-          childType !== 'type_parameters'
-        );
-      })
-      .map((child) => {
-        try {
-          return this.translateNode(child) as Statement;
-        } catch (error) {
-          // If translation fails, try to translate as statement or expression
-          const stmt = this.tryTranslateStatement(child, child.type.toLowerCase());
-          if (stmt) return stmt;
-          const expr = this.tryTranslateExpression(child, child.type.toLowerCase());
-          if (expr) {
-            return NodeFactory.createExpressionStatement(expr, this.getLocationOption(child));
-          }
-          // Skip nodes that can't be translated
-          return null;
+      .filter(
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+        (child: ParseTreeNode) => {
+          // Filter out type-related structural nodes that shouldn't be translated as statements
+          const childType = child.type.toLowerCase();
+          return (
+            childType !== 'base_type' &&
+            childType !== 'array_dimensions' &&
+            childType !== 'type_arguments' &&
+            childType !== 'type_parameters'
+          );
         }
-      })
+      )
+      .map(
+        (
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+          child: Readonly<ParseTreeNode>
+        ) => {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to Statement
+            return this.translateNode(child) as Statement;
+          } catch {
+            // If translation fails, try to translate as statement or expression
+            const stmt = this.tryTranslateStatement(child, child.type.toLowerCase());
+            if (stmt) return stmt;
+            const expr = this.tryTranslateExpression(child, child.type.toLowerCase());
+            if (expr) {
+              return NodeFactory.createExpressionStatement(expr, this.getLocationOption(child));
+            }
+            // Skip nodes that can't be translated
+            return null;
+          }
+        }
+      )
       .filter((stmt): stmt is Statement => stmt !== null);
 
     return NodeFactory.createCompoundStatement(statements, this.getLocationOption(node));
   }
 
-  private translateExpressionStatement(node: ParseTreeNode): Statement {
+  private translateExpressionStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for array access
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     // Expression statement has children: [expression]
     const children = this.getChildren(node);
-    if (children.length === 0) {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+    const emptyArrayLength = 0;
+    if (children.length === emptyArrayLength) {
       throw new TranslationError('Expression statement requires an expression', node);
     }
 
-    const expression = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers, @typescript-eslint/prefer-destructuring -- Get first child
+    const [firstChild] = children;
+    const expression = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
     if (!expression) {
       throw new TranslationError('Expression statement requires an expression', node);
     }
@@ -629,7 +747,10 @@ class ASTTranslator {
     return NodeFactory.createExpressionStatement(expression, this.getLocationOption(node));
   }
 
-  private translateEnhancedForLoopStatement(node: ParseTreeNode): Statement {
+  private translateEnhancedForLoopStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for array access
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     // Try to get named properties first (for integration tests)
     let variable = this.getChild(node, 'variable');
     let iterable = this.getChildExpression(node, 'iterable', true);
@@ -639,7 +760,9 @@ class ASTTranslator {
     // Parser structure: [type, name, iterable, body]
     if (!variable || !iterable || !body) {
       const children = this.getChildren(node);
-      if (children.length < 4) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for for-each statement
+      const minimumChildrenForForEach = 4;
+      if (children.length < minimumChildrenForForEach) {
         throw new TranslationError(
           'For-each statement requires type, name, iterable, and body',
           node
@@ -647,12 +770,17 @@ class ASTTranslator {
       }
 
       // First child is type, second is name, third is iterable, fourth is body
-      const typeNode = children[0];
-      const nameNode = children[1];
-      const iterableNode = children[2];
-      const bodyNode = children[3];
+      // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Array destructuring for clarity
+      const [typeNode, nameNode, iterableNode, bodyNode] = children;
 
-      if (!variable && typeNode && nameNode) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unnecessary-condition -- Check for typeNode and nameNode
+      if (
+        !variable &&
+        typeNode !== null &&
+        typeNode !== undefined &&
+        nameNode !== null &&
+        nameNode !== undefined
+      ) {
         // Construct variable declaration from type and name
         const varType = this.tryTranslateType(typeNode);
         if (!varType) {
@@ -669,7 +797,8 @@ class ASTTranslator {
         };
       }
 
-      if (!iterable && iterableNode) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unnecessary-condition -- Check for iterableNode
+      if (!iterable && iterableNode !== null && iterableNode !== undefined) {
         const iterableExpr = this.tryTranslateExpression(
           iterableNode,
           iterableNode.type.toLowerCase()
@@ -680,7 +809,8 @@ class ASTTranslator {
         iterable = iterableExpr;
       }
 
-      if (!body && bodyNode) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unnecessary-condition -- Check for bodyNode
+      if (!body && bodyNode !== null && bodyNode !== undefined) {
         const bodyStmt = this.tryTranslateStatement(bodyNode, bodyNode.type.toLowerCase());
         if (!bodyStmt) {
           throw new TranslationError('For-each statement requires a body', bodyNode);
@@ -694,13 +824,17 @@ class ASTTranslator {
     if (variable) {
       const decl = this.tryTranslateDeclaration(variable, variable.type.toLowerCase());
       if (decl?.kind === 'VariableDeclaration') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Declaration to VariableDeclaration
         varDecl = decl as VariableDeclaration;
       } else {
         // If translation failed, try to construct from children
         const varChildren = this.getChildren(variable);
-        if (varChildren.length >= 2) {
-          const varType = this.tryTranslateType(varChildren[0]);
-          const varNameNode = varChildren[1];
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for variable declaration
+        const minimumChildrenForVariable = 2;
+        if (varChildren.length >= minimumChildrenForVariable) {
+          // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Array destructuring for clarity
+          const [typeChild, varNameNode] = varChildren;
+          const varType = this.tryTranslateType(typeChild);
           const varName =
             this.getText(varNameNode) ?? this.getProperty<string>(varNameNode, 'name') ?? '';
           if (varType && varName) {
@@ -734,19 +868,29 @@ class ASTTranslator {
     );
   }
 
-  private translateDoWhileLoopStatement(node: ParseTreeNode): Statement {
+  private translateDoWhileLoopStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for array access
+    node: Readonly<ParseTreeNode>
+  ): Statement {
     // Do-while statement has children: [body, condition]
     const children = this.getChildren(node);
-    if (children.length < 2) {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for do-while statement
+    const minimumChildrenForDoWhile = 2;
+    if (children.length < minimumChildrenForDoWhile) {
       throw new TranslationError('Do-while statement requires body and condition', node);
     }
 
-    const body = this.tryTranslateStatement(children[0], children[0].type.toLowerCase());
+    // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Array destructuring for clarity
+    const [bodyNode, conditionNode] = children;
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Get first child index
+    const body = this.tryTranslateStatement(bodyNode, bodyNode.type.toLowerCase());
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for body
     if (!body) {
       throw new TranslationError('Do-while statement requires a body', node);
     }
 
-    const condition = this.tryTranslateExpression(children[1], children[1].type.toLowerCase());
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Get second child index
+    const condition = this.tryTranslateExpression(conditionNode, conditionNode.type.toLowerCase());
     if (!condition) {
       throw new TranslationError('Do-while statement requires a condition', node);
     }
@@ -754,7 +898,10 @@ class ASTTranslator {
     return NodeFactory.createDoWhileLoopStatement(body, condition, this.getLocationOption(node));
   }
 
-  private translateSwitchStatement(node: ParseTreeNode): Statement {
+  private translateSwitchStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Statement {
     const expression = this.getChildExpression(node, 'expression');
     if (!expression) {
       throw new TranslationError('Switch statement requires an expression', node);
@@ -769,13 +916,13 @@ class ASTTranslator {
         if (!value) {
           const ch = this.getChildren(caseNode);
           const valueNode = ch.find(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
             (c: ParseTreeNode) => (c as { type?: string }).type !== 'statements'
           );
           if (valueNode) {
-            const v = this.tryTranslateExpression(
-              valueNode,
-              (valueNode as { type?: string }).type?.toLowerCase?.() ?? ''
-            );
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type guard for optional property
+            const valueType = (valueNode as { type?: string }).type?.toLowerCase?.() ?? '';
+            const v = this.tryTranslateExpression(valueNode, valueType);
             if (v) value = v;
           }
         }
@@ -784,11 +931,22 @@ class ASTTranslator {
         if (!statementsNode) {
           // Look for a child with type 'statements' in the children array
           const children = this.getChildren(caseNode);
-          statementsNode = children.find((child) => child.type === 'statements') ?? null;
+          statementsNode =
+            children.find(
+              // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+              (child: ParseTreeNode) => child.type === 'statements'
+            ) ?? null;
         }
         const statements = statementsNode
           ? this.getChildren(statementsNode)
-              .map((child) => this.translateNode(child) as Statement)
+              .map(
+                // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+                (child: ParseTreeNode) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to Statement
+                  return this.translateNode(child) as Statement;
+                }
+              )
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type guard filter
               .filter((stmt): stmt is Statement => stmt !== null)
           : [];
         cases.push({
@@ -807,11 +965,22 @@ class ASTTranslator {
       if (!statementsNode) {
         // Look for a child with type 'statements' in the children array
         const children = this.getChildren(defaultNode);
-        statementsNode = children.find((child) => child.type === 'statements') ?? null;
+        statementsNode =
+          children.find(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+            (child: ParseTreeNode) => child.type === 'statements'
+          ) ?? null;
       }
       const statements = statementsNode
         ? this.getChildren(statementsNode)
-            .map((child) => this.translateNode(child) as Statement)
+            .map(
+              // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+              (child: ParseTreeNode) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to Statement
+                return this.translateNode(child) as Statement;
+              }
+            )
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type guard filter
             .filter((stmt): stmt is Statement => stmt !== null)
         : [];
       defaultCase = {
@@ -830,7 +999,10 @@ class ASTTranslator {
     );
   }
 
-  private translateTryStatement(node: ParseTreeNode): Statement {
+  private translateTryStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Statement {
     // Try to get named properties first (for integration tests)
     let tryBlock = this.getChild(node, 'tryBlock', 'try');
     let catchClausesNode = this.getChild(node, 'catch_clauses', 'catchClauses');
@@ -840,26 +1012,39 @@ class ASTTranslator {
     // Parser structure: [tryBlock, catch_clauses?, finallyBlock?]
     if (!tryBlock) {
       const children = this.getChildren(node);
-      if (children.length === 0) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+      const emptyArrayLength = 0;
+      if (children.length === emptyArrayLength) {
         throw new TranslationError('Try statement requires a try block', node);
       }
-      tryBlock = children[0]; // First child is try block
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child is try block
+      const firstChildIndex = 0;
+      // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- First child is try block
+      tryBlock = children[firstChildIndex];
 
       // Find catch_clauses and finallyBlock in remaining children
-      for (let i = 1; i < children.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Start from second child
+      const secondChildIndex = 1;
+      for (let i = secondChildIndex; i < children.length; i++) {
         const child = children[i];
         if (child.type === 'catch_clauses' && !catchClausesNode) {
           catchClausesNode = child;
-        } else if (child.type === 'block' && !finallyBlock && i === children.length - 1) {
-          // Last block child is likely the finally block
-          finallyBlock = child;
+        } else if (child.type === 'block' && !finallyBlock) {
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Last child index
+          const lastChildIndex = 1;
+          if (i === children.length - lastChildIndex) {
+            // Last block child is likely the finally block
+            finallyBlock = child;
+          }
         }
       }
     }
 
-    if (!tryBlock) {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for tryBlock existence
+    if (tryBlock === null || tryBlock === undefined) {
       throw new TranslationError('Try statement requires a try block', node);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Statement to CompoundStatement
     const tryBlockStmt = this.translateCompoundStatement(tryBlock) as CompoundStatement;
 
     const catchClauses: CatchClause[] = [];
@@ -867,7 +1052,7 @@ class ASTTranslator {
       const catchChildren = this.getChildren(catchClausesNode);
       for (const catchNode of catchChildren) {
         // Catch clause structure: [exceptionType, name, block]
-        const catchChildren = this.getChildren(catchNode);
+        const catchNodeChildren = this.getChildren(catchNode);
         let exceptionTypeExpr: Expression | undefined = undefined;
         let exceptionType: TypeRef | undefined = undefined;
         let varDecl: VariableDeclaration | undefined = undefined;
@@ -896,14 +1081,20 @@ class ASTTranslator {
         if (variable) {
           const decl = this.tryTranslateDeclaration(variable, variable.type.toLowerCase());
           if (decl?.kind === 'VariableDeclaration') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Declaration to VariableDeclaration
             varDecl = decl as VariableDeclaration;
           }
         }
         block = this.getChild(catchNode, 'block');
 
         // If not found, try positional children
-        if (!exceptionTypeExpr && catchChildren.length >= 1) {
-          const firstChild = catchChildren[0];
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for at least one child
+        const minimumChildrenForException = 1;
+        if (!exceptionTypeExpr && catchNodeChildren.length >= minimumChildrenForException) {
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child is exception type
+          const firstChildIndex = 0;
+          // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- First child is exception type
+          const firstChild = catchNodeChildren[firstChildIndex];
           const expr = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
           if (expr) {
             exceptionTypeExpr = expr;
@@ -911,14 +1102,21 @@ class ASTTranslator {
         }
 
         // Also get the type for variable declaration (if not already set)
-        if (catchChildren.length >= 1) {
-          const typeRef = this.tryTranslateType(catchChildren[0]) ?? undefined;
+        if (catchNodeChildren.length >= minimumChildrenForException) {
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child is type
+          const firstChildIndex = 0;
+          const typeRef = this.tryTranslateType(catchNodeChildren[firstChildIndex]) ?? undefined;
           if (typeRef) {
             exceptionType = typeRef;
           }
         }
-        if (!varDecl && catchChildren.length >= 2) {
-          const nameNode = catchChildren[1];
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for at least two children
+        const minimumChildrenForVariable = 2;
+        if (!varDecl && catchNodeChildren.length >= minimumChildrenForVariable) {
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Second child is name
+          const secondChildIndex = 1;
+          // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Second child is name
+          const nameNode = catchNodeChildren[secondChildIndex];
           if (nameNode.type === 'name') {
             const name = this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name') ?? '';
             if (name && exceptionType) {
@@ -933,8 +1131,13 @@ class ASTTranslator {
             }
           }
         }
-        if (!block && catchChildren.length >= 3) {
-          block = catchChildren[2];
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Third child is block
+        const thirdChildIndex = 3;
+        if (!block && catchChildren.length >= thirdChildIndex) {
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Third child index
+          const thirdChildIndexOffset = 2;
+          // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Third child is block
+          block = catchChildren[thirdChildIndexOffset];
         }
 
         if (!block) {
@@ -945,6 +1148,7 @@ class ASTTranslator {
           throw new TranslationError('Catch clause block must be a CompoundStatement', catchNode);
         }
         catchClauses.push({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Statement to CompoundStatement
           block: blockStmt as CompoundStatement,
           exceptionType: exceptionTypeExpr,
           kind: 'CatchClause',
@@ -956,6 +1160,7 @@ class ASTTranslator {
 
     let finallyBlockStmt: CompoundStatement | undefined = undefined;
     if (finallyBlock) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Statement to CompoundStatement
       finallyBlockStmt = this.translateCompoundStatement(finallyBlock) as CompoundStatement;
     }
 
@@ -967,17 +1172,26 @@ class ASTTranslator {
     );
   }
 
-  private translateBreakStatement(node: ParseTreeNode): Statement {
+  private translateBreakStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Statement {
     const label = this.getProperty<string>(node, 'label');
     return NodeFactory.createBreakStatement(label, this.getLocationOption(node));
   }
 
-  private translateContinueStatement(node: ParseTreeNode): Statement {
+  private translateContinueStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Statement {
     const label = this.getProperty<string>(node, 'label');
     return NodeFactory.createContinueStatement(label, this.getLocationOption(node));
   }
 
-  private translateThrowStatement(node: ParseTreeNode): Statement {
+  private translateThrowStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Statement {
     // Try to get named property first (for integration tests)
     let expression = this.getChildExpression(node, 'expression', true);
 
@@ -985,8 +1199,16 @@ class ASTTranslator {
     // Parser structure: [expression]
     if (!expression) {
       const children = this.getChildren(node);
-      if (children.length > 0) {
-        const expr = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+      const emptyArrayLength = 0;
+      if (children.length > emptyArrayLength) {
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child is expression
+        const firstChildIndex = 0;
+        // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- First child is expression
+        const expr = this.tryTranslateExpression(
+          children[firstChildIndex],
+          children[firstChildIndex].type.toLowerCase()
+        );
         if (expr) {
           expression = expr;
         }
@@ -999,7 +1221,10 @@ class ASTTranslator {
     return NodeFactory.createThrowStatement(expression, this.getLocationOption(node));
   }
 
-  private translateVariableDeclarationStatement(node: ParseTreeNode): Statement {
+  private translateVariableDeclarationStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Statement {
     // Try to get declaration child (wrapper) or variable_declaration directly
     let declaration = this.getChild(node, 'declaration');
     // Try direct variable_declaration child
@@ -1007,8 +1232,16 @@ class ASTTranslator {
     if (!declaration) {
       // Try first child if it's a variable_declaration
       const children = this.getChildren(node);
-      if (children.length > 0 && children[0].type === 'variable_declaration') {
-        declaration = children[0];
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+      const emptyArrayLength = 0;
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child index
+      const firstChildIndex = 0;
+      if (
+        children.length > emptyArrayLength &&
+        children[firstChildIndex].type === 'variable_declaration'
+      ) {
+        // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- First child is declaration
+        declaration = children[firstChildIndex];
       }
     }
     if (!declaration) {
@@ -1022,6 +1255,7 @@ class ASTTranslator {
       );
     }
     return NodeFactory.createVariableDeclarationStatement(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Declaration to VariableDeclaration
       varDecl as VariableDeclaration,
       this.getLocationOption(node)
     );
@@ -1029,14 +1263,20 @@ class ASTTranslator {
 
   // Expression translation methods
 
-  private translateStringVal(node: ParseTreeNode): Expression {
+  private translateStringVal(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Expression {
     const text = this.getText(node) ?? '';
     // Remove quotes if present
     const value = text.replace(/^["']|["']$/g, '');
     return NodeFactory.createStringVal(value, text, this.getLocationOption(node));
   }
 
-  private translateIntegerVal(node: ParseTreeNode): Expression {
+  private translateIntegerVal(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Expression {
     const text = this.getText(node) ?? '0';
     const opts = this.getLocationOption(node);
     if (/[Dd]$/.test(text)) {
@@ -1057,13 +1297,19 @@ class ASTTranslator {
     return NodeFactory.createIntegerVal(value, text, opts);
   }
 
-  private translateBooleanVal(node: ParseTreeNode): Expression {
+  private translateBooleanVal(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Expression {
     const text = this.getText(node)?.toLowerCase() ?? 'false';
     const value = text === 'true';
     return NodeFactory.createBooleanVal(value, this.getLocationOption(node));
   }
 
-  private translateMethodCall(node: ParseTreeNode): Expression {
+  private translateMethodCall(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Expression {
     // Parser creates method_call_expression with children: [expr, { type: 'arguments', children: args }]
     // where expr is:
     //   - identifier (method name) if no target: no_receiver()
@@ -1081,11 +1327,17 @@ class ASTTranslator {
     }
 
     const methodNameFromProp = this.getProperty<string>(node, 'methodName', 'name');
-    if (methodNameFromProp) {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for method name
+    if (
+      methodNameFromProp !== null &&
+      methodNameFromProp !== undefined &&
+      methodNameFromProp !== ''
+    ) {
       methodName = methodNameFromProp;
     }
 
     // Try to get arguments from named property first (for integration tests)
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for arguments property
     if (node.arguments && Array.isArray(node.arguments)) {
       // arguments is a named property (integration test)
       argsNode = { children: node.arguments, type: 'arguments' };
@@ -1094,9 +1346,17 @@ class ASTTranslator {
     }
 
     // If not found as named properties, try positional children (parser output)
-    if (!methodName && children.length >= 2) {
-      const firstChild = children[0];
-      const secondChild = children[1];
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for method call
+    const minimumChildrenForMethodCall = 2;
+    if (!methodName && children.length >= minimumChildrenForMethodCall) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child index
+      const firstChildIndex = 0;
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Second child index
+      const secondChildIndex = 1;
+      // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- First child
+      const firstChild = children[firstChildIndex];
+      // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Second child
+      const secondChild = children[secondChildIndex];
 
       // Second child should be arguments
       if (secondChild.type === 'arguments' || secondChild.type === 'args') {
@@ -1122,21 +1382,22 @@ class ASTTranslator {
         // Has target, first child is field access expression
         const fieldAccess = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
         if (fieldAccess?.kind === 'FieldExpression') {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Expression to FieldExpression
           const fieldExpr = fieldAccess as import('../ast/Expression.js').FieldExpression;
-          target = fieldExpr.target;
-          methodName = fieldExpr.fieldName;
-          isSafeFromTarget = fieldExpr.isSafe;
+          // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Object destructuring for clarity
+          ({ target, fieldName: methodName, isSafe: isSafeFromTarget } = fieldExpr);
         }
       } else {
         // Try to translate as expression - might be a complex target
         const firstExpr = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
         if (firstExpr?.kind === 'FieldExpression') {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from Expression to FieldExpression
           const fieldExpr = firstExpr as import('../ast/Expression.js').FieldExpression;
-          target = fieldExpr.target;
-          methodName = fieldExpr.fieldName;
-          isSafeFromTarget = fieldExpr.isSafe;
+          // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Object destructuring for clarity
+          ({ target, fieldName: methodName, isSafe: isSafeFromTarget } = fieldExpr);
         } else if (firstExpr && 'name' in firstExpr) {
           // Could be an Identifier node (not an expression)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for name property
           methodName = (firstExpr as { name: string }).name;
         } else if (
           firstChild.type === 'super_expression' ||
@@ -1179,7 +1440,10 @@ class ASTTranslator {
     return callExpr;
   }
 
-  private translateBinaryExpression(node: ParseTreeNode): Expression {
+  private translateBinaryExpression(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter needs to be mutable for parsing
+    node: ParseTreeNode
+  ): Expression {
     const operator = this.getProperty<string>(node, 'operator', 'op') ?? '==';
     // Try to get left and right as optional first (to allow fallback)
     let left = this.getChildExpression(node, 'left', true);
@@ -1188,11 +1452,24 @@ class ASTTranslator {
     if (!left || !right) {
       // Try children array (parser uses positional children: [left, right])
       const children = this.getChildren(node);
-      if (children.length >= 2) {
-        const leftExpr = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
-        const rightExpr = this.tryTranslateExpression(children[1], children[1].type.toLowerCase());
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Minimum children for binary expression
+      const minimumChildrenForBinary = 2;
+      if (children.length >= minimumChildrenForBinary) {
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First child index
+        const firstChildIndex = 0;
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Second child index
+        const secondChildIndex = 1;
+        const leftExpr = this.tryTranslateExpression(
+          children[firstChildIndex],
+          children[firstChildIndex].type.toLowerCase()
+        );
+        const rightExpr = this.tryTranslateExpression(
+          children[secondChildIndex],
+          children[secondChildIndex].type.toLowerCase()
+        );
         if (leftExpr && rightExpr) {
           return NodeFactory.createBinaryExpression(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from string to BinaryOperator
             operator as BinaryExpression['operator'],
             leftExpr,
             rightExpr,

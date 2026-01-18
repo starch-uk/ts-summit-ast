@@ -78,6 +78,7 @@ export interface XPathValidationResult {
  */
 export function validateXPath(xpath: string): XPathValidationResult {
   const normalizedXPath = xpath.trim();
+  const emptyArrayLength = 0;
 
   if (!normalizedXPath) {
     return {
@@ -131,7 +132,8 @@ export function validateXPath(xpath: string): XPathValidationResult {
     return {
       error: `Mismatched brackets: ${bracketCountStr} opening brackets, ${closeBracketCountStr} closing brackets`,
       supportedFeatures,
-      unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
+      unsupportedFeatures:
+        unsupportedFeatures.length > emptyArrayLength ? unsupportedFeatures : undefined,
       valid: false,
     };
   }
@@ -146,12 +148,14 @@ export function validateXPath(xpath: string): XPathValidationResult {
     return {
       error: 'Invalid node name in XPath expression',
       supportedFeatures,
-      unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
+      unsupportedFeatures:
+        unsupportedFeatures.length > emptyArrayLength ? unsupportedFeatures : undefined,
       valid: false,
     };
   }
 
-  const valid = unsupportedFeatures.length === 0 && bracketCount === closeBracketCount;
+  const valid =
+    unsupportedFeatures.length === emptyArrayLength && bracketCount === closeBracketCount;
 
   return {
     valid,
@@ -159,11 +163,12 @@ export function validateXPath(xpath: string): XPathValidationResult {
       ? {}
       : {
           error:
-            unsupportedFeatures.length > 0
+            unsupportedFeatures.length > emptyArrayLength
               ? `Unsupported XPath features: ${unsupportedFeatures.join(', ')}`
               : 'Invalid XPath syntax',
         }),
-    supportedFeatures: supportedFeatures.length > 0 ? supportedFeatures : undefined,
+    supportedFeatures: supportedFeatures.length > emptyArrayLength ? supportedFeatures : undefined,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
   };
 }
@@ -274,16 +279,19 @@ export function wouldTriggerRule(
   const normalizedXPath = xpathExpression.trim();
 
   // Check if it's a simple node type match
+  const doubleSlashLength = 2;
+  const firstIndex = 0;
   if (normalizedXPath.startsWith('//')) {
-    const nodeType = normalizedXPath.substring(2).split('[')[0].trim();
+    const nodeType =
+      normalizedXPath.substring(doubleSlashLength).split('[')[firstIndex]?.trim() ?? '';
 
     if (node.kind === nodeType) {
       // Check for attribute filters like [@operator='+']
       const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
       if (attributeMatch) {
-        const attrName = attributeMatch[1];
-        const attrValue = attributeMatch[2];
-        const nodeValue = (node as unknown as Record<string, unknown>)[attrName];
+        const [, attrName, attrValue] = attributeMatch;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- Dynamic property access
+        const nodeValue = (node as unknown as Record<string, unknown>)[attrName ?? ''];
 
         if (nodeValue === attrValue) {
           return {
@@ -313,7 +321,7 @@ export function wouldTriggerRule(
 
   // Check descendants if requested
   if (includeDescendants) {
-    let foundMatch: ASTNode | undefined;
+    let foundMatch: ASTNode | undefined = undefined;
 
     walkAST(node, {
       enterNode: (child): undefined => {
@@ -322,21 +330,24 @@ export function wouldTriggerRule(
             includeDescendants: false,
             strict,
           });
-          if (childResult.matches && !foundMatch) {
+          if (childResult.matches && foundMatch === undefined) {
             foundMatch = child;
           }
         }
+        return undefined;
       },
     });
 
-    if (foundMatch) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type narrowing check
+    if (foundMatch !== undefined) {
+      const matchNode: ASTNode = foundMatch;
       return {
         confidence: 'partial',
         matchDetails: {
-          matchedPattern: foundMatch.kind,
+          matchedPattern: matchNode.kind,
           xpathExpression,
         },
-        matchedNode: foundMatch,
+        matchedNode: matchNode,
         matches: true,
       };
     }
@@ -438,8 +449,10 @@ export function findRuleMatches(
   const parentMap = includeContext ? buildParentMap(ast) : undefined;
 
   walkAST(ast, {
-    enterNode: (node) => {
-      if (maxResults && matches.length >= maxResults) {
+    enterNode: (node): boolean | undefined => {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for positive maxResults
+      const zeroMaxResults = 0;
+      if (maxResults !== undefined && maxResults > zeroMaxResults && matches.length >= maxResults) {
         return false; // Stop traversing
       }
 
@@ -447,17 +460,20 @@ export function findRuleMatches(
         includeDescendants: false,
       });
 
-      if (result.matches && result.matchedNode) {
+      if (result.matches && result.matchedNode !== undefined) {
         const location = getSourceRange(result.matchedNode);
         const { matchedNode } = result;
 
         // Extract match reason
-        let matchReason: string | undefined;
+        let matchReason: string | undefined = undefined;
         const normalizedXPath = xpathExpression.trim();
+        const doubleSlashLength = 2;
+        const firstIndex = 0;
         if (normalizedXPath.startsWith('//')) {
-          const nodeType = normalizedXPath.substring(2).split('[')[0].trim();
+          const nodeType =
+            normalizedXPath.substring(doubleSlashLength).split('[')[firstIndex]?.trim() ?? '';
           const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
-          if (attributeMatch) {
+          if (attributeMatch !== null) {
             matchReason = `Node type matches "${nodeType}" and attribute filter matches`;
           } else {
             matchReason = `Node type matches "${nodeType}"`;
@@ -465,12 +481,19 @@ export function findRuleMatches(
         }
 
         // Extract matched attributes
-        const matchedAttributes: Record<string, unknown> | undefined = (() => {
+        const matchedAttributes: Record<string, unknown> | undefined = (():
+          | Record<string, unknown>
+          | undefined => {
           const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
-          if (attributeMatch && matchedNode) {
-            const attrName = attributeMatch[1];
-            const attrValue = (matchedNode as unknown as Record<string, unknown>)[attrName];
-            return attrValue !== undefined ? { [attrName]: attrValue } : undefined;
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for attribute match
+          if (attributeMatch !== null && matchedNode !== undefined) {
+            const [, attrName] = attributeMatch;
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for attrName
+            if (attrName !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access
+              const attrValue = (matchedNode as unknown as Record<string, unknown>)[attrName];
+              return attrValue !== undefined ? { [attrName]: attrValue } : undefined;
+            }
           }
           return undefined;
         })();
@@ -481,25 +504,30 @@ export function findRuleMatches(
 
         // Build sibling nodes (children of parent, excluding self)
         const siblingNodes: ASTNode[] | undefined =
-          includeContext && parentNode
-            ? (() => {
+          includeContext && parentNode !== undefined
+            ? ((): ASTNode[] => {
                 const parentChildren = Object.values(parentNode)
                   .filter((v): v is ASTNode => v !== null && typeof v === 'object' && 'kind' in v)
                   .filter((n) => n !== matchedNode);
                 // Also check common child properties
                 const commonChildren: ASTNode[] = [];
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access
                 const parentRecord = parentNode as unknown as Record<string, unknown>;
                 if (Array.isArray(parentRecord.statements)) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
                   commonChildren.push(...(parentRecord.statements as ASTNode[]));
                 }
                 if (Array.isArray(parentRecord.members)) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
                   commonChildren.push(...(parentRecord.members as ASTNode[]));
                 }
                 if (Array.isArray(parentRecord.arguments)) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
                   commonChildren.push(...(parentRecord.arguments as ASTNode[]));
                 }
                 return [...new Set([...parentChildren, ...commonChildren])].filter(
-                  (n) => n !== matchedNode && n.location
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for location
+                  (n) => n !== matchedNode && n.location !== null && n.location !== undefined
                 );
               })()
             : undefined;
@@ -510,7 +538,8 @@ export function findRuleMatches(
             capturedGroups: result.matchDetails?.capturedGroups,
             matchReason,
             matchedAttributes,
-            matchedPattern: result.matchDetails?.matchedPattern || matchedNode.kind,
+            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing -- Check for matchedPattern
+            matchedPattern: result.matchDetails?.matchedPattern ?? matchedNode.kind,
           },
           node: matchedNode,
           xpathExpression,

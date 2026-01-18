@@ -91,6 +91,7 @@ export class JsonDeserializer {
       json,
       this.options.reviver as (key: string, value: unknown) => unknown
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns unknown, need to assert to JsonASTNode
     return this.deserializeNode(parsed as JsonASTNode);
   }
 
@@ -98,16 +99,24 @@ export class JsonDeserializer {
    * Deserialize JSON object to AST node.
    * @param json
    */
-  deserializeNode(json: JsonASTNode): ASTNode {
+  public deserializeNode(json: Readonly<JsonASTNode>): ASTNode {
     // Support both '@type' (summit-ast format) and 'kind' (backward compatibility)
-    const nodeType = (
-      '@type' in json && json['@type']
-        ? json['@type']
-        : 'kind' in json && json.kind
-          ? json.kind
-          : null
-    ) as string | null;
-    if (!json || typeof json !== 'object' || !nodeType) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion needed for JSON structure
+    // Support both '@type' (summit-ast format) and 'kind' (backward compatibility)
+    // Support both '@type' (summit-ast format) and 'kind' (backward compatibility)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion needed for JSON structure
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion needed for JSON structure
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type guard check for JSON property
+    const nodeType =
+      '@type' in json &&
+      (json['@type'] as unknown) !== null &&
+      (json['@type'] as unknown) !== undefined
+        ? (json['@type'] as string)
+        : 'kind' in json && (json.kind as unknown) !== null && (json.kind as unknown) !== undefined
+          ? (json.kind as string)
+          : null;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type guard check
+    if (typeof json !== 'object' || json === null || nodeType === null) {
       throw new Error('Invalid JSON AST node: missing @type or kind property');
     }
 
@@ -124,8 +133,9 @@ export class JsonDeserializer {
    * Deserialize source location.
    * @param location
    */
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeLocation(location: unknown): SourceRange | undefined {
-    if (!location || typeof location !== 'object') {
+    if (location === null || location === undefined || typeof location !== 'object') {
       return undefined;
     }
 
@@ -134,15 +144,17 @@ export class JsonDeserializer {
       end?: { column?: number; line?: number; offset?: number };
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default column/line values
+    const defaultLocationValue = 0;
     return {
       end: {
-        column: loc.end?.column ?? 0,
-        line: loc.end?.line ?? 0,
+        column: loc.end?.column ?? defaultLocationValue,
+        line: loc.end?.line ?? defaultLocationValue,
         offset: loc.end?.offset,
       },
       start: {
-        column: loc.start?.column ?? 0,
-        line: loc.start?.line ?? 0,
+        column: loc.start?.column ?? defaultLocationValue,
+        line: loc.start?.line ?? defaultLocationValue,
         offset: loc.start?.offset,
       },
     };
@@ -155,7 +167,7 @@ export class JsonDeserializer {
    * @param location
    */
   private deserializeNodeByKind(
-    json: JsonASTNode,
+    json: Readonly<JsonASTNode>,
     nodeType: string,
     location?: SourceRange
   ): ASTNode {
@@ -282,38 +294,54 @@ export class JsonDeserializer {
   // Statement deserialization methods
 
   private deserializeIfStatement(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): IfStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const thenStatement = this.deserializeNode(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access may be undefined
       (json.thenStatement ?? json.thenBody) as JsonASTNode
     ) as Statement;
+    const elseValue = json.elseStatement ?? json.elseBody;
     const elseStatement =
-      (json.elseStatement ?? json.elseBody)
-        ? (this.deserializeNode((json.elseStatement ?? json.elseBody) as JsonASTNode) as Statement)
+      elseValue !== null && elseValue !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(elseValue as JsonASTNode) as Statement)
         : undefined;
 
     return NodeFactory.createIfStatement(condition, thenStatement, elseStatement, locationOption);
   }
 
   private deserializeForLoopStatement(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ForLoopStatement {
-    const init = json.init
-      ? (this.deserializeNode(json.init as JsonASTNode) as Statement)
-      : undefined;
-    const condition = json.condition
-      ? (this.deserializeNode(json.condition as JsonASTNode) as Expression)
-      : undefined;
-    const update = json.update
-      ? (this.deserializeNode(json.update as JsonASTNode) as Expression)
-      : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for init
+    const init =
+      json.init !== null && json.init !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(json.init as JsonASTNode) as Statement)
+        : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for condition
+    const condition =
+      json.condition !== null && json.condition !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(json.condition as JsonASTNode) as Expression)
+        : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for update
+    const update =
+      json.update !== null && json.update !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(json.update as JsonASTNode) as Expression)
+        : undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const body = this.deserializeNode(json.body as JsonASTNode) as Statement;
 
     return NodeFactory.createForLoopStatement(
       body,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
       init as ExpressionStatement | VariableDeclarationStatement | undefined,
       condition,
       update,
@@ -322,51 +350,63 @@ export class JsonDeserializer {
   }
 
   private deserializeWhileLoopStatement(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): WhileLoopStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const body = this.deserializeNode(json.body as JsonASTNode) as Statement;
 
     return NodeFactory.createWhileLoopStatement(condition, body, locationOption);
   }
 
   private deserializeReturnStatement(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ReturnStatement {
-    const expression = json.expression
-      ? (this.deserializeNode(json.expression as JsonASTNode) as Expression)
-      : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for expression
+    const expression =
+      json.expression !== null && json.expression !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(json.expression as JsonASTNode) as Expression)
+        : undefined;
 
     return NodeFactory.createReturnStatement(expression, locationOption);
   }
 
   private deserializeCompoundStatement(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): CompoundStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const statements = (json.statements as JsonASTNode[]).map(
-      (stmt) => this.deserializeNode(stmt) as Statement
+      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+      (stmt: Readonly<JsonASTNode>) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+        this.deserializeNode(stmt) as Statement
     );
 
     return NodeFactory.createCompoundStatement(statements, locationOption);
   }
 
   private deserializeExpressionStatement(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ExpressionStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const expression = this.deserializeNode(json.expression as JsonASTNode) as Expression;
 
     return NodeFactory.createExpressionStatement(expression, locationOption);
   }
 
   private deserializeVariableDeclarationStatement(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): VariableDeclarationStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const declaration = this.deserializeNode(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
       json.declaration as JsonASTNode
     ) as VariableDeclaration;
 
@@ -376,14 +416,18 @@ export class JsonDeserializer {
   // Expression deserialization methods
 
   private deserializeBinaryExpression(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): BinaryExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const operator = json.operator as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
 
     return NodeFactory.createBinaryExpression(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
       operator as BinaryOperator,
       left,
       right,
@@ -392,19 +436,33 @@ export class JsonDeserializer {
   }
 
   private deserializeCallExpression(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): CallExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const methodName = json.methodName as string;
-    const target = json.target
-      ? (this.deserializeNode(json.target as JsonASTNode) as Expression)
-      : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for target
+    const target =
+      json.target !== null && json.target !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(json.target as JsonASTNode) as Expression)
+        : undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const args = (json.arguments as JsonASTNode[]).map(
-      (arg) => this.deserializeNode(arg) as Expression
+      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+      (arg: Readonly<JsonASTNode>) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+        this.deserializeNode(arg) as Expression
     );
-    const typeArguments = json.typeArguments
-      ? (json.typeArguments as JsonASTNode[]).map((type) => this.deserializeTypeRef(type))
-      : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for typeArguments
+    const typeArguments =
+      json.typeArguments !== null && json.typeArguments !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (json.typeArguments as JsonASTNode[]).map(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+            (type: Readonly<JsonASTNode>) => this.deserializeTypeRef(type)
+          )
+        : undefined;
 
     return NodeFactory.createCallExpression(
       methodName,
@@ -416,36 +474,46 @@ export class JsonDeserializer {
   }
 
   private deserializeFieldExpression(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): FieldExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const fieldName = json.fieldName as string;
-    const target = json.target
-      ? (this.deserializeNode(json.target as JsonASTNode) as Expression)
-      : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for target
+    const target =
+      json.target !== null && json.target !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(json.target as JsonASTNode) as Expression)
+        : undefined;
 
     return NodeFactory.createFieldExpression(fieldName, target, locationOption);
   }
 
   private deserializeArrayExpression(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ArrayExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const array = this.deserializeNode(json.array as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const index = this.deserializeNode(json.index as JsonASTNode) as Expression;
 
     return NodeFactory.createArrayExpression(array, index, locationOption);
   }
 
   private deserializeAssignExpression(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): AssignExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const operator = json.operator as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
 
     return NodeFactory.createAssignExpression(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
       operator as AssignmentOperator,
       left,
       right,
@@ -454,18 +522,21 @@ export class JsonDeserializer {
   }
 
   private deserializeVariableExpression(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): VariableExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const id = this.deserializeNode(json.id as JsonASTNode) as Identifier;
 
     return NodeFactory.createVariableExpression(id, locationOption);
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeIdentifier(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): Identifier {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const name = json.name as string;
 
     return NodeFactory.createIdentifier(name, locationOption);
@@ -473,60 +544,77 @@ export class JsonDeserializer {
 
   // Literal deserialization methods
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeStringVal(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): StringVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as string;
-    const raw = (json.raw as string) ?? `"${value}"`;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, raw can be undefined
+    const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : `"${value}"`;
 
     return NodeFactory.createStringVal(value, raw, locationOption);
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeIntegerVal(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): IntegerVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
-    const raw = (json.raw as string) ?? String(value);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, raw can be undefined
+    const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
     return NodeFactory.createIntegerVal(value, raw, locationOption);
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeDoubleVal(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): DoubleVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
-    const raw = (json.raw as string) ?? String(value);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, raw can be undefined
+    const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
     return NodeFactory.createDoubleVal(value, raw, locationOption);
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeLongVal(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): LongVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
-    const raw = (json.raw as string) ?? String(value);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, raw can be undefined
+    const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
     return NodeFactory.createLongVal(value, raw, locationOption);
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeDecimalVal(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): DecimalVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
-    const raw = (json.raw as string) ?? String(value);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, raw can be undefined
+    const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
     return NodeFactory.createDecimalVal(value, raw, locationOption);
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeBooleanVal(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): BooleanVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as boolean;
 
     return NodeFactory.createBooleanVal(value, locationOption);
@@ -536,22 +624,35 @@ export class JsonDeserializer {
    * TypeRef deserialization (TypeRef is an AST node in summit-ast).
    * @param typeRefJson
    */
-  private deserializeTypeRef(typeRefJson: JsonASTNode): TypeRef {
+  private deserializeTypeRef(typeRefJson: Readonly<JsonASTNode>): TypeRef {
     return this.deserializeTypeRefNode(typeRefJson);
   }
 
   private deserializeTypeRefNode(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): TypeRef {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const componentsArray = json.components as JsonASTNode[] | undefined;
-    const components = (componentsArray ?? []).map((comp) => ({
-      args: ((comp as { args?: JsonASTNode[] }).args ?? []).map((arg) =>
-        this.deserializeTypeRef(arg)
-      ),
-      id: this.deserializeNode(comp.id as JsonASTNode) as Identifier,
-    }));
-    const arrayNesting = (json.arrayNesting as number) ?? 0;
+    const components = (componentsArray ?? []).map(
+      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+      (comp: Readonly<JsonASTNode>) => ({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+        args: ((comp as { args?: JsonASTNode[] }).args ?? []).map(
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+          (arg: Readonly<JsonASTNode>) => this.deserializeTypeRef(arg)
+        ),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+        id: this.deserializeNode(comp.id as JsonASTNode) as Identifier,
+      })
+    );
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default array nesting
+    const defaultArrayNesting = 0;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, arrayNesting can be undefined
+    const arrayNesting =
+      json.arrayNesting !== null && json.arrayNesting !== undefined
+        ? (json.arrayNesting as number)
+        : defaultArrayNesting;
 
     return NodeFactory.createTypeRef(components, arrayNesting, locationOption);
   }
@@ -563,10 +664,12 @@ export class JsonDeserializer {
    * @param locationOption.location
    */
   private deserializeNewExpression(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): NewExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const initializer = this.deserializeNode(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
       json.initializer as JsonASTNode
     ) as import('../ast/Initializer.js').Initializer;
 
@@ -574,51 +677,80 @@ export class JsonDeserializer {
   }
 
   private deserializeConstructorInitializer(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ConstructorInitializer {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const type = this.deserializeTypeRef(json.type as JsonASTNode);
-    const args = ((json.args as JsonASTNode[]) ?? []).map((arg) =>
-      this.deserializeNode(arg)
-    ) as Expression[];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, args can be undefined
+    const args =
+      json.args !== null && json.args !== undefined
+        ? ((json.args as JsonASTNode[]).map(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+            (arg: Readonly<JsonASTNode>) =>
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+              this.deserializeNode(arg)
+          ) as Expression[])
+        : [];
 
     return NodeFactory.createConstructorInitializer(type, args, locationOption);
   }
 
   private deserializeValuesInitializer(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ValuesInitializer {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const type = this.deserializeTypeRef(json.type as JsonASTNode);
-    const values = ((json.values as JsonASTNode[]) ?? []).map((val) =>
-      this.deserializeNode(val)
-    ) as Expression[];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, values can be undefined
+    const values =
+      json.values !== null && json.values !== undefined
+        ? ((json.values as JsonASTNode[]).map(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+            (val: Readonly<JsonASTNode>) =>
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+              this.deserializeNode(val)
+          ) as Expression[])
+        : [];
 
     return NodeFactory.createValuesInitializer(type, values, locationOption);
   }
 
   private deserializeSizedArrayInitializer(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): SizedArrayInitializer {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const type = this.deserializeTypeRef(json.type as JsonASTNode);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const size = this.deserializeNode(json.size as JsonASTNode) as Expression;
 
     return NodeFactory.createSizedArrayInitializer(type, size, locationOption);
   }
 
   private deserializeMapInitializer(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): MapInitializer {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const type = this.deserializeTypeRef(json.type as JsonASTNode);
-    const pairs = ((json.pairs as JsonASTNode[]) ?? []).map((pair: JsonASTNode) => {
-      const pairObj = pair as { key?: unknown; value?: unknown };
-      return {
-        key: this.deserializeNode(pairObj.key as JsonASTNode) as Expression,
-        value: this.deserializeNode(pairObj.value as JsonASTNode) as Expression,
-      };
-    });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, pairs can be undefined
+    const pairs =
+      json.pairs !== null && json.pairs !== undefined
+        ? (json.pairs as JsonASTNode[]).map(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+            (pair: Readonly<JsonASTNode>) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+              const pairObj = pair as { key?: unknown; value?: unknown };
+              return {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+                key: this.deserializeNode(pairObj.key as JsonASTNode) as Expression,
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+                value: this.deserializeNode(pairObj.value as JsonASTNode) as Expression,
+              };
+            }
+          )
+        : [];
 
     return NodeFactory.createMapInitializer(type, pairs, locationOption);
   }
@@ -630,30 +762,42 @@ export class JsonDeserializer {
    * @param locationOption.location
    */
   private deserializeExpressionElementValue(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ExpressionElementValue {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = this.deserializeNode(json.value as JsonASTNode) as Expression;
     return NodeFactory.createExpressionElementValue(value, locationOption);
   }
 
   private deserializeAnnotationElementValue(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): AnnotationElementValue {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = this.deserializeNode(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
       json.value as JsonASTNode
     ) as import('../ast/Declaration.js').Annotation;
     return NodeFactory.createAnnotationElementValue(value, locationOption);
   }
 
   private deserializeArrayElementValue(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): ArrayElementValue {
-    const values = ((json.values as JsonASTNode[]) ?? []).map((val) =>
-      this.deserializeNode(val)
-    ) as import('../ast/ElementValue.js').ElementValue[];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- JSON deserialization requires type assertions, values can be undefined
+    const values =
+      json.values !== null && json.values !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
+          ((json.values as JsonASTNode[]).map(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+            (val: Readonly<JsonASTNode>) =>
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+              this.deserializeNode(val)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing to ElementValue array
+          ) as import('../ast/ElementValue.js').ElementValue[])
+        : [];
     return NodeFactory.createArrayElementValue(values, locationOption);
   }
 
@@ -664,14 +808,19 @@ export class JsonDeserializer {
    * @param locationOption.location
    */
   private deserializeAnnotationArgument(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): import('../ast/Declaration.js').AnnotationArgument {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const name = json.name as string | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = this.deserializeNode(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
       json.value as JsonASTNode
     ) as import('../ast/ElementValue.js').ElementValue;
-    const isNameImplicit = (json.isNameImplicit as boolean) ?? !name;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions -- JSON property access, check name
+    const isNameImplicit =
+      (json.isNameImplicit as boolean) ?? (name === null || name === undefined || name === '');
 
     return {
       isNameImplicit,
@@ -683,17 +832,35 @@ export class JsonDeserializer {
   }
 
   private deserializeVariableDeclaration(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- JSON deserialization requires mutable object
     json: JsonASTNode,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
     locationOption?: { location: SourceRange }
   ): VariableDeclaration {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const name = json.name as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const type = this.deserializeTypeRef(json.type as JsonASTNode);
-    const initializer = json.initializer
-      ? (this.deserializeNode(json.initializer as JsonASTNode) as Expression)
-      : undefined;
-    const modifiers = json.modifiers
-      ? (json.modifiers as JsonASTNode[]).map((mod) => this.deserializeNode(mod) as Modifier)
-      : undefined;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for initializer
+    const initializer =
+      json.initializer !== null && json.initializer !== undefined && json.initializer !== false
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+          (this.deserializeNode(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
+            json.initializer as JsonASTNode
+          ) as Expression)
+        : undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/strict-boolean-expressions -- JSON deserialization requires type assertions, check for modifiers
+    const modifiers =
+      json.modifiers !== null && json.modifiers !== undefined
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
+          (json.modifiers as JsonASTNode[]).map(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
+            (mod: Readonly<JsonASTNode>) =>
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+              this.deserializeNode(mod) as Modifier
+          )
+        : undefined;
 
     return NodeFactory.createVariableDeclaration(
       name,
@@ -706,10 +873,12 @@ export class JsonDeserializer {
 
   // Modifier deserialization
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeModifier(
-    json: JsonASTNode,
-    locationOption?: { location: SourceRange }
+    json: Readonly<JsonASTNode>,
+    locationOption?: Readonly<{ location: SourceRange }>
   ): Modifier {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const keyword = json.keyword as string;
     // Validate keyword is a valid ModifierKeyword
     const validKeywords = [
@@ -736,6 +905,7 @@ export class JsonDeserializer {
     }
 
     return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing to ModifierKeyword
       keyword: keyword as Modifier['keyword'],
       kind: 'Modifier',
       location: locationOption?.location,
@@ -748,8 +918,10 @@ export class JsonDeserializer {
    * @param _json
    * @param nodeType
    */
-  private validateNode(_json: JsonASTNode, nodeType: string | null): void {
-    if (!nodeType || typeof nodeType !== 'string') {
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  private validateNode(_json: Readonly<JsonASTNode>, nodeType: string | null): void {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type guard check
+    if (nodeType === null || typeof nodeType !== 'string') {
       throw new Error('Invalid JSON AST node: @type or kind must be a string');
     }
   }

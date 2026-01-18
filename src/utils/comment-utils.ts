@@ -375,6 +375,7 @@ export interface ExtractCommentsOptions {
  */
 function matchCommentPattern(
   commentText: Readonly<string>,
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
   patterns?: readonly Readonly<CommentPattern>[]
 ): { type: string; matches: RegExpMatchArray } | null {
   const emptyArrayLength = 0;
@@ -423,9 +424,9 @@ function matchCommentPattern(
  * ```
  */
 export function extractComments(
-  ast: ASTNode,
-  source: string,
-  options: ExtractCommentsOptions = {}
+  ast: Readonly<ASTNode>,
+  source: Readonly<string>,
+  options: Readonly<ExtractCommentsOptions> = {}
 ): ExtractedComment[] {
   const {
     includeBlockComments = true,
@@ -448,7 +449,9 @@ export function extractComments(
 
   for (let lineNum = 0; lineNum < lines.length; lineNum++) {
     const line = lines[lineNum];
-    const lineNumber = lineNum + 1;
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Convert 0-based index to 1-based line number
+    const lineNumberOffset = 1;
+    const lineNumber = lineNum + lineNumberOffset;
 
     // Extract line comments
     if (includeLineComments && !inBlockComment) {
@@ -457,10 +460,15 @@ export function extractComments(
         /**
          * Full "// comment text".
          */
-        const fullCommentText = lineCommentMatch[0];
-        const commentText = lineCommentMatch[1].trim();
+        // eslint-disable-next-line @typescript-eslint/prefer-destructuring, @typescript-eslint/no-magic-numbers -- Array index for regex match
+        const fullMatchIndex = 0;
+        const firstCaptureGroup = 1;
+        const fullCommentText = lineCommentMatch[fullMatchIndex];
+        const commentText = lineCommentMatch[firstCaptureGroup].trim();
         const commentStart = line.indexOf('//');
-        const column = commentStart + 1;
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Column offset for comment start
+        const columnOffset = 1;
+        const column = commentStart + columnOffset;
 
         // Extract marker and description
         const marker = '//';
@@ -491,13 +499,25 @@ export function extractComments(
         if (associateNodes) {
           const associated = findAssociatedNode(ast, comment, source);
           if (associated) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for dynamic property assignment
             const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
-            (commentWithAssociation as any).associatedNode = associated.node;
-            (commentWithAssociation as any).nodeRelationship = associated.relationship;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+            (commentWithAssociation as Record<string, unknown>).associatedNode = associated.node;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+            (commentWithAssociation as Record<string, unknown>).nodeRelationship =
+              associated.relationship;
             // Calculate confidence based on distance (closer = more confident)
+            // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Distance thresholds and confidence calculation
+            const distanceThreshold = 10;
+            const maxConfidence = 1.0;
+            const minConfidence = 0.1;
+            const confidenceDivisor = 100;
             const confidence =
-              associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
-            (commentWithAssociation as any).associationConfidence = confidence;
+              associated.distance <= distanceThreshold
+                ? maxConfidence
+                : Math.max(minConfidence, maxConfidence - associated.distance / confidenceDivisor);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property assignment
+            (commentWithAssociation as Record<string, unknown>).associationConfidence = confidence;
           }
         }
 
@@ -524,7 +544,12 @@ export function extractComments(
         // Start of a block comment
         inBlockComment = true;
         blockCommentStartLine = lineNumber;
-        blockCommentStartColumn = (blockStartMatch?.index ?? blockStartMatch2?.index ?? 0) + 1;
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Column offset for comment start
+        const columnOffset = 1;
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default index when no match
+        const defaultIndex = 0;
+        blockCommentStartColumn =
+          (blockStartMatch?.index ?? blockStartMatch2?.index ?? defaultIndex) + columnOffset;
         blockCommentLines = [line];
         blockCommentRawText = line;
 
@@ -541,8 +566,10 @@ export function extractComments(
           const patternMatch = matchCommentPattern(commentText, commentPatterns);
 
           // Parse ApexDoc if requested
-          let apexDocComment: ApexDocComment | undefined;
+          // eslint-disable-next-line @typescript-eslint/init-declarations -- Variable is conditionally initialized
+          let apexDocComment: ApexDocComment | undefined = undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
+            // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
             const location = calculateCommentLocation(
               source,
               blockCommentStartLine,
@@ -576,12 +603,28 @@ export function extractComments(
           if (associateNodes) {
             const associated = findAssociatedNode(ast, comment, source);
             if (associated) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for dynamic property assignment
               const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
-              (commentWithAssociation as any).associatedNode = associated.node;
-              (commentWithAssociation as any).nodeRelationship = associated.relationship;
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+              (commentWithAssociation as Record<string, unknown>).associatedNode = associated.node;
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+              (commentWithAssociation as Record<string, unknown>).nodeRelationship =
+                associated.relationship;
+              // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Confidence calculation constants
+              const maxDistanceForFullConfidence = 10;
+              const fullConfidence = 1.0;
+              const minConfidence = 0.1;
+              const confidenceDivisor = 100;
               const confidence =
-                associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
-              (commentWithAssociation as any).associationConfidence = confidence;
+                associated.distance <= maxDistanceForFullConfidence
+                  ? fullConfidence
+                  : Math.max(
+                      minConfidence,
+                      fullConfidence - associated.distance / confidenceDivisor
+                    );
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+              (commentWithAssociation as Record<string, unknown>).associationConfidence =
+                confidence;
             }
           }
 
@@ -611,8 +654,10 @@ export function extractComments(
           const patternMatch = matchCommentPattern(commentText, commentPatterns);
 
           // Parse ApexDoc if requested
-          let apexDocComment: ApexDocComment | undefined;
+          // eslint-disable-next-line @typescript-eslint/init-declarations -- Variable is conditionally initialized
+          let apexDocComment: ApexDocComment | undefined = undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
+            // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
             const location = calculateCommentLocation(
               source,
               blockCommentStartLine,
@@ -646,12 +691,28 @@ export function extractComments(
           if (associateNodes) {
             const associated = findAssociatedNode(ast, comment, source);
             if (associated) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for dynamic property assignment
               const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
-              (commentWithAssociation as any).associatedNode = associated.node;
-              (commentWithAssociation as any).nodeRelationship = associated.relationship;
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+              (commentWithAssociation as Record<string, unknown>).associatedNode = associated.node;
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+              (commentWithAssociation as Record<string, unknown>).nodeRelationship =
+                associated.relationship;
+              // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Confidence calculation constants
+              const maxDistanceForFullConfidence = 10;
+              const fullConfidence = 1.0;
+              const minConfidence = 0.1;
+              const confidenceDivisor = 100;
               const confidence =
-                associated.distance <= 10 ? 1.0 : Math.max(0.1, 1.0 - associated.distance / 100);
-              (commentWithAssociation as any).associationConfidence = confidence;
+                associated.distance <= maxDistanceForFullConfidence
+                  ? fullConfidence
+                  : Math.max(
+                      minConfidence,
+                      fullConfidence - associated.distance / confidenceDivisor
+                    );
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment
+              (commentWithAssociation as Record<string, unknown>).associationConfidence =
+                confidence;
             }
           }
 

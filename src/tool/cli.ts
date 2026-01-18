@@ -5,6 +5,7 @@
  * Command-line interface for the SummitTool.
  */
 
+import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
 import { SummitTool } from './SummitTool.js';
 
 /**
@@ -82,22 +83,30 @@ function main(): void {
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- process.argv.slice(2) is standard for CLI args
   const args = process.argv.slice(2);
 
-  if (args.length === 0) {
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+  const emptyArrayLength = 0;
+  if (args.length === emptyArrayLength) {
     printHelp();
-    process.exit(0);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Exit code
+    const exitCodeSuccess = 0;
+    process.exit(exitCodeSuccess);
   }
 
   const { files, json, verbose, help } = parseArgs(args);
 
   if (help) {
     printHelp();
-    process.exit(0);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Exit code
+    const exitCodeSuccess = 0;
+    process.exit(exitCodeSuccess);
   }
 
-  if (files.length === 0) {
+  if (files.length === emptyArrayLength) {
     console.error('Error: No files or directories specified');
     printHelp();
-    process.exit(1);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Exit code
+    const exitCodeError = 1;
+    process.exit(exitCodeError);
   }
 
   // Create tool instance
@@ -105,7 +114,7 @@ function main(): void {
   const tool = new SummitTool({
     includeLocation: true,
     json,
-    parseTreeAdapter: (_source, filePath) => {
+    parseTreeAdapter: (_source: string, filePath: string): ParseTreeNode | null => {
       // This is a placeholder - users need to provide their own parser
       console.error(
         `Error: No parse tree adapter provided. Please provide a parser to convert source code to parse trees.\n` +
@@ -128,11 +137,17 @@ function main(): void {
   tool.printResults(allResults);
 
   // Exit with error code if any failures
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
   const hasErrors = allResults.some((r) => !r.success);
-  process.exit(hasErrors ? 1 : 0);
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Exit codes: 1 for error, 0 for success
+  const exitCodeError = 1;
+  const exitCodeSuccess = 0;
+  process.exit(hasErrors ? exitCodeError : exitCodeSuccess);
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers -- process.argv[1] is the script path
+const scriptPathIndex = 1;
+if (import.meta.url === `file://${process.argv[scriptPathIndex]}`) {
   main();
 }

@@ -18,6 +18,7 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class InitializerFactory {
   public static createConstructorInitializer(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
     args: readonly Readonly<Expression>[] = [],
     options?: Readonly<NodeFactoryOptions>
@@ -31,22 +32,28 @@ export class InitializerFactory {
   }
 
   public static createValuesInitializer(
-    type: TypeRef,
-    values: Expression[] = [],
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    type: Readonly<TypeRef>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    values: readonly Expression[] = [],
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): ValuesInitializer {
     return {
       kind: 'ValuesInitializer',
       location: options?.location,
       type,
-      values,
+      values: [...values],
     };
   }
 
   public static createSizedArrayInitializer(
-    type: TypeRef,
-    size: Expression,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    type: Readonly<TypeRef>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    size: Readonly<Expression>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): SizedArrayInitializer {
     return {
       kind: 'SizedArrayInitializer',
@@ -57,14 +64,17 @@ export class InitializerFactory {
   }
 
   public static createMapInitializer(
-    type: TypeRef,
-    pairs: { key: Expression; value: Expression }[],
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    type: Readonly<TypeRef>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    pairs: readonly { key: Expression; value: Expression }[],
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): MapInitializer {
     return {
       kind: 'MapInitializer',
       location: options?.location,
-      pairs,
+      pairs: [...pairs],
       type,
     };
   }

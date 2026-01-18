@@ -210,7 +210,7 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
     case 'NewExpression': {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const expr = node as NewExpression;
-      if (expr.initializer) {
+      if (expr.initializer !== null && expr.initializer !== undefined) {
         children.push(expr.initializer);
       }
       break;
@@ -242,13 +242,17 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const decl = node as VariableDeclaration;
       // TypeRef is not a node type, so we don't traverse it
-      if (decl.modifiers && Array.isArray(decl.modifiers)) {
+      if (
+        decl.modifiers !== null &&
+        decl.modifiers !== undefined &&
+        Array.isArray(decl.modifiers)
+      ) {
         children.push(...decl.modifiers);
       }
-      if (decl.annotations) {
+      if (decl.annotations !== null && decl.annotations !== undefined) {
         children.push(...decl.annotations);
       }
-      if (decl.initializer) {
+      if (decl.initializer !== null && decl.initializer !== undefined) {
         children.push(decl.initializer);
       }
       break;
@@ -257,13 +261,17 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const decl = node as ClassDeclaration;
       // TypeRef is not a node type, so we don't traverse extendsClause or implementsClause
-      if (decl.modifiers && Array.isArray(decl.modifiers)) {
+      if (
+        decl.modifiers !== null &&
+        decl.modifiers !== undefined &&
+        Array.isArray(decl.modifiers)
+      ) {
         children.push(...decl.modifiers);
       }
-      if (decl.annotations) {
+      if (decl.annotations !== null && decl.annotations !== undefined) {
         children.push(...decl.annotations);
       }
-      if (decl.members) {
+      if (decl.members !== null && decl.members !== undefined) {
         children.push(...decl.members);
       }
       break;
@@ -271,14 +279,18 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
     case 'MethodDeclaration': {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const decl = node as MethodDeclaration;
-      if (decl.modifiers && Array.isArray(decl.modifiers)) {
+      if (
+        decl.modifiers !== null &&
+        decl.modifiers !== undefined &&
+        Array.isArray(decl.modifiers)
+      ) {
         children.push(...decl.modifiers);
       }
-      if (decl.annotations) {
+      if (decl.annotations !== null && decl.annotations !== undefined) {
         children.push(...decl.annotations);
       }
       children.push(...decl.parameters);
-      if (decl.body) {
+      if (decl.body !== null && decl.body !== undefined) {
         children.push(decl.body);
       }
       break;
@@ -379,38 +391,6 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
 }
 
 /**
- * Visit children of a node.
- * @param node - The AST node whose children to visit.
- * @param visitor - The visitor to use for traversal.
- */
-function visitChildren(node: Readonly<ASTNode>, visitor: ASTWalkVisitor): void {
-  // Extract children based on node type
-  const children = getNodeChildren(node);
-
-  for (const child of children) {
-    walkAST(child, visitor);
-  }
-}
-
-/**
- * Walk the AST tree with a visitor.
- * @param ast - The AST node to walk.
- * @param visitor - The visitor to use for traversal.
- */
-function walkAST(ast: Readonly<ASTNode>, visitor: ASTWalkVisitor): void {
-  const shouldContinue = visitor.enterNode?.(ast);
-  if (shouldContinue === false) {
-    visitor.exitNode?.(ast);
-    return;
-  }
-
-  // Visit children
-  visitChildren(ast, visitor);
-
-  visitor.exitNode?.(ast);
-}
-
-/**
  * Find children generically by inspecting object properties.
  * @param node - The AST node to find children for.
  * @returns An array of child AST nodes.
@@ -435,7 +415,7 @@ function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
     } else if (Array.isArray(value)) {
       // It's an array - check if it contains AST nodes
       for (const item of value) {
-        if (item && typeof item === 'object' && 'kind' in item) {
+        if (item !== null && item !== undefined && typeof item === 'object' && 'kind' in item) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
           children.push(item as ASTNode);
         }
@@ -444,6 +424,38 @@ function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
   }
 
   return children;
+}
+
+/**
+ * Visit children of a node.
+ * @param node - The AST node whose children to visit.
+ * @param visitor - The visitor to use for traversal.
+ */
+function visitChildren(node: Readonly<ASTNode>, visitor: Readonly<ASTWalkVisitor>): void {
+  // Extract children based on node type
+  const children = getNodeChildren(node);
+
+  for (const child of children) {
+    walkAST(child, visitor);
+  }
+}
+
+/**
+ * Walk the AST tree with a visitor.
+ * @param ast - The AST node to walk.
+ * @param visitor - The visitor to use for traversal.
+ */
+function walkAST(ast: Readonly<ASTNode>, visitor: Readonly<ASTWalkVisitor>): void {
+  const shouldContinue = visitor.enterNode?.(ast);
+  if (shouldContinue === false) {
+    visitor.exitNode?.(ast);
+    return;
+  }
+
+  // Visit children
+  visitChildren(ast, visitor);
+
+  visitor.exitNode?.(ast);
 }
 
 /**
@@ -461,6 +473,7 @@ function buildParentMap(root: Readonly<ASTNode>): Map<ASTNode, ASTNode | null> {
       for (const child of children) {
         parentMap.set(child, node);
       }
+      return undefined;
     },
   });
 
@@ -502,6 +515,7 @@ function findNodesByType(ast: Readonly<ASTNode>, nodeType: string): ASTNode[] {
       if (node.kind === nodeType) {
         results.push(node);
       }
+      return undefined;
     },
   });
 

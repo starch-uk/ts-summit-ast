@@ -499,7 +499,8 @@ function isNullVal(node: ASTNode): node is NullVal {
 
 /**
  * Type guard for NullLiteral nodes (alias for NullVal).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a NullVal.
  * @deprecated Use isNullVal instead.
  */
 function isNullLiteral(node: ASTNode): node is NullVal {
@@ -629,7 +630,8 @@ function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLoopState
 
 /**
  * Type guard for ForEachStatement nodes (alias for EnhancedForLoopStatement).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is an EnhancedForLoopStatement.
  * @deprecated Use isEnhancedForLoopStatement instead.
  */
 function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatement {
@@ -647,7 +649,8 @@ function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatement {
 
 /**
  * Type guard for DoWhileStatement nodes (alias for DoWhileLoopStatement).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a DoWhileLoopStatement.
  * @deprecated Use isDoWhileLoopStatement instead.
  */
 function isDoWhileStatement(node: ASTNode): node is DoWhileLoopStatement {
@@ -665,7 +668,8 @@ function isSoqlExpression(node: ASTNode): node is SoqlExpression {
 
 /**
  * Type guard for SoqlQueryExpression nodes (alias for SoqlExpression).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a SoqlExpression.
  * @deprecated Use isSoqlExpression instead.
  */
 function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
@@ -683,7 +687,8 @@ function isSoslExpression(node: ASTNode): node is SoslExpression {
 
 /**
  * Type guard for SoslQueryExpression nodes (alias for SoslExpression).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a SoslExpression.
  * @deprecated Use isSoslExpression instead.
  */
 function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
@@ -730,7 +735,8 @@ function isFieldExpression(node: ASTNode): node is FieldExpression {
 
 /**
  * Type guard for FieldAccessExpression nodes (alias for FieldExpression).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is a FieldExpression.
  * @deprecated Use isFieldExpression instead.
  */
 function isFieldAccessExpression(node: ASTNode): node is FieldExpression {
@@ -748,7 +754,8 @@ function isArrayExpression(node: ASTNode): node is ArrayExpression {
 
 /**
  * Type guard for ArrayAccessExpression nodes (alias for ArrayExpression).
- * @param node
+ * @param node - The AST node to check.
+ * @returns True if the node is an ArrayExpression.
  * @deprecated Use isArrayExpression instead.
  */
 function isArrayAccessExpression(node: ASTNode): node is ArrayExpression {

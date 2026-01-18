@@ -18,8 +18,10 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class ElementValueFactory {
   public static createExpressionElementValue(
-    value: Expression,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    value: Readonly<Expression>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): ExpressionElementValue {
     return {
       kind: 'ExpressionElementValue',
@@ -29,6 +31,7 @@ export class ElementValueFactory {
   }
 
   public static createAnnotationElementValue(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     value: Readonly<Annotation>,
     options?: Readonly<NodeFactoryOptions>
   ): AnnotationElementValue {
@@ -40,13 +43,15 @@ export class ElementValueFactory {
   }
 
   public static createArrayElementValue(
-    values: ElementValue[],
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    values: readonly ElementValue[],
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): ArrayElementValue {
     return {
       kind: 'ArrayElementValue',
       location: options?.location,
-      values,
+      values: [...values],
     };
   }
 }

@@ -16,6 +16,15 @@ export class ApexLexer {
   private readonly initialLine = 1;
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial column constant
   private readonly initialColumn = 1;
+  // Character offset constants for lookahead
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
+  private readonly singleCharOffset = 1;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
+  private readonly doubleCharOffset = 2;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
+  private readonly tripleCharOffset = 3;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
+  private readonly quadrupleCharOffset = 4;
   private position = this.initialPosition;
   private line = this.initialLine;
   private column = this.initialColumn;
@@ -135,14 +144,12 @@ export class ApexLexer {
     }
 
     // Line comment
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Character position for line comment check
-    if (char === '/' && this.peek(1) === '/') {
+    if (char === '/' && this.peek(this.singleCharOffset) === '/') {
       return this.readLineComment();
     }
 
     // Block comment
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Character position for block comment check
-    if (char === '/' && this.peek(1) === '*') {
+    if (char === '/' && this.peek(this.singleCharOffset) === '*') {
       return this.readBlockComment();
     }
 
@@ -163,101 +170,101 @@ export class ApexLexer {
 
     // Operators and punctuation
     if (char === '+') {
-      if (this.peek(1) === '+') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '+') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.INCREMENT, '++', startLine, startCol);
       }
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.PLUS_ASSIGN, '+=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.PLUS, '+', startLine, startCol);
     }
 
     if (char === '-') {
-      if (this.peek(1) === '-') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '-') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.DECREMENT, '--', startLine, startCol);
       }
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.MINUS_ASSIGN, '-=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.MINUS, '-', startLine, startCol);
     }
 
     if (char === '*') {
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.MULTIPLY_ASSIGN, '*=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.MULTIPLY, '*', startLine, startCol);
     }
 
     if (char === '/') {
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.DIVIDE_ASSIGN, '/=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.DIVIDE, '/', startLine, startCol);
     }
 
     if (char === '%') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.MODULO, '%', startLine, startCol);
     }
 
     if (char === '=') {
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.EQUALS, '==', startLine, startCol);
       }
-      if (this.peek(1) === '>') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '>') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.ARROW, '=>', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.ASSIGN, '=', startLine, startCol);
     }
 
     if (char === '!') {
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.NOT_EQUALS, '!=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.NOT, '!', startLine, startCol);
     }
 
     if (char === '<') {
-      if (this.peek(1) === '<') {
+      if (this.peek(this.singleCharOffset) === '<') {
         // Check for << or <<=
-        if (this.peek(2) === '=') {
-          this.advance(3);
+        if (this.peek(this.doubleCharOffset) === '=') {
+          this.advance(this.tripleCharOffset);
           return this.createToken(TokenType.LEFT_SHIFT_ASSIGN, '<<=', startLine, startCol);
         }
-        this.advance(2);
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.LEFT_SHIFT, '<<', startLine, startCol);
       }
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.LESS_EQUAL, '<=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.LESS_THAN, '<', startLine, startCol);
     }
 
     if (char === '>') {
-      if (this.peek(1) === '>') {
+      if (this.peek(this.singleCharOffset) === '>') {
         // Check for >>, >>>, >>=, or >>>=
-        if (this.peek(2) === '>') {
+        if (this.peek(this.doubleCharOffset) === '>') {
           // >>> or >>>=
-          if (this.peek(3) === '=') {
-            this.advance(4);
+          if (this.peek(this.tripleCharOffset) === '=') {
+            this.advance(this.quadrupleCharOffset);
             return this.createToken(
               TokenType.RIGHT_SHIFT_UNSIGNED_ASSIGN,
               '>>>=',
@@ -265,116 +272,116 @@ export class ApexLexer {
               startCol
             );
           }
-          this.advance(3);
+          this.advance(this.tripleCharOffset);
           return this.createToken(TokenType.RIGHT_SHIFT_UNSIGNED, '>>>', startLine, startCol);
         }
-        if (this.peek(2) === '=') {
-          this.advance(3);
+        if (this.peek(this.doubleCharOffset) === '=') {
+          this.advance(this.tripleCharOffset);
           return this.createToken(TokenType.RIGHT_SHIFT_ASSIGN, '>>=', startLine, startCol);
         }
-        this.advance(2);
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.RIGHT_SHIFT, '>>', startLine, startCol);
       }
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.GREATER_EQUAL, '>=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.GREATER_THAN, '>', startLine, startCol);
     }
 
     if (char === '&') {
-      if (this.peek(1) === '&') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '&') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.AND, '&&', startLine, startCol);
       }
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.AND_ASSIGN, '&=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.BITWISE_AND, '&', startLine, startCol);
     }
 
     if (char === '|') {
-      if (this.peek(1) === '|') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '|') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.OR, '||', startLine, startCol);
       }
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.OR_ASSIGN, '|=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.BITWISE_OR, '|', startLine, startCol);
     }
 
     if (char === '^') {
-      if (this.peek(1) === '=') {
-        this.advance(2);
+      if (this.peek(this.singleCharOffset) === '=') {
+        this.advance(this.doubleCharOffset);
         return this.createToken(TokenType.XOR_ASSIGN, '^=', startLine, startCol);
       }
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.BITWISE_XOR, '^', startLine, startCol);
     }
 
-    if (char === '?' && this.peek(1) === '?') {
-      this.advance(2);
+    if (char === '?' && this.peek(this.singleCharOffset) === '?') {
+      this.advance(this.doubleCharOffset);
       return this.createToken(TokenType.NULL_COALESCING, '??', startLine, startCol);
     }
 
     // Punctuation
     if (char === ';') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.SEMICOLON, ';', startLine, startCol);
     }
     if (char === ',') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.COMMA, ',', startLine, startCol);
     }
     if (char === '.') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.DOT, '.', startLine, startCol);
     }
     if (char === ':') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.COLON, ':', startLine, startCol);
     }
     if (char === '?') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.QUESTION, '?', startLine, startCol);
     }
     if (char === '(') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.LEFT_PAREN, '(', startLine, startCol);
     }
     if (char === ')') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.RIGHT_PAREN, ')', startLine, startCol);
     }
     if (char === '{') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.LEFT_BRACE, '{', startLine, startCol);
     }
     if (char === '}') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.RIGHT_BRACE, '}', startLine, startCol);
     }
     if (char === '[') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.LEFT_BRACKET, '[', startLine, startCol);
     }
     if (char === ']') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.RIGHT_BRACKET, ']', startLine, startCol);
     }
     if (char === '@') {
-      this.advance(1);
+      this.advance(this.singleCharOffset);
       return this.createToken(TokenType.AT, '@', startLine, startCol);
     }
 
     // Unknown character
-    this.advance(1);
+    this.advance(this.singleCharOffset);
     return this.createToken(TokenType.ERROR, char, startLine, startCol);
   }
 
@@ -389,8 +396,8 @@ export class ApexLexer {
       if (char === '\n' || char === '\r') {
         this.line++;
         this.column = 1;
-        if (char === '\r' && this.peek(1) === '\n') {
-          this.advance(1);
+        if (char === '\r' && this.peek(this.singleCharOffset) === '\n') {
+          this.advance(this.singleCharOffset);
         }
       } else {
         this.column++;
@@ -406,7 +413,7 @@ export class ApexLexer {
     const startCol = this.column;
     let text = '//';
 
-    this.advance(2);
+    this.advance(this.doubleCharOffset);
 
     while (
       this.position < this.source.length &&
@@ -414,7 +421,7 @@ export class ApexLexer {
       this.source[this.position] !== '\r'
     ) {
       text += this.source[this.position];
-      this.advance(1);
+      this.advance(this.singleCharOffset);
     }
 
     return this.createToken(TokenType.LINE_COMMENT, text, startLine, startCol);
@@ -425,25 +432,25 @@ export class ApexLexer {
     const startCol = this.column;
     let text = '/*';
 
-    this.advance(2);
+    this.advance(this.doubleCharOffset);
 
     while (this.position < this.source.length) {
-      if (this.source[this.position] === '*' && this.peek(1) === '/') {
+      if (this.source[this.position] === '*' && this.peek(this.singleCharOffset) === '/') {
         text += '*/';
-        this.advance(2);
+        this.advance(this.doubleCharOffset);
         break;
       }
       if (this.source[this.position] === '\n' || this.source[this.position] === '\r') {
         this.line++;
         this.column = 1;
-        if (this.source[this.position] === '\r' && this.peek(1) === '\n') {
-          this.advance(1);
+        if (this.source[this.position] === '\r' && this.peek(this.singleCharOffset) === '\n') {
+          this.advance(this.singleCharOffset);
         }
       } else {
         this.column++;
       }
       text += this.source[this.position];
-      this.advance(1);
+      this.advance(this.singleCharOffset);
     }
 
     return this.createToken(TokenType.BLOCK_COMMENT, text, startLine, startCol);
@@ -454,28 +461,29 @@ export class ApexLexer {
     const startCol = this.column;
     let text = quote;
 
-    this.advance(1);
+    this.advance(this.singleCharOffset);
 
     while (this.position < this.source.length) {
       const char = this.source[this.position];
       text += char;
 
-      if (char === quote && this.source[this.position - 1] !== '\\') {
-        this.advance(1);
+      const previousCharOffset = 1;
+      if (char === quote && this.source[this.position - previousCharOffset] !== '\\') {
+        this.advance(this.singleCharOffset);
         break;
       }
 
       if (char === '\n' || char === '\r') {
         this.line++;
         this.column = 1;
-        if (char === '\r' && this.peek(1) === '\n') {
-          this.advance(1);
+        if (char === '\r' && this.peek(this.singleCharOffset) === '\n') {
+          this.advance(this.singleCharOffset);
         }
       } else {
         this.column++;
       }
 
-      this.advance(1);
+      this.advance(this.singleCharOffset);
     }
 
     return this.createToken(TokenType.STRING_LITERAL, text, startLine, startCol);
@@ -492,7 +500,7 @@ export class ApexLexer {
       (this.isDigit(this.source[this.position]) || this.source[this.position] === '.')
     ) {
       text += this.source[this.position];
-      this.advance(1);
+      this.advance(this.singleCharOffset);
     }
 
     // Read suffix (L for long, D for double) - case insensitive
@@ -500,7 +508,7 @@ export class ApexLexer {
       const suffix = this.source[this.position].toUpperCase();
       if (suffix === 'L' || suffix === 'D') {
         text += this.source[this.position];
-        this.advance(1);
+        this.advance(this.singleCharOffset);
       }
     }
 
@@ -517,17 +525,18 @@ export class ApexLexer {
       this.isIdentifierChar(this.source[this.position])
     ) {
       text += this.source[this.position];
-      this.advance(1);
+      this.advance(this.singleCharOffset);
     }
 
     // Check if it's a keyword (case-insensitive)
     const lowerText = text.toLowerCase();
     const keywordType = this.keywords.get(lowerText);
-    const tokenType = keywordType || TokenType.IDENTIFIER;
+    const tokenType = keywordType ?? TokenType.IDENTIFIER;
 
     return this.createToken(tokenType, text, startLine, startCol);
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params, @typescript-eslint/class-methods-use-this -- Token creation requires 4 parameters, factory method doesn't need instance state
   private createToken(type: TokenType, text: string, line: number, column: number): Token {
     return {
       location: { column, line },
@@ -536,14 +545,17 @@ export class ApexLexer {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method, may be used statically
   private isWhitespace(char: string): boolean {
     return char === ' ' || char === '\t' || char === '\n' || char === '\r';
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method, may be used statically
   private isDigit(char: string): boolean {
     return char >= '0' && char <= '9';
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method, may be used statically
   private isIdentifierStart(char: string): boolean {
     return (
       (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_' || char === '$'

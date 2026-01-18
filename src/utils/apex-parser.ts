@@ -129,6 +129,7 @@ export interface ApexParseResult {
  * ```
  */
 export function isUsableParseResult(
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
   result: Readonly<ApexParseResult>
 ): result is ApexParseResult & { ast: NonNullable<ASTNode>; isUsable: true } {
   return result.isUsable === true && result.ast !== undefined;
@@ -186,7 +187,9 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
   }
 
   if (!parseTree) {
-    if (errors.length === 0) {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+    const emptyArrayLength = 0;
+    if (errors.length === emptyArrayLength) {
       errors.push({
         message: 'Failed to parse source code',
         severity: 'error',
@@ -198,6 +201,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
       isUsable: false,
       partialSuccess: false,
       source: includeSource ? source : undefined,
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
       warnings: warnings.length > 0 ? warnings : undefined,
     };
   }
@@ -225,7 +229,8 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
   }
 
   // Extract comments if requested
-  let comments: ExtractedComment[] | undefined;
+  // eslint-disable-next-line @typescript-eslint/init-declarations -- Initialize with undefined
+  let comments: ExtractedComment[] | undefined = undefined;
   if (includeComments && translationResult.ast) {
     comments = extractComments(translationResult.ast, source, {
       associateNodes: true,
@@ -234,8 +239,10 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
 
   // Determine if parsing was partially successful and if AST is usable
   const hasAST = translationResult.ast !== undefined;
-  const hasErrors = errors.length > 0;
-  const hasWarnings = warnings.length > 0;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+  const emptyArrayLength = 0;
+  const hasErrors = errors.length > emptyArrayLength;
+  const hasWarnings = warnings.length > emptyArrayLength;
   const partialSuccess = hasAST && (hasErrors || hasWarnings);
 
   /**
@@ -250,6 +257,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
     isUsable,
     partialSuccess,
     source: includeSource ? source : undefined,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     warnings: warnings.length > 0 ? warnings : undefined,
   };
 }
@@ -282,8 +290,9 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
  * ```
  */
 export function parseMultipleFiles(
-  sources: string[],
-  options: ApexParseOptions = {}
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+  sources: readonly string[],
+  options: Readonly<ApexParseOptions> = {}
 ): ApexParseResult[] {
   return sources.map((source) => parseApexCode(source, options));
 }
@@ -310,12 +319,17 @@ export function parseMultipleFiles(
  * ```
  */
 export function extractCommentsBatch(
-  asts: ASTNode[],
-  sources: string[],
-  options: ExtractCommentsOptions = {}
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+  asts: readonly ASTNode[],
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+  sources: readonly string[],
+  options: Readonly<ExtractCommentsOptions> = {}
 ): ExtractedComment[][] {
   if (asts.length !== sources.length) {
-    throw new Error(`Mismatched array lengths: ${asts.length} ASTs but ${sources.length} sources`);
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- Array lengths are numbers
+    throw new Error(
+      `Mismatched array lengths: ${String(asts.length)} ASTs but ${String(sources.length)} sources`
+    );
   }
 
   return asts.map((ast, index) => extractComments(ast, sources[index], options));

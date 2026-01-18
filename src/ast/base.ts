@@ -69,7 +69,7 @@ class DefaultVisitor implements ASTVisitor {
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Default implementation intentionally does nothing
-  public visitChildren(_node: ASTNode): void[] {
+  public visitChildren(_node: ASTNode): never[] {
     // Default implementation returns empty array
     // Subclasses should override to visit child nodes
     return [];

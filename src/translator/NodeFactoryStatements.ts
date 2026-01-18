@@ -23,7 +23,7 @@ import type {
 } from '../ast/Statement.js';
 import type { Expression } from '../ast/Expression.js';
 import type { VariableDeclaration } from '../ast/Declaration.js';
-import type { Statement } from '../ast/Statement.js';
+import type { Statement, SwitchCase } from '../ast/Statement.js';
 
 import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 
@@ -50,7 +50,9 @@ export class StatementFactory {
 
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createForLoopStatement(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     body: Readonly<Statement>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Union type parameter
     init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
     condition?: Readonly<Expression>,
     update?: Readonly<Expression>,
@@ -87,12 +89,16 @@ export class StatementFactory {
    * @param options
    * @deprecated Use createForLoopStatement instead.
    */
+  // eslint-disable-next-line @typescript-eslint/max-params -- For statement requires 5 parameters
   public static createForStatement(
-    body: Statement,
-    init?: ExpressionStatement | VariableDeclarationStatement,
-    condition?: Expression,
-    update?: Expression,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    body: Readonly<Statement>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Union type parameter
+    init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
+    condition?: Readonly<Expression>,
+    update?: Readonly<Expression>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): ForLoopStatement {
     return this.createForLoopStatement(body, init, condition, update, options);
   }
@@ -123,13 +129,15 @@ export class StatementFactory {
   }
 
   public static createCompoundStatement(
-    statements: Statement[],
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    statements: readonly Statement[],
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): CompoundStatement {
     return {
       kind: 'CompoundStatement',
       location: options?.location,
-      statements,
+      statements: [...statements],
     };
   }
 
@@ -139,8 +147,10 @@ export class StatementFactory {
    * @deprecated Use createCompoundStatement instead.
    */
   public static createBlock(
-    statements: Statement[],
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    statements: readonly Statement[],
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): CompoundStatement {
     return this.createCompoundStatement(statements, options);
   }
@@ -157,8 +167,10 @@ export class StatementFactory {
   }
 
   public static createVariableDeclarationStatement(
-    declaration: VariableDeclaration,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    declaration: Readonly<VariableDeclaration>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): VariableDeclarationStatement {
     return {
       declaration,
@@ -167,11 +179,16 @@ export class StatementFactory {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params -- Enhanced for loop requires 4 parameters
   public static createEnhancedForLoopStatement(
-    variable: VariableDeclaration,
-    iterable: Expression,
-    body: Statement,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    variable: Readonly<VariableDeclaration>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    iterable: Readonly<Expression>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    body: Readonly<Statement>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): EnhancedForLoopStatement {
     return {
       body,
@@ -202,11 +219,16 @@ export class StatementFactory {
    * @param options
    * @deprecated Use createEnhancedForLoopStatement instead.
    */
+  // eslint-disable-next-line @typescript-eslint/max-params -- For each statement requires 4 parameters
   public static createForEachStatement(
-    variable: VariableDeclaration,
-    iterable: Expression,
-    body: Statement,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    variable: Readonly<VariableDeclaration>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    iterable: Readonly<Expression>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    body: Readonly<Statement>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): EnhancedForLoopStatement {
     return this.createEnhancedForLoopStatement(variable, iterable, body, options);
   }
@@ -225,14 +247,19 @@ export class StatementFactory {
     return this.createDoWhileLoopStatement(body, condition, options);
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params -- Switch statement requires 4 parameters
   public static createSwitchStatement(
-    expression: Expression,
-    cases: any[],
-    defaultCase?: any,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    expression: Readonly<Expression>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    cases: readonly SwitchCase[],
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    defaultCase?: Readonly<SwitchCase>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): SwitchStatement {
     return {
-      cases,
+      cases: [...cases],
       defaultCase,
       expression,
       kind: 'SwitchStatement',
@@ -240,14 +267,19 @@ export class StatementFactory {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/max-params -- Try statement requires 4 parameters
   public static createTryStatement(
-    tryBlock: CompoundStatement,
-    catchClauses: any[],
-    finallyBlock?: CompoundStatement,
-    options?: NodeFactoryOptions
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    tryBlock: Readonly<CompoundStatement>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    catchClauses: readonly import('../ast/Statement.js').CatchClause[],
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    finallyBlock?: Readonly<CompoundStatement>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+    options?: Readonly<NodeFactoryOptions>
   ): TryStatement {
     return {
-      catchClauses,
+      catchClauses: [...catchClauses],
       finallyBlock,
       kind: 'TryStatement',
       location: options?.location,

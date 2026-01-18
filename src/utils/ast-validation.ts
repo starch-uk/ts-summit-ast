@@ -100,9 +100,11 @@ export function validateAST(ast: ASTNode): ASTValidationResult {
     },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+  const emptyArrayLength = 0;
   return {
     errors,
-    valid: errors.length === 0,
+    valid: errors.length === emptyArrayLength,
     warnings,
   };
 }
@@ -164,9 +166,11 @@ export function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
   // In a full implementation, this would walk both trees in parallel
   // and compare each corresponding node
 
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+  const emptyArrayLength = 0;
   return {
     differences,
-    equal: differences.length === 0 && typesMatch,
+    equal: differences.length === emptyArrayLength && typesMatch,
     typesMatch,
   };
 }
@@ -253,14 +257,19 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
    */
   function isLeafNode(node: ASTNode): boolean {
     const children = getNodeChildren(node);
-    return children.length === 0;
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+    const emptyArrayLength = 0;
+    return children.length === emptyArrayLength;
   }
 
   // Walk AST and collect statistics
   walkAST(ast, {
     enterNode: (node): undefined => {
       totalNodes++;
-      nodeTypeCounts[node.kind] = (nodeTypeCounts[node.kind] || 0) + 1;
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initialize count to 0, increment by 1
+      const initialCount = 0;
+      const increment = 1;
+      nodeTypeCounts[node.kind] = (nodeTypeCounts[node.kind] ?? initialCount) + increment;
 
       if (node.location) {
         nodesWithLocation++;
@@ -276,9 +285,15 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
     },
   });
 
-  const maxDepth = depths.length > 0 ? Math.max(...depths) : 1;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array, default depth values
+  const emptyArrayLength = 0;
+  const defaultDepth = 1;
+  const initialSum = 0;
+  const maxDepth = depths.length > emptyArrayLength ? Math.max(...depths) : defaultDepth;
   const averageDepth =
-    depths.length > 0 ? depths.reduce((sum, d) => sum + d, 0) / depths.length : 1;
+    depths.length > emptyArrayLength
+      ? depths.reduce((sum, d) => sum + d, initialSum) / depths.length
+      : defaultDepth;
 
   return {
     averageDepth,

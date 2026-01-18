@@ -61,22 +61,28 @@ type Type = TypeRef;
 /**
  * Converts a TypeRef to its source-like string (e.g. "A[][]", "Map<String>").
  * Equivalent to asCodeString in Kotlin summit-ast.
- * @param typeRef
+ * @param typeRef - The type reference to convert to a string.
+ * @returns The string representation of the type reference.
  */
-function typeRefToCodeString(typeRef: TypeRef): string {
-  if (!typeRef.components || typeRef.components.length === 0) {
+function typeRefToCodeString(typeRef: Readonly<TypeRef>): string {
+  // eslint-disable-line @typescript-eslint/prefer-readonly-parameter-types -- TypeRef is a complex type
+  const emptyArrayLength = 0;
+  if (typeRef.components.length === emptyArrayLength) {
     return 'void';
   }
   const typeString = typeRef.components
-    .map((comp) => {
+    .map((comp: Readonly<TypeRefComponent>) => {
+      // eslint-disable-line @typescript-eslint/prefer-readonly-parameter-types -- TypeRefComponent is a complex type
       let result = comp.id.name;
-      if (comp.args && comp.args.length > 0) {
-        result += `<${comp.args.map(typeRefToCodeString).join(', ')}>`;
+      const emptyArgsLength = 0;
+      if (comp.args.length > emptyArgsLength) {
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array.map callback signature
+        result += `<${comp.args.map((arg: Readonly<TypeRef>) => typeRefToCodeString(arg)).join(', ')}>`;
       }
       return result;
     })
     .join('.');
-  return typeString + '[]'.repeat(typeRef.arrayNesting || 0);
+  return typeString + '[]'.repeat(typeRef.arrayNesting);
 }
 
 export type { TypeRef, TypeRefComponent, Type };

@@ -237,6 +237,7 @@ export function findNodesInRange(
         partiallyOverlapping.push(node);
         allNodes.push(node);
       }
+      return undefined;
     },
   });
 

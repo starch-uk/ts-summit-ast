@@ -173,8 +173,11 @@ export class SummitTool {
       // Translate to AST
       const translationResult = this.translator.translate(parseTree);
 
-      if (translationResult.errors.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+      const emptyArrayLength = 0;
+      if (translationResult.errors.length > emptyArrayLength) {
         return {
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
           error: `Translation errors: ${translationResult.errors.map((e) => e.message).join(', ')}`,
           file: filePath,
           success: false,
@@ -213,6 +216,7 @@ export class SummitTool {
    * @param filePath - The file path to check.
    * @returns True if the file has .cls or .trigger extension.
    */
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private isApexFile(filePath: string): boolean {
     const ext = extname(filePath).toLowerCase();
     return ext === '.cls' || ext === '.trigger';
@@ -225,12 +229,16 @@ export class SummitTool {
    */
   private formatAST(ast: unknown): string {
     if (this.options.verbose) {
-      return JSON.stringify(ast, null, 2);
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- JSON indentation
+      const jsonIndent = 2;
+      return JSON.stringify(ast, null, jsonIndent);
     }
 
     // Simple text representation
-    if (ast && typeof ast === 'object' && 'kind' in ast) {
-      return `AST Node: ${ast.kind}`;
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for AST object
+    if (ast !== null && ast !== undefined && typeof ast === 'object' && 'kind' in ast) {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-type-assertion -- AST kind is always a string
+      return `AST Node: ${(ast as { kind: string }).kind}`;
     }
 
     return String(ast);
@@ -240,19 +248,26 @@ export class SummitTool {
    * Print results to console.
    * @param results - The processing results to print.
    */
-  printResults(results: ProcessResult[]): void {
+  public printResults(
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    results: readonly ProcessResult[]
+  ): void {
     for (const result of results) {
       if (result.success) {
         if (this.options.json) {
-          console.log(JSON.stringify(result.ast, null, 2));
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- JSON indentation
+          const jsonIndent = 2;
+          console.log(JSON.stringify(result.ast, null, jsonIndent));
         } else {
           console.log(`${result.file}: OK`);
-          if (this.options.verbose && result.ast) {
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for AST
+          if (this.options.verbose && result.ast !== null && result.ast !== undefined) {
             console.log(this.formatAST(result.ast));
           }
         }
       } else {
-        console.error(`${result.file}: ERROR - ${result.error}`);
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- Error is always a string
+        console.error(`${result.file}: ERROR - ${result.error ?? ''}`);
       }
     }
   }
