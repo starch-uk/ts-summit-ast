@@ -187,7 +187,6 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
   }
 
   if (!parseTree) {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
     const emptyArrayLength = 0;
     if (errors.length === emptyArrayLength) {
       errors.push({
@@ -229,7 +228,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
   }
 
   // Extract comments if requested
-  // eslint-disable-next-line @typescript-eslint/init-declarations -- Initialize with undefined
+
   let comments: ExtractedComment[] | undefined = undefined;
   if (includeComments && translationResult.ast) {
     comments = extractComments(translationResult.ast, source, {
@@ -239,7 +238,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
 
   // Determine if parsing was partially successful and if AST is usable
   const hasAST = translationResult.ast !== undefined;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+
   const emptyArrayLength = 0;
   const hasErrors = errors.length > emptyArrayLength;
   const hasWarnings = warnings.length > emptyArrayLength;
@@ -290,7 +289,6 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
  * ```
  */
 export function parseMultipleFiles(
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
   sources: readonly string[],
   options: Readonly<ApexParseOptions> = {}
 ): ApexParseResult[] {
@@ -319,14 +317,12 @@ export function parseMultipleFiles(
  * ```
  */
 export function extractCommentsBatch(
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
   asts: readonly ASTNode[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
   sources: readonly string[],
   options: Readonly<ExtractCommentsOptions> = {}
 ): ExtractedComment[][] {
   if (asts.length !== sources.length) {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- Array lengths are numbers
     throw new Error(
       `Mismatched array lengths: ${String(asts.length)} ASTs but ${String(sources.length)} sources`
     );

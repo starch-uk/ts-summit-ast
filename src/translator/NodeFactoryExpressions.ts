@@ -25,7 +25,7 @@ import type {
   LambdaParameter,
 } from '../ast/Expression.js';
 import type { Expression, Statement } from '../ast/index.js';
-import type { TypeRef, Type } from '../ast/Type.js';
+import type { TypeRef } from '../ast/Type.js';
 import type { Identifier } from '../ast/Identifier.js';
 import type { Initializer } from '../ast/Initializer.js';
 import { InitializerFactory } from './NodeFactoryInitializers.js';
@@ -60,12 +60,12 @@ export class ExpressionFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createCallExpression(
     methodName: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     args: readonly Readonly<Expression>[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     target?: Readonly<Expression>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
-    typeArguments?: readonly Readonly<TypeRef>[],
+    typeArguments?: readonly TypeRef[],
     options?: Readonly<NodeFactoryOptions>
   ): CallExpression {
     return {
@@ -74,8 +74,7 @@ export class ExpressionFactory {
       location: options?.location,
       methodName,
       target,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from TypeRef[] to Type[]
-      typeArguments: (typeArguments as Type[] | undefined) ?? undefined,
+      typeArguments: typeArguments ? [...typeArguments] : undefined,
     };
   }
 
@@ -101,13 +100,13 @@ export class ExpressionFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Method call expression requires 5 parameters
   public static createMethodCallExpression(
     methodName: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     args: readonly Expression[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     target?: Readonly<Expression>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     typeArguments?: readonly TypeRef[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): CallExpression {
     return this.createCallExpression(methodName, args, target, typeArguments, options);
@@ -116,10 +115,10 @@ export class ExpressionFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Unary expression requires 4 parameters
   public static createUnaryExpression(
     operator: UnaryExpression['operator'],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     operand: Readonly<Expression>,
     prefix: boolean,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): UnaryExpression {
     return {
@@ -134,7 +133,7 @@ export class ExpressionFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Assign expression requires 4 parameters
   public static createAssignExpression(
     operator: AssignExpression['operator'],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     left: Readonly<Expression>,
     right: Expression,
     options?: NodeFactoryOptions
@@ -185,11 +184,11 @@ export class ExpressionFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Assignment expression requires 4 parameters
   public static createAssignmentExpression(
     operator: AssignExpression['operator'],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     left: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     right: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): AssignExpression {
     return this.createAssignExpression(operator, left, right, options);
@@ -225,9 +224,8 @@ export class ExpressionFactory {
 
   // eslint-disable-next-line @typescript-eslint/max-params -- Ternary expression requires 4 parameters
   public static createTernaryExpression(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     condition: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     thenExpression: Readonly<Expression>,
     elseExpression: Expression,
     options?: NodeFactoryOptions
@@ -244,9 +242,9 @@ export class ExpressionFactory {
   public static createCastExpression(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     expression: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): CastExpression {
     return {
@@ -258,11 +256,10 @@ export class ExpressionFactory {
   }
 
   public static createInstanceOfExpression(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     expression: Readonly<Expression>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): InstanceOfExpression {
     return {
@@ -276,7 +273,7 @@ export class ExpressionFactory {
   public static createNewExpression(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     initializer: Readonly<Initializer>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): NewExpression {
     return {
@@ -290,9 +287,9 @@ export class ExpressionFactory {
   public static createNewArrayExpression(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     size: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): NewExpression {
     // Create SizedArrayInitializer and wrap in NewExpression
@@ -303,9 +300,9 @@ export class ExpressionFactory {
   public static createLambdaExpression(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     parameters: readonly LambdaParameter[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Union type parameter
+
     body: Readonly<Expression | Statement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): LambdaExpression {
     const result: LambdaExpression = {
@@ -333,9 +330,8 @@ export class ExpressionFactory {
   }
 
   public static createParenthesizedExpression(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     expression: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): ParenthesizedExpression {
     return {
@@ -347,9 +343,9 @@ export class ExpressionFactory {
 
   public static createSoqlExpression(
     query: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     bindings: readonly import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): SoqlExpression {
     return {
@@ -362,9 +358,9 @@ export class ExpressionFactory {
 
   public static createSoslExpression(
     query: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     bindings: readonly import('../ast/SoqlOrSoslBinding.js').SoqlOrSoslBinding[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): SoslExpression {
     return {
@@ -383,9 +379,9 @@ export class ExpressionFactory {
    */
   public static createSoqlQueryExpression(
     query: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     boundExpressions?: readonly Expression[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): SoqlExpression {
     // Convert boundExpressions to bindings for backward compatibility
@@ -403,9 +399,9 @@ export class ExpressionFactory {
    */
   public static createSoslQueryExpression(
     query: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     boundExpressions?: readonly Expression[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): SoslExpression {
     // Convert boundExpressions to bindings for backward compatibility

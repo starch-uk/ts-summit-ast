@@ -19,7 +19,6 @@ import type {
   ExpressionStatement,
   VariableDeclarationStatement,
   DmlStatement,
-  DmlOperation,
 } from '../ast/Statement.js';
 import type { Expression } from '../ast/Expression.js';
 import type { VariableDeclaration } from '../ast/Declaration.js';
@@ -50,7 +49,6 @@ export class StatementFactory {
 
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createForLoopStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     body: Readonly<Statement>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Union type parameter
     init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
@@ -91,13 +89,12 @@ export class StatementFactory {
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- For statement requires 5 parameters
   public static createForStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     body: Readonly<Statement>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Union type parameter
     init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
     condition?: Readonly<Expression>,
     update?: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): ForLoopStatement {
     return this.createForLoopStatement(body, init, condition, update, options);
@@ -129,9 +126,8 @@ export class StatementFactory {
   }
 
   public static createCompoundStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     statements: readonly Statement[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): CompoundStatement {
     return {
@@ -147,9 +143,8 @@ export class StatementFactory {
    * @deprecated Use createCompoundStatement instead.
    */
   public static createBlock(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     statements: readonly Statement[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): CompoundStatement {
     return this.createCompoundStatement(statements, options);
@@ -169,7 +164,7 @@ export class StatementFactory {
   public static createVariableDeclarationStatement(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     declaration: Readonly<VariableDeclaration>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): VariableDeclarationStatement {
     return {
@@ -183,11 +178,11 @@ export class StatementFactory {
   public static createEnhancedForLoopStatement(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     variable: Readonly<VariableDeclaration>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     iterable: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     body: Readonly<Statement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): EnhancedForLoopStatement {
     return {
@@ -223,11 +218,11 @@ export class StatementFactory {
   public static createForEachStatement(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     variable: Readonly<VariableDeclaration>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     iterable: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     body: Readonly<Statement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): EnhancedForLoopStatement {
     return this.createEnhancedForLoopStatement(variable, iterable, body, options);
@@ -249,13 +244,12 @@ export class StatementFactory {
 
   // eslint-disable-next-line @typescript-eslint/max-params -- Switch statement requires 4 parameters
   public static createSwitchStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     expression: Readonly<Expression>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     cases: readonly SwitchCase[],
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     defaultCase?: Readonly<SwitchCase>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): SwitchStatement {
     return {
@@ -275,7 +269,7 @@ export class StatementFactory {
     catchClauses: readonly import('../ast/Statement.js').CatchClause[],
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     finallyBlock?: Readonly<CompoundStatement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): TryStatement {
     return {
@@ -318,7 +312,7 @@ export class StatementFactory {
   }
 
   public static createDmlStatement(
-    operation: DmlOperation,
+    operation: 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert',
     target: Expression,
     options?: NodeFactoryOptions
   ): DmlStatement {

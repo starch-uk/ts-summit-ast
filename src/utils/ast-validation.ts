@@ -100,7 +100,6 @@ export function validateAST(ast: ASTNode): ASTValidationResult {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
   const emptyArrayLength = 0;
   return {
     errors,
@@ -166,7 +165,6 @@ export function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
   // In a full implementation, this would walk both trees in parallel
   // and compare each corresponding node
 
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
   const emptyArrayLength = 0;
   return {
     differences,
@@ -257,7 +255,7 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
    */
   function isLeafNode(node: ASTNode): boolean {
     const children = getNodeChildren(node);
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+
     const emptyArrayLength = 0;
     return children.length === emptyArrayLength;
   }
@@ -266,7 +264,7 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
   walkAST(ast, {
     enterNode: (node): undefined => {
       totalNodes++;
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initialize count to 0, increment by 1
+
       const initialCount = 0;
       const increment = 1;
       nodeTypeCounts[node.kind] = (nodeTypeCounts[node.kind] ?? initialCount) + increment;
@@ -285,7 +283,6 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array, default depth values
   const emptyArrayLength = 0;
   const defaultDepth = 1;
   const initialSum = 0;

@@ -10,23 +10,16 @@ import type { Expression } from './Expression.js';
  * Literals are expressions, so they extend Expression.
  */
 interface Literal extends Expression {
-  readonly kind: LiteralKind;
+  readonly kind:
+    | 'BooleanVal'
+    | 'CharacterLiteral'
+    | 'DecimalVal'
+    | 'DoubleVal'
+    | 'IntegerVal'
+    | 'LongVal'
+    | 'NullVal'
+    | 'StringVal';
 }
-
-/**
- * Discriminated union type for all literal kinds.
- */
-/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
-type LiteralKind =
-  | 'BooleanVal'
-  | 'CharacterLiteral'
-  | 'DecimalVal'
-  | 'DoubleVal'
-  | 'IntegerVal'
-  | 'LongVal'
-  | 'NullVal'
-  | 'StringVal';
-/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * String literal: "string" or 'string'.
@@ -125,22 +118,8 @@ interface CharacterLiteral extends Literal {
   readonly raw: string;
 }
 
-/**
- * Union type for all literal node types.
- */
-type LiteralNode =
-  | BooleanVal
-  | CharacterLiteral
-  | DecimalVal
-  | DoubleVal
-  | IntegerVal
-  | LongVal
-  | NullVal
-  | StringVal;
-
 export type {
   Literal,
-  LiteralKind,
   StringVal,
   IntegerVal,
   DoubleVal,
@@ -149,5 +128,4 @@ export type {
   BooleanVal,
   NullVal,
   CharacterLiteral,
-  LiteralNode,
 };

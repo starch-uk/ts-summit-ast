@@ -12,13 +12,6 @@ import type { Expression } from './Expression.js';
  * Base type for all initializer nodes.
  * An initializer is an action that occurs after object allocation to setup its initial state.
  */
-/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
-type Initializer =
-  | ConstructorInitializer
-  | MapInitializer
-  | SizedArrayInitializer
-  | ValuesInitializer;
-/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Object initializer via a constructor call.
@@ -61,10 +54,19 @@ interface MapInitializer extends ASTNode {
   readonly location?: SourceRange;
 }
 
+/**
+ * Union type for all initializer node types.
+ */
+type Initializer =
+  | ConstructorInitializer
+  | MapInitializer
+  | SizedArrayInitializer
+  | ValuesInitializer;
+
 export type {
-  Initializer,
   ConstructorInitializer,
   ValuesInitializer,
   SizedArrayInitializer,
   MapInitializer,
+  Initializer,
 };

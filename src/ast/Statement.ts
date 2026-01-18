@@ -11,35 +11,29 @@ import type { VariableDeclaration } from './Declaration.js';
  * Alias for backward compatibility during migration.
  * @deprecated Use CompoundStatement instead.
  */
-// eslint-disable-next-line @typescript-eslint/no-type-alias -- Type alias needed for backward compatibility
 type Block = CompoundStatement;
 
 /**
  * Base interface for all statement nodes.
  */
 interface Statement extends ASTNode {
-  readonly kind: StatementKind;
+  readonly kind:
+    | 'BreakStatement'
+    | 'CompoundStatement'
+    | 'ContinueStatement'
+    | 'DmlStatement'
+    | 'DoWhileLoopStatement'
+    | 'EnhancedForLoopStatement'
+    | 'ExpressionStatement'
+    | 'ForLoopStatement'
+    | 'IfStatement'
+    | 'ReturnStatement'
+    | 'SwitchStatement'
+    | 'ThrowStatement'
+    | 'TryStatement'
+    | 'VariableDeclarationStatement'
+    | 'WhileLoopStatement';
 }
-
-/**
- * Discriminated union type for all statement kinds.
- */
-type StatementKind =
-  | 'BreakStatement'
-  | 'CompoundStatement'
-  | 'ContinueStatement'
-  | 'DmlStatement'
-  | 'DoWhileLoopStatement'
-  | 'EnhancedForLoopStatement'
-  | 'ExpressionStatement'
-  | 'ForLoopStatement'
-  | 'IfStatement'
-  | 'ReturnStatement'
-  | 'SwitchStatement'
-  | 'ThrowStatement'
-  | 'TryStatement'
-  | 'VariableDeclarationStatement'
-  | 'WhileLoopStatement';
 
 /**
  * If statement: if (condition) thenStatement else elseStatement.
@@ -130,9 +124,11 @@ interface TryStatement extends Statement {
  */
 interface CatchClause extends ASTNode {
   readonly kind: 'CatchClause';
-  readonly exceptionType?: Expression; /**
+
+  /**
    * Type expression.
    */
+  readonly exceptionType?: Expression;
   readonly variable?: VariableDeclaration;
   readonly block: CompoundStatement;
 }
@@ -198,7 +194,7 @@ interface VariableDeclarationStatement extends Statement {
  */
 interface DmlStatement extends Statement {
   readonly kind: 'DmlStatement';
-  readonly operation: DmlOperation;
+  readonly operation: 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert';
 
   /**
    * The sObject or list to operate on.
@@ -209,32 +205,10 @@ interface DmlStatement extends Statement {
 /**
  * DML operations.
  */
-type DmlOperation = 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert';
-
-/**
- * Union type for all statement node types.
- */
-type StatementNode =
-  | BreakStatement
-  | CompoundStatement
-  | ContinueStatement
-  | DmlStatement
-  | DoWhileLoopStatement
-  | EnhancedForLoopStatement
-  | ExpressionStatement
-  | ForLoopStatement
-  | IfStatement
-  | ReturnStatement
-  | SwitchStatement
-  | ThrowStatement
-  | TryStatement
-  | VariableDeclarationStatement
-  | WhileLoopStatement;
 
 export type {
   Block,
   Statement,
-  StatementKind,
   IfStatement,
   ForLoopStatement,
   EnhancedForLoopStatement,
@@ -252,6 +226,4 @@ export type {
   ExpressionStatement,
   VariableDeclarationStatement,
   DmlStatement,
-  DmlOperation,
-  StatementNode,
 };

@@ -14,8 +14,6 @@ import type {
   TypeParameter,
   Modifier,
   Annotation,
-  ClassMember,
-  InterfaceMember,
   Parameter,
 } from '../ast/Declaration.js';
 import type { Expression } from '../ast/Expression.js';
@@ -39,7 +37,7 @@ export class DeclarationFactory {
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
     initializer?: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     modifiers?: readonly Readonly<Modifier>[],
     options?: Readonly<NodeFactoryOptions>
   ): VariableDeclaration {
@@ -57,8 +55,15 @@ export class DeclarationFactory {
   public static createClassDeclaration(
     name: string,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
-    members: readonly ClassMember[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    members: readonly (
+      | ClassDeclaration
+      | EnumDeclaration
+      | InterfaceDeclaration
+      | MethodDeclaration
+      | PropertyDeclaration
+      | VariableDeclaration
+    )[],
+
     modifiers: readonly Modifier[] = [],
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     extendsClause?: Readonly<TypeRef>,
@@ -70,7 +75,6 @@ export class DeclarationFactory {
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     annotations?: readonly Annotation[]
   ): ClassDeclaration {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     const emptyArrayLength = 0;
     return {
       annotations:
@@ -90,8 +94,13 @@ export class DeclarationFactory {
   public static createInterfaceDeclaration(
     name: string,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
-    members: readonly InterfaceMember[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+    members: readonly (
+      | ClassDeclaration
+      | InterfaceDeclaration
+      | MethodDeclaration
+      | PropertyDeclaration
+    )[],
+
     modifiers: readonly Modifier[] = [],
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     extendsClause?: readonly TypeRef[],
@@ -99,7 +108,6 @@ export class DeclarationFactory {
     typeParameters?: readonly TypeParameter[],
     options?: Readonly<NodeFactoryOptions>
   ): InterfaceDeclaration {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     const emptyArrayLength = 0;
     return {
       extendsClause: extendsClause ? [...extendsClause] : undefined,
@@ -121,7 +129,7 @@ export class DeclarationFactory {
     parameters: readonly Parameter[] = [],
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     body?: Readonly<CompoundStatement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     modifiers: readonly Modifier[] = [],
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     typeParameters?: readonly TypeParameter[],
@@ -130,7 +138,6 @@ export class DeclarationFactory {
     isConstructor = false,
     options?: Readonly<NodeFactoryOptions>
   ): MethodDeclaration {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     const emptyArrayLength = 0;
     return {
       annotations: annotations ? [...annotations] : undefined,
@@ -151,7 +158,7 @@ export class DeclarationFactory {
     name: string,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     modifiers: readonly Modifier[] = [],
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     getter?: Readonly<CompoundStatement>,
@@ -161,7 +168,6 @@ export class DeclarationFactory {
     annotations?: readonly Annotation[],
     options?: Readonly<NodeFactoryOptions>
   ): PropertyDeclaration {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     const emptyArrayLength = 0;
     return {
       annotations: annotations ? [...annotations] : undefined,
@@ -178,15 +184,21 @@ export class DeclarationFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Enum declaration requires 5 parameters
   public static createEnumDeclaration(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     values: readonly EnumValue[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     modifiers: readonly Modifier[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
-    members?: readonly ClassMember[],
+
+    members?: readonly (
+      | ClassDeclaration
+      | EnumDeclaration
+      | InterfaceDeclaration
+      | MethodDeclaration
+      | PropertyDeclaration
+      | VariableDeclaration
+    )[],
     options?: NodeFactoryOptions
   ): EnumDeclaration {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     const emptyArrayLength = 0;
     return {
       kind: 'EnumDeclaration',
@@ -210,7 +222,7 @@ export class DeclarationFactory {
     name: string,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     extendsBound?: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): TypeParameter {
     return {

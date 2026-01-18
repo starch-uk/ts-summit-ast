@@ -103,7 +103,6 @@ function parseApexDocComment(
       } else if (c.kind === 'ApexDocCode') {
         return c.text;
       } else if (c.kind === 'ApexDocLink') {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing -- Check for reference or label
         return c.reference ?? c.label ?? '';
       } else if (c.kind === 'ApexDocLiteral') {
         return c.text;
@@ -141,7 +140,6 @@ function cleanApexDocComment(commentText: string): string | null {
     // Remove leading whitespace and asterisk
     const match = /^\s*\*\s?(.*)$/.exec(line);
     if (match) {
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index for regex match
       const firstCaptureGroup = 1;
       return match[firstCaptureGroup];
     }
@@ -189,10 +187,9 @@ function splitMainDescriptionAndTags(commentText: string): {
       mainDescriptionLines.push(line);
     } else {
       // Continuation of previous block tag
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+
       const emptyArrayLength = 0;
       if (blockTagLines.length > emptyArrayLength) {
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index for last element
         const lastIndex = 1;
         blockTagLines[blockTagLines.length - lastIndex] += ' ' + line;
       }
@@ -222,7 +219,6 @@ function parseBlockTag(
     return null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-destructuring, @typescript-eslint/no-magic-numbers -- Array index for regex match
   const firstCaptureGroup = 1;
   const secondCaptureGroup = 2;
   const tagName = match[firstCaptureGroup];
@@ -237,7 +233,6 @@ function parseBlockTag(
   };
 
   if (location) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property assignment for location
     (baseTag as Record<string, unknown>).location = location;
   }
 
@@ -246,8 +241,6 @@ function parseBlockTag(
       // @param paramName description
       const paramMatch = /^(\w+)\s+(.*)$/.exec(content);
       if (paramMatch) {
-        // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Array destructuring for clarity
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array destructuring indices
         const [, paramName, descriptionText] = paramMatch;
         // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
         const desc = parseContent(descriptionText, location, options);
@@ -289,8 +282,6 @@ function parseBlockTag(
       // @group groupName
       const groupMatch = /^(\w+)(?:\s+(.*))?$/.exec(content);
       if (groupMatch) {
-        // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Array destructuring for clarity
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array destructuring indices
         const [, groupName, descriptionText] = groupMatch;
         // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
         const desc = descriptionText ? parseContent(descriptionText, location, options) : [];
@@ -311,10 +302,9 @@ function parseBlockTag(
         content
       );
       if (seeMatch) {
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First capture group is reference, second is description
         const seeFirstCaptureGroup = 1;
         const seeSecondCaptureGroup = 2;
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
+
         const seeDescription = seeMatch[seeSecondCaptureGroup]
           ? parseContent(seeMatch[seeSecondCaptureGroup], location, options)
           : [];
@@ -343,8 +333,6 @@ function parseBlockTag(
       // @throws exceptionType description
       const throwsMatch = /^(\w+(?:\.\w+)*)\s+(.*)$/.exec(content);
       if (throwsMatch) {
-        // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Array destructuring for clarity
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array destructuring indices
         const [, exceptionType, descriptionText] = throwsMatch;
         // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
         const desc = parseContent(descriptionText, location, options);
@@ -391,7 +379,7 @@ function parseContent(
 
   // Match inline tags: {@tag ...}
   const inlineTagRegex = /\{@(\w+)(?:\s+([^}]*))?\}/g;
-  // eslint-disable-next-line @typescript-eslint/init-declarations -- Variable is initialized in while loop
+
   let match: RegExpExecArray | null = null;
 
   while ((match = inlineTagRegex.exec(text)) !== null) {
@@ -408,8 +396,7 @@ function parseContent(
     }
 
     // Parse the inline tag
-    // eslint-disable-next-line @typescript-eslint/prefer-destructuring -- Array destructuring for clarity
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array destructuring indices
+
     const [, tagName, tagContentRaw] = match;
     const tagContent = tagContentRaw || '';
 
@@ -419,7 +406,6 @@ function parseContent(
       result.push(inlineTag);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Full match index
     const fullMatchIndex = 0;
     currentPos = match.index + match[fullMatchIndex].length;
   }
@@ -437,7 +423,7 @@ function parseContent(
   }
 
   // If no inline tags found, return as single text node
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
+
   const emptyArrayLength = 0;
   if (result.length === emptyArrayLength && text) {
     result.push({
@@ -472,7 +458,7 @@ function parseInlineTag(
   switch (tagName) {
     case 'code': {
       // {@code text} - may contain Apex code to parse
-      // eslint-disable-next-line @typescript-eslint/init-declarations -- Variable is conditionally initialized
+
       let nestedAST: ASTNode | undefined = undefined;
       if (parseCodeInCodeTag && content.trim()) {
         try {
@@ -507,7 +493,6 @@ function parseInlineTag(
       // {@link reference} or {@link "text"} or {@link <a href="url">label</a>}
       const linkMatch = /^(class#member|"[^"]*"|<a\s+href="[^"]*">([^<]*)<\/a>)/.exec(content);
       if (linkMatch) {
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First capture group is reference, second is label
         const linkFirstCaptureGroup = 1;
         const linkSecondCaptureGroup = 2;
         return {

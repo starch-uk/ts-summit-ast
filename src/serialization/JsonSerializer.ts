@@ -100,7 +100,7 @@ export class JsonSerializer {
    */
   public serialize(node: Readonly<ASTNode>): string {
     const json = this.serializeNode(node);
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- JSON.stringify indentation parameter
+
     const indentSize = 2;
     return this.options.compact ? JSON.stringify(json) : JSON.stringify(json, null, indentSize);
   }
@@ -344,13 +344,9 @@ export class JsonSerializer {
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeCompoundStatement(node: Readonly<CompoundStatement>, json: JsonASTNode): void {
-    json.statements = node.statements.map(
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-      (stmt: Readonly<Statement>) => this.serializeNode(stmt)
-    );
+    json.statements = node.statements.map((stmt: Readonly<Statement>) => this.serializeNode(stmt));
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeExpressionStatement(
     node: Readonly<ExpressionStatement>,
     json: JsonASTNode
@@ -382,10 +378,7 @@ export class JsonSerializer {
     if (node.target) {
       json.target = this.serializeNode(node.target);
     }
-    json.arguments = node.arguments.map(
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-      (arg: Readonly<Expression>) => this.serializeNode(arg)
-    );
+    json.arguments = node.arguments.map((arg: Readonly<Expression>) => this.serializeNode(arg));
     if (node.typeArguments) {
       json.typeArguments = node.typeArguments.map(
         // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
@@ -428,16 +421,11 @@ export class JsonSerializer {
   // Literal serialization methods
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeStringVal(node: Readonly<StringVal>, json: JsonASTNode): void {
     json.value = node.value;
     json.raw = node.raw;
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private serializeNumericLiteral(
     node: Readonly<DecimalVal | DoubleVal | IntegerVal | LongVal>,
@@ -448,7 +436,6 @@ export class JsonSerializer {
     json.raw = node.raw;
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private serializeBooleanVal(
     node: Readonly<BooleanVal>,
@@ -488,16 +475,13 @@ export class JsonSerializer {
    * @param node - The constructor initializer node.
    * @param json - The JSON object to populate.
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+
   private serializeConstructorInitializer(
     node: Readonly<ConstructorInitializer>,
     json: JsonASTNode
   ): void {
     json.type = this.serializeTypeRef(node.type);
-    json.args = node.args.map(
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-      (arg: Readonly<Expression>) => this.serializeNode(arg)
-    );
+    json.args = node.args.map((arg: Readonly<Expression>) => this.serializeNode(arg));
   }
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -506,7 +490,6 @@ export class JsonSerializer {
     json.values = node.values.map((val) => this.serializeNode(val));
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeSizedArrayInitializer(
     node: Readonly<SizedArrayInitializer>,
     json: JsonASTNode
@@ -518,13 +501,10 @@ export class JsonSerializer {
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeMapInitializer(node: Readonly<MapInitializer>, json: JsonASTNode): void {
     json.type = this.serializeTypeRef(node.type);
-    json.pairs = node.pairs.map(
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-      (pair: Readonly<{ key: Expression; value: Expression }>) => ({
-        key: this.serializeNode(pair.key),
-        value: this.serializeNode(pair.value),
-      })
-    );
+    json.pairs = node.pairs.map((pair: Readonly<{ key: Expression; value: Expression }>) => ({
+      key: this.serializeNode(pair.key),
+      value: this.serializeNode(pair.value),
+    }));
   }
 
   /**
@@ -532,7 +512,7 @@ export class JsonSerializer {
    * @param node
    * @param json
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+
   private serializeExpressionElementValue(
     node: Readonly<ExpressionElementValue>,
     json: JsonASTNode
@@ -540,7 +520,6 @@ export class JsonSerializer {
     json.value = this.serializeNode(node.value);
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeAnnotationElementValue(
     node: Readonly<AnnotationElementValue>,
     json: JsonASTNode
@@ -573,7 +552,6 @@ export class JsonSerializer {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeVariableDeclaration(
     node: Readonly<VariableDeclaration>,
     json: JsonASTNode
@@ -583,24 +561,20 @@ export class JsonSerializer {
     if (node.initializer) {
       json.initializer = this.serializeNode(node.initializer);
     }
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
+
     const emptyArrayLength = 0;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for modifiers array
+
     if (
       node.modifiers !== null &&
       node.modifiers !== undefined &&
       node.modifiers.length > emptyArrayLength
     ) {
-      json.modifiers = node.modifiers.map(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-        (mod: Readonly<Modifier>) => this.serializeNode(mod)
-      );
+      json.modifiers = node.modifiers.map((mod: Readonly<Modifier>) => this.serializeNode(mod));
     }
   }
 
   // Modifier serialization
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private serializeModifier(
     node: Readonly<Modifier>,
@@ -619,18 +593,17 @@ export class JsonSerializer {
       if (key !== 'kind' && key !== 'location' && Object.prototype.hasOwnProperty.call(node, key)) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access for unknown nodes
         const value = (node as unknown as Record<string, unknown>)[key];
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for object with kind property
+
         if (value !== null && value !== undefined && typeof value === 'object' && 'kind' in value) {
           // It's an AST node
           // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from unknown to ASTNode
           json[key] = this.serializeNode(value as ASTNode);
         } else if (Array.isArray(value)) {
-          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array and first element
           const emptyArrayLength = 0;
           const zeroIndex = 0;
           if (value.length > emptyArrayLength) {
             // Non-empty array: check if it contains AST nodes or TypeRefs
-            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check first element
+
             if (
               value[zeroIndex] !== null &&
               value[zeroIndex] !== undefined &&
@@ -639,13 +612,13 @@ export class JsonSerializer {
                 ('components' in value[zeroIndex] && 'arrayNesting' in value[zeroIndex]))
             ) {
               // It's an array of AST nodes or TypeRefs
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return -- Dynamic serialization for unknown node types
+
               json[key] = value.map((item) => {
                 if ('kind' in item) {
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Dynamic serialization for unknown node types
                   return this.serializeNode(item);
                 } else if ('components' in item && 'arrayNesting' in item) {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unsafe-argument -- Dynamic serialization for unknown node types
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic serialization for unknown node types
                   return this.serializeTypeRef(item as TypeRef);
                 }
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Dynamic serialization for unknown node types
@@ -657,7 +630,6 @@ export class JsonSerializer {
             json[key] = [];
           }
         } else if (
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for TypeRef object
           value !== null &&
           value !== undefined &&
           typeof value === 'object' &&

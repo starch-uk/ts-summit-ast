@@ -173,7 +173,6 @@ export class SummitTool {
       // Translate to AST
       const translationResult = this.translator.translate(parseTree);
 
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
       const emptyArrayLength = 0;
       if (translationResult.errors.length > emptyArrayLength) {
         return {
@@ -229,15 +228,14 @@ export class SummitTool {
    */
   private formatAST(ast: unknown): string {
     if (this.options.verbose) {
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- JSON indentation
       const jsonIndent = 2;
       return JSON.stringify(ast, null, jsonIndent);
     }
 
     // Simple text representation
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for AST object
+
     if (ast !== null && ast !== undefined && typeof ast === 'object' && 'kind' in ast) {
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-type-assertion -- AST kind is always a string
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- AST kind is always a string
       return `AST Node: ${(ast as { kind: string }).kind}`;
     }
 
@@ -248,25 +246,20 @@ export class SummitTool {
    * Print results to console.
    * @param results - The processing results to print.
    */
-  public printResults(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
-    results: readonly ProcessResult[]
-  ): void {
+  public printResults(results: readonly ProcessResult[]): void {
     for (const result of results) {
       if (result.success) {
         if (this.options.json) {
-          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- JSON indentation
           const jsonIndent = 2;
           console.log(JSON.stringify(result.ast, null, jsonIndent));
         } else {
           console.log(`${result.file}: OK`);
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Check for AST
+
           if (this.options.verbose && result.ast !== null && result.ast !== undefined) {
             console.log(this.formatAST(result.ast));
           }
         }
       } else {
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- Error is always a string
         console.error(`${result.file}: ERROR - ${result.error ?? ''}`);
       }
     }

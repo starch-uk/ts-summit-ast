@@ -450,7 +450,6 @@ export function findRuleMatches(
 
   walkAST(ast, {
     enterNode: (node): boolean | undefined => {
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for positive maxResults
       const zeroMaxResults = 0;
       if (maxResults !== undefined && maxResults > zeroMaxResults && matches.length >= maxResults) {
         return false; // Stop traversing
@@ -538,7 +537,7 @@ export function findRuleMatches(
             capturedGroups: result.matchDetails?.capturedGroups,
             matchReason,
             matchedAttributes,
-            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing -- Check for matchedPattern
+
             matchedPattern: result.matchDetails?.matchedPattern ?? matchedNode.kind,
           },
           node: matchedNode,

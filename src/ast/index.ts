@@ -20,9 +20,55 @@ export type * from './ApexDoc.js';
  * Union type for all AST node types.
  */
 import type { ASTNode } from './base.js';
-import type { StatementNode, SwitchCase, CatchClause } from './Statement.js';
-import type { ExpressionNode, LambdaParameter } from './Expression.js';
-import type { DeclarationNode, EnumValue } from './Declaration.js';
+import type {
+  SwitchCase,
+  CatchClause,
+  IfStatement,
+  ForLoopStatement,
+  EnhancedForLoopStatement,
+  WhileLoopStatement,
+  DoWhileLoopStatement,
+  ReturnStatement,
+  BreakStatement,
+  ContinueStatement,
+  ThrowStatement,
+  CompoundStatement,
+  ExpressionStatement,
+  VariableDeclarationStatement,
+  DmlStatement,
+  TryStatement,
+  SwitchStatement,
+} from './Statement.js';
+import type {
+  LambdaParameter,
+  BinaryExpression,
+  UnaryExpression,
+  AssignExpression,
+  CallExpression,
+  FieldExpression,
+  ArrayExpression,
+  NewExpression,
+  CastExpression,
+  InstanceOfExpression,
+  TernaryExpression,
+  LambdaExpression,
+  VariableExpression,
+  ThisExpression,
+  SuperExpression,
+  ParenthesizedExpression,
+  SoqlExpression,
+  SoslExpression,
+  TriggerContextVariableExpression,
+} from './Expression.js';
+import type {
+  ClassDeclaration,
+  EnumDeclaration,
+  InterfaceDeclaration,
+  MethodDeclaration,
+  PropertyDeclaration,
+  VariableDeclaration,
+  EnumValue,
+} from './Declaration.js';
 import type { Modifier } from './Declaration.js';
 import type {
   TypeParameter,
@@ -42,6 +88,7 @@ import type { Identifier } from './Identifier.js';
 import type { Initializer } from './Initializer.js';
 import type { ElementValue } from './ElementValue.js';
 import type { SoqlOrSoslBinding } from './SoqlOrSoslBinding.js';
+import type { Literal } from './Literal.js';
 
 /* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 export type AnyASTNode =
@@ -55,17 +102,54 @@ export type AnyASTNode =
   | ApexDocText
   | ASTNode
   | CatchClause
-  | DeclarationNode
+  | ClassDeclaration
+  | EnumDeclaration
+  | InterfaceDeclaration
+  | MethodDeclaration
+  | PropertyDeclaration
+  | VariableDeclaration
   | ElementValue
   | EnumValue
-  | ExpressionNode
+  | BinaryExpression
+  | UnaryExpression
+  | AssignExpression
+  | CallExpression
+  | FieldExpression
+  | ArrayExpression
+  | NewExpression
+  | CastExpression
+  | InstanceOfExpression
+  | TernaryExpression
+  | LambdaExpression
+  | VariableExpression
+  | ThisExpression
+  | SuperExpression
+  | ParenthesizedExpression
+  | SoqlExpression
+  | SoslExpression
+  | TriggerContextVariableExpression
+  | Literal
   | Identifier
   | Initializer
   | LambdaParameter
   | Modifier
   | Parameter
   | SoqlOrSoslBinding
-  | StatementNode
+  | IfStatement
+  | ForLoopStatement
+  | EnhancedForLoopStatement
+  | WhileLoopStatement
+  | DoWhileLoopStatement
+  | ReturnStatement
+  | BreakStatement
+  | ContinueStatement
+  | ThrowStatement
+  | CompoundStatement
+  | ExpressionStatement
+  | VariableDeclarationStatement
+  | DmlStatement
+  | TryStatement
+  | SwitchStatement
   | SwitchCase
   | TypeParameter;
 /* eslint-enable @typescript-eslint/no-type-alias */

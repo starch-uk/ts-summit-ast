@@ -359,7 +359,7 @@ describe('NodeFactory', () => {
       ];
       const node = NodeFactory.createCallExpression('method', [], undefined, typeArgs);
       expect(node.kind).toBe('CallExpression');
-      expect(node.typeArguments).toBe(typeArgs);
+      expect(node.typeArguments).toStrictEqual(typeArgs);
     });
 
     it('should create CallExpression with target', () => {

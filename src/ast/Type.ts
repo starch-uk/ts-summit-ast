@@ -65,14 +65,12 @@ type Type = TypeRef;
  * @returns The string representation of the type reference.
  */
 function typeRefToCodeString(typeRef: Readonly<TypeRef>): string {
-  // eslint-disable-line @typescript-eslint/prefer-readonly-parameter-types -- TypeRef is a complex type
   const emptyArrayLength = 0;
   if (typeRef.components.length === emptyArrayLength) {
     return 'void';
   }
   const typeString = typeRef.components
     .map((comp: Readonly<TypeRefComponent>) => {
-      // eslint-disable-line @typescript-eslint/prefer-readonly-parameter-types -- TypeRefComponent is a complex type
       let result = comp.id.name;
       const emptyArgsLength = 0;
       if (comp.args.length > emptyArgsLength) {

@@ -18,9 +18,8 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class ElementValueFactory {
   public static createExpressionElementValue(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     value: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): ExpressionElementValue {
     return {
@@ -45,7 +44,7 @@ export class ElementValueFactory {
   public static createArrayElementValue(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     values: readonly ElementValue[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): ArrayElementValue {
     return {

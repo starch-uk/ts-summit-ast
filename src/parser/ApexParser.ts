@@ -287,7 +287,7 @@ export class ApexParser {
       children.push({ children: [...modifiers], type: 'modifiers' });
     }
     children.push({ location: this.locationToRange(name.location), text: name.text, type: 'name' });
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- typeParameters can be null/undefined
+
     if (
       typeParameters !== null &&
       typeParameters !== undefined &&
@@ -353,7 +353,7 @@ export class ApexParser {
       children.push({ children: modifiers, type: 'modifiers' });
     }
     children.push({ location: this.locationToRange(name.location), text: name.text, type: 'name' });
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- typeParameters can be null/undefined
+
     if (
       typeParameters !== null &&
       typeParameters !== undefined &&
@@ -454,7 +454,7 @@ export class ApexParser {
     /**
      * Start at @.
      */
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Annotation start offset (2 chars: @ and identifier start)
+
     const annotationStartOffset = 2;
     const start = this.current - annotationStartOffset;
     const modifiers: ParseTreeNode[] = [];
@@ -888,7 +888,7 @@ export class ApexParser {
    * @param returnType - The return type parse tree node.
    * @returns The method or constructor declaration parse tree node.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params, @typescript-eslint/prefer-readonly-parameter-types -- Method parsing requires 4 parameters, arrays are already readonly
+  // eslint-disable-next-line @typescript-eslint/max-params -- Method parsing requires 4 parameters, arrays are already readonly
   private parseMethodOrConstructor(
     name: Readonly<Token>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
@@ -951,7 +951,7 @@ export class ApexParser {
     }
     children.push(returnType);
     children.push({ location: this.locationToRange(name.location), text: name.text, type: 'name' });
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- typeParameters can be null/undefined
+
     if (
       typeParameters !== null &&
       typeParameters !== undefined &&
@@ -1039,7 +1039,6 @@ export class ApexParser {
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Property parsing requires 4 parameters
   private parsePropertyDeclaration(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
     name: Readonly<Token>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
     modifiers: readonly ParseTreeNode[],
@@ -1058,7 +1057,7 @@ export class ApexParser {
 
     // Parse getter
     const peekToken = this.peek();
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- peekToken can be null
+
     if (
       this.check(TokenType.IDENTIFIER) &&
       peekToken !== null &&
@@ -1077,7 +1076,7 @@ export class ApexParser {
 
     // Parse setter
     const setterPeekToken = this.peek();
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- setterPeekToken can be null
+
     if (
       this.check(TokenType.IDENTIFIER) &&
       setterPeekToken !== null &&
@@ -1130,7 +1129,6 @@ export class ApexParser {
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Field parsing requires 5 parameters
   private parseFieldDeclaration(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
     name: Readonly<Token>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
     modifiers: readonly ParseTreeNode[],
@@ -1218,7 +1216,7 @@ export class ApexParser {
     }
 
     // For multiple declarators, return a block with multiple field declarations
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for multiple declarations
+
     const singleDeclarationCount = 1;
     if (declarations.length > singleDeclarationCount) {
       return {
@@ -1255,12 +1253,11 @@ export class ApexParser {
 
           // Check if there's a comma (explicit separator)
           if (this.match(TokenType.COMMA)) {
-            // eslint-disable-line @typescript-eslint/no-magic-numbers -- Array index for comma check
             this.skipWhitespaceAndComments();
           } else {
             // For named arguments, whitespace can separate them
             // Check if next token is an identifier followed by = (named argument)
-            // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Peek one token ahead
+
             const peekOffset = 1;
             const peekToken = this.peek(peekOffset);
             if (!(this.check(TokenType.IDENTIFIER) && peekToken.type === TokenType.ASSIGN)) {
@@ -1346,9 +1343,9 @@ export class ApexParser {
     // Could be name = value or just value
     let name: Token | undefined = undefined;
     // Check for named argument: peek past whitespace to find ASSIGN
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial offset for whitespace peeking
+
     let nextNonWhitespaceOffset = 1;
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Maximum offset to peek for whitespace
+
     const maxWhitespacePeekOffset = 5;
     while (nextNonWhitespaceOffset < maxWhitespacePeekOffset) {
       const peekedToken = this.peek(nextNonWhitespaceOffset);
@@ -1560,7 +1557,6 @@ export class ApexParser {
           };
           // Store access level if present
           if (accessLevel !== undefined && accessLevel !== '') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property assignment for parse tree
             (node as ParseTreeNode & { accessLevel?: string }).accessLevel = accessLevel;
           }
           return node;
@@ -1766,7 +1762,7 @@ export class ApexParser {
           }
 
           // Create variable declaration statement(s) - don't consume semicolon here
-          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for multiple declarations
+
           const singleDeclarationCount = 1;
           if (declarations.length > singleDeclarationCount) {
             const statementNodes: ParseTreeNode[] = declarations.map(
@@ -1823,7 +1819,7 @@ export class ApexParser {
           }
 
           // If multiple expressions, wrap them in a block/compound statement
-          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for multiple expressions
+
           const singleExpressionCount = 1;
           if (expressions.length > singleExpressionCount) {
             init = {
@@ -1886,7 +1882,7 @@ export class ApexParser {
         }
 
         // If multiple expressions, wrap them
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for multiple expressions
+
         const singleExpressionCount = 1;
         if (updateExpressions.length > singleExpressionCount) {
           update = {
@@ -2164,7 +2160,6 @@ export class ApexParser {
           // Structure: children array with [value?, statements]
           const caseChildren: ParseTreeNode[] = [];
 
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Both can be null
           if (
             whenType !== null &&
             whenType !== undefined &&
@@ -2516,7 +2511,7 @@ export class ApexParser {
 
     // For multiple declarators, we need to create a block/compound statement
     // with multiple variable declaration statements
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for multiple declarations
+
     const singleDeclarationCount = 1;
     if (declarations.length > singleDeclarationCount) {
       const statementNodes: ParseTreeNode[] = declarations.map(
@@ -2537,7 +2532,7 @@ export class ApexParser {
 
     // Single declaration - return as variable_declaration_statement
     // Put the variable_declaration directly as child (translator will look for it)
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First declaration index
+
     const firstDeclarationIndex = 0;
     return {
       children: [declarations[firstDeclarationIndex]],
@@ -2662,7 +2657,7 @@ export class ApexParser {
 
     // Parse array brackets (only empty brackets [] for array dimensions)
     // Don't consume [size] - that's handled by the caller (e.g., new Type[size])
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial array dimension count
+
     const initialArrayDimensions = 0;
     let arrayDimensions = initialArrayDimensions;
     while (this.check(TokenType.LEFT_BRACKET)) {
@@ -2686,13 +2681,11 @@ export class ApexParser {
       { location: this.locationToRange(baseType.location), text: qualifiedName, type: 'base_type' },
     ];
 
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     const emptyArrayLength = 0;
     if (typeArguments !== undefined && typeArguments.length > emptyArrayLength) {
       children.push({ children: typeArguments, type: 'type_arguments' });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-zero array dimensions
     const zeroDimensions = 0;
     if (arrayDimensions > zeroDimensions) {
       children.push({ text: arrayDimensions.toString(), type: 'array_dimensions' });
@@ -2805,7 +2798,6 @@ export class ApexParser {
             expr.location != null && thenExpr.location != null && elseExpr.location != null
               ? this.combineLocations(expr.location, elseExpr.location)
               : ((): SourceRange => {
-                  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Ternary expression offset
                   const ternaryExpressionOffset = 3;
                   return this.getLocation(this.current - ternaryExpressionOffset, this.current);
                 })(),
@@ -2866,7 +2858,6 @@ export class ApexParser {
               ? this.combineLocations(expr.location, right.location)
               : (right.location ??
                 ((): SourceRange => {
-                  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                   const previousTokenOffset = 1;
                   return this.getLocation(this.current - previousTokenOffset, this.current);
                 })()),
@@ -2901,7 +2892,6 @@ export class ApexParser {
               ? this.combineLocations(expr.location, right.location)
               : (right.location ??
                 ((): SourceRange => {
-                  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                   const previousTokenOffset = 1;
                   return this.getLocation(this.current - previousTokenOffset, this.current);
                 })()),
@@ -2943,7 +2933,6 @@ export class ApexParser {
               ? this.combineLocations(expr.location, right.location)
               : (right.location ??
                 ((): SourceRange => {
-                  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                   const previousTokenOffset = 1;
                   return this.getLocation(this.current - previousTokenOffset, this.current);
                 })()),
@@ -2967,7 +2956,6 @@ export class ApexParser {
                 ? this.combineLocations(expr.location, right.location)
                 : (right.location ??
                   ((): SourceRange => {
-                    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                     const previousTokenOffset = 1;
                     return this.getLocation(this.current - previousTokenOffset, this.current);
                   })()),
@@ -3002,7 +2990,6 @@ export class ApexParser {
               ? this.combineLocations(expr.location, right.location)
               : (right.location ??
                 ((): SourceRange => {
-                  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                   const previousTokenOffset = 1;
                   return this.getLocation(this.current - previousTokenOffset, this.current);
                 })()),
@@ -3037,7 +3024,6 @@ export class ApexParser {
               ? this.combineLocations(expr.location, right.location)
               : (right.location ??
                 ((): SourceRange => {
-                  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                   const previousTokenOffset = 1;
                   return this.getLocation(this.current - previousTokenOffset, this.current);
                 })()),
@@ -3102,14 +3088,14 @@ export class ApexParser {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- expr can be null
     if (expr !== null && (expr.type === 'super_expression' || expr.type === 'this_expression')) {
       // Get the token that created this expression (super or this)
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token index
+
       const previousTokenIndex = 1;
       const token = this.tokens[this.current - previousTokenIndex];
       // Parse postfix operations (method calls, field access, array access)
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Loop condition is intentional
       while (true) {
         // Check for safe navigation operator ?. or ?(
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Peek one token ahead
+
         const peekOffset = 1;
         const peekToken = this.peek(peekOffset);
         const isSafe =
@@ -3147,7 +3133,6 @@ export class ApexParser {
             location: this.combineLocations(
               expr.location ?? this.locationToRange(token.location),
               ((): SourceRange => {
-                // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                 const previousTokenOffset = 1;
                 return this.getLocation(this.current - previousTokenOffset, this.current);
               })()
@@ -3155,7 +3140,7 @@ export class ApexParser {
             type: 'method_call_expression',
           };
           if (isSafe) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for isSafe
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
             methodCallNode.isSafe = true;
           }
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
@@ -3186,7 +3171,7 @@ export class ApexParser {
             type: 'field_access_expression',
           };
           if (isSafe) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for isSafe
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
             fieldAccessNode.isSafe = true;
           }
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
@@ -3206,7 +3191,6 @@ export class ApexParser {
             location: this.combineLocations(
               expr.location ?? this.locationToRange(token.location),
               ((): SourceRange => {
-                // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                 const previousTokenOffset = 1;
                 return this.getLocation(this.current - previousTokenOffset, this.current);
               })()
@@ -3394,7 +3378,7 @@ export class ApexParser {
         throw new Error('Expected expression in parentheses');
       }
       this.consume(TokenType.RIGHT_PAREN, 'Expected ) after expression');
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index offset
+
       const arrayIndexOffset = 1;
       return {
         children: [expr],
@@ -3495,7 +3479,7 @@ export class ApexParser {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop with break
       while (true) {
         // Check for safe navigation operator ?. or ?(
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index offset
+
         const singleCharOffset = 1;
         const peekToken = this.peek(singleCharOffset);
         const isSafe =
@@ -3534,7 +3518,7 @@ export class ApexParser {
             type: 'method_call_expression',
           };
           if (isSafe) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for isSafe
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
             methodCallNode.isSafe = true;
           }
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
@@ -3562,7 +3546,7 @@ export class ApexParser {
             type: 'field_access_expression',
           };
           if (isSafe) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for isSafe
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
             fieldAccessNode.isSafe = true;
           }
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
@@ -3579,7 +3563,6 @@ export class ApexParser {
             location: this.combineLocations(
               expr.location ?? this.locationToRange(token.location),
               ((): SourceRange => {
-                // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous token offset
                 const previousTokenOffset = 1;
                 return this.getLocation(this.current - previousTokenOffset, this.current);
               })()
@@ -3603,7 +3586,6 @@ export class ApexParser {
       return {
         children: [expr],
         location: ((): SourceRange => {
-          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Parenthesized expression offset
           const parenthesizedExpressionOffset = 2;
           return this.getLocation(this.current - parenthesizedExpressionOffset, this.current);
         })(),
@@ -3664,7 +3646,7 @@ export class ApexParser {
 
     // Read until matching ]
     let depth = 1;
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-zero depth
+
     const zeroDepth = 0;
     while (depth > zeroDepth && !this.isAtEnd()) {
       const token = this.peek();
@@ -3673,7 +3655,7 @@ export class ApexParser {
       } else if (token.type === TokenType.RIGHT_BRACKET) {
         depth--;
       }
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-zero depth
+
       const zeroDepthInner = 0;
       if (depth > zeroDepthInner) {
         queryText += token.text;
@@ -3696,7 +3678,7 @@ export class ApexParser {
       .split('\n')
       .map((line) => {
         const i = line.indexOf('//');
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index check
+
         const zeroIndex = 0;
         return i >= zeroIndex ? line.substring(zeroIndex, i) : line;
       })
@@ -3857,7 +3839,7 @@ export class ApexParser {
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Rest parameter array
   private check(type: TokenType, ...types: TokenType[]): boolean {
     // If we have pending > tokens from RIGHT_SHIFT, and we're checking for GREATER_THAN, return true
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for pending greater than
+
     const zeroPending = 0;
     if (type === TokenType.GREATER_THAN && this.pendingGreaterThan > zeroPending) {
       return true;
@@ -3898,7 +3880,7 @@ export class ApexParser {
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default offset
   private peek(offset = 0): Token {
     const pos = this.current + offset;
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Get last element index
+
     const lastElementOffset = 1;
     return this.tokens[pos] ?? this.tokens[this.tokens.length - lastElementOffset];
   }
@@ -3909,7 +3891,7 @@ export class ApexParser {
 
   private consume(type: TokenType, message: string): Token {
     // If we have pending > tokens from RIGHT_SHIFT, use one of them
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-zero pending count
+
     const zeroPending = 0;
     if (type === TokenType.GREATER_THAN && this.pendingGreaterThan > zeroPending) {
       this.pendingGreaterThan--;
@@ -3958,10 +3940,9 @@ export class ApexParser {
   }
 
   private getLocation(start: number, end: number): SourceRange {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Get last element index
     const lastElementOffset = 1;
     const startToken = this.tokens[Math.min(start, this.tokens.length - lastElementOffset)];
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous position offset
+
     const previousPositionOffset = 1;
     let endToken =
       this.tokens[Math.min(end - previousPositionOffset, this.tokens.length - lastElementOffset)];
@@ -3970,7 +3951,7 @@ export class ApexParser {
     let endLocation = endToken.location;
 
     // If we're at EOF, check if source has trailing newline/whitespace
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check if at last token
+
     const lastTokenIndex = 1;
     if (end >= this.tokens.length - lastTokenIndex && endToken.type === TokenType.EOF) {
       // Count lines in source
@@ -3988,10 +3969,10 @@ export class ApexParser {
         };
       } else if (this.source.endsWith(' ') || this.source.endsWith('\t')) {
         // Source ends with whitespace (but not newline)
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Get last line index
+
         const lastLineIndex = 1;
         const lastLine = lines[lastLineNum - lastLineIndex] || '';
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- +1 because columns are 1-based
+
         const columnOffset = 1;
         endLocation = {
           column: lastLine.length + columnOffset,
@@ -3999,15 +3980,13 @@ export class ApexParser {
         };
       } else {
         // Use the last non-EOF token's location and extend to end of that token
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Get second-to-last token (last before EOF)
+
         const secondToLastTokenIndex = 2;
         const lastNonEofToken = this.tokens[this.tokens.length - secondToLastTokenIndex];
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- lastNonEofToken can be undefined
         if (lastNonEofToken !== null && lastNonEofToken !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default text length if undefined
           const defaultTextLength = 0;
           endLocation = {
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- text is optional
             column:
               lastNonEofToken.location.column +
               (lastNonEofToken.text !== null && lastNonEofToken.text !== undefined

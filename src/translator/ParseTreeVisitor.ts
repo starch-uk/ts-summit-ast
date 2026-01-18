@@ -35,12 +35,10 @@ export class DefaultParseTreeVisitor implements ParseTreeVisitor {
     // Default implementation does nothing
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- Interface requires void[] return type
   public visitChildren(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Visitor pattern may need mutable node
     node: Readonly<ParseTreeNode>
   ): void[] {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for empty array
     const emptyArrayLength = 0;
     if (!node.children || node.children.length === emptyArrayLength) {
       return [];

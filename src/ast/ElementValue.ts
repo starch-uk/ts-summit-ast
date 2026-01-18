@@ -12,7 +12,6 @@ import type { Annotation } from './Declaration.js';
  * Base type for all element value nodes.
  * A value that can be assigned to an annotation element.
  */
-// eslint-disable-next-line @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure
 type ElementValue = AnnotationElementValue | ArrayElementValue | ExpressionElementValue;
 
 /**

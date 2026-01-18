@@ -3,11 +3,12 @@
  * AST node types for declarations (classes, interfaces, methods, etc.).
  */
 
-import type { ASTNode } from './base.js';
-import type { Type } from './Type.js';
+import type { ASTNode, SourceRange } from './base.js';
+import type { TypeRef } from './Type.js';
 import type { Expression } from './Expression.js';
 import type { CompoundStatement } from './Statement.js';
 import type { Identifier } from './Identifier.js';
+import type { ElementValue } from './ElementValue.js';
 
 /**
  * Modifier node types.
@@ -16,7 +17,6 @@ import type { Identifier } from './Identifier.js';
 /**
  * Modifier keywords.
  */
-/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 type ModifierKeyword =
   | 'abstract'
   | 'deprecated'
@@ -39,7 +39,6 @@ type ModifierKeyword =
   | 'webservice'
   | 'with sharing'
   | 'without sharing';
-/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Modifier node.
@@ -53,19 +52,14 @@ interface Modifier extends ASTNode {
  * Base interface for all declaration nodes.
  */
 interface Declaration extends ASTNode {
-  readonly kind: DeclarationKind;
+  readonly kind:
+    | 'ClassDeclaration'
+    | 'EnumDeclaration'
+    | 'InterfaceDeclaration'
+    | 'MethodDeclaration'
+    | 'PropertyDeclaration'
+    | 'VariableDeclaration';
 }
-
-/**
- * Discriminated union type for all declaration kinds.
- */
-type DeclarationKind =
-  | 'ClassDeclaration'
-  | 'EnumDeclaration'
-  | 'InterfaceDeclaration'
-  | 'MethodDeclaration'
-  | 'PropertyDeclaration'
-  | 'VariableDeclaration';
 
 /**
  * Class declaration.
@@ -79,11 +73,20 @@ interface ClassDeclaration extends Declaration {
   /**
    * Superclass.
    */
-  readonly extendsClause?: Type;
-  readonly implementsClause?: Type[]; /**
+  readonly extendsClause?: TypeRef;
+
+  /**
    * Interfaces.
    */
-  readonly members: ClassMember[];
+  readonly implementsClause?: TypeRef[];
+  readonly members: (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[];
   readonly annotations?: Annotation[];
 }
 
@@ -95,10 +98,17 @@ interface InterfaceDeclaration extends Declaration {
   readonly name: string;
   readonly modifiers: Modifier[];
   readonly typeParameters?: TypeParameter[];
-  readonly extendsClause?: Type[]; /**
+
+  /**
    * Extended interfaces.
    */
-  readonly members: InterfaceMember[];
+  readonly extendsClause?: TypeRef[];
+  readonly members: (
+    | ClassDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+  )[];
 }
 
 /**
@@ -108,19 +118,21 @@ interface MethodDeclaration extends Declaration {
   readonly kind: 'MethodDeclaration';
   readonly name: string;
   readonly modifiers: Modifier[];
-  readonly returnType: Type;
+  readonly returnType: TypeRef;
   readonly typeParameters?: TypeParameter[];
   readonly parameters: Parameter[];
-  readonly body?: CompoundStatement; /**
+
+  /**
    * Undefined for abstract/interface methods.
    */
+  readonly body?: CompoundStatement;
   readonly annotations?: Annotation[];
-  readonly isConstructor?: boolean; /**
+
+  /**
    * True if this is a constructor (summit-ast compatibility).
    */
+  readonly isConstructor?: boolean;
 }
-
-import type { SourceRange } from './base.js';
 
 /**
  * Constructor declaration.
@@ -142,7 +154,7 @@ interface ConstructorDeclaration {
 interface VariableDeclaration extends Declaration {
   readonly kind: 'VariableDeclaration';
   readonly name: string;
-  readonly type: Type;
+  readonly type: TypeRef;
   readonly modifiers?: Modifier[];
   readonly initializer?: Expression;
   readonly annotations?: Annotation[];
@@ -154,7 +166,7 @@ interface VariableDeclaration extends Declaration {
 interface PropertyDeclaration extends Declaration {
   readonly kind: 'PropertyDeclaration';
   readonly name: string;
-  readonly type: Type;
+  readonly type: TypeRef;
   readonly modifiers: Modifier[];
   readonly getter?: CompoundStatement;
   readonly setter?: CompoundStatement;
@@ -173,7 +185,14 @@ interface EnumDeclaration extends Declaration {
   /**
    * Enum body members.
    */
-  readonly members?: ClassMember[];
+  readonly members?: (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[];
 }
 
 /**
@@ -192,7 +211,7 @@ interface EnumValue extends ASTNode {
 interface TypeParameter extends ASTNode {
   readonly kind: 'TypeParameter';
   readonly name: string;
-  readonly extendsBound?: Type;
+  readonly extendsBound?: TypeRef;
 }
 
 /**
@@ -201,7 +220,7 @@ interface TypeParameter extends ASTNode {
 interface Parameter extends ASTNode {
   readonly kind: 'Parameter';
   readonly name: string;
-  readonly type: Type;
+  readonly type: TypeRef;
   readonly modifiers?: Modifier[];
   readonly defaultValue?: Expression;
   readonly annotations?: Annotation[];
@@ -222,10 +241,12 @@ interface Annotation extends ASTNode {
  */
 interface AnnotationArgument extends ASTNode {
   readonly kind: 'AnnotationArgument';
-  readonly name?: string; /**
+
+  /**
    * Undefined for positional arguments (implicitly "value").
    */
-  readonly value: import('./ElementValue.js').ElementValue;
+  readonly name?: string;
+  readonly value: ElementValue;
 
   /**
    * True if the name is implicitly set to "value" (unnamed argument).
@@ -234,51 +255,19 @@ interface AnnotationArgument extends ASTNode {
 }
 
 /**
- * Class member (method, field, inner class, etc.).
- */
-type ClassMember =
-  | ClassDeclaration
-  | EnumDeclaration
-  | InterfaceDeclaration
-  | MethodDeclaration
-  | PropertyDeclaration
-  | VariableDeclaration;
-
-/**
- * Interface member (method, property, etc.).
- */
-type InterfaceMember =
-  | ClassDeclaration
-  | InterfaceDeclaration
-  | MethodDeclaration
-  | PropertyDeclaration;
-
-/**
  * Annotation member (method-like).
  */
 interface AnnotationMember extends ASTNode {
   readonly kind: 'AnnotationMember';
   readonly name: string;
-  readonly type: Type;
+  readonly type: TypeRef;
   readonly defaultValue?: Expression;
 }
-
-/**
- * Union type for all declaration node types.
- */
-type DeclarationNode =
-  | ClassDeclaration
-  | EnumDeclaration
-  | InterfaceDeclaration
-  | MethodDeclaration
-  | PropertyDeclaration
-  | VariableDeclaration;
 
 export type {
   ModifierKeyword,
   Modifier,
   Declaration,
-  DeclarationKind,
   ClassDeclaration,
   InterfaceDeclaration,
   MethodDeclaration,
@@ -291,8 +280,5 @@ export type {
   Parameter,
   Annotation,
   AnnotationArgument,
-  ClassMember,
-  InterfaceMember,
   AnnotationMember,
-  DeclarationNode,
 };

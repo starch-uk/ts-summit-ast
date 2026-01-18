@@ -34,9 +34,9 @@ export class InitializerFactory {
   public static createValuesInitializer(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
+
     values: readonly Expression[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): ValuesInitializer {
     return {
@@ -50,9 +50,9 @@ export class InitializerFactory {
   public static createSizedArrayInitializer(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+
     size: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): SizedArrayInitializer {
     return {
@@ -68,7 +68,7 @@ export class InitializerFactory {
     type: Readonly<TypeRef>,
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     pairs: readonly { key: Expression; value: Expression }[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
+
     options?: Readonly<NodeFactoryOptions>
   ): MapInitializer {
     return {

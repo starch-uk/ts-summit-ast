@@ -4,57 +4,73 @@
  */
 
 import type { ASTNode } from './base.js';
-import type { Type, TypeRef } from './Type.js';
-import type { Literal } from './Literal.js';
+import type { TypeRef } from './Type.js';
 import type { Statement } from './Statement.js';
 import type { Identifier } from './Identifier.js';
+import type { Initializer } from './Initializer.js';
+import type { SoqlOrSoslBinding } from './SoqlOrSoslBinding.js';
 
 /**
  * Base interface for all expression nodes.
  */
 interface Expression extends ASTNode {
-  readonly kind: ExpressionKind;
+  readonly kind:
+    | 'ArrayExpression'
+    | 'AssignExpression'
+    | 'BinaryExpression'
+    | 'BooleanVal'
+    | 'CallExpression'
+    | 'CastExpression'
+    | 'CharacterLiteral'
+    | 'DecimalVal'
+    | 'DoubleVal'
+    | 'FieldExpression'
+    | 'InstanceOfExpression'
+    | 'IntegerVal'
+    | 'LambdaExpression'
+    | 'LongVal'
+    | 'NewExpression'
+    | 'NullVal'
+    | 'ParenthesizedExpression'
+    | 'SoqlExpression'
+    | 'SoslExpression'
+    | 'StringVal'
+    | 'SuperExpression'
+    | 'TernaryExpression'
+    | 'ThisExpression'
+    | 'TriggerContextVariableExpression'
+    | 'UnaryExpression'
+    | 'VariableExpression';
 }
-
-/**
- * Discriminated union type for all expression kinds
- * Note: Literal kinds are included here since literals extend Expression.
- */
-
-type ExpressionKind =
-  | 'ArrayExpression'
-  | 'AssignExpression'
-  | 'BinaryExpression'
-  | 'BooleanVal'
-  | 'CallExpression'
-  | 'CastExpression'
-  | 'CharacterLiteral'
-  | 'DecimalVal'
-  | 'DoubleVal'
-  | 'FieldExpression'
-  | 'InstanceOfExpression'
-  | 'IntegerVal'
-  | 'LambdaExpression'
-  | 'LongVal'
-  | 'NewExpression'
-  | 'NullVal'
-  | 'ParenthesizedExpression'
-  | 'SoqlExpression'
-  | 'SoslExpression'
-  | 'StringVal'
-  | 'SuperExpression'
-  | 'TernaryExpression'
-  | 'ThisExpression'
-  | 'TriggerContextVariableExpression'
-  | 'UnaryExpression'
-  | 'VariableExpression';
 
 /**
  * Binary expression: left operator right.
  */
 interface BinaryExpression extends Expression {
   readonly kind: 'BinaryExpression';
-  readonly operator: BinaryOperator;
+  readonly operator:
+    | '-'
+    | '!='
+    | '!=='
+    | '*'
+    | '/'
+    | '&'
+    | '&&'
+    | '%'
+    | '^'
+    | '+'
+    | '<'
+    | '<<'
+    | '<='
+    | '=='
+    | '==='
+    | '>'
+    | '>='
+    | '>>'
+    | '>>>'
+    | '|'
+    | '||'
+    | 'instanceof';
   readonly left: Expression;
   readonly right: Expression;
 }
@@ -62,36 +78,13 @@ interface BinaryExpression extends Expression {
 /**
  * Binary operators.
  */
-type BinaryOperator =
-  | '-'
-  | '!='
-  | '!=='
-  | '*'
-  | '/'
-  | '&'
-  | '&&'
-  | '%'
-  | '^'
-  | '+'
-  | '<'
-  | '<<'
-  | '<='
-  | '=='
-  | '==='
-  | '>'
-  | '>='
-  | '>>'
-  | '>>>'
-  | '|'
-  | '||'
-  | 'instanceof';
 
 /**
  * Unary expression: operator operand or operand operator.
  */
 interface UnaryExpression extends Expression {
   readonly kind: 'UnaryExpression';
-  readonly operator: UnaryOperator;
+  readonly operator: '--' | '-' | '!' | '+' | '++' | '~';
   readonly operand: Expression;
 
   /**
@@ -103,14 +96,25 @@ interface UnaryExpression extends Expression {
 /**
  * Unary operators.
  */
-type UnaryOperator = '--' | '-' | '!' | '+' | '++' | '~';
 
 /**
  * Assignment expression: left = right.
  */
 interface AssignExpression extends Expression {
   readonly kind: 'AssignExpression';
-  readonly operator: AssignmentOperator;
+  readonly operator:
+    | '-='
+    | '*='
+    | '/='
+    | '&='
+    | '%='
+    | '^='
+    | '+='
+    | '<<='
+    | '='
+    | '>>='
+    | '>>>='
+    | '|=';
 
   /**
    * Usually VariableExpression, FieldExpression, or ArrayExpression.
@@ -122,35 +126,24 @@ interface AssignExpression extends Expression {
 /**
  * Assignment operators.
  */
-type AssignmentOperator =
-  | '-='
-  | '*='
-  | '/='
-  | '&='
-  | '%='
-  | '^='
-  | '+='
-  | '<<='
-  | '='
-  | '>>='
-  | '>>>='
-  | '|=';
 
 /**
  * Call expression: target.method(args).
  */
 interface CallExpression extends Expression {
   readonly kind: 'CallExpression';
-  readonly target?: Expression; /**
+
+  /**
    * Undefined for static calls.
    */
+  readonly target?: Expression;
   readonly methodName: string;
   readonly arguments: Expression[];
 
   /**
    * Generic type arguments.
    */
-  readonly typeArguments?: Type[];
+  readonly typeArguments?: TypeRef[];
 
   /**
    * Whether this is a safe navigation call (x?.method()).
@@ -163,9 +156,11 @@ interface CallExpression extends Expression {
  */
 interface FieldExpression extends Expression {
   readonly kind: 'FieldExpression';
-  readonly target?: Expression; /**
+
+  /**
    * Undefined for static access.
    */
+  readonly target?: Expression;
   readonly fieldName: string;
 
   /**
@@ -193,17 +188,21 @@ interface ArrayExpression extends Expression {
  */
 interface NewExpression extends Expression {
   readonly kind: 'NewExpression';
-  readonly initializer: import('./Initializer.js').Initializer;
+  readonly initializer: Initializer;
 
   /**
    * Convenience properties for accessing initializer data.
    */
-  readonly type?: TypeRef; /**
+
+  /**
    * Type from the initializer.
    */
-  readonly arguments?: Expression[]; /**
+  readonly type?: TypeRef;
+
+  /**
    * For ConstructorInitializer.
    */
+  readonly arguments?: Expression[];
 
   /**
    * For ValuesInitializer, MapInitializer.
@@ -216,7 +215,7 @@ interface NewExpression extends Expression {
  */
 interface CastExpression extends Expression {
   readonly kind: 'CastExpression';
-  readonly type: Type;
+  readonly type: TypeRef;
   readonly expression: Expression;
 }
 
@@ -226,7 +225,7 @@ interface CastExpression extends Expression {
 interface InstanceOfExpression extends Expression {
   readonly kind: 'InstanceOfExpression';
   readonly expression: Expression;
-  readonly type: Type;
+  readonly type: TypeRef;
 }
 
 /**
@@ -254,7 +253,7 @@ interface LambdaExpression extends Expression {
 interface LambdaParameter extends ASTNode {
   readonly kind: 'LambdaParameter';
   readonly name: string;
-  readonly type?: Type;
+  readonly type?: TypeRef;
 }
 
 /**
@@ -292,15 +291,17 @@ interface ParenthesizedExpression extends Expression {
  */
 interface SoqlExpression extends Expression {
   readonly kind: 'SoqlExpression';
-  readonly query: string; /**
+
+  /**
    * The raw query text within brackets.
    */
+  readonly query: string;
 
   /**
    * Bound expressions like :variableName.
    * In summit-ast, these are SoqlOrSoslBinding nodes.
    */
-  readonly bindings: import('./SoqlOrSoslBinding.js').SoqlOrSoslBinding[];
+  readonly bindings: SoqlOrSoslBinding[];
 }
 
 /**
@@ -308,15 +309,17 @@ interface SoqlExpression extends Expression {
  */
 interface SoslExpression extends Expression {
   readonly kind: 'SoslExpression';
-  readonly query: string; /**
+
+  /**
    * The raw query text within brackets.
    */
+  readonly query: string;
 
   /**
    * Bound expressions like :variableName.
    * In summit-ast, these are SoqlOrSoslBinding nodes.
    */
-  readonly bindings: import('./SoqlOrSoslBinding.js').SoqlOrSoslBinding[];
+  readonly bindings: SoqlOrSoslBinding[];
 }
 
 /**
@@ -331,39 +334,11 @@ interface TriggerContextVariableExpression extends Expression {
   readonly variableName: string;
 }
 
-/**
- * Union type for all expression node types.
- */
-type ExpressionNode =
-  | ArrayExpression
-  | AssignExpression
-  | BinaryExpression
-  | CallExpression
-  | CastExpression
-  | FieldExpression
-  | InstanceOfExpression
-  | LambdaExpression
-  | Literal
-  | NewExpression
-  | ParenthesizedExpression
-  | SoqlExpression
-  | SoslExpression
-  | SuperExpression
-  | TernaryExpression
-  | ThisExpression
-  | TriggerContextVariableExpression
-  | UnaryExpression
-  | VariableExpression;
-
 export type {
   Expression,
-  ExpressionKind,
   BinaryExpression,
-  BinaryOperator,
   UnaryExpression,
-  UnaryOperator,
   AssignExpression,
-  AssignmentOperator,
   CallExpression,
   FieldExpression,
   ArrayExpression,
@@ -380,5 +355,4 @@ export type {
   SoqlExpression,
   SoslExpression,
   TriggerContextVariableExpression,
-  ExpressionNode,
 };
