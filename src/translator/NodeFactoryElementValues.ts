@@ -30,7 +30,6 @@ export class ElementValueFactory {
   }
 
   public static createAnnotationElementValue(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     value: Readonly<Annotation>,
     options?: Readonly<NodeFactoryOptions>
   ): AnnotationElementValue {
@@ -42,7 +41,6 @@ export class ElementValueFactory {
   }
 
   public static createArrayElementValue(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     values: readonly ElementValue[],
 
     options?: Readonly<NodeFactoryOptions>

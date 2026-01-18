@@ -450,7 +450,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse annotation type declaration: @interface Name { members }.
+   * Parse annotation type declaration: `@interface` Name { members }.
    * @returns The annotation declaration parse tree node.
    */
   private parseAnnotationDeclaration(): ParseTreeNode {
@@ -1918,7 +1918,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse while statement.
+   * Parses a while loop statement from the source code.
    * @returns The parsed while statement parse tree node.
    * @throws {Error} If the while statement is malformed or unexpected tokens are encountered.
    */
@@ -1945,7 +1945,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse do-while statement.
+   * Parses a do-while loop statement from the source code.
    * @returns The parsed do-while statement parse tree node.
    * @throws {Error} If the do-while statement is malformed or unexpected tokens are encountered.
    */
@@ -1976,7 +1976,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse switch statement.
+   * Parses a switch statement from the source code.
    * @returns The parsed switch statement parse tree node.
    * @throws {Error} If the switch statement is malformed or unexpected tokens are encountered.
    */
@@ -2301,7 +2301,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse try statement.
+   * Parses a try-catch-finally statement block from the source code.
    * @returns The parsed try statement parse tree node.
    * @throws {Error} If the try statement is malformed or unexpected tokens are encountered.
    */
@@ -2366,7 +2366,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse break statement.
+   * Parses a break statement from the source code.
    * @returns The parsed break statement parse tree node.
    */
   private parseBreakStatement(): ParseTreeNode {
@@ -2382,7 +2382,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse continue statement.
+   * Parses a continue statement from the source code.
    * @returns The parsed continue statement parse tree node.
    */
   private parseContinueStatement(): ParseTreeNode {
@@ -2398,7 +2398,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse throw statement.
+   * Parses a throw statement from the source code.
    * @returns The parsed throw statement parse tree node.
    */
   private parseThrowStatement(): ParseTreeNode {
@@ -2422,7 +2422,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse return statement.
+   * Parses a return statement from the source code.
    * @returns The parsed return statement parse tree node.
    */
   private parseReturnStatement(): ParseTreeNode {
@@ -2716,7 +2716,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse expression.
+   * Parses an expression from the source code.
    * @returns The parsed expression parse tree node, or null if parsing fails.
    * @throws {Error} If the expression is malformed or unexpected tokens are encountered.
    */
@@ -3033,7 +3033,8 @@ export class ApexParser {
   }
 
   /**
-   * Parse unary expression (prefix and postfix).
+   * Parses a unary expression (prefix and postfix operators).
+   * @returns The parsed unary expression parse tree node, or null if parsing fails.
    */
   private parseUnary(): ParseTreeNode | null {
     // Prefix operators
@@ -3595,8 +3596,8 @@ export class ApexParser {
   }
 
   /**
-   * Parse lambda parameter (for lambda expressions)
-   * Can be: identifier or Type identifier.
+   * Parses a lambda parameter from lambda expressions. Can be either a simple identifier or a typed parameter (Type identifier).
+   * @returns The parsed lambda parameter parse tree node, or null if parsing fails.
    */
   private parseLambdaParameter(): ParseTreeNode | null {
     // Try to parse as typed parameter: Type name
@@ -3713,7 +3714,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse new expression.
+   * Parses a new object instantiation expression from the source code.
    * @returns The parsed new expression parse tree node.
    * @throws {Error} If the new expression is malformed or unexpected tokens are encountered.
    */

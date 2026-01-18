@@ -3,7 +3,7 @@
  * Used by extracted parser modules.
  */
 
-import type { SourceRange, SourceLocation } from '../ast/base.js';
+import type { SourceRange } from '../ast/base.js';
 import type { Token } from './TokenTypes.js';
 import type { ParseTreeNode } from './ParseTreeTypes.js';
 import type { TokenType } from './TokenTypes.js';
@@ -21,7 +21,9 @@ export interface ParserContext {
   /**
    * Helper methods.
    */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Function type properties need mutable array parameters for spread
   match: (...types: TokenType[]) => boolean;
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Function type properties need mutable array parameters for spread
   check: (type: TokenType, ...types: TokenType[]) => boolean;
   advance: () => Token;
   isAtEnd: () => boolean;
@@ -30,7 +32,7 @@ export interface ParserContext {
   consume: (type: TokenType, message: string) => Token;
   skipWhitespaceAndComments: () => void;
   getLocation: (start: number, end: number) => SourceRange;
-  locationToRange: (location: SourceLocation) => SourceRange;
+  locationToRange: (location: SourceRange) => SourceRange;
   combineLocations: (loc1: SourceRange, loc2: SourceRange) => SourceRange;
 
   /**

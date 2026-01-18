@@ -18,7 +18,6 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class InitializerFactory {
   public static createConstructorInitializer(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
     args: readonly Readonly<Expression>[] = [],
     options?: Readonly<NodeFactoryOptions>
@@ -32,7 +31,6 @@ export class InitializerFactory {
   }
 
   public static createValuesInitializer(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
 
     values: readonly Expression[] = [],
@@ -48,7 +46,6 @@ export class InitializerFactory {
   }
 
   public static createSizedArrayInitializer(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
 
     size: Readonly<Expression>,
@@ -64,9 +61,7 @@ export class InitializerFactory {
   }
 
   public static createMapInitializer(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     pairs: readonly { key: Expression; value: Expression }[],
 
     options?: Readonly<NodeFactoryOptions>

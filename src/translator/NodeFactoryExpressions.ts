@@ -64,7 +64,6 @@ export class ExpressionFactory {
     args: readonly Readonly<Expression>[] = [],
 
     target?: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     typeArguments?: readonly TypeRef[],
     options?: Readonly<NodeFactoryOptions>
   ): CallExpression {
@@ -104,7 +103,6 @@ export class ExpressionFactory {
     args: readonly Expression[] = [],
 
     target?: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     typeArguments?: readonly TypeRef[],
 
     options?: Readonly<NodeFactoryOptions>
@@ -240,7 +238,6 @@ export class ExpressionFactory {
   }
 
   public static createCastExpression(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
 
     expression: Readonly<Expression>,
@@ -257,7 +254,6 @@ export class ExpressionFactory {
 
   public static createInstanceOfExpression(
     expression: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
 
     options?: Readonly<NodeFactoryOptions>
@@ -271,7 +267,6 @@ export class ExpressionFactory {
   }
 
   public static createNewExpression(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     initializer: Readonly<Initializer>,
 
     options?: Readonly<NodeFactoryOptions>
@@ -285,7 +280,6 @@ export class ExpressionFactory {
   }
 
   public static createNewArrayExpression(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
 
     size: Readonly<Expression>,
@@ -298,7 +292,6 @@ export class ExpressionFactory {
   }
 
   public static createLambdaExpression(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     parameters: readonly LambdaParameter[],
 
     body: Readonly<Expression | Statement>,

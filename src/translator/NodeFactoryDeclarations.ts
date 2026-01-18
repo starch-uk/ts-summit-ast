@@ -34,7 +34,6 @@ export class DeclarationFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createVariableDeclaration(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
     initializer?: Readonly<Expression>,
 
@@ -54,7 +53,6 @@ export class DeclarationFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Class declaration requires 8 parameters
   public static createClassDeclaration(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     members: readonly (
       | ClassDeclaration
       | EnumDeclaration
@@ -65,14 +63,10 @@ export class DeclarationFactory {
     )[],
 
     modifiers: readonly Modifier[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     extendsClause?: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     implementsClause?: readonly TypeRef[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     typeParameters?: readonly TypeParameter[],
     options?: Readonly<NodeFactoryOptions>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     annotations?: readonly Annotation[]
   ): ClassDeclaration {
     const emptyArrayLength = 0;
@@ -93,7 +87,6 @@ export class DeclarationFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Interface declaration requires 6 parameters
   public static createInterfaceDeclaration(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     members: readonly (
       | ClassDeclaration
       | InterfaceDeclaration
@@ -102,9 +95,7 @@ export class DeclarationFactory {
     )[],
 
     modifiers: readonly Modifier[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     extendsClause?: readonly TypeRef[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     typeParameters?: readonly TypeParameter[],
     options?: Readonly<NodeFactoryOptions>
   ): InterfaceDeclaration {
@@ -123,17 +114,12 @@ export class DeclarationFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Method declaration requires 9 parameters
   public static createMethodDeclaration(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     returnType: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     parameters: readonly Parameter[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     body?: Readonly<CompoundStatement>,
 
     modifiers: readonly Modifier[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     typeParameters?: readonly TypeParameter[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     annotations?: readonly Annotation[],
     isConstructor = false,
     options?: Readonly<NodeFactoryOptions>
@@ -156,15 +142,11 @@ export class DeclarationFactory {
   // eslint-disable-next-line @typescript-eslint/max-params -- Property declaration requires 7 parameters
   public static createPropertyDeclaration(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     type: Readonly<TypeRef>,
 
     modifiers: readonly Modifier[] = [],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     getter?: Readonly<CompoundStatement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     setter?: Readonly<CompoundStatement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     annotations?: readonly Annotation[],
     options?: Readonly<NodeFactoryOptions>
   ): PropertyDeclaration {
@@ -220,7 +202,6 @@ export class DeclarationFactory {
 
   public static createTypeParameter(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     extendsBound?: Readonly<TypeRef>,
 
     options?: Readonly<NodeFactoryOptions>

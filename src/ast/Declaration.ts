@@ -135,7 +135,7 @@ interface MethodDeclaration extends Declaration {
 }
 
 /**
- * Constructor declaration.
+ * Represents a constructor method declaration in an Apex class.
  * @deprecated Use MethodDeclaration with isConstructor: true instead (summit-ast compatibility).
  * This interface is kept for backward compatibility but is not part of DeclarationKind.
  */

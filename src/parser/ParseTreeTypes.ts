@@ -44,6 +44,7 @@ interface ParseTreeNode {
 /**
  * Parse tree with named children (for parsers that use property-based children).
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Type definition with unknown allows flexible property access when used
 type NamedChildrenParseTree = ParseTreeNode &
   Record<string, ParseTreeNode | ParseTreeNode[] | unknown>;
 

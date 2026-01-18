@@ -20,7 +20,7 @@ interface TypeRef extends ASTNode {
    * The sequence of one or more identifiers (with optional type arguments).
    * Multiple components represent inner classes (e.g., "Outer.Inner").
    */
-  readonly components: TypeRefComponent[];
+  readonly components: readonly TypeRefComponent[];
 
   /**
    * The number of levels of array nesting for this type.
@@ -48,7 +48,7 @@ interface TypeRefComponent {
   /**
    * Zero or more type arguments (for generic types).
    */
-  readonly args: TypeRef[];
+  readonly args: readonly TypeRef[];
 }
 
 /**

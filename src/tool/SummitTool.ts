@@ -104,6 +104,7 @@ export class SummitTool {
         });
       }
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Catch clause assigns unknown error type
       results.push({
         error: error instanceof Error ? error.message : String(error),
         file: input,

@@ -78,7 +78,7 @@ class TranslationError extends Error {
 }
 
 /**
- * Result of translation.
+ * Contains the result of translating a parse tree to an AST.
  */
 interface TranslationResult {
   readonly ast?: ASTNode;
@@ -108,7 +108,8 @@ class ASTTranslator {
 
   /**
    * Translate a parse tree node to an AST node.
-   * @param node
+   * @param node - The parse tree node to translate.
+   * @returns The translation result containing the AST node and any errors.
    */
   public translate(node: Readonly<ParseTreeNode>): TranslationResult {
     const errors: TranslationError[] = [];
@@ -117,12 +118,14 @@ class ASTTranslator {
       const ast = this.translateNode(node);
       return { ast, errors };
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Catch clause assigns unknown error type
       const translationError =
         error instanceof TranslationError
           ? error
           : new TranslationError(
               `Translation failed: ${error instanceof Error ? error.message : String(error)}`,
               node,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Error from catch clause is unknown type
               error instanceof Error ? error : undefined
             );
 
@@ -140,7 +143,9 @@ class ASTTranslator {
 
   /**
    * Translate a single node based on its type.
-   * @param node
+   * @param node - The parse tree node to translate.
+   * @returns The translated AST node.
+   * @throws {TranslationError} If the node type is unknown or translation fails.
    */
   private translateNode(node: Readonly<ParseTreeNode>): ASTNode {
     const nodeType = node.type.toLowerCase();
@@ -231,8 +236,9 @@ class ASTTranslator {
 
   /**
    * Try to translate node as a statement.
-   * @param node
-   * @param nodeType
+   * @param node - The parse tree node to translate.
+   * @param nodeType - The type of the node (normalized to lowercase).
+   * @returns The translated statement node, or null if the node is not a statement.
    */
   private tryTranslateStatement(node: Readonly<ParseTreeNode>, nodeType: string): Statement | null {
     switch (nodeType) {
@@ -287,8 +293,9 @@ class ASTTranslator {
 
   /**
    * Try to translate node as an expression.
-   * @param node
-   * @param nodeType
+   * @param node - The parse tree node to translate.
+   * @param nodeType - The type of the node (normalized to lowercase).
+   * @returns The translated expression node, or null if the node is not an expression.
    */
   private tryTranslateExpression(
     node: Readonly<ParseTreeNode>,
@@ -378,8 +385,9 @@ class ASTTranslator {
 
   /**
    * Try to translate node as a declaration.
-   * @param node
-   * @param nodeType
+   * @param node - The parse tree node to translate.
+   * @param nodeType - The type of the node (normalized to lowercase).
+   * @returns The translated declaration node, or null if the node is not a declaration.
    */
   private tryTranslateDeclaration(
     node: Readonly<ParseTreeNode>,
@@ -2821,7 +2829,8 @@ class ASTTranslator {
 
   /**
    * Helper to get class name from context (for constructor detection).
-   * @param node
+   * @param node - The parse tree node to search from.
+   * @returns The class name if found in the context, otherwise undefined.
    */
   private getClassName(node: Readonly<ParseTreeNode>): string | undefined {
     if (this.currentClassName != null) return this.currentClassName;
@@ -3150,6 +3159,12 @@ class ASTTranslator {
     );
   }
 
+  /**
+   * Translate a variable declaration from parse tree to AST.
+   * @param node - The parse tree node representing the variable declaration.
+   * @returns The translated VariableDeclaration AST node.
+   * @throws {TranslationError} If the variable declaration is malformed.
+   */
   private translateVariableDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     const nameFromProperty = this.getProperty<string>(node, 'name');
     let name = nameFromProperty;
@@ -3440,6 +3455,11 @@ class ASTTranslator {
     return node.text ?? this.getProperty<string>(node, 'value', 'content');
   }
 
+  /**
+   * Get location option for node factory if location is enabled.
+   * @param node - The parse tree node containing location information.
+   * @returns The location option object if location is enabled and available, otherwise undefined.
+   */
   private getLocationOption(
     node: Readonly<ParseTreeNode>
   ): Readonly<NodeFactoryOptions> | undefined {
@@ -3450,7 +3470,8 @@ class ASTTranslator {
 
   /**
    * Extract modifiers from a parse tree node.
-   * @param node
+   * @param node - The parse tree node to extract modifiers from.
+   * @returns An array of Modifier nodes found in the parse tree.
    */
   private extractModifiers(node: Readonly<ParseTreeNode>): Modifier[] {
     const modifiers: Modifier[] = [];
@@ -3497,7 +3518,8 @@ class ASTTranslator {
 
   /**
    * Extract type parameters from a parse tree node.
-   * @param node
+   * @param node - The parse tree node to extract type parameters from.
+   * @returns An array of TypeParameter nodes found in the parse tree.
    */
   private extractTypeParameters(node: Readonly<ParseTreeNode>): TypeParameter[] {
     const typeParams: TypeParameter[] = [];
@@ -3544,7 +3566,8 @@ class ASTTranslator {
 
   /**
    * Extract annotations from a parse tree node.
-   * @param node
+   * @param node - The parse tree node to extract annotations from.
+   * @returns An array of Annotation nodes found in the parse tree.
    */
   private extractAnnotations(node: Readonly<ParseTreeNode>): Annotation[] {
     const annotations: Annotation[] = [];
@@ -3562,7 +3585,8 @@ class ASTTranslator {
   /**
    * Build a single Annotation from an annotation parse node.
    * Used by extractAnnotations and recursively by parseElementValue for nested annotations.
-   * @param annotationNode
+   * @param annotationNode - The parse tree node representing the annotation.
+   * @returns The built Annotation node, or null if the annotation cannot be built.
    */
   private buildAnnotationFromNode(annotationNode: Readonly<ParseTreeNode>): Annotation | null {
     const annotationNameNode = this.getChild(annotationNode, 'name');
@@ -3609,7 +3633,8 @@ class ASTTranslator {
 
   /**
    * Parse an annotation argument value (annotation_expression, new_expression/array, or expression) into an ElementValue.
-   * @param valueNode
+   * @param valueNode - The parse tree node representing the annotation argument value.
+   * @returns The parsed ElementValue node, or null if the value cannot be parsed.
    */
   private parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null {
     const nodeType = (valueNode.type ?? '').toLowerCase();

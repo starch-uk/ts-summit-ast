@@ -160,9 +160,10 @@ export class JsonDeserializer {
   /**
    * Deserialize node based on its kind.
    * @param json - The JSON object to deserialize.
-   * @param nodeType - The node type/kind.
+   * @param nodeType - The kind of AST node to deserialize (e.g., 'IfStatement', 'BinaryExpression').
    * @param location - The optional source location.
    * @returns The deserialized AST node.
+   * @throws {Error} If the node type is unknown or not yet implemented.
    */
   private deserializeNodeByKind(
     json: Readonly<JsonASTNode>,
@@ -301,13 +302,17 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): IfStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const thenStatement = this.deserializeNode(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access may be undefined
       (json.thenStatement ?? json.thenBody) as JsonASTNode
     ) as Statement;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     const elseValue = json.elseStatement ?? json.elseBody;
     const elseStatement =
       elseValue !== null && elseValue !== undefined
@@ -328,23 +333,27 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): ForLoopStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     const init =
       json.init !== null && json.init !== undefined
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
           (this.deserializeNode(json.init as JsonASTNode) as Statement)
         : undefined;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     const condition =
       json.condition !== null && json.condition !== undefined
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
           (this.deserializeNode(json.condition as JsonASTNode) as Expression)
         : undefined;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     const update =
       json.update !== null && json.update !== undefined
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
           (this.deserializeNode(json.update as JsonASTNode) as Expression)
         : undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const body = this.deserializeNode(json.body as JsonASTNode) as Statement;
 
@@ -368,8 +377,10 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): WhileLoopStatement {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const body = this.deserializeNode(json.body as JsonASTNode) as Statement;
 
@@ -468,10 +479,13 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): BinaryExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const operator = json.operator as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
 
@@ -494,9 +508,11 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): CallExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const methodName = json.methodName as string;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     const target =
       json.target !== null && json.target !== undefined
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
@@ -536,9 +552,11 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): FieldExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const fieldName = json.fieldName as string;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     const target =
       json.target !== null && json.target !== undefined
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
@@ -558,8 +576,10 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): ArrayExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const array = this.deserializeNode(json.array as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const index = this.deserializeNode(json.index as JsonASTNode) as Expression;
 
@@ -576,10 +596,13 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): AssignExpression {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const operator = json.operator as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
 
@@ -608,7 +631,6 @@ export class JsonDeserializer {
     return NodeFactory.createVariableExpression(id, locationOption);
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   /**
    * Deserializes an Identifier node.
    * @param json - The JSON object to deserialize.
@@ -619,6 +641,7 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): Identifier {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const name = json.name as string;
 
@@ -637,8 +660,10 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): StringVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions, raw can be undefined
     const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : `"${value}"`;
 
@@ -655,8 +680,10 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): IntegerVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions, raw can be undefined
     const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
@@ -673,8 +700,10 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): DoubleVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions, raw can be undefined
     const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
@@ -691,8 +720,10 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): LongVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions, raw can be undefined
     const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
@@ -709,8 +740,10 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): DecimalVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as number;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions, raw can be undefined
     const raw = json.raw !== null && json.raw !== undefined ? (json.raw as string) : String(value);
 
@@ -727,6 +760,7 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): BooleanVal {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const value = json.value as boolean;
 
@@ -752,6 +786,7 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): TypeRef {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
     const componentsArray = json.components as JsonASTNode[] | undefined;
     const components = (componentsArray ?? []).map((comp: Readonly<JsonASTNode>) => ({
@@ -954,6 +989,7 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): import('../ast/Declaration.js').AnnotationArgument {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const name = json.name as string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
@@ -980,8 +1016,10 @@ export class JsonDeserializer {
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
     locationOption?: { location: SourceRange }
   ): VariableDeclaration {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const name = json.name as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const type = this.deserializeTypeRef(json.type as JsonASTNode);
 
@@ -1020,6 +1058,7 @@ export class JsonDeserializer {
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
   ): Modifier {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON property access returns unknown due to index signature
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
     const keyword = json.keyword as string;
     // Validate keyword is a valid ModifierKeyword
