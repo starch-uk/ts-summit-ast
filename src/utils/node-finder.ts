@@ -73,7 +73,7 @@ export function findNodeAtPosition(
         let current: ASTNode | null | undefined = node;
         while (current) {
           depth++;
-          current = parentMap.get(current) || null;
+          current = parentMap.get(current) ?? null;
         }
 
         candidates.push({ depth, node });
@@ -318,7 +318,7 @@ export function getNodeMetadata(node: ASTNode, source?: string): NodeMetadata {
     if (range) {
       const lines = source.split(/\r?\n/);
       if (range.start.line === range.end.line) {
-        const line = lines[range.start.line - 1] || '';
+        const line = lines[range.start.line - 1] ?? '';
         sourceText = line.substring(range.start.column - 1, range.end.column);
       } else {
         // Multi-line - simplified extraction
@@ -331,7 +331,7 @@ export function getNodeMetadata(node: ASTNode, source?: string): NodeMetadata {
     children,
     depth,
     isLeaf,
-    location: node.location || null,
+    location: node.location ?? null,
     nodeType: node.kind,
     parent,
     siblings,
@@ -360,38 +360,40 @@ function getNodeChildren(node: ASTNode): ASTNode[] {
   const children: ASTNode[] = [];
 
   // This is a simplified version - see traversal.ts for full implementation
-  if ('condition' in node && (node as any).condition) {
-    children.push((node as any).condition);
+  if ('condition' in node && (node as { condition?: ASTNode }).condition != null) {
+    children.push((node as { condition: ASTNode }).condition);
   }
-  if ('thenStatement' in node && (node as any).thenStatement) {
-    children.push((node as any).thenStatement);
+  if ('thenStatement' in node && (node as { thenStatement?: ASTNode }).thenStatement != null) {
+    children.push((node as { thenStatement: ASTNode }).thenStatement);
   }
-  if ('elseStatement' in node && (node as any).elseStatement) {
-    children.push((node as any).elseStatement);
+  if ('elseStatement' in node && (node as { elseStatement?: ASTNode }).elseStatement != null) {
+    children.push((node as { elseStatement: ASTNode }).elseStatement);
   }
-  if ('body' in node && (node as any).body) {
-    children.push((node as any).body);
+  if ('body' in node && (node as { body?: ASTNode }).body != null) {
+    children.push((node as { body: ASTNode }).body);
   }
-  if ('statements' in node && Array.isArray((node as any).statements)) {
-    children.push(...(node as any).statements);
+  if ('statements' in node && Array.isArray((node as { statements?: ASTNode[] }).statements)) {
+    const statements = (node as { statements: ASTNode[] }).statements;
+    children.push(...statements);
   }
-  if ('expression' in node && (node as any).expression) {
-    children.push((node as any).expression);
+  if ('expression' in node && (node as { expression?: ASTNode }).expression != null) {
+    children.push((node as { expression: ASTNode }).expression);
   }
-  if ('left' in node && (node as any).left) {
-    children.push((node as any).left);
+  if ('left' in node && (node as { left?: ASTNode }).left != null) {
+    children.push((node as { left: ASTNode }).left);
   }
-  if ('right' in node && (node as any).right) {
-    children.push((node as any).right);
+  if ('right' in node && (node as { right?: ASTNode }).right != null) {
+    children.push((node as { right: ASTNode }).right);
   }
-  if ('arguments' in node && Array.isArray((node as any).arguments)) {
-    children.push(...(node as any).arguments);
+  if ('arguments' in node && Array.isArray((node as { arguments?: ASTNode[] }).arguments)) {
+    const args = (node as { arguments: ASTNode[] }).arguments;
+    children.push(...args);
   }
-  if ('type' in node && (node as any).type) {
-    children.push((node as any).type);
+  if ('type' in node && (node as { type?: ASTNode }).type != null) {
+    children.push((node as { type: ASTNode }).type);
   }
-  if ('initializer' in node && (node as any).initializer) {
-    children.push((node as any).initializer);
+  if ('initializer' in node && (node as { initializer?: ASTNode }).initializer != null) {
+    children.push((node as { initializer: ASTNode }).initializer);
   }
 
   return children;

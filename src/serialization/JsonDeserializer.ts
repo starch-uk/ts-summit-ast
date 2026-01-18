@@ -17,6 +17,10 @@ import type {
 } from '../ast/Statement.js';
 import type {
   BinaryExpression,
+  BinaryOperator,
+  AssignExpression,
+  AssignmentOperator,
+  ArrayExpression,
   CallExpression,
   NewExpression,
   VariableExpression,
@@ -106,7 +110,7 @@ export class JsonDeserializer {
       this.validateNode(json, nodeType);
     }
 
-    const location = this.deserializeLocation(json.location as any);
+    const location = this.deserializeLocation(json.location as unknown);
 
     return this.deserializeNodeByKind(json, nodeType, location);
   }
@@ -115,21 +119,26 @@ export class JsonDeserializer {
    * Deserialize source location.
    * @param location
    */
-  private deserializeLocation(location: any): SourceRange | undefined {
-    if (!location) {
+  private deserializeLocation(location: unknown): SourceRange | undefined {
+    if (!location || typeof location !== 'object') {
       return undefined;
     }
 
+    const loc = location as {
+      start?: { column?: number; line?: number; offset?: number };
+      end?: { column?: number; line?: number; offset?: number };
+    };
+
     return {
       end: {
-        column: location.end?.column ?? 0,
-        line: location.end?.line ?? 0,
-        offset: location.end?.offset,
+        column: loc.end?.column ?? 0,
+        line: loc.end?.line ?? 0,
+        offset: loc.end?.offset,
       },
       start: {
-        column: location.start?.column ?? 0,
-        line: location.start?.line ?? 0,
-        offset: location.start?.offset,
+        column: loc.start?.column ?? 0,
+        line: loc.start?.line ?? 0,
+        offset: loc.start?.offset,
       },
     };
   }
@@ -273,11 +282,11 @@ export class JsonDeserializer {
   ): IfStatement {
     const condition = this.deserializeNode(json.condition as JsonASTNode) as Expression;
     const thenStatement = this.deserializeNode(
-      (json.thenStatement || json.thenBody) as JsonASTNode
+      (json.thenStatement ?? json.thenBody) as JsonASTNode
     ) as Statement;
     const elseStatement =
-      json.elseStatement || json.elseBody
-        ? (this.deserializeNode((json.elseStatement || json.elseBody) as JsonASTNode) as Statement)
+      (json.elseStatement ?? json.elseBody)
+        ? (this.deserializeNode((json.elseStatement ?? json.elseBody) as JsonASTNode) as Statement)
         : undefined;
 
     return NodeFactory.createIfStatement(condition, thenStatement, elseStatement, locationOption);
@@ -298,7 +307,13 @@ export class JsonDeserializer {
       : undefined;
     const body = this.deserializeNode(json.body as JsonASTNode) as Statement;
 
-    return NodeFactory.createForLoopStatement(body, init as any, condition, update, locationOption);
+    return NodeFactory.createForLoopStatement(
+      body,
+      init as ExpressionStatement | VariableDeclarationStatement | undefined,
+      condition,
+      update,
+      locationOption
+    );
   }
 
   private deserializeWhileLoopStatement(
@@ -363,7 +378,12 @@ export class JsonDeserializer {
     const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
     const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
 
-    return NodeFactory.createBinaryExpression(operator as any, left, right, locationOption);
+    return NodeFactory.createBinaryExpression(
+      operator as BinaryOperator,
+      left,
+      right,
+      locationOption
+    );
   }
 
   private deserializeCallExpression(
@@ -378,7 +398,7 @@ export class JsonDeserializer {
       (arg) => this.deserializeNode(arg) as Expression
     );
     const typeArguments = json.typeArguments
-      ? (json.typeArguments as any[]).map((type) => this.deserializeTypeRef(type))
+      ? (json.typeArguments as JsonASTNode[]).map((type) => this.deserializeTypeRef(type))
       : undefined;
 
     return NodeFactory.createCallExpression(
@@ -405,7 +425,7 @@ export class JsonDeserializer {
   private deserializeArrayExpression(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): any {
+  ): ArrayExpression {
     const array = this.deserializeNode(json.array as JsonASTNode) as Expression;
     const index = this.deserializeNode(json.index as JsonASTNode) as Expression;
 
@@ -415,12 +435,17 @@ export class JsonDeserializer {
   private deserializeAssignExpression(
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
-  ): any {
+  ): AssignExpression {
     const operator = json.operator as string;
     const left = this.deserializeNode(json.left as JsonASTNode) as Expression;
     const right = this.deserializeNode(json.right as JsonASTNode) as Expression;
 
-    return NodeFactory.createAssignExpression(operator as any, left, right, locationOption);
+    return NodeFactory.createAssignExpression(
+      operator as AssignmentOperator,
+      left,
+      right,
+      locationOption
+    );
   }
 
   private deserializeVariableExpression(
@@ -448,7 +473,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): StringVal {
     const value = json.value as string;
-    const raw = (json.raw as string) || `"${value}"`;
+    const raw = (json.raw as string) ?? `"${value}"`;
 
     return NodeFactory.createStringVal(value, raw, locationOption);
   }
@@ -458,7 +483,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): IntegerVal {
     const value = json.value as number;
-    const raw = (json.raw as string) || String(value);
+    const raw = (json.raw as string) ?? String(value);
 
     return NodeFactory.createIntegerVal(value, raw, locationOption);
   }
@@ -468,7 +493,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): DoubleVal {
     const value = json.value as number;
-    const raw = (json.raw as string) || String(value);
+    const raw = (json.raw as string) ?? String(value);
 
     return NodeFactory.createDoubleVal(value, raw, locationOption);
   }
@@ -478,7 +503,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): LongVal {
     const value = json.value as number;
-    const raw = (json.raw as string) || String(value);
+    const raw = (json.raw as string) ?? String(value);
 
     return NodeFactory.createLongVal(value, raw, locationOption);
   }
@@ -488,7 +513,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): DecimalVal {
     const value = json.value as number;
-    const raw = (json.raw as string) || String(value);
+    const raw = (json.raw as string) ?? String(value);
 
     return NodeFactory.createDecimalVal(value, raw, locationOption);
   }
@@ -506,7 +531,7 @@ export class JsonDeserializer {
    * TypeRef deserialization (TypeRef is an AST node in summit-ast).
    * @param typeRefJson
    */
-  private deserializeTypeRef(typeRefJson: any): TypeRef {
+  private deserializeTypeRef(typeRefJson: JsonASTNode): TypeRef {
     return this.deserializeTypeRefNode(typeRefJson);
   }
 
@@ -514,12 +539,14 @@ export class JsonDeserializer {
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
   ): TypeRef {
-    const componentsArray = json.components as any[] | undefined;
-    const components = (componentsArray || []).map((comp: any) => ({
-      args: (comp.args || []).map((arg: any) => this.deserializeTypeRef(arg)),
-      id: this.deserializeNode(comp.id) as Identifier,
+    const componentsArray = json.components as JsonASTNode[] | undefined;
+    const components = (componentsArray ?? []).map((comp) => ({
+      args: ((comp as { args?: JsonASTNode[] }).args ?? []).map((arg) =>
+        this.deserializeTypeRef(arg)
+      ),
+      id: this.deserializeNode(comp.id as JsonASTNode) as Identifier,
     }));
-    const arrayNesting = (json.arrayNesting as number) || 0;
+    const arrayNesting = (json.arrayNesting as number) ?? 0;
 
     return NodeFactory.createTypeRef(components, arrayNesting, locationOption);
   }
@@ -546,7 +573,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): ConstructorInitializer {
     const type = this.deserializeTypeRef(json.type as any);
-    const args = ((json.args as any[]) || []).map((arg) =>
+    const args = ((json.args as JsonASTNode[]) ?? []).map((arg) =>
       this.deserializeNode(arg as JsonASTNode)
     ) as Expression[];
 
@@ -558,7 +585,7 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): ValuesInitializer {
     const type = this.deserializeTypeRef(json.type as any);
-    const values = ((json.values as any[]) || []).map((val) =>
+    const values = ((json.values as JsonASTNode[]) ?? []).map((val) =>
       this.deserializeNode(val as JsonASTNode)
     ) as Expression[];
 
@@ -580,10 +607,13 @@ export class JsonDeserializer {
     locationOption?: { location: SourceRange }
   ): MapInitializer {
     const type = this.deserializeTypeRef(json.type as any);
-    const pairs = ((json.pairs as any[]) || []).map((pair) => ({
-      key: this.deserializeNode(pair.key as JsonASTNode) as Expression,
-      value: this.deserializeNode(pair.value as JsonASTNode) as Expression,
-    }));
+    const pairs = ((json.pairs as JsonASTNode[]) ?? []).map((pair: JsonASTNode) => {
+      const pairObj = pair as { key?: unknown; value?: unknown };
+      return {
+        key: this.deserializeNode(pairObj.key as JsonASTNode) as Expression,
+        value: this.deserializeNode(pairObj.value as JsonASTNode) as Expression,
+      };
+    });
 
     return NodeFactory.createMapInitializer(type, pairs, locationOption);
   }
@@ -616,7 +646,7 @@ export class JsonDeserializer {
     json: JsonASTNode,
     locationOption?: { location: SourceRange }
   ): ArrayElementValue {
-    const values = ((json.values as any[]) || []).map((val) =>
+    const values = ((json.values as JsonASTNode[]) ?? []).map((val) =>
       this.deserializeNode(val as JsonASTNode)
     ) as import('../ast/ElementValue.js').ElementValue[];
     return NodeFactory.createArrayElementValue(values, locationOption);
@@ -636,7 +666,7 @@ export class JsonDeserializer {
     const value = this.deserializeNode(
       json.value as JsonASTNode
     ) as import('../ast/ElementValue.js').ElementValue;
-    const isNameImplicit = (json.isNameImplicit as boolean) || !name;
+    const isNameImplicit = (json.isNameImplicit as boolean) ?? !name;
 
     return {
       isNameImplicit,

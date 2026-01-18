@@ -170,7 +170,7 @@ function findFollowingNode(
   maxDistance: number
 ): AssociatedNodeResult | null {
   const lines = source.split(/\r?\n/);
-  const lineLength = (lines[position.line - 1] || '').length;
+  const lineLength = (lines[position.line - 1] ?? '').length;
 
   // Try positions after the comment on the same line
   for (let col = position.column + 1; col <= lineLength + 1; col++) {
@@ -179,7 +179,11 @@ function findFollowingNode(
 
     if (result) {
       const nodeRange = getSourceRange(result.node);
-      if (nodeRange?.start.line === position.line && nodeRange.start.column > position.column) {
+      if (
+        nodeRange != null &&
+        nodeRange.start.line === position.line &&
+        nodeRange.start.column > position.column
+      ) {
         const distance = nodeRange.start.column - position.column;
         if (distance <= maxDistance) {
           return {
@@ -528,7 +532,7 @@ export function extractComments(
               fullCommentText
             );
             apexDocComment =
-              parseApexDocComment(fullCommentText, location, apexDocParseOptions) || undefined;
+              parseApexDocComment(fullCommentText, location, apexDocParseOptions) ?? undefined;
           }
 
           const comment: ExtractedComment = {
@@ -597,7 +601,7 @@ export function extractComments(
               fullCommentText
             );
             apexDocComment =
-              parseApexDocComment(fullCommentText, location, apexDocParseOptions) || undefined;
+              parseApexDocComment(fullCommentText, location, apexDocParseOptions) ?? undefined;
           }
 
           const comment: ExtractedComment = {
@@ -658,7 +662,7 @@ function calculateCommentLocation(
 ): SourceRange {
   const commentLines = commentText.split(/\r?\n/);
   const endLine = startLine + commentLines.length - 1;
-  const endLineText = commentLines[commentLines.length - 1] || '';
+  const endLineText = commentLines[commentLines.length - 1] ?? '';
   const endColumn = startColumn + endLineText.length;
 
   return {

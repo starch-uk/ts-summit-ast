@@ -5,10 +5,40 @@
  */
 
 import type { ASTNode, SourceRange } from '../ast/base.js';
-import type { StatementNode } from '../ast/Statement.js';
-import type { ExpressionNode } from '../ast/Expression.js';
+import type {
+  Statement,
+  IfStatement,
+  ForLoopStatement,
+  WhileLoopStatement,
+  ReturnStatement,
+  CompoundStatement,
+  ExpressionStatement,
+  VariableDeclarationStatement,
+} from '../ast/Statement.js';
+import type {
+  Expression,
+  BinaryExpression,
+  CallExpression,
+  FieldExpression,
+  ArrayExpression,
+  AssignExpression,
+  NewExpression,
+  VariableExpression,
+} from '../ast/Expression.js';
 import type { TypeRef } from '../ast/Type.js';
 import type { Modifier } from '../ast/Declaration.js';
+import type { IntegerVal, DoubleVal, LongVal, DecimalVal, BooleanVal } from '../ast/Literal.js';
+import type {
+  ValuesInitializer,
+  SizedArrayInitializer,
+  MapInitializer,
+} from '../ast/Initializer.js';
+import type {
+  ExpressionElementValue,
+  AnnotationElementValue,
+  ArrayElementValue,
+} from '../ast/ElementValue.js';
+import type { VariableDeclaration, AnnotationArgument } from '../ast/Declaration.js';
 
 /**
  * JSON representation of an AST node.
@@ -231,7 +261,7 @@ export class JsonSerializer {
 
   // Statement serialization methods
 
-  private serializeIfStatement(node: any, json: JsonASTNode): void {
+  private serializeIfStatement(node: IfStatement, json: JsonASTNode): void {
     json.condition = this.serializeNode(node.condition);
     json.thenStatement = this.serializeNode(node.thenStatement);
     if (node.elseStatement) {
@@ -239,7 +269,7 @@ export class JsonSerializer {
     }
   }
 
-  private serializeForLoopStatement(node: any, json: JsonASTNode): void {
+  private serializeForLoopStatement(node: ForLoopStatement, json: JsonASTNode): void {
     if (node.init) {
       json.init = this.serializeNode(node.init);
     }
@@ -252,71 +282,74 @@ export class JsonSerializer {
     json.body = this.serializeNode(node.body);
   }
 
-  private serializeWhileLoopStatement(node: any, json: JsonASTNode): void {
+  private serializeWhileLoopStatement(node: WhileLoopStatement, json: JsonASTNode): void {
     json.condition = this.serializeNode(node.condition);
     json.body = this.serializeNode(node.body);
   }
 
-  private serializeReturnStatement(node: any, json: JsonASTNode): void {
+  private serializeReturnStatement(node: ReturnStatement, json: JsonASTNode): void {
     if (node.expression) {
       json.expression = this.serializeNode(node.expression);
     }
   }
 
-  private serializeCompoundStatement(node: any, json: JsonASTNode): void {
-    json.statements = node.statements.map((stmt: StatementNode) => this.serializeNode(stmt));
+  private serializeCompoundStatement(node: CompoundStatement, json: JsonASTNode): void {
+    json.statements = node.statements.map((stmt: Statement) => this.serializeNode(stmt));
   }
 
-  private serializeExpressionStatement(node: any, json: JsonASTNode): void {
+  private serializeExpressionStatement(node: ExpressionStatement, json: JsonASTNode): void {
     json.expression = this.serializeNode(node.expression);
   }
 
-  private serializeVariableDeclarationStatement(node: any, json: JsonASTNode): void {
+  private serializeVariableDeclarationStatement(
+    node: VariableDeclarationStatement,
+    json: JsonASTNode
+  ): void {
     json.declaration = this.serializeNode(node.declaration);
   }
 
   // Expression serialization methods
 
-  private serializeBinaryExpression(node: any, json: JsonASTNode): void {
+  private serializeBinaryExpression(node: BinaryExpression, json: JsonASTNode): void {
     json.operator = node.operator;
     json.left = this.serializeNode(node.left);
     json.right = this.serializeNode(node.right);
   }
 
-  private serializeCallExpression(node: any, json: JsonASTNode): void {
+  private serializeCallExpression(node: CallExpression, json: JsonASTNode): void {
     json.methodName = node.methodName;
     if (node.target) {
       json.target = this.serializeNode(node.target);
     }
-    json.arguments = node.arguments.map((arg: ExpressionNode) => this.serializeNode(arg));
+    json.arguments = node.arguments.map((arg: Expression) => this.serializeNode(arg));
     if (node.typeArguments) {
       json.typeArguments = node.typeArguments.map((type: TypeRef) => this.serializeTypeRef(type));
     }
   }
 
-  private serializeFieldExpression(node: any, json: JsonASTNode): void {
+  private serializeFieldExpression(node: FieldExpression, json: JsonASTNode): void {
     json.fieldName = node.fieldName;
     if (node.target) {
       json.target = this.serializeNode(node.target);
     }
   }
 
-  private serializeArrayExpression(node: any, json: JsonASTNode): void {
+  private serializeArrayExpression(node: ArrayExpression, json: JsonASTNode): void {
     json.array = this.serializeNode(node.array);
     json.index = this.serializeNode(node.index);
   }
 
-  private serializeAssignExpression(node: any, json: JsonASTNode): void {
+  private serializeAssignExpression(node: AssignExpression, json: JsonASTNode): void {
     json.operator = node.operator;
     json.left = this.serializeNode(node.left);
     json.right = this.serializeNode(node.right);
   }
 
-  private serializeNewExpression(node: any, json: JsonASTNode): void {
+  private serializeNewExpression(node: NewExpression, json: JsonASTNode): void {
     json.initializer = this.serializeNode(node.initializer);
   }
 
-  private serializeVariableExpression(node: any, json: JsonASTNode): void {
+  private serializeVariableExpression(node: VariableExpression, json: JsonASTNode): void {
     json.id = this.serializeNode(node.id);
   }
 
@@ -327,12 +360,15 @@ export class JsonSerializer {
     json.raw = node.raw;
   }
 
-  private serializeNumericLiteral(node: any, json: JsonASTNode): void {
+  private serializeNumericLiteral(
+    node: IntegerVal | DoubleVal | LongVal | DecimalVal,
+    json: JsonASTNode
+  ): void {
     json.value = node.value;
     json.raw = node.raw;
   }
 
-  private serializeBooleanVal(node: any, json: JsonASTNode): void {
+  private serializeBooleanVal(node: BooleanVal, json: JsonASTNode): void {
     json.value = node.value;
   }
 
@@ -363,19 +399,19 @@ export class JsonSerializer {
     json.args = node.args.map((arg: any) => this.serializeNode(arg));
   }
 
-  private serializeValuesInitializer(node: any, json: JsonASTNode): void {
+  private serializeValuesInitializer(node: ValuesInitializer, json: JsonASTNode): void {
     json.type = this.serializeTypeRef(node.type);
-    json.values = node.values.map((val: any) => this.serializeNode(val));
+    json.values = node.values.map((val) => this.serializeNode(val));
   }
 
-  private serializeSizedArrayInitializer(node: any, json: JsonASTNode): void {
+  private serializeSizedArrayInitializer(node: SizedArrayInitializer, json: JsonASTNode): void {
     json.type = this.serializeTypeRef(node.type);
     json.size = this.serializeNode(node.size);
   }
 
-  private serializeMapInitializer(node: any, json: JsonASTNode): void {
+  private serializeMapInitializer(node: MapInitializer, json: JsonASTNode): void {
     json.type = this.serializeTypeRef(node.type);
-    json.pairs = node.pairs.map((pair: any) => ({
+    json.pairs = node.pairs.map((pair) => ({
       key: this.serializeNode(pair.key),
       value: this.serializeNode(pair.value),
     }));
@@ -386,16 +422,16 @@ export class JsonSerializer {
    * @param node
    * @param json
    */
-  private serializeExpressionElementValue(node: any, json: JsonASTNode): void {
+  private serializeExpressionElementValue(node: ExpressionElementValue, json: JsonASTNode): void {
     json.value = this.serializeNode(node.value);
   }
 
-  private serializeAnnotationElementValue(node: any, json: JsonASTNode): void {
+  private serializeAnnotationElementValue(node: AnnotationElementValue, json: JsonASTNode): void {
     json.value = this.serializeNode(node.value);
   }
 
-  private serializeArrayElementValue(node: any, json: JsonASTNode): void {
-    json.values = node.values.map((val: any) => this.serializeNode(val));
+  private serializeArrayElementValue(node: ArrayElementValue, json: JsonASTNode): void {
+    json.values = node.values.map((val) => this.serializeNode(val));
   }
 
   /**
@@ -403,7 +439,7 @@ export class JsonSerializer {
    * @param node
    * @param json
    */
-  private serializeAnnotationArgument(node: any, json: JsonASTNode): void {
+  private serializeAnnotationArgument(node: AnnotationArgument, json: JsonASTNode): void {
     if (node.name) {
       json.name = node.name;
     }
@@ -413,7 +449,7 @@ export class JsonSerializer {
     }
   }
 
-  private serializeVariableDeclaration(node: any, json: JsonASTNode): void {
+  private serializeVariableDeclaration(node: VariableDeclaration, json: JsonASTNode): void {
     json.name = node.name;
     json.type = this.serializeTypeRef(node.type);
     if (node.initializer) {
@@ -426,7 +462,7 @@ export class JsonSerializer {
 
   // Modifier serialization
 
-  private serializeModifier(node: any, json: JsonASTNode): void {
+  private serializeModifier(node: Modifier, json: JsonASTNode): void {
     json.keyword = node.keyword;
   }
 
@@ -448,7 +484,7 @@ export class JsonSerializer {
           ('kind' in value[0] || ('components' in value[0] && 'arrayNesting' in value[0]))
         ) {
           // It's an array of AST nodes or TypeRefs
-          json[key] = value.map((item: any) => {
+          json[key] = value.map((item) => {
             if ('kind' in item) {
               return this.serializeNode(item);
             } else if ('components' in item && 'arrayNesting' in item) {

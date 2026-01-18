@@ -103,7 +103,7 @@ export function getSourceText(
    * Convert 1-based to 0-based.
    */
   const distanceFromStart = start.column - 1;
-  const lastLine = relevantLines[relevantLines.length - 1] || '';
+  const lastLine = relevantLines[relevantLines.length - 1] ?? '';
 
   // Original uses 0-based exclusive endColumn
   // Our system appears to use 1-based INCLUSIVE endColumn (based on test expectations)
@@ -146,7 +146,7 @@ export function getSourceTextForRange(source: string, range: SourceRange): strin
 
   if (start.line === end.line) {
     // Single line
-    const line = lines[start.line - 1] || '';
+    const line = lines[start.line - 1] ?? '';
     const startCol = Math.max(0, start.column - 1);
     const endCol = Math.min(line.length, end.column - 1);
     return line.substring(startCol, endCol);
@@ -158,16 +158,16 @@ export function getSourceTextForRange(source: string, range: SourceRange): strin
   const endCol = Math.max(0, end.column - 1);
 
   // First line
-  const firstLine = lines[start.line - 1] || '';
+  const firstLine = lines[start.line - 1] ?? '';
   resultLines.push(firstLine.substring(startCol));
 
   // Middle lines
   for (let i = start.line; i < end.line - 1; i++) {
-    resultLines.push(lines[i] || '');
+    resultLines.push(lines[i] ?? '');
   }
 
   // Last line
-  const lastLine = lines[end.line - 1] || '';
+  const lastLine = lines[end.line - 1] ?? '';
   resultLines.push(lastLine.substring(0, endCol));
 
   return resultLines.join('\n');
@@ -179,7 +179,7 @@ export function getSourceTextForRange(source: string, range: SourceRange): strin
  * @returns The source range, or null if not available.
  */
 export function getSourceRange(node: ASTNode): SourceRange | null {
-  return node.location || null;
+  return node.location ?? null;
 }
 
 /**
