@@ -62,7 +62,7 @@ interface Declaration extends ASTNode {
 }
 
 /**
- * Class declaration.
+ * Represents a class declaration in the AST.
  */
 interface ClassDeclaration extends Declaration {
   readonly kind: 'ClassDeclaration';
@@ -91,7 +91,7 @@ interface ClassDeclaration extends Declaration {
 }
 
 /**
- * Interface declaration.
+ * Represents an interface declaration in the AST.
  */
 interface InterfaceDeclaration extends Declaration {
   readonly kind: 'InterfaceDeclaration';
@@ -112,7 +112,7 @@ interface InterfaceDeclaration extends Declaration {
 }
 
 /**
- * Method declaration.
+ * Represents a method declaration in the AST.
  */
 interface MethodDeclaration extends Declaration {
   readonly kind: 'MethodDeclaration';
@@ -149,7 +149,7 @@ interface ConstructorDeclaration {
 }
 
 /**
- * Variable declaration.
+ * Represents a variable declaration in the AST.
  */
 interface VariableDeclaration extends Declaration {
   readonly kind: 'VariableDeclaration';
@@ -161,7 +161,7 @@ interface VariableDeclaration extends Declaration {
 }
 
 /**
- * Property declaration (getter/setter).
+ * Represents a property declaration (getter/setter) in the AST.
  */
 interface PropertyDeclaration extends Declaration {
   readonly kind: 'PropertyDeclaration';
@@ -174,7 +174,7 @@ interface PropertyDeclaration extends Declaration {
 }
 
 /**
- * Enum declaration.
+ * Represents an enum declaration in the AST.
  */
 interface EnumDeclaration extends Declaration {
   readonly kind: 'EnumDeclaration';
@@ -227,7 +227,7 @@ interface Parameter extends ASTNode {
 }
 
 /**
- * Annotation: @AnnotationName(args).
+ * Annotation: `@AnnotationName`(args).
  */
 interface Annotation extends ASTNode {
   readonly kind: 'Annotation';

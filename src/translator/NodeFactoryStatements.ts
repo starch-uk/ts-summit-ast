@@ -19,6 +19,7 @@ import type {
   ExpressionStatement,
   VariableDeclarationStatement,
   DmlStatement,
+  CatchClause,
 } from '../ast/Statement.js';
 import type { Expression } from '../ast/Expression.js';
 import type { VariableDeclaration } from '../ast/Declaration.js';
@@ -29,9 +30,15 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
 /**
  * Factory for statement nodes.
  */
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class StatementFactory {
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
+  /**
+   * Creates an if statement.
+   * @param condition - The condition expression.
+   * @param thenStatement - The statement to execute if the condition is true.
+   * @param elseStatement - The statement to execute if the condition is false.
+   * @param options - Optional factory options.
+   * @returns The created if statement.
+   */
   public static createIfStatement(
     condition: Expression,
     thenStatement: Statement,
@@ -47,10 +54,17 @@ export class StatementFactory {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
+  /**
+   * Creates a for loop statement.
+   * @param body - The body statement of the for loop.
+   * @param init - The initialization statement.
+   * @param condition - The loop condition expression.
+   * @param update - The update expression.
+   * @param options - Optional factory options.
+   * @returns The created for loop statement.
+   */
   public static createForLoopStatement(
     body: Readonly<Statement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Union type parameter
     init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
     condition?: Readonly<Expression>,
     update?: Readonly<Expression>,
@@ -66,6 +80,13 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a while loop statement.
+   * @param condition - The loop condition expression.
+   * @param body - The body statement of the while loop.
+   * @param options - Optional factory options.
+   * @returns The created while loop statement.
+   */
   public static createWhileLoopStatement(
     condition: Expression,
     body: Statement,
@@ -80,30 +101,31 @@ export class StatementFactory {
   }
 
   /**
-   * @param body
-   * @param init
-   * @param condition
-   * @param update
-   * @param options
+   * Creates a for loop statement.
+   * @param body - The body statement of the for loop.
+   * @param init - The initialization statement.
+   * @param condition - The loop condition expression.
+   * @param update - The update expression.
+   * @param options - Optional factory options.
+   * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- For statement requires 5 parameters
   public static createForStatement(
     body: Readonly<Statement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Union type parameter
     init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
     condition?: Readonly<Expression>,
     update?: Readonly<Expression>,
-
     options?: Readonly<NodeFactoryOptions>
   ): ForLoopStatement {
     return this.createForLoopStatement(body, init, condition, update, options);
   }
 
   /**
-   * @param condition
-   * @param body
-   * @param options
+   * Creates a while loop statement.
+   * @param condition - The loop condition expression.
+   * @param body - The body statement of the while loop.
+   * @param options - Optional factory options.
+   * @returns The created while loop statement.
    * @deprecated Use createWhileLoopStatement instead.
    */
   public static createWhileStatement(
@@ -114,6 +136,12 @@ export class StatementFactory {
     return this.createWhileLoopStatement(condition, body, options);
   }
 
+  /**
+   * Creates a return statement.
+   * @param expression - The expression to return, if any.
+   * @param options - Optional factory options.
+   * @returns The created return statement.
+   */
   public static createReturnStatement(
     expression?: Expression,
     options?: NodeFactoryOptions
@@ -125,9 +153,14 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a compound statement (block).
+   * @param statements - The statements in the compound statement.
+   * @param options - Optional factory options.
+   * @returns The created compound statement.
+   */
   public static createCompoundStatement(
     statements: readonly Statement[],
-
     options?: Readonly<NodeFactoryOptions>
   ): CompoundStatement {
     return {
@@ -138,18 +171,25 @@ export class StatementFactory {
   }
 
   /**
-   * @param statements
-   * @param options
+   * Creates a block statement.
+   * @param statements - The statements in the block.
+   * @param options - Optional factory options.
+   * @returns The created compound statement.
    * @deprecated Use createCompoundStatement instead.
    */
   public static createBlock(
     statements: readonly Statement[],
-
     options?: Readonly<NodeFactoryOptions>
   ): CompoundStatement {
     return this.createCompoundStatement(statements, options);
   }
 
+  /**
+   * Creates an expression statement.
+   * @param expression - The expression.
+   * @param options - Optional factory options.
+   * @returns The created expression statement.
+   */
   public static createExpressionStatement(
     expression: Expression,
     options?: NodeFactoryOptions
@@ -161,10 +201,14 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a variable declaration statement.
+   * @param declaration - The variable declaration.
+   * @param options - Optional factory options.
+   * @returns The created variable declaration statement.
+   */
   public static createVariableDeclarationStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     declaration: Readonly<VariableDeclaration>,
-
     options?: Readonly<NodeFactoryOptions>
   ): VariableDeclarationStatement {
     return {
@@ -174,15 +218,18 @@ export class StatementFactory {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Enhanced for loop requires 4 parameters
+  /**
+   * Creates an enhanced for loop statement.
+   * @param variable - The loop variable declaration.
+   * @param iterable - The iterable expression.
+   * @param body - The body statement of the enhanced for loop.
+   * @param options - Optional factory options.
+   * @returns The created enhanced for loop statement.
+   */
   public static createEnhancedForLoopStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     variable: Readonly<VariableDeclaration>,
-
     iterable: Readonly<Expression>,
-
     body: Readonly<Statement>,
-
     options?: Readonly<NodeFactoryOptions>
   ): EnhancedForLoopStatement {
     return {
@@ -194,6 +241,13 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a do-while loop statement.
+   * @param body - The body statement of the do-while loop.
+   * @param condition - The loop condition expression.
+   * @param options - Optional factory options.
+   * @returns The created do-while loop statement.
+   */
   public static createDoWhileLoopStatement(
     body: Statement,
     condition: Expression,
@@ -208,30 +262,29 @@ export class StatementFactory {
   }
 
   /**
-   * @param variable
-   * @param iterable
-   * @param body
-   * @param options
+   * Creates a for-each loop statement.
+   * @param variable - The loop variable declaration.
+   * @param iterable - The iterable expression.
+   * @param body - The body statement of the for-each loop.
+   * @param options - Optional factory options.
+   * @returns The created enhanced for loop statement.
    * @deprecated Use createEnhancedForLoopStatement instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- For each statement requires 4 parameters
   public static createForEachStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     variable: Readonly<VariableDeclaration>,
-
     iterable: Readonly<Expression>,
-
     body: Readonly<Statement>,
-
     options?: Readonly<NodeFactoryOptions>
   ): EnhancedForLoopStatement {
     return this.createEnhancedForLoopStatement(variable, iterable, body, options);
   }
 
   /**
-   * @param body
-   * @param condition
-   * @param options
+   * Creates a do-while loop statement.
+   * @param body - The body statement of the do-while loop.
+   * @param condition - The loop condition expression.
+   * @param options - Optional factory options.
+   * @returns The created do-while loop statement.
    * @deprecated Use createDoWhileLoopStatement instead.
    */
   public static createDoWhileStatement(
@@ -242,12 +295,17 @@ export class StatementFactory {
     return this.createDoWhileLoopStatement(body, condition, options);
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Switch statement requires 4 parameters
+  /**
+   * Creates a switch statement.
+   * @param expression - The switch expression.
+   * @param cases - The switch cases.
+   * @param defaultCase - The default case, if any.
+   * @param options - Optional factory options.
+   * @returns The created switch statement.
+   */
   public static createSwitchStatement(
     expression: Readonly<Expression>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
     cases: readonly SwitchCase[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     defaultCase?: Readonly<SwitchCase>,
 
     options?: Readonly<NodeFactoryOptions>
@@ -261,15 +319,18 @@ export class StatementFactory {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Try statement requires 4 parameters
+  /**
+   * Creates a try statement.
+   * @param tryBlock - The try block statement.
+   * @param catchClauses - The catch clauses.
+   * @param finallyBlock - The finally block statement, if any.
+   * @param options - Optional factory options.
+   * @returns The created try statement.
+   */
   public static createTryStatement(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
     tryBlock: Readonly<CompoundStatement>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
-    catchClauses: readonly import('../ast/Statement.js').CatchClause[],
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+    catchClauses: readonly CatchClause[],
     finallyBlock?: Readonly<CompoundStatement>,
-
     options?: Readonly<NodeFactoryOptions>
   ): TryStatement {
     return {
@@ -281,6 +342,12 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a break statement.
+   * @param label - The optional label to break to.
+   * @param options - Optional factory options.
+   * @returns The created break statement.
+   */
   public static createBreakStatement(label?: string, options?: NodeFactoryOptions): BreakStatement {
     return {
       kind: 'BreakStatement',
@@ -289,6 +356,12 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a continue statement.
+   * @param label - The optional label to continue to.
+   * @param options - Optional factory options.
+   * @returns The created continue statement.
+   */
   public static createContinueStatement(
     label?: string,
     options?: NodeFactoryOptions
@@ -300,6 +373,12 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a throw statement.
+   * @param expression - The expression to throw.
+   * @param options - Optional factory options.
+   * @returns The created throw statement.
+   */
   public static createThrowStatement(
     expression: Expression,
     options?: NodeFactoryOptions
@@ -311,6 +390,13 @@ export class StatementFactory {
     };
   }
 
+  /**
+   * Creates a DML statement.
+   * @param operation - The DML operation type.
+   * @param target - The target expression.
+   * @param options - Optional factory options.
+   * @returns The created DML statement.
+   */
   public static createDmlStatement(
     operation: 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert',
     target: Expression,

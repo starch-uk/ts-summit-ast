@@ -370,12 +370,13 @@ export interface ExtractCommentsOptions {
  */
 
 /**
- * @param commentText
- * @param patterns
+ * Matches a comment against a set of patterns.
+ * @param commentText - The comment text to match.
+ * @param patterns - The patterns to match against.
+ * @returns The match result if a pattern matches, or null if no match.
  */
 function matchCommentPattern(
   commentText: Readonly<string>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array parameter
   patterns?: readonly Readonly<CommentPattern>[]
 ): { type: string; matches: RegExpMatchArray } | null {
   const emptyArrayLength = 0;

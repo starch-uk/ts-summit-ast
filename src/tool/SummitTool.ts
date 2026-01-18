@@ -115,6 +115,29 @@ export class SummitTool {
   }
 
   /**
+   * Print results to console.
+   * @param results - The processing results to print.
+   */
+  public printResults(results: readonly ProcessResult[]): void {
+    for (const result of results) {
+      if (result.success) {
+        if (this.options.json) {
+          const jsonIndent = 2;
+          console.log(JSON.stringify(result.ast, null, jsonIndent));
+        } else {
+          console.log(`${result.file}: OK`);
+
+          if (this.options.verbose && result.ast !== null && result.ast !== undefined) {
+            console.log(this.formatAST(result.ast));
+          }
+        }
+      } else {
+        console.error(`${result.file}: ERROR - ${result.error ?? ''}`);
+      }
+    }
+  }
+
+  /**
    * Process a directory recursively.
    * @param dir - The directory path to process.
    * @returns Array of processing results.
@@ -176,8 +199,7 @@ export class SummitTool {
       const emptyArrayLength = 0;
       if (translationResult.errors.length > emptyArrayLength) {
         return {
-          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-          error: `Translation errors: ${translationResult.errors.map((e) => e.message).join(', ')}`,
+          error: `Translation errors: ${translationResult.errors.map((e: Readonly<{ message: string }>) => e.message).join(', ')}`,
           file: filePath,
           success: false,
         };
@@ -215,7 +237,6 @@ export class SummitTool {
    * @param filePath - The file path to check.
    * @returns True if the file has .cls or .trigger extension.
    */
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private isApexFile(filePath: string): boolean {
     const ext = extname(filePath).toLowerCase();
     return ext === '.cls' || ext === '.trigger';
@@ -240,28 +261,5 @@ export class SummitTool {
     }
 
     return String(ast);
-  }
-
-  /**
-   * Print results to console.
-   * @param results - The processing results to print.
-   */
-  public printResults(results: readonly ProcessResult[]): void {
-    for (const result of results) {
-      if (result.success) {
-        if (this.options.json) {
-          const jsonIndent = 2;
-          console.log(JSON.stringify(result.ast, null, jsonIndent));
-        } else {
-          console.log(`${result.file}: OK`);
-
-          if (this.options.verbose && result.ast !== null && result.ast !== undefined) {
-            console.log(this.formatAST(result.ast));
-          }
-        }
-      } else {
-        console.error(`${result.file}: ERROR - ${result.error ?? ''}`);
-      }
-    }
   }
 }

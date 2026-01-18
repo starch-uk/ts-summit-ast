@@ -304,6 +304,7 @@ export function parseMultipleFiles(
  * @param sources - Array of source code strings corresponding to each AST.
  * @param options - Extraction options (applied to all ASTs).
  * @returns Array of extracted comment arrays, one per AST.
+ * @throws {Error} If the lengths of asts and sources arrays do not match.
  * @example
  * ```typescript
  * const asts = [result1.ast!, result2.ast!];
@@ -318,7 +319,6 @@ export function parseMultipleFiles(
  */
 export function extractCommentsBatch(
   asts: readonly ASTNode[],
-
   sources: readonly string[],
   options: Readonly<ExtractCommentsOptions> = {}
 ): ExtractedComment[][] {

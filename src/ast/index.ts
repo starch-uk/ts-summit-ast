@@ -100,56 +100,56 @@ export type AnyASTNode =
   | ApexDocContent
   | ApexDocInlineTag
   | ApexDocText
+  | ArrayExpression
+  | AssignExpression
   | ASTNode
+  | BinaryExpression
+  | BreakStatement
+  | CallExpression
+  | CastExpression
   | CatchClause
   | ClassDeclaration
-  | EnumDeclaration
-  | InterfaceDeclaration
-  | MethodDeclaration
-  | PropertyDeclaration
-  | VariableDeclaration
-  | ElementValue
-  | EnumValue
-  | BinaryExpression
-  | UnaryExpression
-  | AssignExpression
-  | CallExpression
-  | FieldExpression
-  | ArrayExpression
-  | NewExpression
-  | CastExpression
-  | InstanceOfExpression
-  | TernaryExpression
-  | LambdaExpression
-  | VariableExpression
-  | ThisExpression
-  | SuperExpression
-  | ParenthesizedExpression
-  | SoqlExpression
-  | SoslExpression
-  | TriggerContextVariableExpression
-  | Literal
-  | Identifier
-  | Initializer
-  | LambdaParameter
-  | Modifier
-  | Parameter
-  | SoqlOrSoslBinding
-  | IfStatement
-  | ForLoopStatement
-  | EnhancedForLoopStatement
-  | WhileLoopStatement
-  | DoWhileLoopStatement
-  | ReturnStatement
-  | BreakStatement
-  | ContinueStatement
-  | ThrowStatement
   | CompoundStatement
-  | ExpressionStatement
-  | VariableDeclarationStatement
+  | ContinueStatement
   | DmlStatement
-  | TryStatement
-  | SwitchStatement
+  | DoWhileLoopStatement
+  | ElementValue
+  | EnhancedForLoopStatement
+  | EnumDeclaration
+  | EnumValue
+  | ExpressionStatement
+  | FieldExpression
+  | ForLoopStatement
+  | Identifier
+  | IfStatement
+  | Initializer
+  | InstanceOfExpression
+  | InterfaceDeclaration
+  | LambdaExpression
+  | LambdaParameter
+  | Literal
+  | MethodDeclaration
+  | Modifier
+  | NewExpression
+  | Parameter
+  | ParenthesizedExpression
+  | PropertyDeclaration
+  | ReturnStatement
+  | SoqlExpression
+  | SoqlOrSoslBinding
+  | SoslExpression
+  | SuperExpression
   | SwitchCase
-  | TypeParameter;
+  | SwitchStatement
+  | TernaryExpression
+  | ThisExpression
+  | ThrowStatement
+  | TriggerContextVariableExpression
+  | TryStatement
+  | TypeParameter
+  | UnaryExpression
+  | VariableDeclaration
+  | VariableDeclarationStatement
+  | VariableExpression
+  | WhileLoopStatement;
 /* eslint-enable @typescript-eslint/no-type-alias */

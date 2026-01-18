@@ -142,7 +142,7 @@ interface ReturnStatement extends Statement {
 }
 
 /**
- * Break statement: break;.
+ * Represents a break statement in the AST.
  */
 interface BreakStatement extends Statement {
   readonly kind: 'BreakStatement';
@@ -150,7 +150,7 @@ interface BreakStatement extends Statement {
 }
 
 /**
- * Continue statement: continue;.
+ * Represents a continue statement in the AST.
  */
 interface ContinueStatement extends Statement {
   readonly kind: 'ContinueStatement';
@@ -174,7 +174,7 @@ interface CompoundStatement extends Statement {
 }
 
 /**
- * Expression statement: expression;.
+ * Represents an expression statement in the AST.
  */
 interface ExpressionStatement extends Statement {
   readonly kind: 'ExpressionStatement';

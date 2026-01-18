@@ -248,7 +248,7 @@ interface LambdaExpression extends Expression {
 }
 
 /**
- * Lambda parameter.
+ * Represents a lambda parameter in the AST.
  */
 interface LambdaParameter extends ASTNode {
   readonly kind: 'LambdaParameter';
@@ -257,7 +257,7 @@ interface LambdaParameter extends ASTNode {
 }
 
 /**
- * Variable expression: a reference to a variable or parameter.
+ * Represents a variable expression that references a variable or parameter.
  */
 interface VariableExpression extends Expression {
   readonly kind: 'VariableExpression';
@@ -265,21 +265,21 @@ interface VariableExpression extends Expression {
 }
 
 /**
- * This expression: this.
+ * Represents the 'this' expression in the AST.
  */
 interface ThisExpression extends Expression {
   readonly kind: 'ThisExpression';
 }
 
 /**
- * Super expression: super.
+ * Represents the 'super' expression in the AST.
  */
 interface SuperExpression extends Expression {
   readonly kind: 'SuperExpression';
 }
 
 /**
- * Parenthesized expression: (expression).
+ * Represents a parenthesized expression in the AST.
  */
 interface ParenthesizedExpression extends Expression {
   readonly kind: 'ParenthesizedExpression';

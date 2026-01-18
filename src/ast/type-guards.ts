@@ -41,6 +41,20 @@ import type {
   ParenthesizedExpression,
 } from './Expression.js';
 import type {
+  Initializer,
+  ConstructorInitializer,
+  ValuesInitializer,
+  SizedArrayInitializer,
+  MapInitializer,
+} from './Initializer.js';
+import type {
+  ElementValue,
+  ExpressionElementValue,
+  AnnotationElementValue,
+  ArrayElementValue,
+} from './ElementValue.js';
+import type { SoqlOrSoslBinding } from './SoqlOrSoslBinding.js';
+import type {
   Literal,
   StringVal,
   IntegerVal,
@@ -898,7 +912,7 @@ function isEnumValue(node: ASTNode): node is EnumValue {
  * @param node - The AST node to check.
  * @returns True if the node is an Initializer.
  */
-function isInitializer(node: ASTNode): node is import('./Initializer.js').Initializer {
+function isInitializer(node: ASTNode): node is Initializer {
   return (
     'kind' in node &&
     (node.kind === 'ConstructorInitializer' ||
@@ -913,9 +927,7 @@ function isInitializer(node: ASTNode): node is import('./Initializer.js').Initia
  * @param node - The AST node to check.
  * @returns True if the node is a ConstructorInitializer.
  */
-function isConstructorInitializer(
-  node: ASTNode
-): node is import('./Initializer.js').ConstructorInitializer {
+function isConstructorInitializer(node: ASTNode): node is ConstructorInitializer {
   return 'kind' in node && node.kind === 'ConstructorInitializer';
 }
 
@@ -924,7 +936,7 @@ function isConstructorInitializer(
  * @param node - The AST node to check.
  * @returns True if the node is a ValuesInitializer.
  */
-function isValuesInitializer(node: ASTNode): node is import('./Initializer.js').ValuesInitializer {
+function isValuesInitializer(node: ASTNode): node is ValuesInitializer {
   return 'kind' in node && node.kind === 'ValuesInitializer';
 }
 
@@ -933,9 +945,7 @@ function isValuesInitializer(node: ASTNode): node is import('./Initializer.js').
  * @param node - The AST node to check.
  * @returns True if the node is a SizedArrayInitializer.
  */
-function isSizedArrayInitializer(
-  node: ASTNode
-): node is import('./Initializer.js').SizedArrayInitializer {
+function isSizedArrayInitializer(node: ASTNode): node is SizedArrayInitializer {
   return 'kind' in node && node.kind === 'SizedArrayInitializer';
 }
 
@@ -944,7 +954,7 @@ function isSizedArrayInitializer(
  * @param node - The AST node to check.
  * @returns True if the node is a MapInitializer.
  */
-function isMapInitializer(node: ASTNode): node is import('./Initializer.js').MapInitializer {
+function isMapInitializer(node: ASTNode): node is MapInitializer {
   return 'kind' in node && node.kind === 'MapInitializer';
 }
 
@@ -953,7 +963,7 @@ function isMapInitializer(node: ASTNode): node is import('./Initializer.js').Map
  * @param node - The AST node to check.
  * @returns True if the node is an ElementValue.
  */
-function isElementValue(node: ASTNode): node is import('./ElementValue.js').ElementValue {
+function isElementValue(node: ASTNode): node is ElementValue {
   return (
     'kind' in node &&
     (node.kind === 'ExpressionElementValue' ||
@@ -967,9 +977,7 @@ function isElementValue(node: ASTNode): node is import('./ElementValue.js').Elem
  * @param node - The AST node to check.
  * @returns True if the node is an ExpressionElementValue.
  */
-function isExpressionElementValue(
-  node: ASTNode
-): node is import('./ElementValue.js').ExpressionElementValue {
+function isExpressionElementValue(node: ASTNode): node is ExpressionElementValue {
   return 'kind' in node && node.kind === 'ExpressionElementValue';
 }
 
@@ -978,9 +986,7 @@ function isExpressionElementValue(
  * @param node - The AST node to check.
  * @returns True if the node is an AnnotationElementValue.
  */
-function isAnnotationElementValue(
-  node: ASTNode
-): node is import('./ElementValue.js').AnnotationElementValue {
+function isAnnotationElementValue(node: ASTNode): node is AnnotationElementValue {
   return 'kind' in node && node.kind === 'AnnotationElementValue';
 }
 
@@ -989,7 +995,7 @@ function isAnnotationElementValue(
  * @param node - The AST node to check.
  * @returns True if the node is an ArrayElementValue.
  */
-function isArrayElementValue(node: ASTNode): node is import('./ElementValue.js').ArrayElementValue {
+function isArrayElementValue(node: ASTNode): node is ArrayElementValue {
   return 'kind' in node && node.kind === 'ArrayElementValue';
 }
 
@@ -998,9 +1004,7 @@ function isArrayElementValue(node: ASTNode): node is import('./ElementValue.js')
  * @param node - The AST node to check.
  * @returns True if the node is a SoqlOrSoslBinding.
  */
-function isSoqlOrSoslBinding(
-  node: ASTNode
-): node is import('./SoqlOrSoslBinding.js').SoqlOrSoslBinding {
+function isSoqlOrSoslBinding(node: ASTNode): node is SoqlOrSoslBinding {
   return 'kind' in node && node.kind === 'SoqlOrSoslBinding';
 }
 

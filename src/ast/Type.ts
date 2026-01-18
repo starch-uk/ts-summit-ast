@@ -74,8 +74,8 @@ function typeRefToCodeString(typeRef: Readonly<TypeRef>): string {
       let result = comp.id.name;
       const emptyArgsLength = 0;
       if (comp.args.length > emptyArgsLength) {
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array.map callback signature
-        result += `<${comp.args.map((arg: Readonly<TypeRef>) => typeRefToCodeString(arg)).join(', ')}>`;
+        const readonlyArgs = comp.args as readonly TypeRef[];
+        result += `<${readonlyArgs.map((arg: Readonly<TypeRef>) => typeRefToCodeString(arg)).join(', ')}>`;
       }
       return result;
     })

@@ -95,7 +95,9 @@ export class JsonDeserializer {
 
   /**
    * Deserialize JSON object to AST node.
-   * @param json
+   * @param json - The JSON object to deserialize.
+   * @returns The deserialized AST node.
+   * @throws {Error} If the JSON object is invalid or missing required properties.
    */
   public deserializeNode(json: Readonly<JsonASTNode>): ASTNode {
     // Support both '@type' (summit-ast format) and 'kind' (backward compatibility)
@@ -126,10 +128,10 @@ export class JsonDeserializer {
   }
 
   /**
-   * Deserialize source location.
-   * @param location
+   * Deserialize source location from JSON data.
+   * @param location - The location data to deserialize, can be an object with start/end properties or null/undefined.
+   * @returns The deserialized source range, or undefined if the location data is invalid or missing.
    */
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private deserializeLocation(location: unknown): SourceRange | undefined {
     if (location === null || location === undefined || typeof location !== 'object') {
       return undefined;
@@ -157,9 +159,10 @@ export class JsonDeserializer {
 
   /**
    * Deserialize node based on its kind.
-   * @param json
-   * @param nodeType
-   * @param location
+   * @param json - The JSON object to deserialize.
+   * @param nodeType - The node type/kind.
+   * @param location - The optional source location.
+   * @returns The deserialized AST node.
    */
   private deserializeNodeByKind(
     json: Readonly<JsonASTNode>,
@@ -288,6 +291,12 @@ export class JsonDeserializer {
 
   // Statement deserialization methods
 
+  /**
+   * Deserializes an IfStatement.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized IfStatement node.
+   */
   private deserializeIfStatement(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -309,6 +318,12 @@ export class JsonDeserializer {
     return NodeFactory.createIfStatement(condition, thenStatement, elseStatement, locationOption);
   }
 
+  /**
+   * Deserializes a ForLoopStatement.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized ForLoopStatement node.
+   */
   private deserializeForLoopStatement(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -343,6 +358,12 @@ export class JsonDeserializer {
     );
   }
 
+  /**
+   * Deserializes a WhileLoopStatement.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized WhileLoopStatement node.
+   */
   private deserializeWhileLoopStatement(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -355,6 +376,12 @@ export class JsonDeserializer {
     return NodeFactory.createWhileLoopStatement(condition, body, locationOption);
   }
 
+  /**
+   * Deserializes a ReturnStatement.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized ReturnStatement node.
+   */
   private deserializeReturnStatement(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -368,6 +395,12 @@ export class JsonDeserializer {
     return NodeFactory.createReturnStatement(expression, locationOption);
   }
 
+  /**
+   * Deserializes a CompoundStatement.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized CompoundStatement node.
+   */
   private deserializeCompoundStatement(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -382,6 +415,12 @@ export class JsonDeserializer {
     return NodeFactory.createCompoundStatement(statements, locationOption);
   }
 
+  /**
+   * Deserializes an ExpressionStatement.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized ExpressionStatement node.
+   */
   private deserializeExpressionStatement(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -392,6 +431,12 @@ export class JsonDeserializer {
     return NodeFactory.createExpressionStatement(expression, locationOption);
   }
 
+  /**
+   * Deserializes a VariableDeclarationStatement.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized VariableDeclarationStatement node.
+   */
   private deserializeVariableDeclarationStatement(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -405,8 +450,20 @@ export class JsonDeserializer {
     return NodeFactory.createVariableDeclarationStatement(declaration, locationOption);
   }
 
+  /**
+   * Deserialize a type reference from JSON.
+   * @param typeRefJson - The JSON object representing the type reference.
+   * @returns The deserialized type reference.
+   */
+
   // Expression deserialization methods
 
+  /**
+   * Deserializes a BinaryExpression.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized BinaryExpression node.
+   */
   private deserializeBinaryExpression(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -427,6 +484,12 @@ export class JsonDeserializer {
     );
   }
 
+  /**
+   * Deserializes a CallExpression.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized CallExpression node.
+   */
   private deserializeCallExpression(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -463,6 +526,12 @@ export class JsonDeserializer {
     );
   }
 
+  /**
+   * Deserializes a FieldExpression.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized FieldExpression node.
+   */
   private deserializeFieldExpression(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -479,6 +548,12 @@ export class JsonDeserializer {
     return NodeFactory.createFieldExpression(fieldName, target, locationOption);
   }
 
+  /**
+   * Deserializes an ArrayExpression.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized ArrayExpression node.
+   */
   private deserializeArrayExpression(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -491,6 +566,12 @@ export class JsonDeserializer {
     return NodeFactory.createArrayExpression(array, index, locationOption);
   }
 
+  /**
+   * Deserializes an AssignExpression.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized AssignExpression node.
+   */
   private deserializeAssignExpression(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -511,6 +592,12 @@ export class JsonDeserializer {
     );
   }
 
+  /**
+   * Deserializes a VariableExpression.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized VariableExpression node.
+   */
   private deserializeVariableExpression(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -522,6 +609,12 @@ export class JsonDeserializer {
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  /**
+   * Deserializes an Identifier node.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized Identifier node.
+   */
   private deserializeIdentifier(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -534,7 +627,12 @@ export class JsonDeserializer {
 
   // Literal deserialization methods
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  /**
+   * Deserializes a StringVal literal.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized StringVal node.
+   */
   private deserializeStringVal(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -547,7 +645,12 @@ export class JsonDeserializer {
     return NodeFactory.createStringVal(value, raw, locationOption);
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  /**
+   * Deserializes an IntegerVal literal.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized IntegerVal node.
+   */
   private deserializeIntegerVal(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -560,7 +663,12 @@ export class JsonDeserializer {
     return NodeFactory.createIntegerVal(value, raw, locationOption);
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  /**
+   * Deserializes a DoubleVal literal.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized DoubleVal node.
+   */
   private deserializeDoubleVal(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -573,7 +681,12 @@ export class JsonDeserializer {
     return NodeFactory.createDoubleVal(value, raw, locationOption);
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  /**
+   * Deserializes a LongVal literal.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized LongVal node.
+   */
   private deserializeLongVal(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -586,7 +699,12 @@ export class JsonDeserializer {
     return NodeFactory.createLongVal(value, raw, locationOption);
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  /**
+   * Deserializes a DecimalVal literal.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized DecimalVal node.
+   */
   private deserializeDecimalVal(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -599,7 +717,12 @@ export class JsonDeserializer {
     return NodeFactory.createDecimalVal(value, raw, locationOption);
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
+  /**
+   * Deserializes a BooleanVal literal.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized BooleanVal node.
+   */
   private deserializeBooleanVal(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -612,12 +735,19 @@ export class JsonDeserializer {
 
   /**
    * TypeRef deserialization (TypeRef is an AST node in summit-ast).
-   * @param typeRefJson
+   * @param typeRefJson - The JSON object representing the TypeRef.
+   * @returns The deserialized TypeRef node.
    */
   private deserializeTypeRef(typeRefJson: Readonly<JsonASTNode>): TypeRef {
     return this.deserializeTypeRefNode(typeRefJson);
   }
 
+  /**
+   * Deserializes a TypeRef node.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized TypeRef node.
+   */
   private deserializeTypeRefNode(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -644,10 +774,11 @@ export class JsonDeserializer {
   }
 
   /**
-   * Initializer deserialization methods.
-   * @param json
-   * @param locationOption
-   * @param locationOption.location
+   * Deserializes a NewExpression initializer.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @param locationOption.location - The source location for the node.
+   * @returns The deserialized NewExpression node.
    */
   private deserializeNewExpression(
     json: Readonly<JsonASTNode>,
@@ -662,6 +793,12 @@ export class JsonDeserializer {
     return NodeFactory.createNewExpression(initializer, locationOption);
   }
 
+  /**
+   * Deserializes a ConstructorInitializer from JSON.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized ConstructorInitializer node.
+   */
   private deserializeConstructorInitializer(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -679,6 +816,12 @@ export class JsonDeserializer {
     return NodeFactory.createConstructorInitializer(type, args, locationOption);
   }
 
+  /**
+   * Deserializes a ValuesInitializer from JSON.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized ValuesInitializer node.
+   */
   private deserializeValuesInitializer(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -696,6 +839,12 @@ export class JsonDeserializer {
     return NodeFactory.createValuesInitializer(type, values, locationOption);
   }
 
+  /**
+   * Deserializes a SizedArrayInitializer from JSON.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized SizedArrayInitializer node.
+   */
   private deserializeSizedArrayInitializer(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -708,6 +857,12 @@ export class JsonDeserializer {
     return NodeFactory.createSizedArrayInitializer(type, size, locationOption);
   }
 
+  /**
+   * Deserializes a MapInitializer from JSON.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @returns The deserialized MapInitializer node.
+   */
   private deserializeMapInitializer(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -733,10 +888,11 @@ export class JsonDeserializer {
   }
 
   /**
-   * ElementValue deserialization methods.
-   * @param json
-   * @param locationOption
-   * @param locationOption.location
+   * Deserializes an ExpressionElementValue.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @param locationOption.location - The source location for the node.
+   * @returns The deserialized ExpressionElementValue node.
    */
   private deserializeExpressionElementValue(
     json: Readonly<JsonASTNode>,
@@ -747,6 +903,13 @@ export class JsonDeserializer {
     return NodeFactory.createExpressionElementValue(value, locationOption);
   }
 
+  /**
+   * Deserializes an AnnotationElementValue.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @param locationOption.location - The source location for the node.
+   * @returns The deserialized AnnotationElementValue node.
+   */
   private deserializeAnnotationElementValue(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -759,6 +922,13 @@ export class JsonDeserializer {
     return NodeFactory.createAnnotationElementValue(value, locationOption);
   }
 
+  /**
+   * Deserializes an ArrayElementValue.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @param locationOption.location - The source location for the node.
+   * @returns The deserialized ArrayElementValue node.
+   */
   private deserializeArrayElementValue(
     json: Readonly<JsonASTNode>,
     locationOption?: Readonly<{ location: SourceRange }>
@@ -774,10 +944,11 @@ export class JsonDeserializer {
   }
 
   /**
-   * Declaration deserialization methods.
-   * @param json
-   * @param locationOption
-   * @param locationOption.location
+   * Deserializes an AnnotationArgument.
+   * @param json - The JSON object to deserialize.
+   * @param locationOption - Optional location information.
+   * @param locationOption.location - The source location for the node.
+   * @returns The deserialized AnnotationArgument node.
    */
   private deserializeAnnotationArgument(
     json: Readonly<JsonASTNode>,
@@ -885,11 +1056,10 @@ export class JsonDeserializer {
 
   /**
    * Validate JSON node structure.
-   * @param json
-   * @param _json
-   * @param nodeType
+   * @param _json - The JSON object to validate.
+   * @param nodeType - The node type to validate.
+   * @throws {Error} If the node type is invalid or missing.
    */
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   private validateNode(_json: Readonly<JsonASTNode>, nodeType: string | null): void {
     if (nodeType === null || typeof nodeType !== 'string') {
       throw new Error('Invalid JSON AST node: @type or kind must be a string');

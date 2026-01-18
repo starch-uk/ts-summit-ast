@@ -13,10 +13,22 @@ import type { SourceRange } from '../ast/base.js';
  */
 interface ParseTreeNode {
   /**
+   * Additional properties that parsers may include
+   * This allows for parser-specific data while maintaining compatibility.
+   */
+  readonly [key: string]: unknown;
+
+  /**
    * Node type/kind identifier (e.g., "if_statement", "method_call", etc.)
    * The exact values depend on the parser, but should be consistent.
    */
   readonly type: string;
+
+  /**
+   * Child nodes (if any)
+   * Different parsers may structure children differently.
+   */
+  readonly children?: ParseTreeNode[];
 
   /**
    * Optional source location information.
@@ -27,30 +39,13 @@ interface ParseTreeNode {
    * Optional text content of this node.
    */
   readonly text?: string;
-
-  /**
-   * Child nodes (if any)
-   * Different parsers may structure children differently.
-   */
-  readonly children?: ParseTreeNode[];
-
-  /**
-   * Additional properties that parsers may include
-   * This allows for parser-specific data while maintaining compatibility.
-   */
-  readonly [key: string]: unknown;
 }
 
 /**
  * Parse tree with named children (for parsers that use property-based children).
  */
-interface NamedChildrenParseTree extends ParseTreeNode {
-  /**
-   * Named child properties
-   * Example: { condition: node, thenBody: node, elseBody: node }.
-   */
-  readonly [childName: string]: ParseTreeNode | ParseTreeNode[] | unknown;
-}
+type NamedChildrenParseTree = ParseTreeNode &
+  Record<string, ParseTreeNode | ParseTreeNode[] | unknown>;
 
 /**
  * Parse tree with positional children.

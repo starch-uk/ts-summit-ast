@@ -10,6 +10,7 @@ import type { ParseTreeNode } from './ParseTreeTypes.js';
 
 /**
  * Simple recursive descent parser for Apex.
+ * @throws {Error} If parsing fails due to malformed input or unexpected tokens.
  */
 export class ApexParser {
   private readonly tokens: Token[] = [];
@@ -31,6 +32,11 @@ export class ApexParser {
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index constant
   private readonly zeroIndex = 0;
 
+  /**
+   * Creates a new ApexParser instance.
+   * @param _source - The Apex source code to parse.
+   * @throws {Error} If tokenization fails.
+   */
   public constructor(_source: string) {
     this.source = _source;
     const lexer = new ApexLexer(_source);
@@ -56,6 +62,7 @@ export class ApexParser {
   /**
    * Parse compilation unit (top-level).
    * @returns The compilation unit parse tree node.
+   * @throws {Error} If the compilation unit is malformed or unexpected tokens are encountered.
    */
   private parseCompilationUnit(): ParseTreeNode {
     const declarations: ParseTreeNode[] = [];
@@ -99,6 +106,7 @@ export class ApexParser {
   /**
    * Parse a declaration (class, interface, trigger, etc.).
    * @returns The declaration parse tree node, or null if not a declaration.
+   * @throws {Error} If the declaration is malformed or unexpected tokens are encountered.
    */
   private parseDeclaration(): ParseTreeNode | null {
     this.skipWhitespaceAndComments();
@@ -218,10 +226,11 @@ export class ApexParser {
   }
 
   /**
-   * Parse class declaration.
+   * Parses a class declaration from the token stream.
    * @param annotations - Annotations that were parsed before the class keyword.
    * @param preModifiers - Modifiers that were parsed before the class keyword.
    * @returns The class declaration parse tree node.
+   * @throws {Error} If the class declaration is malformed or unexpected tokens are encountered.
    */
   private parseClassDeclaration(
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default empty array parameter
@@ -288,11 +297,7 @@ export class ApexParser {
     }
     children.push({ location: this.locationToRange(name.location), text: name.text, type: 'name' });
 
-    if (
-      typeParameters !== null &&
-      typeParameters !== undefined &&
-      typeParameters.length > this.zeroIndex
-    ) {
+    if (typeParameters.length > this.zeroIndex) {
       children.push({ children: typeParameters, type: 'type_parameters' });
     }
     if (extendsClause != null) {
@@ -311,8 +316,9 @@ export class ApexParser {
   }
 
   /**
-   * Parse interface declaration.
+   * Parses an interface declaration from the token stream.
    * @returns The interface declaration parse tree node.
+   * @throws {Error} If the interface declaration is malformed or unexpected tokens are encountered.
    */
   private parseInterfaceDeclaration(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -354,11 +360,7 @@ export class ApexParser {
     }
     children.push({ location: this.locationToRange(name.location), text: name.text, type: 'name' });
 
-    if (
-      typeParameters !== null &&
-      typeParameters !== undefined &&
-      typeParameters.length > this.zeroIndex
-    ) {
+    if (typeParameters.length > this.zeroIndex) {
       children.push({ children: typeParameters, type: 'type_parameters' });
     }
     if (extendsList.length > this.zeroIndex) {
@@ -374,8 +376,9 @@ export class ApexParser {
   }
 
   /**
-   * Parse trigger declaration.
+   * Parses a trigger declaration from the token stream.
    * @returns The trigger declaration parse tree node.
+   * @throws {Error} If the trigger declaration is malformed or unexpected tokens are encountered.
    */
   private parseTriggerDeclaration(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -569,7 +572,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse enum declaration.
+   * Parses an enum declaration from the token stream.
    * @returns The enum declaration parse tree node.
    */
   private parseEnumDeclaration(): ParseTreeNode {
@@ -647,6 +650,7 @@ export class ApexParser {
    * In class context, this parses class members; otherwise, it parses statements.
    * @param isClassBody - Whether this is a class body (true) or statement block (false).
    * @returns The block parse tree node.
+   * @throws {Error} If the block is malformed or unexpected tokens are encountered.
    */
   private parseBlock(isClassBody = false): ParseTreeNode {
     const start = this.current;
@@ -687,6 +691,7 @@ export class ApexParser {
   /**
    * Parse a class member (method, constructor, field, inner class, etc.).
    * @returns The parsed class member node, or null if parsing fails.
+   * @throws {Error} If the class member is malformed or unexpected tokens are encountered.
    */
   private parseClassMember(): ParseTreeNode | null {
     this.skipWhitespaceAndComments();
@@ -806,7 +811,6 @@ export class ApexParser {
     // Static initializer: static { } or check if static was consumed as modifier
     // Check if we have static modifier and next token is {
     const hasStaticModifier = modifiers.some(
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
       (m: Readonly<ParseTreeNode>) => m.text === 'static' || m.text === 'STATIC'
     );
     if (hasStaticModifier && this.check(TokenType.LEFT_BRACE)) {
@@ -952,11 +956,7 @@ export class ApexParser {
     children.push(returnType);
     children.push({ location: this.locationToRange(name.location), text: name.text, type: 'name' });
 
-    if (
-      typeParameters !== null &&
-      typeParameters !== undefined &&
-      typeParameters.length > this.zeroIndex
-    ) {
+    if (typeParameters.length > this.zeroIndex) {
       children.push({ children: typeParameters, type: 'type_parameters' });
     }
     if (parameters.length > this.zeroIndex) {
@@ -991,6 +991,7 @@ export class ApexParser {
   /**
    * Parse parameter declaration.
    * @returns The parsed parameter node, or null if parsing fails.
+   * @throws {Error} If the parameter declaration is malformed or unexpected tokens are encountered.
    */
   private parseParameter(): ParseTreeNode | null {
     const start = this.current;
@@ -1058,11 +1059,7 @@ export class ApexParser {
     // Parse getter
     const peekToken = this.peek();
 
-    if (
-      this.check(TokenType.IDENTIFIER) &&
-      peekToken !== null &&
-      peekToken.text.toLowerCase() === 'get'
-    ) {
+    if (this.check(TokenType.IDENTIFIER) && peekToken.text.toLowerCase() === 'get') {
       this.advance(); // Consume 'get'
       this.skipWhitespaceAndComments();
       if (this.check(TokenType.LEFT_BRACE)) {
@@ -1077,11 +1074,7 @@ export class ApexParser {
     // Parse setter
     const setterPeekToken = this.peek();
 
-    if (
-      this.check(TokenType.IDENTIFIER) &&
-      setterPeekToken !== null &&
-      setterPeekToken.text.toLowerCase() === 'set'
-    ) {
+    if (this.check(TokenType.IDENTIFIER) && setterPeekToken.text.toLowerCase() === 'set') {
       this.advance(); // Consume 'set'
       this.skipWhitespaceAndComments();
       if (this.check(TokenType.LEFT_BRACE)) {
@@ -1119,7 +1112,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse field declaration.
+   * Parses a field declaration from the token stream.
    * @param name - The field name token.
    * @param modifiers - Array of modifier parse tree nodes.
    * @param annotations - Array of annotation parse tree nodes.
@@ -1231,7 +1224,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse annotation.
+   * Parses an annotation from the token stream.
    * @returns The parsed annotation node, or null if parsing fails.
    */
   private parseAnnotation(): ParseTreeNode | null {
@@ -1298,7 +1291,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse enum constant.
+   * Parses an enum constant from the token stream.
    * @returns The parsed enum constant node, or null if parsing fails.
    */
   private parseEnumConstant(): ParseTreeNode | null {
@@ -1334,7 +1327,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse annotation argument.
+   * Parses an annotation argument from the token stream.
    * @returns The parsed annotation argument node, or null if parsing fails.
    */
   private parseAnnotationArgument(): ParseTreeNode | null {
@@ -1468,6 +1461,7 @@ export class ApexParser {
   /**
    * Parse a statement.
    * @returns The parsed statement node, or null if parsing fails.
+   * @throws {Error} If the statement is malformed or unexpected tokens are encountered.
    */
   private parseStatement(): ParseTreeNode | null {
     this.skipWhitespaceAndComments();
@@ -1609,8 +1603,9 @@ export class ApexParser {
   }
 
   /**
-   * Parse if statement.
+   * Parses an if statement from the token stream.
    * @returns The parsed if statement parse tree node.
+   * @throws {Error} If the if statement is malformed or unexpected tokens are encountered.
    */
   private parseIfStatement(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -1648,6 +1643,7 @@ export class ApexParser {
   /**
    * Parse for statement (supports both traditional for and for-each).
    * @returns The parsed for statement parse tree node.
+   * @throws {Error} If the for statement is malformed or unexpected tokens are encountered.
    */
   private parseForStatement(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -1924,6 +1920,7 @@ export class ApexParser {
   /**
    * Parse while statement.
    * @returns The parsed while statement parse tree node.
+   * @throws {Error} If the while statement is malformed or unexpected tokens are encountered.
    */
   private parseWhileStatement(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -1950,6 +1947,7 @@ export class ApexParser {
   /**
    * Parse do-while statement.
    * @returns The parsed do-while statement parse tree node.
+   * @throws {Error} If the do-while statement is malformed or unexpected tokens are encountered.
    */
   private parseDoWhileStatement(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -1980,6 +1978,7 @@ export class ApexParser {
   /**
    * Parse switch statement.
    * @returns The parsed switch statement parse tree node.
+   * @throws {Error} If the switch statement is malformed or unexpected tokens are encountered.
    */
   private parseSwitchStatement(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -2160,12 +2159,7 @@ export class ApexParser {
           // Structure: children array with [value?, statements]
           const caseChildren: ParseTreeNode[] = [];
 
-          if (
-            whenType !== null &&
-            whenType !== undefined &&
-            whenVariable !== null &&
-            whenVariable !== undefined
-          ) {
+          if (whenType !== null && whenVariable !== null) {
             // Type matching case: "when Type variable"
             // Create a value node that represents the type matching
             caseChildren.push({
@@ -2309,6 +2303,7 @@ export class ApexParser {
   /**
    * Parse try statement.
    * @returns The parsed try statement parse tree node.
+   * @throws {Error} If the try statement is malformed or unexpected tokens are encountered.
    */
   private parseTryStatement(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -2723,6 +2718,7 @@ export class ApexParser {
   /**
    * Parse expression.
    * @returns The parsed expression parse tree node, or null if parsing fails.
+   * @throws {Error} If the expression is malformed or unexpected tokens are encountered.
    */
   private parseExpression(): ParseTreeNode | null {
     return this.parseAssignment();
@@ -3016,11 +3012,11 @@ export class ApexParser {
     while (this.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)) {
       const operator = this.previous();
       const right = this.parseUnary();
-      if (right != null) {
+      if (right != null && expr != null) {
         expr = {
-          children: expr !== null ? [expr, right] : [right],
+          children: [expr, right],
           location:
-            expr?.location != null && right.location != null
+            expr.location != null && right.location != null
               ? this.combineLocations(expr.location, right.location)
               : (right.location ??
                 ((): SourceRange => {
@@ -3208,6 +3204,8 @@ export class ApexParser {
 
   /**
    * Parse primary expression.
+   * @returns The parsed primary expression parse tree node, or null if parsing fails.
+   * @throws {Error} If the primary expression is malformed or unexpected tokens are encountered.
    */
   private parsePrimary(): ParseTreeNode | null {
     if (this.match(TokenType.BOOLEAN_LITERAL, TokenType.TRUE, TokenType.FALSE)) {
@@ -3467,7 +3465,7 @@ export class ApexParser {
               },
             ],
             location: this.combineLocations(
-              expr.location ?? this.locationToRange(token.location),
+              expr.location ?? this.getLocation(this.current - 1, this.current),
               this.locationToRange(triggerVar.location)
             ),
             type: 'field_access_expression',
@@ -3634,6 +3632,8 @@ export class ApexParser {
 
   /**
    * Parse SOQL/SOSL query.
+   * @returns The parsed SOQL/SOSL query parse tree node.
+   * @throws {Error} If the query is malformed or unexpected tokens are encountered.
    */
   private parseSoqlSoslQuery(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -3714,6 +3714,8 @@ export class ApexParser {
 
   /**
    * Parse new expression.
+   * @returns The parsed new expression parse tree node.
+   * @throws {Error} If the new expression is malformed or unexpected tokens are encountered.
    */
   private parseNewExpression(): ParseTreeNode {
     const start = this.current - this.singleIndexOffset;
@@ -3985,13 +3987,8 @@ export class ApexParser {
         const lastNonEofToken = this.tokens[this.tokens.length - secondToLastTokenIndex];
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- lastNonEofToken can be undefined
         if (lastNonEofToken !== null && lastNonEofToken !== undefined) {
-          const defaultTextLength = 0;
           endLocation = {
-            column:
-              lastNonEofToken.location.column +
-              (lastNonEofToken.text !== null && lastNonEofToken.text !== undefined
-                ? lastNonEofToken.text.length
-                : defaultTextLength),
+            column: lastNonEofToken.location.column + lastNonEofToken.text.length,
             line: lastNonEofToken.location.line,
           };
         }
