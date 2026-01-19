@@ -1,5 +1,5 @@
 /**
- * Tests for statement translation
+ * @file Unit tests for statement translation.
  * Ported from com.google.summit.translation.StatementTest.
  */
 
@@ -40,7 +40,8 @@ import type { TypeRef } from '../../src/ast/Type.js';
 describe('Statement Translation', () => {
   /**
    * Concatenates the string into a method body and returns the AST.
-   * @param statement
+   * @param statement - The Apex statement source to embed in a method body.
+   * @returns The translated AST for the generated class.
    */
   function parseApexStatementInCode(statement: string): ASTNode {
     return parseAndTranslate(
@@ -56,7 +57,8 @@ describe('Statement Translation', () => {
 
   /**
    * Helper to convert TypeRef to code string (equivalent to summit-ast asCodeString()).
-   * @param typeRef
+   * @param typeRef - The type reference to convert.
+   * @returns The Apex code string for the type reference.
    */
   function typeRefToCodeString(typeRef: TypeRef): string {
     if (typeRef.components.length === 0) return 'void';

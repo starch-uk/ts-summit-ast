@@ -1,5 +1,5 @@
 /**
- * Tests for base AST types and node creation.
+ * @file Unit tests for base AST types and node creation.
  */
 
 import type { ASTNode, SourceLocation, SourceRange } from '../../src/ast/base.js';

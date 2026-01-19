@@ -449,8 +449,8 @@ export class JsonSerializer {
   }
 
   /**
-   * TypeRef serialization (TypeRef is an AST node in summit-ast).
-   * @param typeRef - The TypeRef node to serialize.
+   * Serializes a TypeRef node to JSON (TypeRef is an AST node in summit-ast).
+   * @param typeRef - The type reference node to serialize.
    * @returns The serialized TypeRef JSON representation.
    */
   private serializeTypeRef(typeRef: Readonly<TypeRef>): unknown {

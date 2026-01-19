@@ -1,5 +1,5 @@
 /**
- * Tests for ApexDoc parser utilities.
+ * @file Unit tests for utilities (ApexDoc parsing, source extraction, traversal, node-finder, and rule-matching).
  */
 
 import {
@@ -977,26 +977,27 @@ public class Test {}`;
 });
 
 /**
- * Tests for DFS walker/traversal
- * Ported from com.google.summit.ast.traversal.DfsWalkerTest
+ * Tests for DFS walker/traversal.
+ * Ported from com.google.summit.ast.traversal.DfsWalkerTest.
  * Enhanced version of traversal.test.ts.
  */
 
 /**
- * Create a test AST structure for traversal tests
+ * Create a test AST structure for traversal tests.
  * Structure (matching original Kotlin FakeAst):
- *   NODE_0 (root Block)
- *     NODE_1 (Block with IfStatement)
- *       NODE_3 (Identifier in IfStatement)
- *     NODE_2 (IfStatement)
- *       NODE_4 (Identifier in IfStatement).
+ * NODE_0 (root Block)
+ * NODE_1 (Block with IfStatement)
+ * NODE_3 (Identifier in IfStatement)
+ * NODE_2 (IfStatement)
+ * NODE_4 (Identifier in IfStatement).
  *
  * Original Kotlin structure:
- *   NODE_0 (FakeNode with [NODE_1, NODE_2])
- *     NODE_1 (FakeNodeTypeA with [NODE_3])
- *       NODE_3 (FakeNodeTypeB)
- *     NODE_2 (FakeNodeTypeB with [NODE_4])
- *       NODE_4 (FakeNodeTypeB).
+ * NODE_0 (FakeNode with [NODE_1, NODE_2])
+ * NODE_1 (FakeNodeTypeA with [NODE_3])
+ * NODE_3 (FakeNodeTypeB)
+ * NODE_2 (FakeNodeTypeB with [NODE_4])
+ * NODE_4 (FakeNodeTypeB).
+ * @returns A test AST root node.
  */
 function createTestAST(): ASTNode {
   // NODE_3: Identifier
@@ -1015,7 +1016,9 @@ function createTestAST(): ASTNode {
 }
 
 /**
- * @param node
+ * Convert a node to a stable ID used by traversal assertions.
+ * @param node - The AST node to identify.
+ * @returns A stable node identifier string.
  */
 function nodeToId(node: ASTNode): string {
   // NODE_0: Root Block with 2 statements (NODE_1 and NODE_2)
@@ -1058,7 +1061,9 @@ function nodeToId(node: ASTNode): string {
 }
 
 /**
- * @param node
+ * Checks whether the node corresponds to NODE_2 in the test tree.
+ * @param node - The AST node to check.
+ * @returns True if the node is NODE_2.
  */
 function nodeIdIs2(node: ASTNode): boolean {
   // NODE_2 is the IfStatement containing NODE_4
@@ -1070,7 +1075,9 @@ function nodeIdIs2(node: ASTNode): boolean {
 }
 
 /**
- * @param node
+ * Checks whether the node corresponds to NODE_1 in the test tree.
+ * @param node - The AST node to check.
+ * @returns True if the node is NODE_1.
  */
 function nodeIdIs1(node: ASTNode): boolean {
   // NODE_1 is the Block containing an IfStatement with NODE_3
@@ -1086,7 +1093,9 @@ function nodeIdIs1(node: ASTNode): boolean {
 }
 
 /**
- * @param node
+ * Checks whether the node corresponds to an even-numbered node ID in the test tree.
+ * @param node - The AST node to check.
+ * @returns True if the node ID is one of NODE_0, NODE_2, or NODE_4.
  */
 function nodeIdIsEven(node: ASTNode): boolean {
   const id = nodeToId(node);

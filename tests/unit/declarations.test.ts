@@ -1,5 +1,5 @@
 /**
- * Tests for class declaration translation
+ * @file Unit tests for declaration translation (classes, interfaces, enums, methods, modifiers).
  * Ported from com.google.summit.translation.ClassDeclarationTest.
  */
 
@@ -33,7 +33,8 @@ import { getNodeChildren } from '../../src/utils/traversal.js';
 
 /**
  * Helper function to convert TypeRef to code string (equivalent to asCodeString in Kotlin).
- * @param typeRef
+ * @param typeRef - The type reference to convert.
+ * @returns The Apex code string for the type reference.
  */
 function typeRefToCodeString(typeRef: TypeRef): string {
   if (!typeRef.components || typeRef.components.length === 0) {
@@ -54,7 +55,8 @@ function typeRefToCodeString(typeRef: TypeRef): string {
 
 /**
  * Helper function to check if a TypeRef is void.
- * @param typeRef
+ * @param typeRef - The type reference to check.
+ * @returns True if the type reference represents void.
  */
 function isVoidType(typeRef: TypeRef | undefined): boolean {
   if (!typeRef) return false;
@@ -65,8 +67,9 @@ function isVoidType(typeRef: TypeRef | undefined): boolean {
  * Helper function to get qualified name for a declaration.
  * For fields: "ClassName.fieldName"
  * For inner types: "OuterClass.InnerClass".
- * @param decl
- * @param enclosingClassName
+ * @param decl - The class member declaration.
+ * @param enclosingClassName - The enclosing class name (if any).
+ * @returns A fully-qualified member name string.
  */
 function getQualifiedName(decl: ClassMember, enclosingClassName?: string): string {
   if (enclosingClassName) {
@@ -78,7 +81,8 @@ function getQualifiedName(decl: ClassMember, enclosingClassName?: string): strin
 /**
  * Helper function to check if a method is an anonymous initialization block.
  * In summit-ast, these are methods named "_init" with no parameters and void return.
- * @param method
+ * @param method - The method declaration to check.
+ * @returns True if the method is an anonymous initialization block.
  */
 function isAnonymousInitializationCode(method: MethodDeclaration): boolean {
   return method.name === '_init' && method.parameters.length === 0 && isVoidType(method.returnType);
@@ -86,8 +90,9 @@ function isAnonymousInitializationCode(method: MethodDeclaration): boolean {
 
 /**
  * Helper function to check if a modifier has a specific keyword.
- * @param modifiers
- * @param keyword
+ * @param modifiers - The list of modifiers to search.
+ * @param keyword - The keyword to check for (e.g., 'public', 'static').
+ * @returns True if any modifier matches the keyword.
  */
 function hasKeyword(modifiers: any[], keyword: string): boolean {
   return modifiers.some((m) => m.kind === 'Modifier' && m.keyword === keyword);
@@ -1034,7 +1039,8 @@ describe('Modifier Translation', () => {
   /**
    * Finds an annotation on a class declaration by name.
    * @param cu - Compilation unit.
-   * @param name - Annotation name.
+   * @param name - The annotation identifier to look for.
+   * @returns The matching annotation, or null if not found.
    */
   function findAnnotationOnClass(cu: ASTNode, name: string): Annotation | null {
     const classDecl = findFirstNodeOfType(cu, isClassDeclaration);

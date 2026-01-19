@@ -1,5 +1,5 @@
 /**
- * Tests for visitor pattern.
+ * @file Unit tests for visitor pattern.
  */
 
 import { DefaultVisitor, type ASTVisitor } from '../../src/ast/base.js';

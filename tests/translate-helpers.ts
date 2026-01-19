@@ -1,5 +1,5 @@
 /**
- * Test helpers for parsing and translating Apex code
+ * @file Test helpers for parsing and translating Apex code.
  * Ported from com.google.summit.testing.TranslateHelpers.
  */
 
@@ -13,6 +13,7 @@ import type { ASTWalkVisitor } from '../src/utils/traversal.js';
  * Parses and translates a source code input string.
  * @param input - The source code to parse and translate.
  * @returns The translated AST node.
+ * @throws {Error} If parsing fails or translation returns errors or no AST.
  */
 export function parseAndTranslate(input: string): ASTNode {
   const parseTree = parseApexSource(input);
@@ -42,6 +43,7 @@ export function parseAndTranslate(input: string): ASTNode {
 /**
  * Finds and returns the first AST node of a type in the given AST.
  * The AST is searched in depth-first pre-order.
+ * @template T - The desired AST node type.
  * @param root - The AST to search.
  * @param predicate - Function to check if a node matches the desired type.
  * @returns The first instance matching the predicate or null if none.
@@ -70,6 +72,7 @@ export function findFirstNodeOfType<T extends ASTNode>(
  * Asserts that the AST has no node matching the predicate.
  * @param root - The AST to search.
  * @param predicate - Function to check if a node matches the type to assert non-presence.
+ * @throws {Error} If a matching node is found.
  */
 export function assertNoNodeOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): void {
   const found = findFirstNodeOfType(root, predicate as (node: ASTNode) => node is ASTNode);
@@ -106,6 +109,7 @@ export function countNodesOfType(root: ASTNode, predicate: (node: ASTNode) => bo
  * Asserts that the AST has no untranslated nodes.
  * Note: This assumes untranslated nodes have a specific kind or property.
  * @param root - The AST to search.
+ * @throws {Error} If any untranslated nodes are found.
  */
 export function assertFullyTranslated(root: ASTNode): void {
   // In the original, this checks for Untranslated nodes

@@ -1,5 +1,5 @@
 /**
- * Integration tests for complex Apex code parsing.
+ * @file Integration tests for complex Apex code parsing.
  * Tests end-to-end parsing scenarios with complex Apex constructs.
  */
 

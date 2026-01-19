@@ -452,11 +452,11 @@ function parseContent(
 }
 
 /**
- * Parse an inline tag.
+ * Parses an inline ApexDoc tag.
  * @param tagName - The inline tag name (e.g., "code", "link").
- * @param content - The tag content.
- * @param location - Optional source location.
- * @param options - Parsing options.
+ * @param content - The raw inline tag content.
+ * @param location - Optional source location range for the tag.
+ * @param options - Parser options controlling inline parsing behavior.
  * @returns The parsed inline tag, or null if parsing fails.
  */
 // eslint-disable-next-line @typescript-eslint/max-params -- Inline tag parsing requires 4 parameters

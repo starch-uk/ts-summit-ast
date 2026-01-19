@@ -682,7 +682,7 @@ export class NodeFactory {
 
   /**
    * Creates an expression element value.
-   * @param value - The expression value.
+   * @param value - The expression AST node to wrap as an element value.
    * @param options - Optional factory options.
    * @returns The created expression element value.
    */
@@ -823,7 +823,7 @@ export class NodeFactory {
 
   /**
    * Creates a string literal value.
-   * @param value - The string value.
+   * @param value - The string value for the literal node.
    * @param raw - The raw string value as it appeared in source.
    * @param options - Optional factory options.
    * @returns The created string literal value.
@@ -836,6 +836,13 @@ export class NodeFactory {
     return LiteralFactory.createStringVal(value, raw, options);
   }
 
+  /**
+   * Creates an integer literal value.
+   * @param value - The integer value for the literal node.
+   * @param raw - The raw numeric literal text as it appeared in source.
+   * @param options - Optional factory options.
+   * @returns The created integer literal value.
+   */
   public static createIntegerVal(
     value: number,
     raw?: string,
@@ -844,6 +851,13 @@ export class NodeFactory {
     return LiteralFactory.createIntegerVal(value, raw, options);
   }
 
+  /**
+   * Creates a double literal value.
+   * @param value - The double value for the literal node.
+   * @param raw - The raw numeric literal text as it appeared in source.
+   * @param options - Optional factory options.
+   * @returns The created double literal value.
+   */
   public static createDoubleVal(
     value: number,
     raw?: string,
@@ -852,10 +866,24 @@ export class NodeFactory {
     return LiteralFactory.createDoubleVal(value, raw, options);
   }
 
+  /**
+   * Creates a long literal value.
+   * @param value - The long value for the literal node.
+   * @param raw - The raw numeric literal text as it appeared in source.
+   * @param options - Optional factory options.
+   * @returns The created long literal value.
+   */
   public static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
     return LiteralFactory.createLongVal(value, raw, options);
   }
 
+  /**
+   * Creates a decimal literal value.
+   * @param value - The decimal value for the literal node.
+   * @param raw - The raw numeric literal text as it appeared in source.
+   * @param options - Optional factory options.
+   * @returns The created decimal literal value.
+   */
   public static createDecimalVal(
     value: number,
     raw?: string,
@@ -864,6 +892,12 @@ export class NodeFactory {
     return LiteralFactory.createDecimalVal(value, raw, options);
   }
 
+  /**
+   * Creates a boolean literal value.
+   * @param value - The boolean value for the literal node.
+   * @param options - Optional factory options.
+   * @returns The created boolean literal value.
+   */
   public static createBooleanVal(
     value: boolean,
     options?: Readonly<NodeFactoryOptions>
@@ -871,14 +905,21 @@ export class NodeFactory {
     return LiteralFactory.createBooleanVal(value, options);
   }
 
+  /**
+   * Creates a null literal value.
+   * @param options - Optional factory options.
+   * @returns The created null literal value.
+   */
   public static createNullVal(options?: Readonly<NodeFactoryOptions>): NullVal {
     return LiteralFactory.createNullVal(options);
   }
 
   /**
-   * @param value
-   * @param raw
-   * @param options
+   * Creates a string literal value.
+   * @param value - The string value for the literal node.
+   * @param raw - The raw string value as it appeared in source.
+   * @param options - Optional factory options.
+   * @returns The created string literal value.
    * @deprecated Use createStringVal instead.
    */
   public static createStringLiteral(
@@ -890,9 +931,11 @@ export class NodeFactory {
   }
 
   /**
-   * @param value
-   * @param raw
-   * @param options
+   * Creates a numeric literal value.
+   * @param value - The numeric value for the literal node.
+   * @param raw - The raw numeric literal text as it appeared in source.
+   * @param options - Optional factory options.
+   * @returns The created numeric literal value.
    * @deprecated Use createIntegerVal, createDoubleVal, createLongVal, or createDecimalVal instead.
    */
   public static createNumberLiteral(
@@ -904,8 +947,10 @@ export class NodeFactory {
   }
 
   /**
-   * @param value
-   * @param options
+   * Creates a boolean literal value.
+   * @param value - The boolean value for the literal node.
+   * @param options - Optional factory options.
+   * @returns The created boolean literal value.
    * @deprecated Use createBooleanVal instead.
    */
   public static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
@@ -913,7 +958,9 @@ export class NodeFactory {
   }
 
   /**
-   * @param options
+   * Creates a null literal value.
+   * @param options - Optional factory options.
+   * @returns The created null literal value.
    * @deprecated Use createNullVal instead.
    */
   public static createNullLiteral(options?: Readonly<NodeFactoryOptions>): NullVal {
@@ -921,11 +968,12 @@ export class NodeFactory {
   }
 
   /**
-   * TypeRef creation helpers.
+   * Creates a complex type reference.
    * In summit-ast, TypeRef extends Node(), so it IS an AST node.
-   * @param components
-   * @param arrayNesting
-   * @param options
+   * @param components - The list of identifier components and their type arguments.
+   * @param arrayNesting - The array nesting level (0 for non-array).
+   * @param options - Optional factory options.
+   * @returns The created type reference.
    */
   public static createTypeRef(
     components: readonly { id: Identifier; args?: TypeRef[] }[],
@@ -967,12 +1015,13 @@ export class NodeFactory {
   }
 
   /**
-   * Declaration factories.
-   * @param name
-   * @param type
-   * @param initializer
-   * @param modifiers
-   * @param options
+   * Creates a variable declaration.
+   * @param name - The identifier name for the variable.
+   * @param type - The declared type of the variable.
+   * @param initializer - The optional initializer expression.
+   * @param modifiers - Optional modifiers (e.g., 'final', 'static').
+   * @param options - Optional factory options.
+   * @returns The created variable declaration.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Variable declaration requires 5 parameters
   public static createVariableDeclaration(

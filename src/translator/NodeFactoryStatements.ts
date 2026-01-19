@@ -56,10 +56,10 @@ export class StatementFactory {
 
   /**
    * Creates a for loop statement.
-   * @param body - The body statement of the for loop.
-   * @param init - The initialization statement.
-   * @param condition - The loop condition expression.
-   * @param update - The update expression.
+   * @param body - The statement executed for each iteration.
+   * @param init - The optional initialization statement.
+   * @param condition - The optional loop condition expression.
+   * @param update - The optional update expression executed after each iteration.
    * @param options - Optional factory options.
    * @returns The created for loop statement.
    */
@@ -82,8 +82,8 @@ export class StatementFactory {
 
   /**
    * Creates a while loop statement.
-   * @param condition - The loop condition expression.
-   * @param body - The body statement of the while loop.
+   * @param condition - The boolean expression evaluated before each iteration.
+   * @param body - The statement executed for each iteration.
    * @param options - Optional factory options.
    * @returns The created while loop statement.
    */
@@ -102,10 +102,10 @@ export class StatementFactory {
 
   /**
    * Creates a for loop statement.
-   * @param body - The body statement of the for loop.
-   * @param init - The initialization statement.
-   * @param condition - The loop condition expression.
-   * @param update - The update expression.
+   * @param body - The statement executed for each iteration.
+   * @param init - The optional initialization statement.
+   * @param condition - The optional loop condition expression.
+   * @param update - The optional update expression executed after each iteration.
    * @param options - Optional factory options.
    * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
@@ -122,8 +122,8 @@ export class StatementFactory {
 
   /**
    * Creates a while loop statement.
-   * @param condition - The loop condition expression.
-   * @param body - The body statement of the while loop.
+   * @param condition - The boolean expression evaluated before each iteration.
+   * @param body - The statement executed for each iteration.
    * @param options - Optional factory options.
    * @returns The created while loop statement.
    * @deprecated Use createWhileLoopStatement instead.
@@ -155,7 +155,7 @@ export class StatementFactory {
 
   /**
    * Creates a compound statement (block).
-   * @param statements - The statements in the compound statement.
+   * @param statements - The list of statements to include in the block.
    * @param options - Optional factory options.
    * @returns The created compound statement.
    */
@@ -172,7 +172,7 @@ export class StatementFactory {
 
   /**
    * Creates a block statement.
-   * @param statements - The statements in the block.
+   * @param statements - The list of statements to include in the block.
    * @param options - Optional factory options.
    * @returns The created compound statement.
    * @deprecated Use createCompoundStatement instead.
@@ -186,7 +186,7 @@ export class StatementFactory {
 
   /**
    * Creates an expression statement.
-   * @param expression - The expression.
+   * @param expression - The expression to wrap as a statement.
    * @param options - Optional factory options.
    * @returns The created expression statement.
    */
@@ -203,7 +203,7 @@ export class StatementFactory {
 
   /**
    * Creates a variable declaration statement.
-   * @param declaration - The variable declaration.
+   * @param declaration - The variable declaration to wrap as a statement.
    * @param options - Optional factory options.
    * @returns The created variable declaration statement.
    */
@@ -220,9 +220,9 @@ export class StatementFactory {
 
   /**
    * Creates an enhanced for loop statement.
-   * @param variable - The loop variable declaration.
-   * @param iterable - The iterable expression.
-   * @param body - The body statement of the enhanced for loop.
+   * @param variable - The loop iteration variable declaration.
+   * @param iterable - The expression producing the collection to iterate over.
+   * @param body - The statement executed for each iteration.
    * @param options - Optional factory options.
    * @returns The created enhanced for loop statement.
    */
@@ -243,8 +243,8 @@ export class StatementFactory {
 
   /**
    * Creates a do-while loop statement.
-   * @param body - The body statement of the do-while loop.
-   * @param condition - The loop condition expression.
+   * @param body - The statement executed before checking the condition.
+   * @param condition - The boolean expression evaluated after each iteration.
    * @param options - Optional factory options.
    * @returns The created do-while loop statement.
    */
@@ -263,9 +263,9 @@ export class StatementFactory {
 
   /**
    * Creates a for-each loop statement.
-   * @param variable - The loop variable declaration.
-   * @param iterable - The iterable expression.
-   * @param body - The body statement of the for-each loop.
+   * @param variable - The loop iteration variable declaration.
+   * @param iterable - The expression producing the collection to iterate over.
+   * @param body - The statement executed for each iteration.
    * @param options - Optional factory options.
    * @returns The created enhanced for loop statement.
    * @deprecated Use createEnhancedForLoopStatement instead.
@@ -281,8 +281,8 @@ export class StatementFactory {
 
   /**
    * Creates a do-while loop statement.
-   * @param body - The body statement of the do-while loop.
-   * @param condition - The loop condition expression.
+   * @param body - The statement executed before checking the condition.
+   * @param condition - The boolean expression evaluated after each iteration.
    * @param options - Optional factory options.
    * @returns The created do-while loop statement.
    * @deprecated Use createDoWhileLoopStatement instead.
@@ -297,8 +297,8 @@ export class StatementFactory {
 
   /**
    * Creates a switch statement.
-   * @param expression - The switch expression.
-   * @param cases - The switch cases.
+   * @param expression - The expression to switch on.
+   * @param cases - The list of switch cases.
    * @param defaultCase - The default case, if any.
    * @param options - Optional factory options.
    * @returns The created switch statement.
@@ -321,9 +321,9 @@ export class StatementFactory {
 
   /**
    * Creates a try statement.
-   * @param tryBlock - The try block statement.
-   * @param catchClauses - The catch clauses.
-   * @param finallyBlock - The finally block statement, if any.
+   * @param tryBlock - The compound statement to execute in the try block.
+   * @param catchClauses - The list of catch clause handlers.
+   * @param finallyBlock - The compound statement to execute in the finally block, if any.
    * @param options - Optional factory options.
    * @returns The created try statement.
    */
@@ -375,7 +375,7 @@ export class StatementFactory {
 
   /**
    * Creates a throw statement.
-   * @param expression - The expression to throw.
+   * @param expression - The expression value to throw.
    * @param options - Optional factory options.
    * @returns The created throw statement.
    */

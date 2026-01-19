@@ -312,7 +312,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an IfStatement.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized IfStatement node.
    */
   private deserializeIfStatement(
@@ -341,7 +341,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a ForLoopStatement.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized ForLoopStatement node.
    */
   private deserializeForLoopStatement(
@@ -382,7 +382,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a WhileLoopStatement.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized WhileLoopStatement node.
    */
   private deserializeWhileLoopStatement(
@@ -401,7 +401,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a ReturnStatement.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized ReturnStatement node.
    */
   private deserializeReturnStatement(
@@ -421,7 +421,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a CompoundStatement.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized CompoundStatement node.
    */
   private deserializeCompoundStatement(
@@ -443,7 +443,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an ExpressionStatement.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized ExpressionStatement node.
    */
   private deserializeExpressionStatement(
@@ -458,7 +458,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a VariableDeclarationStatement.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized VariableDeclarationStatement node.
    */
   private deserializeVariableDeclarationStatement(
@@ -482,7 +482,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a BinaryExpression.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized BinaryExpression node.
    */
   private deserializeBinaryExpression(
@@ -510,7 +510,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a CallExpression.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized CallExpression node.
    */
   private deserializeCallExpression(
@@ -554,7 +554,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a FieldExpression.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized FieldExpression node.
    */
   private deserializeFieldExpression(
@@ -576,7 +576,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an ArrayExpression.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized ArrayExpression node.
    */
   private deserializeArrayExpression(
@@ -595,7 +595,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an AssignExpression.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized AssignExpression node.
    */
   private deserializeAssignExpression(
@@ -623,7 +623,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a VariableExpression.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized VariableExpression node.
    */
   private deserializeVariableExpression(
@@ -638,7 +638,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an Identifier node.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized Identifier node.
    */
   private deserializeIdentifier(
@@ -656,7 +656,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a StringVal literal.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized StringVal node.
    */
   private deserializeStringVal(
@@ -675,7 +675,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an IntegerVal literal.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized IntegerVal node.
    */
   private deserializeIntegerVal(
@@ -694,7 +694,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a DoubleVal literal.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized DoubleVal node.
    */
   private deserializeDoubleVal(
@@ -713,7 +713,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a LongVal literal.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized LongVal node.
    */
   private deserializeLongVal(
@@ -732,7 +732,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a DecimalVal literal.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized DecimalVal node.
    */
   private deserializeDecimalVal(
@@ -751,7 +751,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a BooleanVal literal.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized BooleanVal node.
    */
   private deserializeBooleanVal(
@@ -776,7 +776,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a TypeRef node.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized TypeRef node.
    */
   private deserializeTypeRefNode(
@@ -808,7 +808,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a NewExpression initializer.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @param locationOption.location - The source location for the node.
    * @returns The deserialized NewExpression node.
    */
@@ -825,7 +825,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a ConstructorInitializer from JSON.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized ConstructorInitializer node.
    */
   private deserializeConstructorInitializer(
@@ -847,7 +847,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a ValuesInitializer from JSON.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized ValuesInitializer node.
    */
   private deserializeValuesInitializer(
@@ -869,7 +869,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a SizedArrayInitializer from JSON.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized SizedArrayInitializer node.
    */
   private deserializeSizedArrayInitializer(
@@ -886,7 +886,7 @@ export class JsonDeserializer {
   /**
    * Deserializes a MapInitializer from JSON.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @returns The deserialized MapInitializer node.
    */
   private deserializeMapInitializer(
@@ -915,7 +915,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an ExpressionElementValue.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @param locationOption.location - The source location for the node.
    * @returns The deserialized ExpressionElementValue node.
    */
@@ -930,7 +930,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an AnnotationElementValue.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @param locationOption.location - The source location for the node.
    * @returns The deserialized AnnotationElementValue node.
    */
@@ -949,7 +949,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an ArrayElementValue.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @param locationOption.location - The source location for the node.
    * @returns The deserialized ArrayElementValue node.
    */
@@ -970,7 +970,7 @@ export class JsonDeserializer {
   /**
    * Deserializes an AnnotationArgument.
    * @param json - The JSON object to deserialize.
-   * @param locationOption - Optional location information.
+   * @param locationOption - Optional source location data for the deserialized node.
    * @param locationOption.location - The source location for the node.
    * @returns The deserialized AnnotationArgument node.
    */

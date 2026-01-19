@@ -1,5 +1,5 @@
 /**
- * Integration tests for error recovery and partial parsing.
+ * @file Integration tests for error recovery and partial parsing.
  * Tests how the parser handles malformed or invalid Apex code.
  */
 

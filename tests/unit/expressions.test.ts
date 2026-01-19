@@ -1,5 +1,5 @@
 /**
- * Tests for compilation unit translation
+ * @file Unit tests for compilation unit and expression translation.
  * Ported from com.google.summit.translation.CompilationUnitTest.
  */
 
@@ -45,7 +45,8 @@ import { getNodeChildren, getParentNode } from '../../src/utils/traversal.js';
 /**
  * Helper function to convert TypeRef to type-erased string (equivalent to asTypeErasedString in Kotlin).
  * This removes generic type arguments but keeps array nesting.
- * @param typeRef
+ * @param typeRef - The type reference to convert.
+ * @returns The type-erased Apex code string for the type reference.
  */
 function typeRefToTypeErasedString(typeRef: TypeRef): string {
   if (typeRef.components.length === 0) {
@@ -207,7 +208,8 @@ describe('TypeRef Translation', () => {
 describe('Expression Translation', () => {
   /**
    * Concatenates the string in a field initializer context and returns the AST.
-   * @param expression
+   * @param expression - The Apex expression source to embed in a field initializer.
+   * @returns The translated AST for the generated class.
    */
   function parseApexExpressionInCode(expression: string): ASTNode {
     return parseAndTranslate(
@@ -601,7 +603,8 @@ describe('Expression Translation', () => {
 describe('SOQL and SOSL Translation', () => {
   /**
    * Concatenates the string in a field initializer context and returns the AST.
-   * @param soql
+   * @param soql - The SOQL/SOSL query body (without surrounding brackets).
+   * @returns The translated AST for the generated class.
    */
   function parseSoqlOrSoslInCode(soql: string): ASTNode {
     return parseAndTranslate(
@@ -717,7 +720,8 @@ describe('SOQL and SOSL Translation', () => {
 describe('Literal Expression Translation', () => {
   /**
    * Concatenates the string in a field initializer context and returns the AST.
-   * @param expression
+   * @param expression - The Apex expression source to embed in a field initializer.
+   * @returns The Apex source code for a compilation unit containing the expression.
    */
   function createCompilationUnitCodeUsingExpression(expression: string): string {
     return `
@@ -888,7 +892,8 @@ import type { NewExpression } from '../../src/ast/Expression.js';
 describe('Initializer Translation', () => {
   /**
    * Concatenates the expression as a field initializer and returns the NewExpression.
-   * @param expression
+   * @param expression - The Apex expression source to embed as a field initializer.
+   * @returns The translated NewExpression node, or null if not found.
    */
   function parseNewExpressionInCode(expression: string): NewExpression | null {
     return findFirstNodeOfType(

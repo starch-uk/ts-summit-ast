@@ -1,5 +1,5 @@
 /**
- * Tests for AST validation utilities.
+ * @file Unit tests for AST validation utilities.
  */
 
 import { validateAST, compareASTs, getASTStatistics } from '../../src/utils/ast-validation.js';

@@ -3648,7 +3648,7 @@ export class ApexParser {
   }
 
   /**
-   * Parse SOQL/SOSL query.
+   * Parses a bracketed SOQL/SOSL query (e.g., `[SELECT ...]`) into a parse tree node.
    * @returns The parsed SOQL/SOSL query parse tree node.
    * @throws {Error} If the query is malformed or unexpected tokens are encountered.
    */

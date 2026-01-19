@@ -733,7 +733,7 @@ export function extractComments(
  * @param _source - The source code string (unused).
  * @param startLine - The starting line number.
  * @param startColumn - The starting column number.
- * @param commentText - The comment text.
+ * @param commentText - The full comment text (may span multiple lines).
  * @returns The source range for the comment.
  */
 function calculateCommentLocation(

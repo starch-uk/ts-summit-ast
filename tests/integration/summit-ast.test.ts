@@ -1,5 +1,5 @@
 /**
- * Tests for SummitAST parsing functionality
+ * @file Integration tests for SummitAST parsing functionality.
  * Ported from com.google.summit.SummitASTTest.
  */
 

@@ -1,5 +1,5 @@
 /**
- * Comprehensive tests for NodeFactory.
+ * @file Comprehensive unit tests for NodeFactory.
  */
 
 import { NodeFactory } from '../../src/translator/NodeFactory.js';

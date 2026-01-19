@@ -1,5 +1,5 @@
 /**
- * Tests for JSON serialization and deserialization.
+ * @file Unit tests for JSON serialization and deserialization.
  * Ported from com.google.summit.serialization.SerializationTest.
  */
 

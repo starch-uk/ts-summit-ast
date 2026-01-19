@@ -1,5 +1,5 @@
 /**
- * Integration tests for AST translator.
+ * @file Integration tests for AST translator.
  */
 
 import { ASTTranslator } from '../../src/translator/ASTTranslator.js';
