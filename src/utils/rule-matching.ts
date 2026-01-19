@@ -1,54 +1,62 @@
 /**
- * Rule matching utilities for XPath-like pattern matching
- * 
+ * @file Rule matching utilities for XPath-like pattern matching.
+ *
  * Note: This is a simplified implementation. A full XPath implementation
  * would require a more sophisticated parser and matcher.
  */
+
+/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
 
 import type { ASTNode, SourceRange } from '../ast/base.js';
 import { walkAST, buildParentMap } from './traversal.js';
 import { getSourceRange } from './source-extraction.js';
 
 /**
- * XPath feature support information
+ * XPath feature support information.
  */
 export interface XPathFeatureSupport {
   /**
-   * Whether XPath 3.1 features are supported
+   * Whether XPath 3.1 features are supported.
    */
   readonly supportsXPath31: boolean;
+
   /**
-   * List of supported axes
+   * List of supported axes.
    */
   readonly supportedAxes: string[];
+
   /**
-   * List of supported functions
+   * List of supported functions.
    */
   readonly supportedFunctions: string[];
+
   /**
-   * List of unsupported features (if any)
+   * List of unsupported features (if any).
    */
   readonly unsupportedFeatures?: string[];
 }
 
 /**
- * Result of XPath validation
+ * Contains the result of validating an XPath expression, including whether it's valid and any errors found.
  */
 export interface XPathValidationResult {
   /**
-   * Whether the XPath expression is valid
+   * Whether the XPath expression is valid.
    */
   readonly valid: boolean;
+
   /**
-   * Error message if validation failed
+   * Error message if validation failed.
    */
   readonly error?: string;
+
   /**
-   * Supported features detected in the expression
+   * Supported features detected in the expression.
    */
   readonly supportedFeatures?: string[];
+
   /**
-   * Unsupported features detected in the expression
+   * Unsupported features detected in the expression.
    */
   readonly unsupportedFeatures?: string[];
 }
@@ -58,10 +66,8 @@ export interface XPathValidationResult {
  *
  * This function performs basic syntax validation to catch common errors
  * before attempting to evaluate the XPath expression against an AST.
- *
- * @param xpath - The XPath expression to validate
- * @returns Validation result indicating if the expression is valid
- *
+ * @param xpath - The XPath expression to validate.
+ * @returns Validation result indicating if the expression is valid.
  * @example
  * ```typescript
  * const validation = validateXPath('//VariableDeclaration[@name="test"]');
@@ -72,11 +78,12 @@ export interface XPathValidationResult {
  */
 export function validateXPath(xpath: string): XPathValidationResult {
   const normalizedXPath = xpath.trim();
+  const emptyArrayLength = 0;
 
   if (!normalizedXPath) {
     return {
-      valid: false,
       error: 'XPath expression cannot be empty',
+      valid: false,
     };
   }
 
@@ -117,14 +124,17 @@ export function validateXPath(xpath: string): XPathValidationResult {
   }
 
   // Basic syntax checks
-  const bracketCount = (normalizedXPath.match(/\[/g) || []).length;
-  const closeBracketCount = (normalizedXPath.match(/\]/g) || []).length;
+  const bracketCount = (normalizedXPath.match(/\[/g) ?? []).length;
+  const closeBracketCount = (normalizedXPath.match(/\]/g) ?? []).length;
   if (bracketCount !== closeBracketCount) {
+    const bracketCountStr = String(bracketCount);
+    const closeBracketCountStr = String(closeBracketCount);
     return {
-      valid: false,
-      error: `Mismatched brackets: ${bracketCount} opening brackets, ${closeBracketCount} closing brackets`,
+      error: `Mismatched brackets: ${bracketCountStr} opening brackets, ${closeBracketCountStr} closing brackets`,
       supportedFeatures,
-      unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
+      unsupportedFeatures:
+        unsupportedFeatures.length > emptyArrayLength ? unsupportedFeatures : undefined,
+      valid: false,
     };
   }
 
@@ -136,25 +146,29 @@ export function validateXPath(xpath: string): XPathValidationResult {
   // Check for invalid characters in node names
   if (/\/\/[^a-zA-Z*][^[\]]*\[/.test(normalizedXPath)) {
     return {
-      valid: false,
       error: 'Invalid node name in XPath expression',
       supportedFeatures,
-      unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
+      unsupportedFeatures:
+        unsupportedFeatures.length > emptyArrayLength ? unsupportedFeatures : undefined,
+      valid: false,
     };
   }
 
-  const valid = unsupportedFeatures.length === 0 && bracketCount === closeBracketCount;
+  const valid =
+    unsupportedFeatures.length === emptyArrayLength && bracketCount === closeBracketCount;
 
   return {
     valid,
     ...(valid
       ? {}
       : {
-          error: unsupportedFeatures.length > 0
-            ? `Unsupported XPath features: ${unsupportedFeatures.join(', ')}`
-            : 'Invalid XPath syntax',
+          error:
+            unsupportedFeatures.length > emptyArrayLength
+              ? `Unsupported XPath features: ${unsupportedFeatures.join(', ')}`
+              : 'Invalid XPath syntax',
         }),
-    supportedFeatures: supportedFeatures.length > 0 ? supportedFeatures : undefined,
+    supportedFeatures: supportedFeatures.length > emptyArrayLength ? supportedFeatures : undefined,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
     unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
   };
 }
@@ -164,9 +178,7 @@ export function validateXPath(xpath: string): XPathValidationResult {
  *
  * This function returns information about which XPath features,
  * axes, and functions are supported by the current implementation.
- *
- * @returns Feature support information
- *
+ * @returns Feature support information.
  * @example
  * ```typescript
  * const support = getXPathFeatureSupport();
@@ -201,15 +213,15 @@ export function getXPathFeatureSupport(): XPathFeatureSupport {
   ];
 
   return {
-    supportsXPath31: false,
     supportedAxes,
     supportedFunctions,
+    supportsXPath31: false,
     unsupportedFeatures,
   };
 }
 
 /**
- * Result of rule matching
+ * Result of rule matching.
  */
 export interface RuleMatchResult {
   readonly matches: boolean;
@@ -217,24 +229,39 @@ export interface RuleMatchResult {
   readonly matchDetails?: {
     readonly xpathExpression: string;
     readonly matchedPattern: string;
-    readonly capturedGroups?: Record<string, ASTNode>; // Named capture groups
+
+    /**
+     * Named capture groups.
+     */
+    readonly capturedGroups?: Record<string, ASTNode>;
   };
-  readonly confidence: 'exact' | 'partial' | 'none';
+  readonly confidence: 'exact' | 'none' | 'partial';
 }
 
 /**
- * Options for rule matching
+ * Options for rule matching.
  */
 export interface WouldTriggerRuleOptions {
-  readonly strict?: boolean; // Require exact match
-  readonly includeDescendants?: boolean; // Check descendant nodes
+  /**
+   * Require exact match.
+   */
+  readonly strict?: boolean;
+
+  /**
+   * Check descendant nodes.
+   */
+  readonly includeDescendants?: boolean;
 }
 
 /**
  * Check if an AST node matches a rule or pattern.
- * 
+ *
  * This is a simplified XPath matcher. Full XPath support would require
  * a more sophisticated implementation.
+ * @param node - The AST node to check.
+ * @param xpathExpression - The XPath expression to match against.
+ * @param options - Options for matching.
+ * @returns Rule match result indicating if the node matches.
  */
 export function wouldTriggerRule(
   node: ASTNode,
@@ -245,45 +272,48 @@ export function wouldTriggerRule(
 
   // Simplified XPath matching - supports basic patterns like:
   // - "//VariableDeclaration"
-  // - "//MethodCallExpression"
+  // - "//CallExpression"
   // - "//BinaryExpression[@operator='+']"
   // - "//*[kind='Identifier']"
 
   const normalizedXPath = xpathExpression.trim();
 
   // Check if it's a simple node type match
+  const doubleSlashLength = 2;
+  const firstIndex = 0;
   if (normalizedXPath.startsWith('//')) {
-    const nodeType = normalizedXPath.substring(2).split('[')[0].trim();
-    
+    const nodeType =
+      normalizedXPath.substring(doubleSlashLength).split('[')[firstIndex]?.trim() ?? '';
+
     if (node.kind === nodeType) {
       // Check for attribute filters like [@operator='+']
-      const attributeMatch = normalizedXPath.match(/\[@(\w+)='([^']+)'\]/);
+      const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
       if (attributeMatch) {
-        const attrName = attributeMatch[1];
-        const attrValue = attributeMatch[2];
-        const nodeValue = (node as any)[attrName];
+        const [, attrName, attrValue] = attributeMatch;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- Dynamic property access
+        const nodeValue = (node as unknown as Record<string, unknown>)[attrName ?? ''];
 
         if (nodeValue === attrValue) {
           return {
-            matches: true,
-            matchedNode: node,
-            matchDetails: {
-              xpathExpression,
-              matchedPattern: nodeType,
-            },
             confidence: 'exact',
+            matchDetails: {
+              matchedPattern: nodeType,
+              xpathExpression,
+            },
+            matchedNode: node,
+            matches: true,
           };
         }
       } else {
         // No attribute filter, just type match
         return {
-          matches: true,
-          matchedNode: node,
-          matchDetails: {
-            xpathExpression,
-            matchedPattern: nodeType,
-          },
           confidence: 'exact',
+          matchDetails: {
+            matchedPattern: nodeType,
+            xpathExpression,
+          },
+          matchedNode: node,
+          matches: true,
         };
       }
     }
@@ -291,43 +321,46 @@ export function wouldTriggerRule(
 
   // Check descendants if requested
   if (includeDescendants) {
-    let foundMatch: ASTNode | undefined;
+    let foundMatch: ASTNode | undefined = undefined;
 
     walkAST(node, {
-      enterNode: (child) => {
+      enterNode: (child): undefined => {
         if (child !== node) {
           const childResult = wouldTriggerRule(child, xpathExpression, {
-            strict,
             includeDescendants: false,
+            strict,
           });
-          if (childResult.matches && !foundMatch) {
+          if (childResult.matches && foundMatch === undefined) {
             foundMatch = child;
           }
         }
+        return undefined;
       },
     });
 
-    if (foundMatch) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type narrowing check
+    if (foundMatch !== undefined) {
+      const matchNode: ASTNode = foundMatch;
       return {
-        matches: true,
-        matchedNode: foundMatch,
-        matchDetails: {
-          xpathExpression,
-          matchedPattern: foundMatch.kind,
-        },
         confidence: 'partial',
+        matchDetails: {
+          matchedPattern: matchNode.kind,
+          xpathExpression,
+        },
+        matchedNode: matchNode,
+        matches: true,
       };
     }
   }
 
   return {
-    matches: false,
     confidence: 'none',
+    matches: false,
   };
 }
 
 /**
- * Rule match information
+ * Rule match information.
  */
 export interface RuleMatch {
   readonly node: ASTNode;
@@ -335,36 +368,45 @@ export interface RuleMatch {
   readonly matchDetails: {
     readonly matchedPattern: string;
     readonly capturedGroups?: Record<string, ASTNode>;
+
     /**
      * Reason why this node matched the XPath expression
-     * (e.g., "Node type matches", "Attribute filter matches")
+     * (e.g., "Node type matches", "Attribute filter matches").
      */
     readonly matchReason?: string;
+
     /**
-     * Attribute values that caused the match (for attribute filters)
+     * Attribute values that caused the match (for attribute filters).
      */
     readonly matchedAttributes?: Record<string, unknown>;
   };
   readonly location: SourceRange | null;
+
   /**
-   * Parent node context (when includeContext is true)
+   * Parent node context (when includeContext is true).
    */
   readonly parentNode?: ASTNode;
+
   /**
-   * Sibling nodes context (when includeContext is true)
+   * Sibling nodes context (when includeContext is true).
    */
   readonly siblingNodes?: ASTNode[];
 }
 
 /**
- * Options for finding rule matches
+ * Options for finding rule matches.
  */
 export interface FindRuleMatchesOptions {
   readonly maxResults?: number;
-  readonly includeNested?: boolean; // Include nested matches
+
+  /**
+   * Include nested matches.
+   */
+  readonly includeNested?: boolean;
+
   /**
    * Include context information (parent, siblings) in match results
-   * Default: false
+   * Default: false.
    */
   readonly includeContext?: boolean;
 }
@@ -375,15 +417,13 @@ export interface FindRuleMatchesOptions {
  * Returns detailed match information including which nodes matched,
  * match context (parent/child relationships), and attribute values
  * that caused the match.
- *
- * @param ast - The AST node to search in
- * @param xpathExpression - The XPath expression to match
- * @param options - Options for finding matches
- * @param options.maxResults - Maximum number of matches to return
- * @param options.includeNested - Include nested matches (default: true)
- * @param options.includeContext - Include parent/sibling context (default: false)
- * @returns Array of rule matches with detailed information
- *
+ * @param ast - The AST node to search in.
+ * @param xpathExpression - The XPath expression to match.
+ * @param options - Options for finding matches.
+ * @param options.maxResults - Maximum number of matches to return.
+ * @param options.includeNested - Include nested matches (default: true).
+ * @param options.includeContext - Include parent/sibling context (default: false).
+ * @returns Array of rule matches with detailed information.
  * @example
  * ```typescript
  * const matches = findRuleMatches(ast, "//BinaryExpression[@operator='+']", {
@@ -404,13 +444,14 @@ export function findRuleMatches(
 ): RuleMatch[] {
   const { maxResults, includeNested = true, includeContext = false } = options;
   const matches: RuleMatch[] = [];
-  
+
   // Build parent map if context is needed
   const parentMap = includeContext ? buildParentMap(ast) : undefined;
 
   walkAST(ast, {
-    enterNode: (node) => {
-      if (maxResults && matches.length >= maxResults) {
+    enterNode: (node): boolean | undefined => {
+      const zeroMaxResults = 0;
+      if (maxResults !== undefined && maxResults > zeroMaxResults && matches.length >= maxResults) {
         return false; // Stop traversing
       }
 
@@ -418,17 +459,20 @@ export function findRuleMatches(
         includeDescendants: false,
       });
 
-      if (result.matches && result.matchedNode) {
+      if (result.matches && result.matchedNode !== undefined) {
         const location = getSourceRange(result.matchedNode);
-        const matchedNode = result.matchedNode;
+        const { matchedNode } = result;
 
         // Extract match reason
-        let matchReason: string | undefined;
+        let matchReason: string | undefined = undefined;
         const normalizedXPath = xpathExpression.trim();
+        const doubleSlashLength = 2;
+        const firstIndex = 0;
         if (normalizedXPath.startsWith('//')) {
-          const nodeType = normalizedXPath.substring(2).split('[')[0].trim();
-          const attributeMatch = normalizedXPath.match(/\[@(\w+)='([^']+)'\]/);
-          if (attributeMatch) {
+          const nodeType =
+            normalizedXPath.substring(doubleSlashLength).split('[')[firstIndex]?.trim() ?? '';
+          const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
+          if (attributeMatch !== null) {
             matchReason = `Node type matches "${nodeType}" and attribute filter matches`;
           } else {
             matchReason = `Node type matches "${nodeType}"`;
@@ -436,54 +480,68 @@ export function findRuleMatches(
         }
 
         // Extract matched attributes
-        const matchedAttributes: Record<string, unknown> | undefined = (() => {
-          const attributeMatch = normalizedXPath.match(/\[@(\w+)='([^']+)'\]/);
-          if (attributeMatch && matchedNode) {
-            const attrName = attributeMatch[1];
-            const attrValue = (matchedNode as any)[attrName];
-            return attrValue !== undefined ? { [attrName]: attrValue } : undefined;
+        const matchedAttributes: Record<string, unknown> | undefined = (():
+          | Record<string, unknown>
+          | undefined => {
+          const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for attribute match
+          if (attributeMatch !== null && matchedNode !== undefined) {
+            const [, attrName] = attributeMatch;
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for attrName
+            if (attrName !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access
+              const attrValue = (matchedNode as unknown as Record<string, unknown>)[attrName];
+              return attrValue !== undefined ? { [attrName]: attrValue } : undefined;
+            }
           }
           return undefined;
         })();
 
         // Get parent and siblings if context is requested
-        const parentNode = includeContext && parentMap
-          ? (parentMap.get(matchedNode) ?? undefined)
-          : undefined;
+        const parentNode =
+          includeContext && parentMap ? (parentMap.get(matchedNode) ?? undefined) : undefined;
 
         // Build sibling nodes (children of parent, excluding self)
-        const siblingNodes: ASTNode[] | undefined = includeContext && parentNode
-          ? (() => {
-              const parentChildren = Object.values(parentNode)
-                .filter((v): v is ASTNode => v !== null && typeof v === 'object' && 'kind' in v)
-                .filter((n) => n !== matchedNode);
-              // Also check common child properties
-              const commonChildren: ASTNode[] = [];
-              if ((parentNode as any).statements) {
-                commonChildren.push(...((parentNode as any).statements as ASTNode[]));
-              }
-              if ((parentNode as any).members) {
-                commonChildren.push(...((parentNode as any).members as ASTNode[]));
-              }
-              if ((parentNode as any).arguments) {
-                commonChildren.push(...((parentNode as any).arguments as ASTNode[]));
-              }
-              return [...new Set([...parentChildren, ...commonChildren])].filter(
-                (n) => n !== matchedNode && n.location
-              );
-            })()
-          : undefined;
+        const siblingNodes: ASTNode[] | undefined =
+          includeContext && parentNode !== undefined
+            ? ((): ASTNode[] => {
+                const parentChildren = Object.values(parentNode)
+                  .filter((v): v is ASTNode => v !== null && typeof v === 'object' && 'kind' in v)
+                  .filter((n) => n !== matchedNode);
+                // Also check common child properties
+                const commonChildren: ASTNode[] = [];
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access
+                const parentRecord = parentNode as unknown as Record<string, unknown>;
+                if (Array.isArray(parentRecord.statements)) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
+                  commonChildren.push(...(parentRecord.statements as ASTNode[]));
+                }
+                if (Array.isArray(parentRecord.members)) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
+                  commonChildren.push(...(parentRecord.members as ASTNode[]));
+                }
+                if (Array.isArray(parentRecord.arguments)) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
+                  commonChildren.push(...(parentRecord.arguments as ASTNode[]));
+                }
+                return [...new Set([...parentChildren, ...commonChildren])].filter(
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for location
+                  (n) => n !== matchedNode && n.location !== null && n.location !== undefined
+                );
+              })()
+            : undefined;
 
         matches.push({
-          node: matchedNode,
-          xpathExpression,
+          location,
           matchDetails: {
-            matchedPattern: result.matchDetails?.matchedPattern || matchedNode.kind,
             capturedGroups: result.matchDetails?.capturedGroups,
             matchReason,
             matchedAttributes,
+
+            matchedPattern: result.matchDetails?.matchedPattern ?? matchedNode.kind,
           },
-          location,
+          node: matchedNode,
+          xpathExpression,
           ...(parentNode ? { parentNode } : {}),
           ...(siblingNodes ? { siblingNodes } : {}),
         });

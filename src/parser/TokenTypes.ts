@@ -1,0 +1,150 @@
+/**
+ * @file Token types and token interface definitions for Apex lexer.
+ * Token type enum and Token interface for the Apex lexer.
+ */
+
+import type { SourceLocation } from '../ast/base.js';
+
+/**
+ * Token types.
+ */
+export enum TokenType {
+  // Keywords
+  PUBLIC = 'PUBLIC',
+  PRIVATE = 'PRIVATE',
+  PROTECTED = 'PROTECTED',
+  GLOBAL = 'GLOBAL',
+  STATIC = 'STATIC',
+  FINAL = 'FINAL',
+  ABSTRACT = 'ABSTRACT',
+  CLASS = 'CLASS',
+  INTERFACE = 'INTERFACE',
+  ENUM = 'ENUM',
+  TRIGGER = 'TRIGGER',
+  VOID = 'VOID',
+  RETURN = 'RETURN',
+  IF = 'IF',
+  ELSE = 'ELSE',
+  FOR = 'FOR',
+  WHILE = 'WHILE',
+  DO = 'DO',
+  SWITCH = 'SWITCH',
+  CASE = 'CASE',
+  DEFAULT = 'DEFAULT',
+  BREAK = 'BREAK',
+  CONTINUE = 'CONTINUE',
+  TRY = 'TRY',
+  CATCH = 'CATCH',
+  FINALLY = 'FINALLY',
+  THROW = 'THROW',
+  NEW = 'NEW',
+  THIS = 'THIS',
+  SUPER = 'SUPER',
+  NULL = 'NULL',
+  TRUE = 'TRUE',
+  FALSE = 'FALSE',
+  EXTENDS = 'EXTENDS',
+  IMPLEMENTS = 'IMPLEMENTS',
+  WITH = 'WITH',
+  SHARING = 'SHARING',
+  WITHOUT = 'WITHOUT',
+  INHERITED = 'INHERITED',
+  TESTMETHOD = 'TESTMETHOD',
+  WEBSERVICE = 'WEBSERVICE',
+  FUTURE = 'FUTURE',
+  DATABASE = 'DATABASE',
+  OVERRIDE = 'OVERRIDE',
+  VIRTUAL = 'VIRTUAL',
+  TRANSIENT = 'TRANSIENT',
+
+  // Types
+  INTEGER = 'INTEGER',
+  STRING = 'STRING',
+  BOOLEAN = 'BOOLEAN',
+  DECIMAL = 'DECIMAL',
+  DOUBLE = 'DOUBLE',
+  LONG = 'LONG',
+  DATE = 'DATE',
+  DATETIME = 'DATETIME',
+  TIME = 'TIME',
+  ID = 'ID',
+  BLOB = 'BLOB',
+  OBJECT = 'OBJECT',
+
+  // Literals
+  IDENTIFIER = 'IDENTIFIER',
+  STRING_LITERAL = 'STRING_LITERAL',
+  NUMBER_LITERAL = 'NUMBER_LITERAL',
+  BOOLEAN_LITERAL = 'BOOLEAN_LITERAL',
+  NULL_LITERAL = 'NULL_LITERAL',
+
+  // Operators
+  PLUS = 'PLUS',
+  MINUS = 'MINUS',
+  MULTIPLY = 'MULTIPLY',
+  DIVIDE = 'DIVIDE',
+  MODULO = 'MODULO',
+  ASSIGN = 'ASSIGN',
+  EQUALS = 'EQUALS',
+  NOT_EQUALS = 'NOT_EQUALS',
+  LESS_THAN = 'LESS_THAN',
+  LESS_EQUAL = 'LESS_EQUAL',
+  GREATER_THAN = 'GREATER_THAN',
+  GREATER_EQUAL = 'GREATER_EQUAL',
+  AND = 'AND',
+  OR = 'OR',
+  NOT = 'NOT',
+  INCREMENT = 'INCREMENT',
+  DECREMENT = 'DECREMENT',
+  PLUS_ASSIGN = 'PLUS_ASSIGN',
+  MINUS_ASSIGN = 'MINUS_ASSIGN',
+  MULTIPLY_ASSIGN = 'MULTIPLY_ASSIGN',
+  DIVIDE_ASSIGN = 'DIVIDE_ASSIGN',
+  AND_ASSIGN = 'AND_ASSIGN',
+  OR_ASSIGN = 'OR_ASSIGN',
+  XOR_ASSIGN = 'XOR_ASSIGN',
+  LEFT_SHIFT_ASSIGN = 'LEFT_SHIFT_ASSIGN',
+  RIGHT_SHIFT_ASSIGN = 'RIGHT_SHIFT_ASSIGN',
+  RIGHT_SHIFT_UNSIGNED_ASSIGN = 'RIGHT_SHIFT_UNSIGNED_ASSIGN',
+  NULL_COALESCING = 'NULL_COALESCING',
+  LEFT_SHIFT = 'LEFT_SHIFT',
+  RIGHT_SHIFT = 'RIGHT_SHIFT',
+  RIGHT_SHIFT_UNSIGNED = 'RIGHT_SHIFT_UNSIGNED',
+  BITWISE_AND = 'BITWISE_AND',
+  BITWISE_OR = 'BITWISE_OR',
+  BITWISE_XOR = 'BITWISE_XOR',
+
+  // Punctuation
+  SEMICOLON = 'SEMICOLON',
+  COMMA = 'COMMA',
+  DOT = 'DOT',
+  COLON = 'COLON',
+  QUESTION = 'QUESTION',
+  ARROW = 'ARROW', // => for Map initializers
+  LEFT_PAREN = 'LEFT_PAREN',
+  RIGHT_PAREN = 'RIGHT_PAREN',
+  LEFT_BRACE = 'LEFT_BRACE',
+  RIGHT_BRACE = 'RIGHT_BRACE',
+  LEFT_BRACKET = 'LEFT_BRACKET',
+  RIGHT_BRACKET = 'RIGHT_BRACKET',
+  AT = 'AT',
+
+  // Comments
+  LINE_COMMENT = 'LINE_COMMENT',
+  BLOCK_COMMENT = 'BLOCK_COMMENT',
+
+  // Other
+  WHITESPACE = 'WHITESPACE',
+  NEWLINE = 'NEWLINE',
+  EOF = 'EOF',
+  ERROR = 'ERROR',
+}
+
+/**
+ * Token representation.
+ */
+export interface Token {
+  readonly type: TokenType;
+  readonly text: string;
+  readonly location: SourceLocation;
+}

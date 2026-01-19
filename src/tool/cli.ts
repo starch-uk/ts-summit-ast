@@ -1,14 +1,19 @@
 #!/usr/bin/env node
+
 /**
- * CLI entry point for SummitTool
+ * @file CLI entry point for SummitTool.
+ * Command-line interface for the SummitTool.
  */
 
+import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
 import { SummitTool } from './SummitTool.js';
 
 /**
- * Parse command line arguments
+ * Parse command line arguments.
+ * @param args - Command line arguments.
+ * @returns Parsed arguments object.
  */
-function parseArgs(args: string[]): {
+function parseArgs(args: readonly string[]): {
   files: string[];
   json: boolean;
   verbose: boolean;
@@ -19,9 +24,7 @@ function parseArgs(args: string[]): {
   let verbose = false;
   let help = false;
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
+  for (const arg of args) {
     switch (arg) {
       case '-json':
       case '--json':
@@ -43,11 +46,11 @@ function parseArgs(args: string[]): {
     }
   }
 
-  return { files, json, verbose, help };
+  return { files, help, json, verbose };
 }
 
 /**
- * Print help message
+ * Print help message.
  */
 function printHelp(): void {
   console.log(`
@@ -74,36 +77,43 @@ Note:
 }
 
 /**
- * Main CLI function
+ * Main CLI function.
  */
 function main(): void {
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- process.argv.slice(2) is standard for CLI args
   const args = process.argv.slice(2);
 
-  if (args.length === 0) {
+  const emptyArrayLength = 0;
+  if (args.length === emptyArrayLength) {
     printHelp();
-    process.exit(0);
+
+    const exitCodeSuccess = 0;
+    process.exit(exitCodeSuccess);
   }
 
   const { files, json, verbose, help } = parseArgs(args);
 
   if (help) {
     printHelp();
-    process.exit(0);
+
+    const exitCodeSuccess = 0;
+    process.exit(exitCodeSuccess);
   }
 
-  if (files.length === 0) {
+  if (files.length === emptyArrayLength) {
     console.error('Error: No files or directories specified');
     printHelp();
-    process.exit(1);
+
+    const exitCodeError = 1;
+    process.exit(exitCodeError);
   }
 
   // Create tool instance
   // Note: In a real implementation, users would provide their parse tree adapter
   const tool = new SummitTool({
-    json,
-    verbose,
     includeLocation: true,
-    parseTreeAdapter: (_source, filePath) => {
+    json,
+    parseTreeAdapter: (_source: string, filePath: string): ParseTreeNode | null => {
       // This is a placeholder - users need to provide their own parser
       console.error(
         `Error: No parse tree adapter provided. Please provide a parser to convert source code to parse trees.\n` +
@@ -112,10 +122,11 @@ function main(): void {
       );
       return null;
     },
+    verbose,
   });
 
   // Process all files/directories
-  const allResults: Array<{ file: string; success: boolean; error?: string; ast?: unknown }> = [];
+  const allResults: { file: string; success: boolean; error?: string; ast?: unknown }[] = [];
   for (const file of files) {
     const results = tool.process(file);
     allResults.push(...results);
@@ -125,11 +136,17 @@ function main(): void {
   tool.printResults(allResults);
 
   // Exit with error code if any failures
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
   const hasErrors = allResults.some((r) => !r.success);
-  process.exit(hasErrors ? 1 : 0);
+
+  const exitCodeError = 1;
+  const exitCodeSuccess = 0;
+  process.exit(hasErrors ? exitCodeError : exitCodeSuccess);
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+
+const scriptPathIndex = 1;
+if (import.meta.url === `file://${process.argv[scriptPathIndex]}`) {
   main();
 }

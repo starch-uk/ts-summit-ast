@@ -1,6 +1,6 @@
 /**
- * Parser-agnostic parse tree interface
- * 
+ * @file Parser-agnostic parse tree interface.
+ *
  * This defines a minimal interface that any parse tree structure can implement.
  * The translator will work with any parse tree that conforms to this interface.
  */
@@ -9,109 +9,120 @@ import type { SourceRange } from '../ast/base.js';
 
 /**
  * Base interface for parse tree nodes
- * This is intentionally minimal to support various parser outputs
+ * This is intentionally minimal to support various parser outputs.
  */
-export interface ParseTreeNode {
+interface ParseTreeNode {
+  /**
+   * Additional properties that parsers may include
+   * This allows for parser-specific data while maintaining compatibility.
+   */
+  readonly [key: string]: unknown;
+
   /**
    * Node type/kind identifier (e.g., "if_statement", "method_call", etc.)
-   * The exact values depend on the parser, but should be consistent
+   * The exact values depend on the parser, but should be consistent.
    */
   readonly type: string;
 
   /**
-   * Optional source location information
-   */
-  readonly location?: SourceRange;
-
-  /**
-   * Optional text content of this node
-   */
-  readonly text?: string;
-
-  /**
    * Child nodes (if any)
-   * Different parsers may structure children differently
+   * Different parsers may structure children differently.
    */
   readonly children?: ParseTreeNode[];
 
   /**
-   * Additional properties that parsers may include
-   * This allows for parser-specific data while maintaining compatibility
+   * Optional source location information.
    */
-  readonly [key: string]: unknown;
+  readonly location?: SourceRange;
+
+  /**
+   * Optional text content of this node.
+   */
+  readonly text?: string;
 }
 
 /**
- * Parse tree with named children (for parsers that use property-based children)
+ * Parse tree with named children (for parsers that use property-based children).
  */
-export interface NamedChildrenParseTree extends ParseTreeNode {
-  /**
-   * Named child properties
-   * Example: { condition: node, thenBody: node, elseBody: node }
-   */
-  readonly [childName: string]: ParseTreeNode | ParseTreeNode[] | unknown;
-}
+type NamedChildrenParseTree = ParseTreeNode &
+  Record<string, ParseTreeNode | ParseTreeNode[] | unknown>;
 
 /**
- * Parse tree with positional children
+ * Parse tree with positional children.
  */
-export interface PositionalChildrenParseTree extends ParseTreeNode {
+interface PositionalChildrenParseTree extends ParseTreeNode {
   /**
-   * Array of child nodes in order
+   * Array of child nodes in order.
    */
   readonly children: ParseTreeNode[];
 }
 
 /**
- * Token information (for parsers that provide token-level details)
+ * Token information (for parsers that provide token-level details).
  */
-export interface Token {
+interface Token {
   readonly type: string;
   readonly text: string;
   readonly location?: SourceRange;
 }
 
 /**
- * Parse tree with token information
+ * Parse tree with token information.
  */
-export interface TokenizedParseTree extends ParseTreeNode {
+interface TokenizedParseTree extends ParseTreeNode {
   readonly tokens?: Token[];
 }
 
 /**
- * Error information from parsing
+ * Error information from parsing.
  */
-export interface ParseError {
+interface ParseError {
   readonly message: string;
   readonly location?: SourceRange;
-  readonly severity?: 'error' | 'warning' | 'info';
+  readonly severity?: 'error' | 'info' | 'warning';
 }
 
 /**
- * Complete parse result
+ * Complete parse result.
  */
-export interface ParseResult {
+interface ParseResult {
   readonly tree?: ParseTreeNode;
   readonly errors?: ParseError[];
-  readonly source?: string; // Original source code
+
+  /**
+   * Original source code.
+   */
+  readonly source?: string;
 }
 
 /**
- * Adapter interface for converting parser-specific trees to our parse tree format
+ * Adapter interface for converting parser-specific trees to our parse tree format.
+ * @template T The type of the parser-specific tree.
  */
-export interface ParseTreeAdapter<T = unknown> {
+interface ParseTreeAdapter<T = unknown> {
   /**
-   * Convert a parser-specific tree to our ParseTreeNode format
+   * Convert a parser-specific tree to our ParseTreeNode format.
    */
-  adapt(node: T): ParseTreeNode;
+  adapt: (node: T) => ParseTreeNode;
 
   /**
-   * Extract source location from parser-specific node
+   * Extract source location from parser-specific node.
    */
-  getLocation?(node: T): SourceRange | undefined;
+  getLocation?: (node: T) => SourceRange | undefined;
 
   /**
-   * Extract text content from parser-specific node
+   * Extract text content from parser-specific node.
    */
-  getText?(node: T): string | undefined;
+  getText?: (node: T) => string | undefined;
 }
+
+export type {
+  ParseTreeNode,
+  NamedChildrenParseTree,
+  PositionalChildrenParseTree,
+  Token,
+  TokenizedParseTree,
+  ParseError,
+  ParseResult,
+  ParseTreeAdapter,
+};

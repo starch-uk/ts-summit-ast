@@ -1,37 +1,22 @@
 /**
- * Utility functions for AST manipulation and analysis
+ * @file Utility functions for AST manipulation and analysis.
+ * Main export file for utility functions.
  */
 
-// Position utilities
-export * from './position.js';
-export type { Position } from './position.js';
-export { isPositionInRange } from './position.js';
+// Re-export ASTVisitor from ast for convenience (the one from utils is ASTWalkVisitor)
+export type { ASTVisitor } from '../ast/base.js';
 
-// Traversal utilities
-export * from './traversal.js';
+// All type exports
+export type { Position, SourceTextOptions } from './source-extraction.js';
 export type { ASTWalkVisitor } from './traversal.js';
-export {
-  findNodesByType,
-  getParentNode,
-  getChildNodesByType,
-} from './traversal.js';
-
-// Node finding utilities
-export * from './node-finder.js';
 export type {
   NodeAtPositionResult,
   FindNodeAtPositionOptions,
+  NodePath,
+  NodeMetadata,
   NodesInRangeResult,
   FindNodesInRangeOptions,
 } from './node-finder.js';
-
-// Source extraction utilities
-export * from './source-extraction.js';
-export type { SourceTextOptions } from './source-extraction.js';
-export { getSourceTextForRange, mergeSourceRanges } from './source-extraction.js';
-
-// Comment mapping utilities
-export * from './comment-mapping.js';
 export type {
   CommentInfo,
   CommentPattern,
@@ -39,14 +24,7 @@ export type {
   FindAssociatedNodeOptions,
   ExtractedComment,
   ExtractCommentsOptions,
-} from './comment-mapping.js';
-
-// Node information utilities
-export * from './node-info.js';
-export type { NodePath, NodeMetadata } from './node-info.js';
-
-// Rule matching utilities
-export * from './rule-matching.js';
+} from './comment-utils.js';
 export type {
   RuleMatchResult,
   WouldTriggerRuleOptions,
@@ -55,28 +33,16 @@ export type {
   XPathValidationResult,
   XPathFeatureSupport,
 } from './rule-matching.js';
-export { validateXPath, getXPathFeatureSupport } from './rule-matching.js';
-
-// Re-export ASTVisitor from ast for convenience (the one from utils is ASTWalkVisitor)
-export type { ASTVisitor } from '../ast/visitor.js';
-
-// Apex parsing utilities
-export * from './apex-parser.js';
 export type { ApexParseError, ApexParseOptions, ApexParseResult } from './apex-parser.js';
-
-// ApexDoc parsing utilities
-export * from './apexdoc-parser.js';
 export type { ApexDocParseOptions } from './apexdoc-parser.js';
+export type { ASTValidationResult, ASTComparisonResult, ASTStatistics } from './ast-validation.js';
 
-// Batch processing utilities
-export * from './batch-processing.js';
-export { parseMultipleFiles, extractCommentsBatch } from './batch-processing.js';
-
-// AST validation utilities
+// All value exports
+export * from './source-extraction.js';
+export * from './traversal.js';
+export * from './node-finder.js';
+export * from './comment-utils.js';
+export * from './rule-matching.js';
+export * from './apex-parser.js';
+export * from './apexdoc-parser.js';
 export * from './ast-validation.js';
-export type {
-  ASTValidationResult,
-  ASTComparisonResult,
-  ASTStatistics,
-} from './ast-validation.js';
-export { validateAST, compareASTs, getASTStatistics } from './ast-validation.js';

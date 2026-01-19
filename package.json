@@ -1,6 +1,6 @@
 {
   "name": "ts-summit-ast",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "TypeScript port of Summit-AST - Abstract Syntax Tree for Salesforce Apex source code",
   "main": "./lib/index.js",
   "module": "./esm/index.js",
@@ -29,6 +29,7 @@
   "scripts": {
     "build": "tsc && tsc --project tsconfig.esm.json",
     "build:watch": "tsc --watch",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.esm.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
@@ -57,14 +58,21 @@
   "engines": {
     "node": ">=18.0.0"
   },
+	"packageManager": "pnpm@10.28.1",
   "devDependencies": {
     "@types/node": "^25.0.9",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
+    "@vitest/coverage-v8": "4.0.17",
     "@vitest/ui": "^4.0.17",
+    "agent-docs": "^1.4.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsdoc": "^62.1.0",
     "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-sort-class-members": "^1.21.0",
+    "eslint-plugin-sort-keys": "^2.3.5",
     "prettier": "^3.8.0",
     "tsup": "^8.5.1",
     "typedoc": "^0.28.16",
