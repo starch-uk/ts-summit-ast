@@ -119,14 +119,12 @@ class ASTTranslator {
       const ast = this.translateNode(node);
       return { ast, errors };
     } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Catch clause assigns unknown error type
       const translationError =
         error instanceof TranslationError
           ? error
           : new TranslationError(
               `Translation failed: ${error instanceof Error ? error.message : String(error)}`,
               node,
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Error from catch clause is unknown type
               error instanceof Error ? error : undefined
             );
 
@@ -434,7 +432,7 @@ class ASTTranslator {
         // In a full implementation, we'd create a proper TriggerDeclaration AST node
         const triggerNameNode = this.getChild(node, 'name');
         const triggerName = triggerNameNode
-          ? (this.getText(triggerNameNode as Readonly<ParseTreeNode>) ??
+          ? (this.getText(triggerNameNode) ??
             this.getProperty<string>(triggerNameNode, 'name') ??
             'Unknown')
           : 'Unknown';
@@ -476,7 +474,7 @@ class ASTTranslator {
 
       if (!condition) {
         const zeroIndex = 0;
-        const conditionChild = children[zeroIndex] as Readonly<ParseTreeNode>;
+        const conditionChild = children[zeroIndex];
         const cond = this.tryTranslateExpression(conditionChild, conditionChild.type.toLowerCase());
         if (!cond) {
           throw new TranslationError('If statement requires a condition', node);
@@ -486,7 +484,7 @@ class ASTTranslator {
 
       if (!thenStatement) {
         const secondChildIndex = 1;
-        const thenChild = children[secondChildIndex] as Readonly<ParseTreeNode>;
+        const thenChild = children[secondChildIndex];
         const then = this.tryTranslateStatement(thenChild, thenChild.type.toLowerCase());
         if (!then) {
           throw new TranslationError('If statement requires a then body', node);
@@ -496,7 +494,7 @@ class ASTTranslator {
 
       const elseChildIndex = 2;
       if (!elseStatement && children.length > elseChildIndex) {
-        const elseChild = children[elseChildIndex] as Readonly<ParseTreeNode>;
+        const elseChild = children[elseChildIndex];
         const els = this.tryTranslateStatement(elseChild, elseChild.type.toLowerCase());
         elseStatement = els ?? undefined;
       }
@@ -524,7 +522,7 @@ class ASTTranslator {
     const emptyArrayLength = 0;
     if (children.length > emptyArrayLength) {
       const lastElementOffset = 1;
-      const lastChild = children[children.length - lastElementOffset] as Readonly<ParseTreeNode>;
+      const lastChild = children[children.length - lastElementOffset];
       const stmt = this.tryTranslateStatement(lastChild, lastChild.type.toLowerCase());
       if (stmt) {
         body = stmt;
@@ -538,7 +536,7 @@ class ASTTranslator {
     const minimumChildrenForInit = 2;
     if (children.length >= minimumChildrenForInit) {
       const [initChild] = children;
-      const initChildReadonly = initChild as Readonly<ParseTreeNode>;
+      const initChildReadonly = initChild;
       // First try as expression (for comma-separated assignments)
       const initExpr = this.tryTranslateExpression(
         initChildReadonly,
@@ -566,7 +564,7 @@ class ASTTranslator {
     const minimumChildrenForCondition = 3;
     if (children.length >= minimumChildrenForCondition) {
       const secondChildIndex = 1;
-      const conditionChild = children[secondChildIndex] as Readonly<ParseTreeNode>;
+      const conditionChild = children[secondChildIndex];
       condition =
         this.tryTranslateExpression(conditionChild, conditionChild.type.toLowerCase()) ?? undefined;
     }
@@ -576,7 +574,7 @@ class ASTTranslator {
     const minimumChildrenForUpdate = 4;
     if (children.length >= minimumChildrenForUpdate) {
       const thirdChildIndex = 2;
-      const updateChild = children[thirdChildIndex] as Readonly<ParseTreeNode>;
+      const updateChild = children[thirdChildIndex];
       update =
         this.tryTranslateExpression(updateChild, updateChild.type.toLowerCase()) ?? undefined;
     }
@@ -595,13 +593,13 @@ class ASTTranslator {
       if ((updateNode as { type?: string }).type === 'block') {
         const blockChildren = this.getChildren(updateNode);
         for (const c of blockChildren) {
-          const cReadonly = c as Readonly<ParseTreeNode>;
+          const cReadonly = c;
           const stmtChildren = this.getChildren(cReadonly);
 
           const emptyArrayLengthLocal = 0;
           if (stmtChildren.length > emptyArrayLengthLocal) {
             const [inner] = stmtChildren;
-            const innerReadonly = inner as Readonly<ParseTreeNode>;
+            const innerReadonly = inner;
             const expr = this.tryTranslateExpression(
               innerReadonly,
 
@@ -660,7 +658,7 @@ class ASTTranslator {
     }
 
     const zeroIndex = 0;
-    const conditionChild = children[zeroIndex] as Readonly<ParseTreeNode>;
+    const conditionChild = children[zeroIndex];
     const condition = this.tryTranslateExpression(
       conditionChild,
       conditionChild.type.toLowerCase()
@@ -670,7 +668,7 @@ class ASTTranslator {
     }
 
     const secondChildIndex = 1;
-    const bodyChild = children[secondChildIndex] as Readonly<ParseTreeNode>;
+    const bodyChild = children[secondChildIndex];
     const body = this.tryTranslateStatement(bodyChild, bodyChild.type.toLowerCase());
     if (!body) {
       throw new TranslationError('While statement requires a body', node);
@@ -688,7 +686,7 @@ class ASTTranslator {
     const expression =
       children.length > emptyArrayLength
         ? (() => {
-            const returnChild = children[zeroIndex] as Readonly<ParseTreeNode>;
+            const returnChild = children[zeroIndex];
             return (
               this.tryTranslateExpression(returnChild, returnChild.type.toLowerCase()) ?? undefined
             );
@@ -735,7 +733,7 @@ class ASTTranslator {
           return null;
         } catch {
           // If translation fails, try to translate as statement or expression
-          const childReadonly = child as Readonly<ParseTreeNode>;
+          const childReadonly = child;
           const stmt = this.tryTranslateStatement(childReadonly, childReadonly.type.toLowerCase());
           if (stmt) return stmt;
           const expr = this.tryTranslateExpression(childReadonly, childReadonly.type.toLowerCase());
@@ -761,7 +759,7 @@ class ASTTranslator {
     }
 
     const [firstChild] = children;
-    const firstChildReadonly = firstChild as Readonly<ParseTreeNode>;
+    const firstChildReadonly = firstChild;
     const expression = this.tryTranslateExpression(
       firstChildReadonly,
       firstChildReadonly.type.toLowerCase()
@@ -796,13 +794,7 @@ class ASTTranslator {
 
       const [typeNode, nameNode, iterableNode, bodyNode] = children;
 
-      if (
-        !variable &&
-        typeNode !== null &&
-        typeNode !== undefined &&
-        nameNode !== null &&
-        nameNode !== undefined
-      ) {
+      if (!variable) {
         // Construct variable declaration from type and name
         const varType = this.tryTranslateType(typeNode);
         if (!varType) {
@@ -819,7 +811,7 @@ class ASTTranslator {
         };
       }
 
-      if (!iterable && iterableNode !== null && iterableNode !== undefined) {
+      if (!iterable) {
         const iterableExpr = this.tryTranslateExpression(
           iterableNode,
           iterableNode.type.toLowerCase()
@@ -830,14 +822,10 @@ class ASTTranslator {
         iterable = iterableExpr;
       }
 
-      if (!body && bodyNode !== null && bodyNode !== undefined) {
-        const bodyNodeReadonly = bodyNode as Readonly<ParseTreeNode>;
-        const bodyStmt = this.tryTranslateStatement(
-          bodyNodeReadonly,
-          bodyNodeReadonly.type.toLowerCase()
-        );
+      if (!body) {
+        const bodyStmt = this.tryTranslateStatement(bodyNode, bodyNode.type.toLowerCase());
         if (!bodyStmt) {
-          throw new TranslationError('For-each statement requires a body', bodyNodeReadonly);
+          throw new TranslationError('For-each statement requires a body', bodyNode);
         }
         body = bodyStmt;
       }
@@ -845,45 +833,37 @@ class ASTTranslator {
 
     // Translate variable declaration if we have it
     let varDecl: VariableDeclaration | null = null;
-    if (variable) {
-      const variableReadonly = variable as Readonly<ParseTreeNode>;
-      const decl = this.tryTranslateDeclaration(
-        variableReadonly,
-        variableReadonly.type.toLowerCase()
-      );
-      if (decl?.kind === 'VariableDeclaration') {
-        varDecl = decl as VariableDeclaration;
-      } else {
-        // If translation failed, try to construct from children
-        const varChildren = this.getChildren(variableReadonly);
+    const variableReadonly = variable;
+    const decl = this.tryTranslateDeclaration(
+      variableReadonly,
+      variableReadonly.type.toLowerCase()
+    );
+    if (decl?.kind === 'VariableDeclaration') {
+      varDecl = decl as VariableDeclaration;
+    } else {
+      // If translation failed, try to construct from children
+      const varChildren = this.getChildren(variableReadonly);
 
-        const minimumChildrenForVariable = 2;
-        if (varChildren.length >= minimumChildrenForVariable) {
-          const [typeChild, varNameNode] = varChildren;
-          const varType = this.tryTranslateType(typeChild as Readonly<ParseTreeNode>);
-          const varName =
-            this.getText(varNameNode) ?? this.getProperty<string>(varNameNode, 'name') ?? '';
-          if (varType && varName) {
-            varDecl = NodeFactory.createVariableDeclaration(
-              varName,
-              varType,
-              undefined,
-              undefined,
-              this.getLocationOption(varNameNode)
-            );
-          }
+      const minimumChildrenForVariable = 2;
+      if (varChildren.length >= minimumChildrenForVariable) {
+        const [typeChild, varNameNode] = varChildren;
+        const varType = this.tryTranslateType(typeChild);
+        const varName =
+          this.getText(varNameNode) ?? this.getProperty<string>(varNameNode, 'name') ?? '';
+        if (varType && varName) {
+          varDecl = NodeFactory.createVariableDeclaration(
+            varName,
+            varType,
+            undefined,
+            undefined,
+            this.getLocationOption(varNameNode)
+          );
         }
       }
     }
 
     if (!varDecl) {
       throw new TranslationError('For-each statement requires a variable', node);
-    }
-    if (!iterable) {
-      throw new TranslationError('For-each statement requires an iterable', node);
-    }
-    if (!body) {
-      throw new TranslationError('For-each statement requires a body', node);
     }
 
     return NodeFactory.createEnhancedForLoopStatement(
@@ -929,7 +909,7 @@ class ASTTranslator {
     if (casesNode) {
       const caseChildren = this.getChildren(casesNode);
       for (const caseNode of caseChildren) {
-        const caseNodeReadonly = caseNode as Readonly<ParseTreeNode>;
+        const caseNodeReadonly = caseNode;
         let value = this.getChildExpression(caseNodeReadonly, 'value', true);
         // Apex "when value" puts the value expression(s) as first children before the 'statements' node
         if (!value) {
@@ -938,14 +918,10 @@ class ASTTranslator {
             (c: Readonly<ParseTreeNode>) => (c as { type?: string }).type !== 'statements'
           );
           if (valueNode) {
-            const valueNodeReadonly = valueNode as Readonly<ParseTreeNode>;
+            const valueNodeReadonly = valueNode;
             const valueTypeProperty = (valueNodeReadonly as { type?: string }).type;
             const valueType =
-              valueTypeProperty !== null &&
-              valueTypeProperty !== undefined &&
-              typeof valueTypeProperty.toLowerCase === 'function'
-                ? valueTypeProperty.toLowerCase()
-                : '';
+              typeof valueTypeProperty === 'string' ? valueTypeProperty.toLowerCase() : '';
             const v = this.tryTranslateExpression(valueNodeReadonly, valueType);
             if (v) value = v;
           }
@@ -959,7 +935,7 @@ class ASTTranslator {
             children.find((child: Readonly<ParseTreeNode>) => child.type === 'statements') ?? null;
         }
         const statements = statementsNode
-          ? this.getChildren(statementsNode as Readonly<ParseTreeNode>)
+          ? this.getChildren(statementsNode)
               .map((child: Readonly<ParseTreeNode>) => {
                 const translated = this.translateNode(child);
                 if (
@@ -982,7 +958,7 @@ class ASTTranslator {
                 }
                 return null;
               })
-              .filter((stmt): stmt is Statement => stmt !== null && stmt !== undefined)
+              .filter((stmt): stmt is Statement => stmt !== null)
           : [];
         cases.push({
           kind: 'SwitchCase',
@@ -1000,6 +976,7 @@ class ASTTranslator {
       if (!statementsNode) {
         // Look for a child with type 'statements' in the children array
         const children = this.getChildren(defaultNode);
+
         statementsNode =
           children.find((child: Readonly<ParseTreeNode>) => child.type === 'statements') ?? null;
       }
@@ -1027,7 +1004,7 @@ class ASTTranslator {
               }
               return null;
             })
-            .filter((stmt): stmt is Statement => stmt !== null && stmt !== undefined)
+            .filter((stmt): stmt is Statement => stmt !== null)
         : [];
       defaultCase = {
         kind: 'SwitchCase',
@@ -1063,13 +1040,13 @@ class ASTTranslator {
 
       const firstChildIndex = 0;
 
-      tryBlock = children[firstChildIndex] as Readonly<ParseTreeNode>;
+      tryBlock = children[firstChildIndex];
 
       // Find catch_clauses and finallyBlock in remaining children
 
       const secondChildIndex = 1;
       for (let i = secondChildIndex; i < children.length; i++) {
-        const child = children[i] as Readonly<ParseTreeNode>;
+        const child = children[i];
         if (child.type === 'catch_clauses' && !catchClausesNode) {
           catchClausesNode = child;
         } else if (child.type === 'block' && !finallyBlock) {
@@ -1082,10 +1059,7 @@ class ASTTranslator {
       }
     }
 
-    if (tryBlock === null || tryBlock === undefined) {
-      throw new TranslationError('Try statement requires a try block', node);
-    }
-    const tryBlockStmtResult = this.translateCompoundStatement(tryBlock as Readonly<ParseTreeNode>);
+    const tryBlockStmtResult = this.translateCompoundStatement(tryBlock);
     if (tryBlockStmtResult.kind !== 'CompoundStatement') {
       throw new TranslationError('Try statement requires a CompoundStatement for try block', node);
     }
@@ -1093,9 +1067,9 @@ class ASTTranslator {
 
     const catchClauses: CatchClause[] = [];
     if (catchClausesNode) {
-      const catchChildren = this.getChildren(catchClausesNode as Readonly<ParseTreeNode>);
+      const catchChildren = this.getChildren(catchClausesNode);
       for (const catchNode of catchChildren) {
-        const catchNodeReadonly = catchNode as Readonly<ParseTreeNode>;
+        const catchNodeReadonly = catchNode;
         // Catch clause structure: [exceptionType, name, block]
         const catchNodeChildren = this.getChildren(catchNodeReadonly);
         let exceptionTypeExpr: Expression | undefined = undefined;
@@ -1113,7 +1087,7 @@ class ASTTranslator {
         const exceptionTypeNode = this.getChild(catchNodeReadonly, 'exceptionType');
         if (!exceptionTypeExpr && exceptionTypeNode) {
           // Try translating as expression first
-          const exceptionTypeNodeReadonly = exceptionTypeNode as Readonly<ParseTreeNode>;
+          const exceptionTypeNodeReadonly = exceptionTypeNode;
           const expr = this.tryTranslateExpression(
             exceptionTypeNodeReadonly,
             exceptionTypeNodeReadonly.type.toLowerCase()
@@ -1125,7 +1099,7 @@ class ASTTranslator {
 
         const variable = this.getChild(catchNodeReadonly, 'variable', 'name');
         if (variable) {
-          const variableReadonly = variable as Readonly<ParseTreeNode>;
+          const variableReadonly = variable;
           const decl = this.tryTranslateDeclaration(
             variableReadonly,
             variableReadonly.type.toLowerCase()
@@ -1142,7 +1116,7 @@ class ASTTranslator {
         if (!exceptionTypeExpr && catchNodeChildren.length >= minimumChildrenForException) {
           const firstChildIndex = 0;
 
-          const firstChild = catchNodeChildren[firstChildIndex] as Readonly<ParseTreeNode>;
+          const firstChild = catchNodeChildren[firstChildIndex];
           const expr = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
           if (expr) {
             exceptionTypeExpr = expr;
@@ -1152,7 +1126,7 @@ class ASTTranslator {
         // Also get the type for variable declaration (if not already set)
         if (catchNodeChildren.length >= minimumChildrenForException) {
           const firstChildIndex = 0;
-          const firstChildForType = catchNodeChildren[firstChildIndex] as Readonly<ParseTreeNode>;
+          const firstChildForType = catchNodeChildren[firstChildIndex];
           const typeRef = this.tryTranslateType(firstChildForType) ?? undefined;
           if (typeRef) {
             exceptionType = typeRef;
@@ -1163,7 +1137,7 @@ class ASTTranslator {
         if (!varDecl && catchNodeChildren.length >= minimumChildrenForVariable) {
           const secondChildIndex = 1;
 
-          const nameNode = catchNodeChildren[secondChildIndex] as Readonly<ParseTreeNode>;
+          const nameNode = catchNodeChildren[secondChildIndex];
           if (nameNode.type === 'name') {
             const name = this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name') ?? '';
             if (name && exceptionType) {
@@ -1208,9 +1182,7 @@ class ASTTranslator {
 
     let finallyBlockStmt: CompoundStatement | undefined = undefined;
     if (finallyBlock) {
-      const finallyBlockResult = this.translateCompoundStatement(
-        finallyBlock as Readonly<ParseTreeNode>
-      );
+      const finallyBlockResult = this.translateCompoundStatement(finallyBlock);
       if (finallyBlockResult.kind !== 'CompoundStatement') {
         throw new TranslationError('Finally block must be a CompoundStatement', node);
       }
@@ -1354,11 +1326,7 @@ class ASTTranslator {
 
     const methodNameFromProp = this.getProperty<string>(node, 'methodName', 'name');
 
-    if (
-      methodNameFromProp !== null &&
-      methodNameFromProp !== undefined &&
-      methodNameFromProp !== ''
-    ) {
+    if (methodNameFromProp) {
       methodName = methodNameFromProp;
     }
 
@@ -1545,7 +1513,7 @@ class ASTTranslator {
       const emptyArrayLength = 0;
       if (children.length > emptyArrayLength) {
         const firstChildIndex = 0;
-        const firstChild = children[firstChildIndex] as Readonly<ParseTreeNode>;
+        const firstChild = children[firstChildIndex];
         const expr = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
         if (expr) {
           return NodeFactory.createUnaryExpression(
@@ -1602,7 +1570,7 @@ class ASTTranslator {
       if (children.length >= minimumChildrenForTarget) {
         // First child is the target expression
         const firstChildIndex = 0;
-        const targetNode = children[firstChildIndex] as Readonly<ParseTreeNode>;
+        const targetNode = children[firstChildIndex];
         target =
           this.tryTranslateExpression(targetNode, targetNode.type.toLowerCase()) ?? undefined;
       }
@@ -1621,7 +1589,7 @@ class ASTTranslator {
       if (children.length >= minimumChildrenForField) {
         // Second child is the field node
         const secondChildIndex = 1;
-        const fieldChild = children[secondChildIndex] as Readonly<ParseTreeNode>;
+        const fieldChild = children[secondChildIndex];
         fieldName =
           this.getText(fieldChild) ??
           this.getProperty<string>(fieldChild, 'name') ??
@@ -1657,8 +1625,8 @@ class ASTTranslator {
       if (children.length >= minimumChildrenForArrayAccess) {
         const firstChildIndex = 0;
         const secondChildIndex = 1;
-        const arrayChild = children[firstChildIndex] as Readonly<ParseTreeNode>;
-        const indexChild = children[secondChildIndex] as Readonly<ParseTreeNode>;
+        const arrayChild = children[firstChildIndex];
+        const indexChild = children[secondChildIndex];
         const arrExpr = this.tryTranslateExpression(arrayChild, arrayChild.type.toLowerCase());
         const idxExpr = this.tryTranslateExpression(indexChild, indexChild.type.toLowerCase());
         if (arrExpr && idxExpr) {
@@ -1674,7 +1642,7 @@ class ASTTranslator {
       const minimumChildrenForIndex = 2;
       if (children.length >= minimumChildrenForIndex) {
         const secondChildIndex = 1;
-        const indexChild = children[secondChildIndex] as Readonly<ParseTreeNode>;
+        const indexChild = children[secondChildIndex];
         const idxExpr = this.tryTranslateExpression(indexChild, indexChild.type.toLowerCase());
         if (idxExpr) {
           return NodeFactory.createArrayExpression(array, idxExpr, this.getLocationOption(node));
@@ -1700,9 +1668,9 @@ class ASTTranslator {
         const conditionIndex = 0;
         const thenIndex = 1;
         const elseIndex = 2;
-        const conditionChild = children[conditionIndex] as Readonly<ParseTreeNode>;
-        const thenChild = children[thenIndex] as Readonly<ParseTreeNode>;
-        const elseChild = children[elseIndex] as Readonly<ParseTreeNode>;
+        const conditionChild = children[conditionIndex];
+        const thenChild = children[thenIndex];
+        const elseChild = children[elseIndex];
         const cond = this.tryTranslateExpression(conditionChild, conditionChild.type.toLowerCase());
         const then = this.tryTranslateExpression(thenChild, thenChild.type.toLowerCase());
         const els = this.tryTranslateExpression(elseChild, elseChild.type.toLowerCase());
@@ -1734,7 +1702,7 @@ class ASTTranslator {
       const firstChildIndex = 0;
       typeNode = children[firstChildIndex];
     }
-    const type = typeNode ? this.tryTranslateType(typeNode as Readonly<ParseTreeNode>) : null;
+    const type = typeNode ? this.tryTranslateType(typeNode) : null;
     if (!type) {
       throw new TranslationError('Cast expression requires a type', node);
     }
@@ -1745,7 +1713,7 @@ class ASTTranslator {
     if (!expression && children.length >= minimumChildrenForExpression) {
       // Second child is the expression
       const secondChildIndex = 1;
-      const expressionChild = children[secondChildIndex] as Readonly<ParseTreeNode>;
+      const expressionChild = children[secondChildIndex];
       expression =
         this.tryTranslateExpression(expressionChild, expressionChild.type.toLowerCase()) ??
         undefined;
@@ -1770,8 +1738,8 @@ class ASTTranslator {
       if (children.length >= minimumChildrenForCast) {
         const expressionIndex = 0;
         const typeIndex = 1;
-        const expressionChild = children[expressionIndex] as Readonly<ParseTreeNode>;
-        const typeChild = children[typeIndex] as Readonly<ParseTreeNode>;
+        const expressionChild = children[expressionIndex];
+        const typeChild = children[typeIndex];
         const expr = this.tryTranslateExpression(
           expressionChild,
           expressionChild.type.toLowerCase()
@@ -1919,8 +1887,8 @@ class ASTTranslator {
       // use the values from the initializer
       if (initializer.kind === 'ValuesInitializer') {
         exprWithProps.arrayInitializer = initializer.values;
-      } else if (initializer.kind === 'MapInitializer') {
-        // For MapInitializer, flatten pairs into array
+      } else {
+        // MapInitializer: flatten pairs into array
         const flattened: Expression[] = [];
         for (const pair of initializer.pairs) {
           flattened.push(pair.key, pair.value);
@@ -1960,7 +1928,7 @@ class ASTTranslator {
       size = this.tryTranslateExpression(sizeChild, sizeChild.type.toLowerCase()) ?? undefined;
       // If that fails and it's a number literal, translate it directly
       if (!size && (sizeChild.type === 'number_literal' || sizeChild.type === 'number')) {
-        size = this.translateIntegerVal(sizeChild) ?? undefined;
+        size = this.translateIntegerVal(sizeChild);
       }
     }
     if (!size) {
@@ -2157,7 +2125,13 @@ class ASTTranslator {
       // Also track statement boundaries: fields from adjacent field_declaration nodes with same type/modifiers
       // should be grouped if they come from the same source statement (detected by location proximity)
       const membersWithIndex: {
-        decl: Declaration;
+        decl:
+          | ClassDeclaration
+          | EnumDeclaration
+          | InterfaceDeclaration
+          | MethodDeclaration
+          | PropertyDeclaration
+          | VariableDeclaration;
         sourceIndex: number;
         statementId?: number;
         parseNode?: ParseTreeNode;
@@ -2177,7 +2151,7 @@ class ASTTranslator {
             const sameLine =
               lastLocation &&
               currentLocation &&
-              lastLocation.start?.line === currentLocation.start?.line;
+              lastLocation.start.line === currentLocation.start.line;
             if (!sameLine) {
               // Different line = different statement
               statementCounter++;
@@ -2190,7 +2164,22 @@ class ASTTranslator {
           lastFieldDeclarationNode = memberNode;
         }
         const decl = this.tryTranslateDeclaration(memberNode, memberNode.type.toLowerCase());
-        if (decl) {
+        if (
+          decl &&
+          (decl.kind === 'ClassDeclaration' ||
+            decl.kind === 'EnumDeclaration' ||
+            decl.kind === 'InterfaceDeclaration' ||
+            decl.kind === 'MethodDeclaration' ||
+            decl.kind === 'PropertyDeclaration' ||
+            decl.kind === 'VariableDeclaration')
+        ) {
+          const declTyped = decl as
+            | ClassDeclaration
+            | EnumDeclaration
+            | InterfaceDeclaration
+            | MethodDeclaration
+            | PropertyDeclaration
+            | VariableDeclaration;
           // For field declarations, use statementId to preserve grouping
           // The statementId is based on line numbers - fields on the same line share a statementId
           const statementId =
@@ -2198,7 +2187,7 @@ class ASTTranslator {
           // Store the parse node so we can check if fields come from the same parse tree node
           // Fields from the same statement come from the same parse tree node (same parent)
           const parseNode = memberNode;
-          membersWithIndex.push({ decl, parseNode, sourceIndex: i, statementId });
+          membersWithIndex.push({ decl: declTyped, parseNode, sourceIndex: i, statementId });
         }
       }
       // Sort members by category: inner types < fields < properties < methods
@@ -2221,10 +2210,7 @@ class ASTTranslator {
         if (decl.kind === 'PropertyDeclaration') {
           return 2; // Properties
         }
-        if (decl.kind === 'MethodDeclaration') {
-          return 3; // Methods
-        }
-        return 4; // Other (shouldn't happen)
+        return 3; // Methods
       };
       // CRITICAL: The original Kotlin implementation preserves source order for members
       // within each category. The test's grouping logic relies on this ordering.
@@ -2638,28 +2624,7 @@ class ASTTranslator {
       // Let me try a different approach: Use location information to ensure fields
       // from different statements are separated in the final order.
       // Extract sorted declarations and filter to valid ClassMembers
-      const sortedDecls = membersWithIndex
-        .map((m) => m.decl)
-        .filter(
-          (
-            decl
-          ): decl is
-            | ClassDeclaration
-            | EnumDeclaration
-            | InterfaceDeclaration
-            | MethodDeclaration
-            | PropertyDeclaration
-            | VariableDeclaration => {
-            return (
-              decl.kind === 'ClassDeclaration' ||
-              decl.kind === 'EnumDeclaration' ||
-              decl.kind === 'InterfaceDeclaration' ||
-              decl.kind === 'MethodDeclaration' ||
-              decl.kind === 'PropertyDeclaration' ||
-              decl.kind === 'VariableDeclaration'
-            );
-          }
-        );
+      const sortedDecls = membersWithIndex.map((m) => m.decl);
       members.push(...sortedDecls);
     }
 
@@ -2670,7 +2635,7 @@ class ASTTranslator {
         this.getChild(extendsClause, 'type') ??
         this.getChildren(extendsClause).find((c: Readonly<ParseTreeNode>) => c.type === 'type');
       if (typeChild) {
-        extendsType = this.tryTranslateType(typeChild as Readonly<ParseTreeNode>) ?? undefined;
+        extendsType = this.tryTranslateType(typeChild) ?? undefined;
       }
     }
 
@@ -3109,7 +3074,7 @@ class ASTTranslator {
     // Parser creates a 'block' node for enum body, not 'body' or 'members'
     const bodyNode = this.getChild(node, 'body', 'members') ?? this.getChild(node, 'block');
     if (bodyNode) {
-      const bodyChildren = this.getChildren(bodyNode as Readonly<ParseTreeNode>);
+      const bodyChildren = this.getChildren(bodyNode);
       for (const childNode of bodyChildren) {
         if (
           childNode.type === 'enum_constant' ||
@@ -3128,15 +3093,7 @@ class ASTTranslator {
         } else {
           // Other enum members (methods, inner classes, etc.)
           const decl = this.tryTranslateDeclaration(childNode, childNode.type.toLowerCase());
-          if (
-            decl &&
-            (decl.kind === 'ClassDeclaration' ||
-              decl.kind === 'EnumDeclaration' ||
-              decl.kind === 'InterfaceDeclaration' ||
-              decl.kind === 'MethodDeclaration' ||
-              decl.kind === 'PropertyDeclaration' ||
-              decl.kind === 'VariableDeclaration')
-          ) {
+          if (decl) {
             members.push(
               decl as
                 | ClassDeclaration
@@ -3609,10 +3566,11 @@ class ASTTranslator {
           : undefined;
         // Parser: annotation_argument has children [value] or [name, value]; value has type annotation_expression, new_expression, or expression
         const argChildrenList = this.getChildren(argNode);
+        const emptyArrayLengthLocal = 0;
+        if (argChildrenList.length === emptyArrayLengthLocal) continue;
         const valueNode =
           argChildrenList.find((c) => c.type !== 'name') ??
           argChildrenList[argChildrenList.length - 1];
-        if (!valueNode) continue;
         const elementValue = this.parseElementValue(valueNode);
         if (!elementValue) continue;
         args.push({
@@ -3638,10 +3596,12 @@ class ASTTranslator {
    * @returns The parsed ElementValue node, or null if the value cannot be parsed.
    */
   private parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null {
-    const nodeType = (valueNode.type ?? '').toLowerCase();
+    const nodeType = valueNode.type.toLowerCase();
     if (nodeType === 'annotation_expression') {
-      const inner = this.getChildren(valueNode)[0];
-      if (!inner) return null;
+      const children = this.getChildren(valueNode);
+      const emptyArrayLength = 0;
+      if (children.length === emptyArrayLength) return null;
+      const inner = children[0];
       const ann = this.buildAnnotationFromNode(inner);
       if (!ann) return null;
       return NodeFactory.createAnnotationElementValue(ann, this.getLocationOption(valueNode));
@@ -3649,9 +3609,7 @@ class ASTTranslator {
     if (nodeType === 'new_expression') {
       const valsInit =
         this.getChild(valueNode, 'values_initializer') ??
-        this.getChildren(valueNode).find(
-          (c) => (c.type ?? '').toLowerCase() === 'values_initializer'
-        );
+        this.getChildren(valueNode).find((c) => c.type.toLowerCase() === 'values_initializer');
       if (!valsInit) return null;
       const elNodes = this.getChildren(valsInit);
       const evals = elNodes

@@ -177,6 +177,10 @@ export default [
 		rules: {
 			// Disable no-magic-numbers for test files (common to use magic numbers in tests)
 			'@typescript-eslint/no-magic-numbers': 'off',
+			// Disable no-unsafe-member-access for test files (Vitest matchers are type-safe but ESLint can't resolve them)
+			'@typescript-eslint/no-unsafe-member-access': 'off',
+			// Disable no-unsafe-call for test files (Vitest globals/matchers are type-safe but ESLint can't resolve them)
+			'@typescript-eslint/no-unsafe-call': 'off',
 		},
 	},
 	{

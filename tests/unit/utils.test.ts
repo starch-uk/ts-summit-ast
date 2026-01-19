@@ -2,13 +2,67 @@
  * Tests for ApexDoc parser utilities.
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   parseApexDocComment,
   isApexDocCommentString,
   type ApexDocParseOptions,
 } from '../../src/utils/apexdoc-parser.js';
 import type { ApexDocComment } from '../../src/ast/ApexDoc.js';
+import { JsonSerializer, JsonDeserializer } from '../../src/serialization/index.js';
+import {
+  isBinaryExpression,
+  isIdentifier,
+  isClassDeclaration,
+  isVariableDeclaration,
+} from '../../src/ast/type-guards.js';
+import {
+  getSourceText,
+  getSourceRange,
+  locationToOffset,
+  offsetToLocation,
+  UNKNOWN_SOURCE_LOCATION,
+  isUnknownLocation,
+  isPositionInRange,
+  isPositionBefore,
+  isPositionAfter,
+  getDistanceToRange,
+} from '../../src/utils/source-extraction.js';
+import type { Position } from '../../src/utils/source-extraction.js';
+import type { SourceRange } from '../../src/ast/base.js';
+import type { ASTNode } from '../../src/ast/base.js';
+import { walkAST } from '../../src/utils/traversal.js';
+import type { ASTWalkVisitor } from '../../src/utils/traversal.js';
+import {
+  findNodeAtPosition,
+  findNodesInRange,
+  getNodePath,
+  getNodeMetadata,
+  isNodeType,
+} from '../../src/utils/node-finder.js';
+import {
+  wouldTriggerRule,
+  findRuleMatches,
+  validateXPath,
+  getXPathFeatureSupport,
+} from '../../src/utils/rule-matching.js';
+import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
+import {
+  getAncestors,
+  buildParentMap,
+  findNodesByType,
+  getParentNode,
+  getChildNodesByType,
+  getNodeChildren,
+} from '../../src/utils/traversal.js';
+import { NodeFactory } from '../../src/translator/NodeFactory.js';
+import { extractComments, findAssociatedNode } from '../../src/utils/comment-utils.js';
+import type { CommentInfo } from '../../src/utils/comment-utils.js';
+import {
+  parseApexCode,
+  parseMultipleFiles,
+  extractCommentsBatch,
+  isUsableParseResult,
+} from '../../src/utils/apex-parser.js';
 
 describe('ApexDoc Parser', () => {
   describe('isApexDocCommentString', () => {
@@ -32,9 +86,10 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.kind).toBe('ApexDocComment');
-      expect(result!.mainDescription).toBe('This is a simple description.');
-      expect(result!.blockTags).toHaveLength(0);
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.kind).toBe('ApexDocComment');
+      expect(result.mainDescription).toBe('This is a simple description.');
+      expect(result.blockTags).toHaveLength(0);
     });
 
     it('should parse multi-line ApexDoc comment', () => {
@@ -45,8 +100,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.mainDescription).toContain('multi-line description');
-      expect(result!.blockTags).toHaveLength(0);
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.mainDescription).toContain('multi-line description');
+      expect(result.blockTags).toHaveLength(0);
     });
 
     it('should parse ApexDoc comment with @param tag', () => {
@@ -57,9 +113,10 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocParam');
-      expect((result!.blockTags[0] as any).paramName).toBe('name');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocParam');
+      expect((result.blockTags[0] as any).paramName).toBe('name');
     });
 
     it('should parse ApexDoc comment with multiple @param tags', () => {
@@ -71,11 +128,12 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(2);
-      expect(result!.blockTags[0].kind).toBe('ApexDocParam');
-      expect((result!.blockTags[0] as any).paramName).toBe('x');
-      expect(result!.blockTags[1].kind).toBe('ApexDocParam');
-      expect((result!.blockTags[1] as any).paramName).toBe('y');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(2);
+      expect(result.blockTags[0].kind).toBe('ApexDocParam');
+      expect((result.blockTags[0] as any).paramName).toBe('x');
+      expect(result.blockTags[1].kind).toBe('ApexDocParam');
+      expect((result.blockTags[1] as any).paramName).toBe('y');
     });
 
     it('should parse @return tag', () => {
@@ -86,8 +144,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocReturn');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocReturn');
     });
 
     it('should parse @author tag', () => {
@@ -98,8 +157,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocAuthor');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocAuthor');
     });
 
     it('should parse @deprecated tag', () => {
@@ -110,8 +170,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocDeprecated');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocDeprecated');
     });
 
     it('should parse @example tag', () => {
@@ -122,8 +183,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocExample');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocExample');
     });
 
     it('should parse @group tag', () => {
@@ -134,9 +196,10 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocGroup');
-      expect((result!.blockTags[0] as any).groupName).toBe('Utilities');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocGroup');
+      expect((result.blockTags[0] as any).groupName).toBe('Utilities');
     });
 
     it('should parse @group tag with description', () => {
@@ -147,8 +210,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags[0].kind).toBe('ApexDocGroup');
-      expect((result!.blockTags[0] as any).groupName).toBe('Utilities');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags[0].kind).toBe('ApexDocGroup');
+      expect((result.blockTags[0] as any).groupName).toBe('Utilities');
     });
 
     it('should parse @see tag', () => {
@@ -159,8 +223,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocSee');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocSee');
     });
 
     it('should parse @since tag', () => {
@@ -171,8 +236,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocSince');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocSince');
     });
 
     it('should parse @throws tag with exception type', () => {
@@ -183,9 +249,10 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocThrows');
-      expect((result!.blockTags[0] as any).exceptionType).toBe('IllegalArgumentException');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocThrows');
+      expect((result.blockTags[0] as any).exceptionType).toBe('IllegalArgumentException');
     });
 
     it('should parse @throws tag without exception type', () => {
@@ -196,7 +263,8 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags[0].kind).toBe('ApexDocThrows');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags[0].kind).toBe('ApexDocThrows');
     });
 
     it('should parse @version tag', () => {
@@ -207,8 +275,9 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags).toHaveLength(1);
-      expect(result!.blockTags[0].kind).toBe('ApexDocVersion');
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags).toHaveLength(1);
+      expect(result.blockTags[0].kind).toBe('ApexDocVersion');
     });
 
     it('should parse comment with all block tags', () => {
@@ -225,7 +294,8 @@ describe('ApexDoc Parser', () => {
       const result = parseApexDocComment(comment);
 
       expect(result).not.toBeNull();
-      expect(result!.blockTags.length).toBeGreaterThan(5);
+      if (!result) throw new Error('Expected parseApexDocComment to return a result');
+      expect(result.blockTags.length).toBeGreaterThan(5);
     });
 
     describe('Inline Tags', () => {
@@ -236,7 +306,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toContain('String');
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toContain('String');
       });
 
       it('should parse {@link} tag', () => {
@@ -246,7 +317,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toContain('OtherClass');
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toContain('OtherClass');
       });
 
       it('should parse {@literal} tag', () => {
@@ -256,7 +328,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toContain('<code>');
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toContain('<code>');
       });
 
       it('should parse {@hidden} tag', () => {
@@ -266,7 +339,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toContain('internal');
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toContain('internal');
       });
 
       it('should parse multiple inline tags', () => {
@@ -277,8 +351,9 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toContain('String');
-        expect(result!.mainDescription).toContain('Integer');
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toContain('String');
+        expect(result.mainDescription).toContain('Integer');
       });
 
       it('should parse inline tags in block tag descriptions', () => {
@@ -289,7 +364,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.blockTags[0].description.length).toBeGreaterThan(0);
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.blockTags[0].description.length).toBeGreaterThan(0);
       });
     });
 
@@ -325,8 +401,9 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toBe('');
-        expect(result!.blockTags).toHaveLength(0);
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toBe('');
+        expect(result.blockTags).toHaveLength(0);
       });
 
       it('should handle comment with only tags', () => {
@@ -336,8 +413,9 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toBe('');
-        expect(result!.blockTags).toHaveLength(1);
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toBe('');
+        expect(result.blockTags).toHaveLength(1);
       });
 
       it('should handle malformed @param tag', () => {
@@ -359,7 +437,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment, location);
 
         expect(result).not.toBeNull();
-        expect(result!.location).toEqual(location);
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.location).toEqual(location);
       });
 
       it('should handle comment without location when includeLocation is false', () => {
@@ -374,7 +453,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment, location, options);
 
         expect(result).not.toBeNull();
-        expect(result!.location).toBeUndefined();
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.location).toBeUndefined();
       });
 
       it('should handle multi-line block tags', () => {
@@ -387,7 +467,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.blockTags).toHaveLength(1);
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.blockTags).toHaveLength(1);
       });
 
       it('should handle comments with extra whitespace', () => {
@@ -399,7 +480,8 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toContain('Description');
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toContain('Description');
       });
     });
 
@@ -423,8 +505,9 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.mainDescription).toContain('Calculates');
-        expect(result!.blockTags.length).toBeGreaterThanOrEqual(6);
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.mainDescription).toContain('Calculates');
+        expect(result.blockTags.length).toBeGreaterThanOrEqual(6);
       });
 
       it('should parse class documentation with group', () => {
@@ -442,9 +525,10 @@ describe('ApexDoc Parser', () => {
         const result = parseApexDocComment(comment);
 
         expect(result).not.toBeNull();
-        expect(result!.blockTags.some((tag) => tag.kind === 'ApexDocGroup')).toBe(true);
-        expect(result!.blockTags.some((tag) => tag.kind === 'ApexDocAuthor')).toBe(true);
-        expect(result!.blockTags.some((tag) => tag.kind === 'ApexDocVersion')).toBe(true);
+        if (!result) throw new Error('Expected parseApexDocComment to return a result');
+        expect(result.blockTags.some((tag) => tag.kind === 'ApexDocGroup')).toBe(true);
+        expect(result.blockTags.some((tag) => tag.kind === 'ApexDocAuthor')).toBe(true);
+        expect(result.blockTags.some((tag) => tag.kind === 'ApexDocVersion')).toBe(true);
       });
     });
   });
@@ -453,10 +537,6 @@ describe('ApexDoc Parser', () => {
 /**
  * Tests for comment mapping utilities.
  */
-
-import { extractComments, findAssociatedNode } from '../../src/utils/comment-utils.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import type { CommentInfo } from '../../src/utils/comment-utils.js';
 
 describe('Comment Mapping Utilities', () => {
   describe('findAssociatedNode', () => {
@@ -477,7 +557,10 @@ describe('Comment Mapping Utilities', () => {
 
       const result = findAssociatedNode(node, comment, source);
       // Result may be null if no good match found, which is acceptable
-      expect(result === null || result.node !== undefined).toBe(true);
+      if (result) {
+        expect(result.distance).toBeGreaterThanOrEqual(0);
+        expect(['attached', 'enclosing', 'following', 'preceding']).toContain(result.relationship);
+      }
     });
 
     it('should find enclosing node when comment is at node position', () => {
@@ -496,9 +579,9 @@ describe('Comment Mapping Utilities', () => {
 
       const result = findAssociatedNode(node, comment, 'test // comment');
       // Result may find enclosing node or be null
-      expect(
-        result === null || result.relationship === 'enclosing' || result.node !== undefined
-      ).toBe(true);
+      if (result) {
+        expect(result.relationship).toBe('enclosing');
+      }
     });
 
     it('should prefer preceding node when preferPreceding is true', () => {
@@ -518,8 +601,10 @@ describe('Comment Mapping Utilities', () => {
       const result = findAssociatedNode(node, comment, 'test // comment', {
         preferPreceding: true,
       });
-      // Result may be null or find preceding node
-      expect(result === null || result !== null).toBe(true);
+      // If a node is found, we should prefer a preceding relationship for this layout.
+      if (result) {
+        expect(result.relationship).toBe('preceding');
+      }
     });
 
     it('should try following node when preferPreceding is false', () => {
@@ -539,8 +624,10 @@ describe('Comment Mapping Utilities', () => {
       const result = findAssociatedNode(node, comment, '// comment test', {
         preferPreceding: false,
       });
-      // Result may be null or find following node
-      expect(result === null || result !== null).toBe(true);
+      // If a node is found, we should prefer following when preferPreceding is false.
+      if (result) {
+        expect(result.relationship).toBe('following');
+      }
     });
 
     it('should respect maxDistance option', () => {
@@ -561,7 +648,7 @@ describe('Comment Mapping Utilities', () => {
         maxDistance: 10,
       });
       // Result should be null if distance exceeds maxDistance
-      expect(result === null || result !== null).toBe(true);
+      expect(result).toBeNull();
     });
 
     it('should return null when no associated node found', () => {
@@ -901,11 +988,6 @@ public class Test {}`;
  * Ported from com.google.summit.ast.traversal.DfsWalkerTest
  * Enhanced version of traversal.test.ts.
  */
-
-import { walkAST } from '../../src/utils/traversal.js';
-import type { ASTWalkVisitor } from '../../src/utils/traversal.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import type { ASTNode } from '../../src/ast/base.js';
 
 /**
  * Create a test AST structure for traversal tests
@@ -1283,17 +1365,6 @@ describe('DFS Walker', () => {
  * Tests for node finding utilities.
  */
 
-import {
-  findNodeAtPosition,
-  findNodesInRange,
-  getNodePath,
-  getNodeMetadata,
-  isNodeType,
-} from '../../src/utils/node-finder.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import type { Position } from '../../src/utils/source-extraction.js';
-import type { SourceRange } from '../../src/ast/base.js';
-
 describe('Node Finder Utilities', () => {
   describe('findNodeAtPosition', () => {
     it('should find node at position', () => {
@@ -1483,14 +1554,6 @@ describe('Node Finder Utilities', () => {
 /**
  * Tests for rule matching utilities.
  */
-
-import {
-  wouldTriggerRule,
-  findRuleMatches,
-  validateXPath,
-  getXPathFeatureSupport,
-} from '../../src/utils/rule-matching.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
 
 describe('Rule Matching Utilities', () => {
   describe('wouldTriggerRule', () => {
@@ -1752,7 +1815,9 @@ describe('Rule Matching Utilities', () => {
       expect(support.supportsXPath31).toBe(false);
       expect(support.supportedAxes).toContain('descendant-or-self');
       expect(support.unsupportedFeatures).toBeDefined();
-      expect(support.unsupportedFeatures!.length).toBeGreaterThan(0);
+      if (!support.unsupportedFeatures)
+        throw new Error('Expected unsupportedFeatures to be defined');
+      expect(support.unsupportedFeatures.length).toBeGreaterThan(0);
     });
   });
 });
@@ -1761,24 +1826,6 @@ describe('Rule Matching Utilities', () => {
  * Tests for source extraction utilities
  * Ported from com.google.summit.translation.SourceLocationTest.
  */
-
-import {
-  getSourceText,
-  getSourceRange,
-  locationToOffset,
-  offsetToLocation,
-  UNKNOWN_SOURCE_LOCATION,
-  isUnknownLocation,
-  isPositionInRange,
-  isPositionBefore,
-  isPositionAfter,
-  getDistanceToRange,
-} from '../../src/utils/source-extraction.js';
-import type { Position } from '../../src/utils/source-extraction.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
-import { isClassDeclaration, isVariableDeclaration } from '../../src/ast/type-guards.js';
-import type { SourceRange } from '../../src/ast/base.js';
 
 describe('Source Extraction Utilities', () => {
   const sourceCode = `public class Test {
@@ -1927,7 +1974,7 @@ describe('Source Extraction Utilities', () => {
         }
       `.trim();
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         const extracted = getSourceText(cu, input);
         expect(extracted).toContain('class Test');
       }
@@ -1953,7 +2000,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(0);
         const extracted = getSourceText(cu, input);
@@ -1965,7 +2012,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n ';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(1);
         const extracted = getSourceText(cu, input);
@@ -1977,7 +2024,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\npublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         // The source location starts from the first regular token
         expect(cu.location.start.line).toBe(2);
         expect(cu.location.start.column).toBeGreaterThanOrEqual(0);
@@ -1988,7 +2035,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\t\tpublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.start.column).toBeGreaterThanOrEqual(2);
       }
     });
@@ -2078,18 +2125,6 @@ describe('Source Extraction Utilities', () => {
 /**
  * Tests for AST traversal utilities.
  */
-
-import {
-  walkAST,
-  getAncestors,
-  buildParentMap,
-  findNodesByType,
-  getParentNode,
-  getChildNodesByType,
-  getNodeChildren,
-} from '../../src/utils/traversal.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import type { ASTWalkVisitor } from '../../src/utils/traversal.js';
 
 describe('AST Traversal Utilities', () => {
   describe('walkAST', () => {
@@ -2287,6 +2322,7 @@ describe('AST Traversal Utilities', () => {
     });
 
     it('should handle unknown node types generically', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         child1: NodeFactory.createIdentifier('child1'),
         childArray: [
@@ -2295,6 +2331,7 @@ describe('AST Traversal Utilities', () => {
         ],
         kind: 'UnknownNodeType',
       };
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
       const children = getNodeChildren(unknownNode);
       expect(children.length).toBe(3);
     });
@@ -2334,13 +2371,6 @@ describe('AST Traversal Utilities', () => {
 /**
  * Tests for apex-parser batch functions.
  */
-import {
-  parseApexCode,
-  parseMultipleFiles,
-  extractCommentsBatch,
-  isUsableParseResult,
-} from '../../src/utils/apex-parser.js';
-import { extractComments } from '../../src/utils/comment-utils.js';
 
 describe('apex-parser batch functions', () => {
   describe('parseMultipleFiles', () => {

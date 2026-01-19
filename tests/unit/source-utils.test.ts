@@ -3,7 +3,6 @@
  * Ported from com.google.summit.translation.SourceLocationTest.
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   getSourceText,
   getSourceRange,
@@ -169,7 +168,7 @@ describe('Source Extraction Utilities', () => {
         }
       `.trim();
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         const extracted = getSourceText(cu, input);
         expect(extracted).toContain('class Test');
       }
@@ -195,7 +194,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(0);
         const extracted = getSourceText(cu, input);
@@ -207,7 +206,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n ';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(1);
         const extracted = getSourceText(cu, input);
@@ -219,7 +218,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\npublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         // The source location starts from the first regular token
         expect(cu.location.start.line).toBe(2);
         expect(cu.location.start.column).toBeGreaterThanOrEqual(0);
@@ -230,7 +229,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\t\tpublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.start.column).toBeGreaterThanOrEqual(2);
       }
     });
@@ -517,24 +516,6 @@ describe('Node Finder Utilities', () => {
  * Ported from com.google.summit.translation.SourceLocationTest.
  */
 
-import {
-  getSourceText,
-  getSourceRange,
-  locationToOffset,
-  offsetToLocation,
-  UNKNOWN_SOURCE_LOCATION,
-  isUnknownLocation,
-  isPositionInRange,
-  isPositionBefore,
-  isPositionAfter,
-  getDistanceToRange,
-} from '../../src/utils/source-extraction.js';
-import type { Position } from '../../src/utils/source-extraction.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
-import { isClassDeclaration, isVariableDeclaration } from '../../src/ast/type-guards.js';
-import type { SourceRange } from '../../src/ast/base.js';
-
 describe('Source Extraction Utilities', () => {
   const sourceCode = `public class Test {
     private Integer value = 42;
@@ -682,7 +663,7 @@ describe('Source Extraction Utilities', () => {
         }
       `.trim();
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         const extracted = getSourceText(cu, input);
         expect(extracted).toContain('class Test');
       }
@@ -708,7 +689,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(0);
         const extracted = getSourceText(cu, input);
@@ -720,7 +701,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n ';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(1);
         const extracted = getSourceText(cu, input);
@@ -732,7 +713,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\npublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         // The source location starts from the first regular token
         expect(cu.location.start.line).toBe(2);
         expect(cu.location.start.column).toBeGreaterThanOrEqual(0);
@@ -743,7 +724,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\t\tpublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu?.location) {
+      if (cu.location) {
         expect(cu.location.start.column).toBeGreaterThanOrEqual(2);
       }
     });

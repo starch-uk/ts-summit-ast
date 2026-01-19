@@ -2,7 +2,6 @@
  * Integration tests for AST translator.
  */
 
-import { describe, it, expect } from 'vitest';
 import { ASTTranslator } from '../../src/translator/ASTTranslator.js';
 import type { ParseTreeNode } from '../../src/parser/ParseTreeTypes.js';
 import {
@@ -31,7 +30,9 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isVariableExpression(result.ast!)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       if (isVariableExpression(result.ast!)) {
         expect(result.ast.id.name).toBe('myVariable');
       }
@@ -46,7 +47,9 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isStringLiteral(result.ast!)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       if (isStringLiteral(result.ast!)) {
         expect(result.ast.value).toBe('hello world');
       }
@@ -61,7 +64,9 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isNumberLiteral(result.ast!)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       if (isNumberLiteral(result.ast!)) {
         expect(result.ast.value).toBe(42);
       }
@@ -76,7 +81,9 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isBooleanLiteral(result.ast!)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       if (isBooleanLiteral(result.ast!)) {
         expect(result.ast.value).toBe(true);
       }
@@ -90,6 +97,7 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isNullLiteral(result.ast!)).toBe(true);
     });
 
@@ -110,7 +118,9 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isBinaryExpression(result.ast!)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       if (isBinaryExpression(result.ast!)) {
         expect(result.ast.operator).toBe('+');
       }
@@ -135,7 +145,9 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isMethodCallExpression(result.ast!)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       if (isMethodCallExpression(result.ast!)) {
         expect(result.ast.methodName).toBe('doSomething');
         expect(result.ast.arguments).toHaveLength(2);
@@ -156,6 +168,7 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isReturnStatement(result.ast!)).toBe(true);
     });
 
@@ -167,6 +180,7 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isReturnStatement(result.ast!)).toBe(true);
     });
 
@@ -196,6 +210,7 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isIfStatement(result.ast!)).toBe(true);
     });
 
@@ -223,7 +238,9 @@ describe('AST Translator', () => {
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
       expect(result.ast).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       expect(isBlock(result.ast!)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with toBeDefined
       if (isBlock(result.ast!)) {
         expect(result.ast.statements).toHaveLength(2);
       }

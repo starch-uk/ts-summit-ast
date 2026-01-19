@@ -103,10 +103,10 @@ export class SummitTool {
           success: false,
         });
       }
-    } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Catch clause assigns unknown error type
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       results.push({
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
         file: input,
         success: false,
       });
@@ -224,9 +224,10 @@ export class SummitTool {
         file: filePath,
         success: true,
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
         file: filePath,
         success: false,
       };

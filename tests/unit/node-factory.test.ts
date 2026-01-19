@@ -2,7 +2,6 @@
  * Comprehensive tests for NodeFactory.
  */
 
-import { describe, it, expect } from 'vitest';
 import { NodeFactory } from '../../src/translator/NodeFactory.js';
 import { ExpressionFactory } from '../../src/translator/NodeFactoryExpressions.js';
 import { LiteralFactory } from '../../src/translator/NodeFactoryLiterals.js';

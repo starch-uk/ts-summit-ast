@@ -415,7 +415,7 @@ function matchCommentPattern(
  * @example
  * ```typescript
  * const result = parseApexCode('public class Test { // comment }');
- * const comments = extractComments(result.ast!, 'public class Test { // comment }', {
+ * const comments = extractComments(result.ast ?? null, 'public class Test { // comment }', {
  *   associateNodes: true,
  *   includeLineComments: true,
  *   commentPatterns: [

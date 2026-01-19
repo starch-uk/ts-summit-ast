@@ -143,8 +143,8 @@ export interface ASTComparisonResult {
  * @returns Comparison result with any differences found.
  * @example
  * ```typescript
- * const ast1 = parseApexCode('public class Test { }').ast!;
- * const ast2 = parseApexCode('public class Test { }').ast!;
+ * const ast1 = parseApexCode('public class Test { }').ast ?? null;
+ * const ast2 = parseApexCode('public class Test { }').ast ?? null;
  * const comparison = compareASTs(ast1, ast2);
  * if (comparison.equal) {
  *   console.log('ASTs are structurally equivalent');

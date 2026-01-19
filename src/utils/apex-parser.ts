@@ -307,7 +307,7 @@ export function parseMultipleFiles(
  * @throws {Error} If the lengths of asts and sources arrays do not match.
  * @example
  * ```typescript
- * const asts = [result1.ast!, result2.ast!];
+ * const asts = [result1.ast ?? null, result2.ast ?? null].filter((ast): ast is ASTNode => ast !== null);
  * const sources = ['public class Test1 { }', 'public class Test2 { }'];
  * const commentsArrays = extractCommentsBatch(asts, sources, {
  *   associateNodes: true,

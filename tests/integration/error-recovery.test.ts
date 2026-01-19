@@ -3,7 +3,6 @@
  * Tests how the parser handles malformed or invalid Apex code.
  */
 
-import { describe, it, expect } from 'vitest';
 import { parseApexCode } from '../../src/utils/apex-parser.js';
 import { validateAST } from '../../src/utils/ast-validation.js';
 import { findFirstNodeOfType } from '../translate-helpers.js';
@@ -82,7 +81,7 @@ describe('Error Recovery and Partial Parsing', () => {
         expect(classDecl).not.toBeNull();
 
         // Should have at least the valid method
-        if (classDecl && classDecl.members) {
+        if (classDecl) {
           const validMethod = classDecl.members.find(
             (m) => isMethodDeclaration(m) && m.name === 'validMethod'
           );

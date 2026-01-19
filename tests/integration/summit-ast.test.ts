@@ -3,7 +3,6 @@
  * Ported from com.google.summit.SummitASTTest.
  */
 
-import { describe, it, expect } from 'vitest';
 import { parseApexCode } from '../../src/utils/apex-parser.js';
 
 describe('SummitAST Parsing', () => {

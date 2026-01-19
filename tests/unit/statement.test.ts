@@ -3,7 +3,6 @@
  * Ported from com.google.summit.translation.StatementTest.
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   parseAndTranslate,
   findFirstNodeOfType,
@@ -39,13 +38,14 @@ import {
   isVariableDeclaration,
 } from '../../src/ast/type-guards.js';
 import { getNodeChildren } from '../../src/utils/traversal.js';
+import type { ASTNode } from '../../src/ast/base.js';
 
 describe('Statement Translation', () => {
   /**
    * Counts the number of untranslated statement nodes in the AST.
    * @param node
    */
-  function countUntranslatedStatements(node: any): number {
+  function countUntranslatedStatements(node: ASTNode): number {
     return countNodesOfType(
       node,
       (n) => n.kind === 'UntranslatedStatement' || n.kind === 'Untranslated'
@@ -56,7 +56,7 @@ describe('Statement Translation', () => {
    * Concatenates the string into a method body and returns the AST.
    * @param statement
    */
-  function parseApexStatementInCode(statement: string): any {
+  function parseApexStatementInCode(statement: string): ASTNode {
     return parseAndTranslate(
       `
         class Test {
@@ -75,7 +75,8 @@ describe('Statement Translation', () => {
     const classDecl = findFirstNodeOfType(compilationUnit, isClassDeclaration);
     expect(classDecl).not.toBeNull();
     // Original: val methodDecl = classDecl.methodDeclarations.first()
-    const methodDecl = classDecl.members.find((m) => isMethodDeclaration(m)) as any;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked that classDecl is not null
+    const methodDecl = classDecl!.members.find((m) => isMethodDeclaration(m));
     // Original: assertNotNull(methodDecl.body)
     expect(methodDecl.body).toBeDefined();
     // Original: assertThat(methodDecl.body?.statements).hasSize(2)
@@ -91,7 +92,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertThat(node.condition).isInstanceOf(VariableExpression::class.java)
-    expect(isVariableExpression(node.condition)).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    expect(isVariableExpression(node!.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
     const conditionVariable = node.condition as any;
@@ -257,7 +259,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertThat(node.condition).isInstanceOf(VariableExpression::class.java)
-    expect(isVariableExpression(node.condition)).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    expect(isVariableExpression(node!.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
     const conditionVariable = node.condition as any;
@@ -271,7 +274,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertThat(node.condition).isInstanceOf(VariableExpression::class.java)
-    expect(isVariableExpression(node.condition)).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    expect(isVariableExpression(node!.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
     const conditionVariable = node.condition as any;
@@ -330,7 +334,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 
@@ -341,7 +346,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 
@@ -374,7 +380,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
     // Original: assertWithMessage("Node should have default/unspecified access")
     //           .that(node.access).isNull()
@@ -389,7 +396,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 
@@ -400,7 +408,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 
@@ -411,7 +420,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 
@@ -476,7 +486,8 @@ describe('Statement Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 

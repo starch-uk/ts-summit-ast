@@ -2,7 +2,6 @@
  * Tests for AST validation utilities.
  */
 
-import { describe, it, expect } from 'vitest';
 import { validateAST, compareASTs, getASTStatistics } from '../../src/utils/ast-validation.js';
 import { NodeFactory } from '../../src/translator/NodeFactory.js';
 import { parseApexCode } from '../../src/utils/apex-parser.js';
@@ -18,10 +17,12 @@ describe('AST Validation', () => {
     });
 
     it('should detect missing kind property', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing invalid node structure
       const node: any = {
         name: 'test',
         // Missing kind property
       };
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing invalid node structure
       const result = validateAST(node);
 
       expect(result.valid).toBe(false);

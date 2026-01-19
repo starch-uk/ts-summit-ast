@@ -2,7 +2,6 @@
  * Tests for base AST types and node creation.
  */
 
-import { describe, it, expect } from 'vitest';
 import type { ASTNode, SourceLocation, SourceRange } from '../../src/ast/base.js';
 import { NodeFactory } from '../../src/translator/NodeFactory.js';
 import {

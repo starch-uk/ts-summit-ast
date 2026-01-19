@@ -3,8 +3,11 @@
  * Ported from com.google.summit.translation.CompilationUnitTest.
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
+import {
+  parseAndTranslate,
+  findFirstNodeOfType,
+  assertFullyTranslated,
+} from '../translate-helpers.js';
 import { parseApexCode } from '../../src/utils/apex-parser.js';
 import {
   isEnumDeclaration,
@@ -15,6 +18,28 @@ import {
   isSoslQueryExpression,
   isMethodCallExpression,
   isCallExpression,
+  isNewExpression,
+  isThisExpression,
+  isSuperExpression,
+  isIdentifier,
+  isBinaryExpression,
+  isFieldExpression,
+  isUnaryExpression,
+  isTernaryExpression,
+  isCastExpression,
+  isArrayExpression,
+  isVariableExpression,
+  isStringLiteral,
+  isNullLiteral,
+  isBooleanLiteral,
+  isIntegerVal,
+  isDecimalVal,
+  isDoubleVal,
+  isLongVal,
+  isConstructorInitializer,
+  isValuesInitializer,
+  isSizedArrayInitializer,
+  isMapInitializer,
 } from '../../src/ast/type-guards.js';
 import type { ASTNode } from '../../src/ast/base.js';
 import type { Statement } from '../../src/ast/Statement.js';
@@ -28,7 +53,7 @@ import { getNodeChildren, getParentNode } from '../../src/utils/traversal.js';
  * @param typeRef
  */
 function typeRefToTypeErasedString(typeRef: TypeRef): string {
-  if (!typeRef.components || typeRef.components.length === 0) {
+  if (typeRef.components.length === 0) {
     return 'void';
   }
   const typeString = typeRef.components.map((comp) => comp.id.name).join('.');
@@ -182,38 +207,12 @@ describe('TypeRef Translation', () => {
  * Ported from com.google.summit.translation.ExpressionTest.
  */
 
-import { describe, it, expect } from 'vitest';
-import {
-  parseAndTranslate,
-  findFirstNodeOfType,
-  countNodesOfType,
-  assertFullyTranslated,
-} from '../translate-helpers.js';
-import {
-  isThisExpression,
-  isSuperExpression,
-  isIdentifier,
-  isSoqlExpression,
-  isSoslExpression,
-  isBinaryExpression,
-  isFieldExpression,
-  isArrayExpression,
-  isNewExpression,
-  isCallExpression,
-  isCastExpression,
-  isTernaryExpression,
-  isUnaryExpression,
-  isParenthesizedExpression,
-  isVariableExpression,
-} from '../../src/ast/type-guards.js';
-import { getNodeChildren } from '../../src/utils/traversal.js';
-
 describe('Expression Translation', () => {
   /**
    * Counts the number of untranslated expression nodes in the AST.
    * @param node
    */
-  function countUntranslatedExpressions(node: any): number {
+  function countUntranslatedExpressions(node: ASTNode): number {
     return countNodesOfType(
       node,
       (n) => n.kind === 'UntranslatedExpression' || n.kind === 'Untranslated'
@@ -224,7 +223,7 @@ describe('Expression Translation', () => {
    * Concatenates the string in a field initializer context and returns the AST.
    * @param expression
    */
-  function parseApexExpressionInCode(expression: string): any {
+  function parseApexExpressionInCode(expression: string): ASTNode {
     return parseAndTranslate(
       `
         class Test {
@@ -241,7 +240,8 @@ describe('Expression Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have no children").that(node?.getChildren()).isEmpty()
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(0);
   });
 
@@ -252,7 +252,8 @@ describe('Expression Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have no children").that(node?.getChildren()).isEmpty()
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(0);
   });
 
@@ -272,7 +273,8 @@ describe('Expression Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertThat(node?.id?.asCodeString()).isEqualTo("id")
-    expect(node.name).toBe('id');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    expect(node!.name).toBe('id');
   });
 
   it('soql primary translation has bound expressions', () => {
@@ -282,7 +284,8 @@ describe('Expression Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node?.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 
@@ -293,7 +296,8 @@ describe('Expression Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node?.getChildren()).hasSize(1)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(1);
   });
 
@@ -334,10 +338,12 @@ describe('Expression Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have two children").that(node.getChildren()).hasSize(2)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(2);
     // Original: assertThat(node.isSafe).isFalse()
-    expect(node.isSafe).toBe(false);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    expect(node!.isSafe).toBe(false);
     // Original: assertThat(node.field.asCodeString()).isEqualTo("y")
     expect(node.fieldName).toBe('y');
   });
@@ -359,7 +365,8 @@ describe('Expression Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have two children").that(node.getChildren()).hasSize(2)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(2);
   });
 
@@ -538,7 +545,8 @@ describe('Expression Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have two children").that(node.getChildren()).hasSize(2)
-    const children = getNodeChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const children = getNodeChildren(node!);
     expect(children.length).toBe(2);
     // Original: assertThat(node.type.asCodeString()).isEqualTo("String")
     // Note: Type may be accessed via node.type (TypeRef)
@@ -720,19 +728,6 @@ describe('SOQL and SOSL Translation', () => {
  * Ported from com.google.summit.translation.LiteralExpressionTest.
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
-import {
-  isNullLiteral,
-  isBooleanLiteral,
-  isNumberLiteral,
-  isStringLiteral,
-  isIntegerVal,
-  isLongVal,
-  isDecimalVal,
-  isDoubleVal,
-} from '../../src/ast/type-guards.js';
-
 describe('Literal Expression Translation', () => {
   /**
    * Concatenates the string in a field initializer context and returns the AST.
@@ -870,7 +865,7 @@ describe('Literal Expression Translation', () => {
     // This handles cases where the parser reports errors instead of throwing
     if (!errorThrown) {
       const result = parseApexCode(code);
-      if (result.errors && result.errors.length > 0) {
+      if (result.errors.length > 0) {
         // Errors were reported, which is acceptable alternative to throwing
         // Original: assertFailsWith expects an exception, but error reporting is also valid
         expect(result.errors.length).toBeGreaterThan(0);
@@ -902,20 +897,7 @@ describe('Literal Expression Translation', () => {
  * Ported from com.google.summit.translation.InitializerTest.
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
-import {
-  isNewExpression,
-  isStringLiteral,
-  isIntegerVal,
-  isConstructorInitializer,
-  isValuesInitializer,
-  isMapInitializer,
-  isSizedArrayInitializer,
-} from '../../src/ast/type-guards.js';
 import type { NewExpression } from '../../src/ast/Expression.js';
-import type { TypeRef } from '../../src/ast/Type.js';
-import { getNodeChildren } from '../../src/utils/traversal.js';
 
 describe('Initializer Translation', () => {
   /**
@@ -942,9 +924,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val ctorInitializer = node.initializer as? ConstructorInitializer
     // Original: assertNotNull(ctorInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isConstructorInitializer(initializer)).toBe(true);
     // Original: assertThat(ctorInitializer.type.asCodeString()).isEqualTo("String")
+
     expect(typeRefToCodeString(initializer.type)).toBe('String');
     // Original: assertThat(ctorInitializer.args).hasSize(1)
     expect(initializer.args).toHaveLength(1);
@@ -957,7 +942,9 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).isEmpty()
     expect(initializer.values).toHaveLength(0);
@@ -970,7 +957,9 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).isEmpty()
     expect(initializer.values).toHaveLength(0);
@@ -983,15 +972,19 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val mapInitializer = node.initializer as? MapInitializer
     // Original: assertNotNull(mapInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isMapInitializer(initializer)).toBe(true);
     // Original: assertThat(mapInitializer.pairs).hasSize(2)
     expect(initializer.pairs).toHaveLength(2);
     // Original: val firstKeyValuePair = mapInitializer.pairs.first()
     const firstKeyValuePair = initializer.pairs[0];
     // Original: assertThat(firstKeyValuePair.first).isInstanceOf(LiteralExpression.StringVal::class.java)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- firstKeyValuePair.key type is narrowed by isStringLiteral check
     expect(isStringLiteral(firstKeyValuePair.key)).toBe(true);
     // Original: assertThat(firstKeyValuePair.second).isInstanceOf(LiteralExpression.StringVal::class.java)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- firstKeyValuePair.value type is narrowed by isStringLiteral check
     expect(isStringLiteral(firstKeyValuePair.value)).toBe(true);
   });
 
@@ -1002,7 +995,9 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).hasSize(3)
     expect(initializer.values).toHaveLength(3);
@@ -1015,7 +1010,9 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).hasSize(3)
     expect(initializer.values).toHaveLength(3);
@@ -1028,7 +1025,9 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).hasSize(3)
     expect(initializer.values).toHaveLength(3);
@@ -1041,9 +1040,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val arrayInitializer = node.initializer as? SizedArrayInitializer
     // Original: assertNotNull(arrayInitializer)
-    const { initializer } = node;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
+    const { initializer } = node!;
+
     expect(isSizedArrayInitializer(initializer)).toBe(true);
     // Original: assertThat(arrayInitializer.size).isInstanceOf(LiteralExpression.IntegerVal::class.java)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- initializer.size type is narrowed after isSizedArrayInitializer check
     expect(isIntegerVal(initializer.size)).toBe(true);
   });
 });

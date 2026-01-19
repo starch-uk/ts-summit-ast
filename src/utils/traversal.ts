@@ -282,57 +282,27 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const decl = node as VariableDeclaration;
       // TypeRef is not a node type, so we don't traverse it
-      if (
-        decl.modifiers !== null &&
-        decl.modifiers !== undefined &&
-        Array.isArray(decl.modifiers)
-      ) {
-        children.push(...decl.modifiers);
-      }
-      if (decl.annotations !== null && decl.annotations !== undefined) {
-        children.push(...decl.annotations);
-      }
-      if (decl.initializer !== null && decl.initializer !== undefined) {
-        children.push(decl.initializer);
-      }
+      if (decl.modifiers) children.push(...decl.modifiers);
+      if (decl.annotations) children.push(...decl.annotations);
+      if (decl.initializer) children.push(decl.initializer);
       break;
     }
     case 'ClassDeclaration': {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const decl = node as ClassDeclaration;
       // TypeRef is not a node type, so we don't traverse extendsClause or implementsClause
-      if (
-        decl.modifiers !== null &&
-        decl.modifiers !== undefined &&
-        Array.isArray(decl.modifiers)
-      ) {
-        children.push(...decl.modifiers);
-      }
-      if (decl.annotations !== null && decl.annotations !== undefined) {
-        children.push(...decl.annotations);
-      }
-      if (decl.members !== null && decl.members !== undefined) {
-        children.push(...decl.members);
-      }
+      children.push(...decl.modifiers);
+      if (decl.annotations) children.push(...decl.annotations);
+      children.push(...decl.members);
       break;
     }
     case 'MethodDeclaration': {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const decl = node as MethodDeclaration;
-      if (
-        decl.modifiers !== null &&
-        decl.modifiers !== undefined &&
-        Array.isArray(decl.modifiers)
-      ) {
-        children.push(...decl.modifiers);
-      }
-      if (decl.annotations !== null && decl.annotations !== undefined) {
-        children.push(...decl.annotations);
-      }
+      children.push(...decl.modifiers);
+      if (decl.annotations) children.push(...decl.annotations);
       children.push(...decl.parameters);
-      if (decl.body !== null && decl.body !== undefined) {
-        children.push(decl.body);
-      }
+      if (decl.body) children.push(decl.body);
       break;
     }
     case 'TypeRef': {
@@ -341,12 +311,8 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
       // TypeRef children are: identifiers from all components + type arguments from all components
       for (const comp of typeRef.components) {
         children.push(comp.id);
-        if (comp.args) {
-          for (const arg of comp.args) {
-            if (arg && typeof arg === 'object' && 'kind' in arg) {
-              children.push(arg as ASTNode);
-            }
-          }
+        for (const arg of comp.args) {
+          children.push(arg);
         }
       }
       break;

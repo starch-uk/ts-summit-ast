@@ -3,14 +3,12 @@
  * Ported from com.google.summit.serialization.SerializationTest.
  */
 
-import { describe, it, expect } from 'vitest';
 import { JsonSerializer, JsonDeserializer } from '../../src/serialization/index.js';
 import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { parseAndTranslate } from '../translate-helpers.js';
+import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
 import type { Modifier } from '../../src/ast/Declaration.js';
-import { isVariableDeclarationStatement } from '../../src/ast/type-guards.js';
-import { findFirstNodeOfType } from '../translate-helpers.js';
 import {
+  isVariableDeclarationStatement,
   isIdentifier,
   isStringVal,
   isIntegerVal,
@@ -23,7 +21,31 @@ import {
   isReturnStatement,
   isCompoundStatement,
   isBlock,
+  isForStatement,
+  isWhileStatement,
+  isClassType,
+  isVariableDeclaration,
 } from '../../src/ast/type-guards.js';
+import {
+  getSourceText,
+  getSourceRange,
+  locationToOffset,
+  offsetToLocation,
+  UNKNOWN_SOURCE_LOCATION,
+  isUnknownLocation,
+  isPositionInRange,
+  isPositionBefore,
+  isPositionAfter,
+  getDistanceToRange,
+} from '../../src/utils/source-extraction.js';
+import type { Position } from '../../src/utils/source-extraction.js';
+import type { SourceRange } from '../../src/ast/base.js';
+import {
+  parseApexCode,
+  parseMultipleFiles,
+  extractCommentsBatch,
+  isUsableParseResult,
+} from '../../src/utils/apex-parser.js';
 
 describe('JSON Serialization', () => {
   const serializer = new JsonSerializer({ includeLocation: true });
@@ -128,9 +150,7 @@ describe('JSON Serialization', () => {
         // Original: assertNotNull(testTree)
         expect(testTree).not.toBeNull();
         // If deserialization succeeds, verify the kind matches original
-        if (testTree) {
-          expect(testTree.kind).toBe('CompilationUnit');
-        }
+        expect(testTree.kind).toBe('CompilationUnit');
       } catch (error) {
         // If CompilationUnit deserialization isn't supported yet,
         // we still verify that serialization works correctly
@@ -535,17 +555,6 @@ describe('JSON Serialization', () => {
  * Comprehensive serialization tests for all node types.
  */
 
-import { JsonDeserializer, JsonSerializer } from '../../src/serialization/index.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import {
-  isForStatement,
-  isWhileStatement,
-  isBinaryExpression,
-  isIdentifier,
-  isClassType,
-  isVariableDeclaration,
-} from '../../src/ast/type-guards.js';
-
 describe('Comprehensive Serialization', () => {
   const serializer = new JsonSerializer();
   const deserializer = new JsonDeserializer();
@@ -774,6 +783,7 @@ describe('Comprehensive Serialization', () => {
     it('should throw error for missing @type or kind', () => {
       const deserializer = new JsonDeserializer();
       expect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument -- Testing invalid JSON node structure
         deserializer.deserializeNode({} as any);
       }).toThrow('Invalid JSON AST node: missing @type or kind property');
     });
@@ -877,6 +887,7 @@ describe('Comprehensive Serialization', () => {
     it('should serialize unknown node types using serializeUnknownNode', () => {
       const serializer = new JsonSerializer();
       // Create a mock unknown node type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         kind: 'UnknownNodeType',
         property1: NodeFactory.createIdentifier('test'),
@@ -887,6 +898,7 @@ describe('Comprehensive Serialization', () => {
         },
         property4: 'primitive',
       };
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
       const json = serializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed['@type']).toBe('UnknownNodeType');
@@ -898,6 +910,7 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize unknown node with array of TypeRefs', () => {
       const serializer = new JsonSerializer();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         kind: 'UnknownNode',
         typeRefs: [
@@ -907,6 +920,7 @@ describe('Comprehensive Serialization', () => {
           },
         ],
       };
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
       const json = serializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed.typeRefs).toBeDefined();
@@ -915,10 +929,12 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize unknown node with empty array', () => {
       const serializer = new JsonSerializer();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         emptyArray: [],
         kind: 'UnknownNode',
       };
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
       const json = serializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       // Empty arrays should be serialized as primitives
@@ -1176,6 +1192,7 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize unknown node with array containing non-AST items', () => {
       const serializer = new JsonSerializer();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         kind: 'UnknownNode',
         mixedArray: [
@@ -1185,6 +1202,7 @@ describe('Comprehensive Serialization', () => {
           { kind: 'SomeNode', value: 'test' },
         ],
       };
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
       const json = serializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed.mixedArray).toBeDefined();

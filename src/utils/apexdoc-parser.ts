@@ -141,7 +141,11 @@ function cleanApexDocComment(commentText: string): string | null {
     const match = /^\s*\*\s?(.*)$/.exec(line);
     if (match) {
       const firstCaptureGroup = 1;
-      return match[firstCaptureGroup];
+      const captured = match[firstCaptureGroup];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Capture group can be undefined if not matched
+      if (captured !== undefined) {
+        return captured;
+      }
     }
     // If no asterisk, just trim
     return line.trimStart();
@@ -223,6 +227,10 @@ function parseBlockTag(
   const secondCaptureGroup = 2;
   const tagName = match[firstCaptureGroup];
   const content = match[secondCaptureGroup];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Capture groups can be undefined if not matched
+  if (tagName === undefined || content === undefined) {
+    return null;
+  }
 
   // Parse content (may contain inline tags)
   // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
@@ -283,7 +291,6 @@ function parseBlockTag(
       const groupMatch = /^(\w+)(?:\s+(.*))?$/.exec(content);
       if (groupMatch) {
         const [, groupName, descriptionText] = groupMatch;
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
         const desc = descriptionText ? parseContent(descriptionText, location, options) : [];
         return {
           description: desc,
@@ -304,14 +311,21 @@ function parseBlockTag(
       if (seeMatch) {
         const seeFirstCaptureGroup = 1;
         const seeSecondCaptureGroup = 2;
+        const seeReference = seeMatch[seeFirstCaptureGroup];
+        const seeDescriptionText = seeMatch[seeSecondCaptureGroup];
 
-        const seeDescription = seeMatch[seeSecondCaptureGroup]
-          ? parseContent(seeMatch[seeSecondCaptureGroup], location, options)
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Capture groups can be undefined if not matched
+        if (seeReference === undefined) {
+          return null;
+        }
+
+        const seeDescription = seeDescriptionText
+          ? parseContent(seeDescriptionText, location, options)
           : [];
         return {
           description: seeDescription,
           kind: 'ApexDocSee',
-          reference: seeMatch[seeFirstCaptureGroup],
+          reference: seeReference,
           ...(location ? { location } : {}),
         } as ApexDocSee;
       }
@@ -407,7 +421,8 @@ function parseContent(
     }
 
     const fullMatchIndex = 0;
-    currentPos = match.index + match[fullMatchIndex].length;
+    const fullMatch = match[fullMatchIndex];
+    currentPos = match.index + fullMatch.length;
   }
 
   // Add remaining text
@@ -494,11 +509,12 @@ function parseInlineTag(
       const linkMatch = /^(class#member|"[^"]*"|<a\s+href="[^"]*">([^<]*)<\/a>)/.exec(content);
       if (linkMatch) {
         const linkFirstCaptureGroup = 1;
-        const linkSecondCaptureGroup = 2;
+        const label = linkMatch.length > 2 ? linkMatch[2] : undefined;
+        const reference = linkMatch[linkFirstCaptureGroup];
         return {
           kind: 'ApexDocLink',
-          label: linkMatch[linkSecondCaptureGroup],
-          reference: linkMatch[linkFirstCaptureGroup],
+          ...(label ? { label } : {}),
+          reference,
           ...baseTag,
         } as ApexDocLink;
       }

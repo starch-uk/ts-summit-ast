@@ -2,7 +2,6 @@
  * Tests for visitor pattern.
  */
 
-import { describe, it, expect } from 'vitest';
 import { DefaultVisitor, type ASTVisitor } from '../../src/ast/base.js';
 import { NodeFactory } from '../../src/translator/NodeFactory.js';
 import type { ASTNode } from '../../src/ast/base.js';
@@ -127,11 +126,11 @@ describe('Visitor Pattern', () => {
  * Tests for type guard functions.
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   isStatement,
   isExpression,
   isLiteral,
+  isType,
   isDeclaration,
   isIfStatement,
   isForStatement,
@@ -143,11 +142,16 @@ import {
   isBinaryExpression,
   isMethodCallExpression,
   isVariableExpression,
+  isIdentifier,
   isStringLiteral,
   isNumberLiteral,
   isBooleanLiteral,
   isNullLiteral,
   isClassDeclaration,
+  isMethodDeclaration,
+  isVariableDeclaration,
+  isModifier,
+  isTriggerContextVariableExpression,
   isApexDocComment,
   isApexDocBlockTag,
   isApexDocInlineTag,
@@ -156,7 +160,29 @@ import {
   isApexDocGroup,
   isApexDocCode,
 } from '../../src/ast/type-guards.js';
-import type { ASTNode } from '../../src/ast/base.js';
+
+// #region agent log
+fetch('http://127.0.0.1:7250/ingest/3c5fc984-5244-4e90-a556-6aa06134b21f', {
+  body: JSON.stringify({
+    data: {
+      isIdentifier: typeof isIdentifier,
+      isMethodDeclaration: typeof isMethodDeclaration,
+      isModifier: typeof isModifier,
+      isTriggerContextVariableExpression: typeof isTriggerContextVariableExpression,
+      isType: typeof isType,
+      isVariableDeclaration: typeof isVariableDeclaration,
+    },
+    hypothesisId: 'A',
+    location: 'tests/unit/ast.test.ts:imports',
+    message: 'Type guard symbol presence (typeof)',
+    runId: 'pre-fix',
+    sessionId: 'debug-session',
+    timestamp: Date.now(),
+  }),
+  headers: { 'Content-Type': 'application/json' },
+  method: 'POST',
+}).catch(() => {});
+// #endregion
 
 describe('Type Guards', () => {
   describe('isStatement', () => {
@@ -351,35 +377,6 @@ describe('Type Guards', () => {
 /**
  * Comprehensive tests for all type guard functions.
  */
-
-import { describe, it, expect } from 'vitest';
-import {
-  isStatement,
-  isExpression,
-  isLiteral,
-  isType,
-  isDeclaration,
-  isModifier,
-  isIfStatement,
-  isForStatement,
-  isWhileStatement,
-  isReturnStatement,
-  isBlock,
-  isExpressionStatement,
-  isVariableDeclarationStatement,
-  isBinaryExpression,
-  isMethodCallExpression,
-  isIdentifier,
-  isStringLiteral,
-  isNumberLiteral,
-  isBooleanLiteral,
-  isNullLiteral,
-  isClassDeclaration,
-  isMethodDeclaration,
-  isVariableDeclaration,
-  isTriggerContextVariableExpression,
-} from '../../src/ast/type-guards.js';
-import type { ASTNode } from '../../src/ast/base.js';
 
 describe('Comprehensive Type Guards', () => {
   describe('Statement Type Guards', () => {

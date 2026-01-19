@@ -72,7 +72,7 @@ export function findFirstNodeOfType<T extends ASTNode>(
  * @param predicate - Function to check if a node matches the type to assert non-presence.
  */
 export function assertNoNodeOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): void {
-  const found = findFirstNodeOfType(root, predicate as any);
+  const found = findFirstNodeOfType(root, predicate as (node: ASTNode) => node is ASTNode);
   if (found) {
     throw new Error(
       `AST should have no node of this type. Found one at location: ${JSON.stringify(found.location)}`

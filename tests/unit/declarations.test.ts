@@ -3,8 +3,7 @@
  * Ported from com.google.summit.translation.ClassDeclarationTest.
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
+import { parseAndTranslate, findFirstNodeOfType, countNodesOfType } from '../translate-helpers.js';
 import {
   isClassDeclaration,
   isEnumDeclaration,
@@ -51,7 +50,8 @@ function typeRefToCodeString(typeRef: TypeRef): string {
       return result;
     })
     .join('.');
-  return typeString + '[]'.repeat(typeRef.arrayNesting || 0);
+
+  return typeString + '[]'.repeat((typeRef.arrayNesting ?? 0) as number);
 }
 
 /**
@@ -83,11 +83,7 @@ function getQualifiedName(decl: ClassMember, enclosingClassName?: string): strin
  * @param method
  */
 function isAnonymousInitializationCode(method: MethodDeclaration): boolean {
-  return (
-    method.name === '_init' &&
-    (!method.parameters || method.parameters.length === 0) &&
-    isVoidType(method.returnType)
-  );
+  return method.name === '_init' && method.parameters.length === 0 && isVoidType(method.returnType);
 }
 
 /**
@@ -96,7 +92,7 @@ function isAnonymousInitializationCode(method: MethodDeclaration): boolean {
  * @param keyword
  */
 function hasKeyword(modifiers: any[], keyword: string): boolean {
-  return modifiers?.some((m) => m.kind === 'Modifier' && m.keyword === keyword) ?? false;
+  return modifiers.some((m) => m.kind === 'Modifier' && m.keyword === keyword);
 }
 
 describe('Class Declaration Translation', () => {
@@ -441,7 +437,7 @@ describe('Class Declaration Translation', () => {
           // - isAnonymousInitializationCode() is true
           // - id.asCodeString() == "_init"
           for (const methodDecl of initMethods) {
-            expect(methodDecl.parameters?.length || 0).toBe(0);
+            expect(methodDecl.parameters.length).toBe(0);
             expect(isVoidType(methodDecl.returnType)).toBe(true);
             expect(isAnonymousInitializationCode(methodDecl)).toBe(true);
             expect(methodDecl.name).toBe('_init');
@@ -501,13 +497,13 @@ describe('Class Declaration Translation', () => {
           if (propDecl.getter) {
             // Original: "Automattic getter should have no body" - body is null
             // In TypeScript, body is statements array, so we check it's empty
-            expect(propDecl.getter.statements?.length || 0).toBe(0);
+            expect(propDecl.getter.statements.length).toBe(0);
           }
 
           // Original: setter is not null, setter.body is null
           // Original: "Automattic setter should have no body" - body is null
           if (propDecl.setter) {
-            expect(propDecl.setter.statements?.length || 0).toBe(0);
+            expect(propDecl.setter.statements.length).toBe(0);
           } else {
             // If setter is undefined, automatic properties may not be fully implemented
             // This is acceptable - we at least verify the property exists
@@ -678,17 +674,13 @@ describe('Class Declaration Translation', () => {
       expect(methodDecl.name).toBe('Test');
 
       // Original: parameterDeclarations hasSize 1
-      expect(methodDecl.parameters?.length || 0).toBe(1);
+      expect(methodDecl.parameters.length).toBe(1);
 
       // Original: returnType.isVoid() is true
       // In TypeScript, constructors may have void return type or it may be represented differently
-      if (methodDecl.returnType) {
-        // If returnType exists, verify it's void (or at least defined)
-        const isVoid = isVoidType(methodDecl.returnType);
-        // If not void, it might be a different representation - we verify it exists
-        // The important thing is that the constructor exists and has correct name/parameters
-        expect(methodDecl.returnType).toBeDefined();
-      }
+      const isVoid = isVoidType(methodDecl.returnType);
+      // If not void, it might be a different representation - we still verify it exists.
+      expect(methodDecl.returnType).toBeDefined();
     }
   });
 
@@ -1041,11 +1033,6 @@ describe('Method Declaration Translation', () => {
  * Tests for modifier translation
  * Ported from com.google.summit.translation.ModifierTest.
  */
-
-import { describe, it, expect } from 'vitest';
-import { parseAndTranslate, findFirstNodeOfType, countNodesOfType } from '../translate-helpers.js';
-import { isClassDeclaration } from '../../src/ast/type-guards.js';
-import type { ClassDeclaration } from '../../src/ast/Declaration.js';
 
 describe('Modifier Translation', () => {
   /**

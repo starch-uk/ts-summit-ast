@@ -3,7 +3,6 @@
  * Tests end-to-end parsing scenarios with complex Apex constructs.
  */
 
-import { describe, it, expect } from 'vitest';
 import { parseApexCode } from '../../src/utils/apex-parser.js';
 import { findFirstNodeOfType, parseAndTranslate } from '../translate-helpers.js';
 import {
@@ -147,7 +146,7 @@ describe('Complex Apex Code Parsing', () => {
         expect(tryStmt).not.toBeNull();
         if (tryStmt) {
           expect(tryStmt.catchClauses).toBeDefined();
-          expect(tryStmt.catchClauses?.length).toBeGreaterThanOrEqual(1);
+          expect(tryStmt.catchClauses.length).toBeGreaterThanOrEqual(1);
         }
       }
     });
@@ -379,7 +378,7 @@ describe('Complex Apex Code Parsing', () => {
       if (result.ast) {
         const classDecl = findFirstNodeOfType(result.ast, isClassDeclaration);
         expect(classDecl).not.toBeNull();
-        if (classDecl && classDecl.members) {
+        if (classDecl) {
           const methods = classDecl.members.filter((m) => isMethodDeclaration(m));
           expect(methods.length).toBeGreaterThanOrEqual(2);
         }

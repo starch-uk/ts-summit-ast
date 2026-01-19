@@ -42,14 +42,7 @@ interface SourceTextOptions {
  * - extractFrom uses: lines.subList(startLine-1, endLine), then drops startColumn from start
  * and (lastLine.length - endColumn) from end.
  *
- * Original Kotlin code:.
- * ```kotlin
- * val lines = source.lines().subList(startLine!! - 1, endLine!!)
- * val joinedLines = lines.joinToString(separator = "\n")
- * val distanceFromStart = startColumn!!
- * val distanceFromEnd = lines.last().length - endColumn!!
- * return joinedLines.drop(distanceFromStart).dropLast(distanceFromEnd)
- * ```
+ * Original Kotlin implementation used null assertion operator (!!) for non-null values.
  * @param node - The AST node to extract source text for.
  * @param source - The original source code string.
  * @param options - Options for extraction.

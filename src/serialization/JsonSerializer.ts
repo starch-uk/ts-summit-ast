@@ -563,11 +563,7 @@ export class JsonSerializer {
 
     const emptyArrayLength = 0;
 
-    if (
-      node.modifiers !== null &&
-      node.modifiers !== undefined &&
-      node.modifiers.length > emptyArrayLength
-    ) {
+    if (node.modifiers && node.modifiers.length > emptyArrayLength) {
       json.modifiers = node.modifiers.map((mod: Readonly<Modifier>) => this.serializeNode(mod));
     }
   }
