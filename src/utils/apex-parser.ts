@@ -229,8 +229,8 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
 
   // Extract comments if requested
 
-  let comments: ExtractedComment[] | undefined = undefined;
-  if (includeComments && translationResult.ast) {
+  let comments: ExtractedComment[] | undefined;
+  if (includeComments && translationResult.ast !== undefined) {
     comments = extractComments(translationResult.ast, source, {
       associateNodes: true,
     });

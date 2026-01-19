@@ -139,7 +139,7 @@ describe('Error Recovery and Partial Parsing', () => {
       const result = parseApexCode(apexCode);
 
       // Result may indicate partial success
-      if (result.partialSuccess || result.isUsable) {
+      if (result.partialSuccess === true || result.isUsable === true) {
         expect(result.ast).toBeDefined();
       }
     });
@@ -156,7 +156,7 @@ describe('Error Recovery and Partial Parsing', () => {
       const result = parseApexCode(apexCode);
 
       // If usable, AST should still be available for analysis
-      if (result.isUsable) {
+      if (result.isUsable === true) {
         expect(result.ast).toBeDefined();
       }
     });

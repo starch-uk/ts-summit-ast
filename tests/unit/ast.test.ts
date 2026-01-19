@@ -76,16 +76,16 @@ describe('Visitor Pattern', () => {
         }
 
         override visitChildren(node: ASTNode): void[] {
-          if ('condition' in node && node.condition) {
+          if ('condition' in node && node.condition != null) {
             this.visit(node.condition as ASTNode);
           }
-          if ('thenStatement' in node && node.thenStatement) {
+          if ('thenStatement' in node && node.thenStatement != null) {
             this.visit(node.thenStatement as ASTNode);
           }
-          if ('elseStatement' in node && node.elseStatement) {
+          if ('elseStatement' in node && node.elseStatement != null) {
             this.visit(node.elseStatement as ASTNode);
           }
-          if ('expression' in node && node.expression) {
+          if ('expression' in node && node.expression != null) {
             this.visit(node.expression as ASTNode);
           }
           return [];

@@ -65,7 +65,9 @@ describe('Statement Translation', () => {
     const base = typeRef.components
       .map((c) => {
         const args =
-          c.args && c.args.length > 0 ? `<${c.args.map(typeRefToCodeString).join(', ')}>` : '';
+          c.args != null && c.args.length > 0
+            ? `<${c.args.map(typeRefToCodeString).join(', ')}>`
+            : '';
         return `${c.id.name}${args}`;
       })
       .join('.');

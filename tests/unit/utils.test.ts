@@ -1676,8 +1676,10 @@ describe('Rule Matching Utilities', () => {
       const matches = findRuleMatches(ast, '//Identifier', { includeContext: true });
       expect(matches.length).toBeGreaterThan(0);
       // Sibling nodes should be populated when parent has statements
-      const matchWithSiblings = matches.find((m) => m.siblingNodes && m.siblingNodes.length > 0);
-      if (matchWithSiblings) {
+      const matchWithSiblings = matches.find(
+        (m) => m.siblingNodes != null && m.siblingNodes.length > 0
+      );
+      if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
       }
     });
@@ -1701,8 +1703,10 @@ describe('Rule Matching Utilities', () => {
 
       const matches = findRuleMatches(classDecl, '//MethodDeclaration', { includeContext: true });
       expect(matches.length).toBeGreaterThan(0);
-      const matchWithSiblings = matches.find((m) => m.siblingNodes && m.siblingNodes.length > 0);
-      if (matchWithSiblings) {
+      const matchWithSiblings = matches.find(
+        (m) => m.siblingNodes != null && m.siblingNodes.length > 0
+      );
+      if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
       }
     });
@@ -1714,8 +1718,10 @@ describe('Rule Matching Utilities', () => {
 
       const matches = findRuleMatches(methodCall, '//Identifier', { includeContext: true });
       expect(matches.length).toBeGreaterThan(0);
-      const matchWithSiblings = matches.find((m) => m.siblingNodes && m.siblingNodes.length > 0);
-      if (matchWithSiblings) {
+      const matchWithSiblings = matches.find(
+        (m) => m.siblingNodes != null && m.siblingNodes.length > 0
+      );
+      if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
       }
     });
@@ -2570,7 +2576,7 @@ describe('apex-parser batch functions', () => {
   describe('isUsableParseResult', () => {
     it('should return true for usable parse result', () => {
       const result = parseApexCode('public class Test { }');
-      if (result.ast && result.isUsable) {
+      if (result.ast != null && result.isUsable === true) {
         expect(isUsableParseResult(result)).toBe(true);
       }
     });

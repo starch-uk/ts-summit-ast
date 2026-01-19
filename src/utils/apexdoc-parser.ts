@@ -513,7 +513,7 @@ function parseInlineTag(
         const reference = linkMatch[linkFirstCaptureGroup];
         return {
           kind: 'ApexDocLink',
-          ...(label ? { label } : {}),
+          ...(label != null && label !== '' ? { label } : {}),
           reference,
           ...baseTag,
         } as ApexDocLink;

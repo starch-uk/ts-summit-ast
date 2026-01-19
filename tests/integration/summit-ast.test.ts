@@ -164,7 +164,7 @@ describe('SummitAST Parsing', () => {
     // This ensures the auto-detection worked correctly
     if (result.ast?.kind === 'CompilationUnit') {
       expect(result.ast.declarations).toBeDefined();
-      if (result.ast.declarations && result.ast.declarations.length > 0) {
+      if (result.ast.declarations != null && result.ast.declarations.length > 0) {
         const [firstDecl] = result.ast.declarations;
         // Should be InterfaceDeclaration or ClassDeclaration, not TriggerDeclaration
         // This verifies the parser correctly identified the type
@@ -234,7 +234,7 @@ public class Main implements I, J {
         const classDecl = result.ast.declarations.find((d) => d.kind === 'ClassDeclaration');
         expect(classDecl).toBeDefined();
         // Verify the class declaration has the expected name
-        if (classDecl && 'name' in classDecl) {
+        if (classDecl != null && 'name' in classDecl) {
           expect(classDecl.name).toBeDefined();
         }
       }

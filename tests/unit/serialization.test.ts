@@ -287,7 +287,7 @@ describe('JSON Serialization', () => {
         expect(expectedParsed.declaration).toBeDefined();
 
         // Compare declaration properties (matching original's thoroughness)
-        if (actualParsed.declaration && expectedParsed.declaration) {
+        if (actualParsed.declaration != null && expectedParsed.declaration != null) {
           // Original expects exact match, so verify all properties match
           expect(actualParsed.declaration['@type']).toBe(expectedParsed.declaration['@type']);
           expect(actualParsed.declaration.id ?? actualParsed.declaration.name).toBeDefined();
@@ -303,7 +303,7 @@ describe('JSON Serialization', () => {
             expectedParsed.declaration.name;
           expect(actualName).toBe(expectedName);
           // Verify type matches (if present)
-          if (actualParsed.declaration.type && expectedParsed.declaration.type) {
+          if (actualParsed.declaration.type != null && expectedParsed.declaration.type != null) {
             expect(actualParsed.declaration.type).toBeDefined();
             expect(expectedParsed.declaration.type).toBeDefined();
           }
@@ -923,7 +923,7 @@ describe('Comprehensive Serialization', () => {
     it('should use replacer function if provided', () => {
       const replacer = (key: string, value: unknown) => {
         // Replacer is called on the final JSON object, not individual properties
-        if (key === '' && value && typeof value === 'object' && '@type' in value) {
+        if (key === '' && value != null && typeof value === 'object' && '@type' in value) {
           // Can modify the entire object
           return value;
         }

@@ -30,7 +30,7 @@ export class TypeFactory {
     packageName?: string,
     options?: NodeFactoryOptions
   ): TypeRef {
-    const fullName = packageName ? `${packageName}.${name}` : name;
+    const fullName = packageName != null && packageName !== '' ? `${packageName}.${name}` : name;
     return {
       arrayNesting: 0,
       components: [

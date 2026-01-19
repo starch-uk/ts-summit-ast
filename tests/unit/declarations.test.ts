@@ -37,13 +37,13 @@ import { getNodeChildren } from '../../src/utils/traversal.js';
  * @returns The Apex code string for the type reference.
  */
 function typeRefToCodeString(typeRef: TypeRef): string {
-  if (!typeRef.components || typeRef.components.length === 0) {
+  if (typeRef.components == null || typeRef.components.length === 0) {
     return 'void';
   }
   const typeString = typeRef.components
     .map((comp) => {
       let result = comp.id.name;
-      if (comp.args && comp.args.length > 0) {
+      if (comp.args != null && comp.args.length > 0) {
         result += `<${comp.args.map(typeRefToCodeString).join(', ')}>`;
       }
       return result;
@@ -59,8 +59,8 @@ function typeRefToCodeString(typeRef: TypeRef): string {
  * @returns True if the type reference represents void.
  */
 function isVoidType(typeRef: TypeRef | undefined): boolean {
-  if (!typeRef) return false;
-  return !typeRef.components || typeRef.components.length === 0;
+  if (typeRef == null) return false;
+  return typeRef.components == null || typeRef.components.length === 0;
 }
 
 /**
@@ -72,7 +72,7 @@ function isVoidType(typeRef: TypeRef | undefined): boolean {
  * @returns A fully-qualified member name string.
  */
 function getQualifiedName(decl: ClassMember, enclosingClassName?: string): string {
-  if (enclosingClassName) {
+  if (enclosingClassName != null && enclosingClassName !== '') {
     return `${enclosingClassName}.${decl.name}`;
   }
   return decl.name;
@@ -218,7 +218,7 @@ describe('Class Declaration Translation', () => {
         (m) => isEnumDeclaration(m) && m.name === 'InnerEnum'
       ) as EnumDeclaration | undefined;
       expect(innerEnumDecl).toBeDefined();
-      if (innerEnumDecl) {
+      if (innerEnumDecl != null) {
         // Original: getEnclosingType() == enclosingClassDecl
         // Original: qualifiedName == "EnclosingClass.InnerEnum"
         expect(innerEnumDecl.name).toBe('InnerEnum');
@@ -571,7 +571,7 @@ describe('Class Declaration Translation', () => {
       expect(propDecl.getter).toBeDefined();
       const getterMethodDecl = propDecl.getter;
       expect(getterMethodDecl).toBeDefined();
-      if (getterMethodDecl) {
+      if (getterMethodDecl != null) {
         // Original: "A defined property getter should have a method body" - body is not null
         expect(getterMethodDecl.statements).toBeDefined();
         expect(getterMethodDecl.statements?.length ?? 0).toBeGreaterThan(0);
@@ -580,7 +580,7 @@ describe('Class Declaration Translation', () => {
         expect(getterMethodDecl.parameters?.length ?? 0).toBe(0);
 
         // Original: returnType.asCodeString() == "String"
-        if (getterMethodDecl.returnType) {
+        if (getterMethodDecl.returnType != null) {
           const returnTypeString = typeRefToCodeString(getterMethodDecl.returnType);
           expect(['String', 'Object']).toContain(returnTypeString);
         }
@@ -620,18 +620,18 @@ describe('Class Declaration Translation', () => {
       expect(propDecl.setter).toBeDefined();
       const setterMethodDecl = propDecl.setter;
       expect(setterMethodDecl).toBeDefined();
-      if (setterMethodDecl) {
+      if (setterMethodDecl != null) {
         // Original: "A defined property setter should have a method body" - body is not null
         expect(setterMethodDecl.statements).toBeDefined();
         expect(setterMethodDecl.statements?.length ?? 0).toBeGreaterThan(0);
 
         // Original: returnType.isVoid() is true
-        if (setterMethodDecl.returnType) {
+        if (setterMethodDecl.returnType != null) {
           expect(isVoidType(setterMethodDecl.returnType)).toBe(true);
         }
 
         // Original: parameterDeclarations hasSize 1
-        if (setterMethodDecl.parameters && setterMethodDecl.parameters.length > 0) {
+        if (setterMethodDecl.parameters != null && setterMethodDecl.parameters.length > 0) {
           expect(setterMethodDecl.parameters.length).toBe(1);
           const paramDecl = setterMethodDecl.parameters[0];
 
@@ -1126,7 +1126,7 @@ describe('Modifier Translation', () => {
     // Original: assertThat(annotationA.args).hasSize(3)
     expect(annotationA?.arguments).toHaveLength(3);
     // Original: assertThat(annotationA.args.none { it.isNameImplicit }).isTrue()
-    expect(annotationA?.arguments?.every((arg) => !arg.isNameImplicit)).toBe(true);
+    expect(annotationA?.arguments?.every((arg) => arg.isNameImplicit !== true)).toBe(true);
 
     // Original: val annotationB = findAnnotationOnClass(cu, "B")!!
     const annotationB = findAnnotationOnClass(cu, 'B');
