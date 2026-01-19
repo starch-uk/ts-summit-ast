@@ -143,7 +143,7 @@ describe('Statement Translation', () => {
     // Upstream asserts a WhenValue with two values.
     // Our TS port records multi-value when clauses on the first case as `values`.
     expect(node.cases).toHaveLength(1);
-    const whenValueCase = node.cases[0];
+    const [whenValueCase] = node.cases;
     expect(whenValueCase.values).toBeDefined();
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- values is asserted above
     expect(whenValueCase.values!).toHaveLength(2);
@@ -192,7 +192,7 @@ describe('Statement Translation', () => {
     // Our TS port records this on the SwitchCase as `matchType` and `downcastDeclarations`.
     expect(node.cases).toHaveLength(1);
 
-    const whenTypeCase = node.cases[0];
+    const [whenTypeCase] = node.cases;
     expect(whenTypeCase.matchType).toBeDefined();
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- matchType is asserted above
     expect(typeRefToCodeString(whenTypeCase.matchType!)).toBe('Type');
@@ -201,7 +201,7 @@ describe('Statement Translation', () => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- downcastDeclarations is asserted above
     expect(whenTypeCase.downcastDeclarations!).toHaveLength(1);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- downcastDeclarations is asserted above
-    const varDecl = whenTypeCase.downcastDeclarations![0];
+    const [varDecl] = whenTypeCase.downcastDeclarations!;
     expect(typeRefToCodeString(varDecl.type)).toBe('Type');
     expect(varDecl.name).toBe('variable');
     expect(varDecl.initializer).toBeUndefined();
@@ -329,7 +329,7 @@ describe('Statement Translation', () => {
     // Original: val exceptionDecl = catchBlock.exception.declarations.first()
     // Original: assertThat(exceptionDecl.type.asCodeString()).isEqualTo("Exception")
     // Original: assertThat(exceptionDecl.id.asCodeString()).isEqualTo("e")
-    const catchBlock = node.catchClauses[0];
+    const [catchBlock] = node.catchClauses;
     expect(catchBlock.variable).toBeDefined();
     expect(catchBlock.variable.name).toBe('e');
     expect(catchBlock.variable.type).toBeDefined();

@@ -333,12 +333,12 @@ describe('Class Declaration Translation', () => {
         // This matches the original Kotlin behavior where FieldDeclarationGroup objects are
         // created per statement (one parse tree node per statement with comma-separated declarators).
         const sameType = typeRefToCodeString(current.type) === typeRefToCodeString(prev.type);
-        const currentModifiers = (current.modifiers || [])
-          .map((m) => (m as any).keyword || '')
+        const currentModifiers = (current.modifiers ?? [])
+          .map((m) => (m as any).keyword ?? '')
           .sort()
           .join(',');
-        const prevModifiers = (prev.modifiers || [])
-          .map((m) => (m as any).keyword || '')
+        const prevModifiers = (prev.modifiers ?? [])
+          .map((m) => (m as any).keyword ?? '')
           .sort()
           .join(',');
         const sameModifiers = currentModifiers === prevModifiers;
@@ -569,10 +569,10 @@ describe('Class Declaration Translation', () => {
       if (getterMethodDecl) {
         // Original: "A defined property getter should have a method body" - body is not null
         expect(getterMethodDecl.statements).toBeDefined();
-        expect(getterMethodDecl.statements?.length || 0).toBeGreaterThan(0);
+        expect(getterMethodDecl.statements?.length ?? 0).toBeGreaterThan(0);
 
         // Original: parameterDeclarations hasSize 0
-        expect(getterMethodDecl.parameters?.length || 0).toBe(0);
+        expect(getterMethodDecl.parameters?.length ?? 0).toBe(0);
 
         // Original: returnType.asCodeString() == "String"
         if (getterMethodDecl.returnType) {
@@ -618,7 +618,7 @@ describe('Class Declaration Translation', () => {
       if (setterMethodDecl) {
         // Original: "A defined property setter should have a method body" - body is not null
         expect(setterMethodDecl.statements).toBeDefined();
-        expect(setterMethodDecl.statements?.length || 0).toBeGreaterThan(0);
+        expect(setterMethodDecl.statements?.length ?? 0).toBeGreaterThan(0);
 
         // Original: returnType.isVoid() is true
         if (setterMethodDecl.returnType) {
@@ -1039,7 +1039,7 @@ describe('Modifier Translation', () => {
   function findAnnotationOnClass(cu: ASTNode, name: string): Annotation | null {
     const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
     if (classDecl?.annotations) {
-      return classDecl.annotations.find((a) => a.name === name) || null;
+      return classDecl.annotations.find((a) => a.name === name) ?? null;
     }
     return null;
   }

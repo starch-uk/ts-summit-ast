@@ -1032,7 +1032,7 @@ function nodeToId(node: ASTNode): string {
   if (node.kind === 'CompoundStatement') {
     const stmts = (node as any).statements;
     if (stmts?.length === 1 && stmts[0].kind === 'IfStatement') {
-      const ifStmt = stmts[0];
+      const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
       if (ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3') {
         return 'NODE_1';
@@ -1077,7 +1077,7 @@ function nodeIdIs1(node: ASTNode): boolean {
   if (node.kind === 'CompoundStatement') {
     const stmts = (node as any).statements;
     if (stmts?.length === 1 && stmts[0].kind === 'IfStatement') {
-      const ifStmt = stmts[0];
+      const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
       return ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3';
     }
@@ -1302,7 +1302,7 @@ describe('DFS Walker', () => {
     // Original: val allVisited = DfsWalker(root).stream().collect(Collectors.toList())
     // Original: val firstVisited = DfsWalker(root).stream().findFirst().get()
     // Original: assertThat(firstVisited).isEqualTo(allVisited.first())
-    const firstVisited = allVisited[0];
+    const [firstVisited] = allVisited;
     expect(firstVisited).toBe(root);
     expect(allVisited.length).toBeGreaterThan(0);
   });

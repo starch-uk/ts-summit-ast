@@ -101,12 +101,12 @@ export type { NodeFactoryOptions };
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class NodeFactory {
   /**
-   * Create an if statement node.
-   * @param condition - The condition expression.
-   * @param thenStatement - The then statement.
-   * @param elseStatement - The else statement (optional).
-   * @param options - Additional options.
-   * @returns The created IfStatement node.
+   * Creates an if statement.
+   * @param condition - The boolean expression to evaluate.
+   * @param thenStatement - The statement to execute if the condition is true.
+   * @param elseStatement - The statement to execute if the condition is false (optional).
+   * @param options - Optional factory options.
+   * @returns The created if statement.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- If statement requires 4 parameters
   public static createIfStatement(
@@ -139,11 +139,13 @@ export class NodeFactory {
   }
 
   /**
-   * @param body
-   * @param init
-   * @param condition
-   * @param update
-   * @param options
+   * Creates a for loop statement.
+   * @param body - The body statement of the for loop.
+   * @param init - The initialization statement.
+   * @param condition - The loop condition expression.
+   * @param update - The update expression.
+   * @param options - Optional factory options.
+   * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- For statement requires 5 parameters
@@ -159,9 +161,11 @@ export class NodeFactory {
   }
 
   /**
-   * @param condition
-   * @param body
-   * @param options
+   * Creates a while loop statement.
+   * @param condition - The loop condition expression.
+   * @param body - The body statement of the while loop.
+   * @param options - Optional factory options.
+   * @returns The created while loop statement.
    * @deprecated Use createWhileLoopStatement instead.
    */
   public static createWhileStatement(
@@ -172,6 +176,12 @@ export class NodeFactory {
     return this.createWhileLoopStatement(condition, body, options);
   }
 
+  /**
+   * Creates a return statement.
+   * @param expression - The expression to return, if any.
+   * @param options - Optional factory options.
+   * @returns The created return statement.
+   */
   public static createReturnStatement(
     expression?: Expression,
     options?: NodeFactoryOptions
@@ -179,6 +189,12 @@ export class NodeFactory {
     return StatementFactory.createReturnStatement(expression, options);
   }
 
+  /**
+   * Creates a compound statement (block).
+   * @param statements - The list of statements to include in the compound statement.
+   * @param options - Optional factory options.
+   * @returns The created compound statement.
+   */
   public static createCompoundStatement(
     statements: readonly Statement[],
     options?: Readonly<NodeFactoryOptions>
@@ -187,8 +203,10 @@ export class NodeFactory {
   }
 
   /**
-   * @param statements
-   * @param options
+   * Creates a block statement.
+   * @param statements - The list of statements to include in the block.
+   * @param options - Optional factory options.
+   * @returns The created compound statement.
    * @deprecated Use createCompoundStatement instead.
    */
   public static createBlock(
@@ -198,6 +216,12 @@ export class NodeFactory {
     return this.createCompoundStatement(statements, options);
   }
 
+  /**
+   * Creates an expression statement.
+   * @param expression - The expression to wrap in a statement.
+   * @param options - Optional factory options.
+   * @returns The created expression statement.
+   */
   public static createExpressionStatement(
     expression: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
@@ -205,6 +229,12 @@ export class NodeFactory {
     return StatementFactory.createExpressionStatement(expression, options);
   }
 
+  /**
+   * Creates a variable declaration statement.
+   * @param declaration - The variable declaration to wrap in a statement.
+   * @param options - Optional factory options.
+   * @returns The created variable declaration statement.
+   */
   public static createVariableDeclarationStatement(
     declaration: Readonly<VariableDeclaration>,
     options?: Readonly<NodeFactoryOptions>
@@ -212,6 +242,14 @@ export class NodeFactory {
     return StatementFactory.createVariableDeclarationStatement(declaration, options);
   }
 
+  /**
+   * Creates an enhanced for loop statement.
+   * @param variable - The variable declaration for the loop iteration variable.
+   * @param iterable - The expression representing the collection to iterate over.
+   * @param body - The statement to execute in each iteration.
+   * @param options - Optional factory options.
+   * @returns The created enhanced for loop statement.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Enhanced for loop statement requires 4 parameters
   public static createEnhancedForLoopStatement(
     variable: Readonly<VariableDeclaration>,
@@ -222,6 +260,13 @@ export class NodeFactory {
     return StatementFactory.createEnhancedForLoopStatement(variable, iterable, body, options);
   }
 
+  /**
+   * Creates a do-while loop statement.
+   * @param body - The statement to execute before checking the condition.
+   * @param condition - The boolean expression to evaluate after each iteration.
+   * @param options - Optional factory options.
+   * @returns The created do-while loop statement.
+   */
   public static createDoWhileLoopStatement(
     body: Statement,
     condition: Expression,
@@ -231,10 +276,12 @@ export class NodeFactory {
   }
 
   /**
-   * @param variable
-   * @param iterable
-   * @param body
-   * @param options
+   * Creates a for-each loop statement.
+   * @param variable - The loop variable declaration.
+   * @param iterable - The iterable expression.
+   * @param body - The body statement of the for-each loop.
+   * @param options - Optional factory options.
+   * @returns The created enhanced for loop statement.
    * @deprecated Use createEnhancedForLoopStatement instead.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- ForEach statement requires 4 parameters
@@ -248,9 +295,11 @@ export class NodeFactory {
   }
 
   /**
-   * @param body
-   * @param condition
-   * @param options
+   * Creates a do-while loop statement.
+   * @param body - The body statement of the do-while loop.
+   * @param condition - The loop condition expression.
+   * @param options - Optional factory options.
+   * @returns The created do-while loop statement.
    * @deprecated Use createDoWhileLoopStatement instead.
    */
   public static createDoWhileStatement(
@@ -261,6 +310,14 @@ export class NodeFactory {
     return this.createDoWhileLoopStatement(body, condition, options);
   }
 
+  /**
+   * Creates a switch statement.
+   * @param expression - The expression to switch on.
+   * @param cases - The list of switch case statements.
+   * @param defaultCase - The default case statement, if any.
+   * @param options - Optional factory options.
+   * @returns The created switch statement.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Switch statement requires 4 parameters
   public static createSwitchStatement(
     expression: Readonly<Expression>,
@@ -272,6 +329,14 @@ export class NodeFactory {
     return StatementFactory.createSwitchStatement(expression, [...cases], defaultCase, options);
   }
 
+  /**
+   * Creates a try statement.
+   * @param tryBlock - The compound statement to execute in the try block.
+   * @param catchClauses - The list of catch clause handlers.
+   * @param finallyBlock - The compound statement to execute in the finally block, if any.
+   * @param options - Optional factory options.
+   * @returns The created try statement.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Try statement requires 4 parameters
   public static createTryStatement(
     tryBlock: Readonly<CompoundStatement>,
@@ -283,6 +348,12 @@ export class NodeFactory {
     return StatementFactory.createTryStatement(tryBlock, [...catchClauses], finallyBlock, options);
   }
 
+  /**
+   * Creates a break statement.
+   * @param label - The optional label to break to.
+   * @param options - Optional factory options.
+   * @returns The created break statement.
+   */
   public static createBreakStatement(
     label?: string,
     options?: Readonly<NodeFactoryOptions>
@@ -290,6 +361,12 @@ export class NodeFactory {
     return StatementFactory.createBreakStatement(label, options);
   }
 
+  /**
+   * Creates a continue statement.
+   * @param label - The optional label to continue to.
+   * @param options - Optional factory options.
+   * @returns The created continue statement.
+   */
   public static createContinueStatement(
     label?: string,
     options?: Readonly<NodeFactoryOptions>
@@ -297,6 +374,12 @@ export class NodeFactory {
     return StatementFactory.createContinueStatement(label, options);
   }
 
+  /**
+   * Creates a throw statement.
+   * @param expression - The expression to throw.
+   * @param options - Optional factory options.
+   * @returns The created throw statement.
+   */
   public static createThrowStatement(
     expression: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
@@ -304,6 +387,13 @@ export class NodeFactory {
     return StatementFactory.createThrowStatement(expression, options);
   }
 
+  /**
+   * Creates a DML statement.
+   * @param operation - The DML operation type.
+   * @param target - The target expression.
+   * @param options - Optional factory options.
+   * @returns The created DML statement.
+   */
   public static createDmlStatement(
     operation: 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert',
     target: Readonly<Expression>,
@@ -313,11 +403,12 @@ export class NodeFactory {
   }
 
   /**
-   * Expression factories.
-   * @param operator
-   * @param left
-   * @param right
-   * @param options
+   * Creates a binary expression.
+   * @param operator - The binary operator to apply (e.g., '+', '-', '==', '!=').
+   * @param left - The left-hand side expression.
+   * @param right - The right-hand side expression.
+   * @param options - Optional factory options.
+   * @returns The created binary expression.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Binary expression requires 4 parameters
   public static createBinaryExpression(
@@ -329,6 +420,15 @@ export class NodeFactory {
     return ExpressionFactory.createBinaryExpression(operator, left, right, options);
   }
 
+  /**
+   * Creates a call expression.
+   * @param methodName - The name of the method to call.
+   * @param args - The arguments to pass to the method.
+   * @param target - The target expression on which to call the method.
+   * @param typeArguments - The type arguments for generic method calls.
+   * @param options - Optional factory options.
+   * @returns The created call expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Call expression requires 5 parameters
   public static createCallExpression(
     methodName: string,
@@ -357,11 +457,13 @@ export class NodeFactory {
   }
 
   /**
-   * @param methodName
-   * @param args
-   * @param target
-   * @param typeArguments
-   * @param options
+   * Creates a method call expression.
+   * @param methodName - The name of the method to call.
+   * @param args - The arguments to pass to the method.
+   * @param target - The target expression on which to call the method.
+   * @param typeArguments - The type arguments for generic method calls.
+   * @param options - Optional factory options.
+   * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Method call expression requires 5 parameters
@@ -376,6 +478,14 @@ export class NodeFactory {
     return this.createCallExpression(methodName, args, target, typeArguments, options);
   }
 
+  /**
+   * Creates a unary expression.
+   * @param operator - The unary operator to apply (e.g., '!', '++', '--').
+   * @param operand - The expression to apply the operator to.
+   * @param prefix - Whether the operator is prefix (true) or postfix (false).
+   * @param options - Optional factory options.
+   * @returns The created unary expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Unary expression requires 4 parameters
   public static createUnaryExpression(
     operator: UnaryExpression['operator'],
@@ -386,6 +496,14 @@ export class NodeFactory {
     return ExpressionFactory.createUnaryExpression(operator, operand, prefix, options);
   }
 
+  /**
+   * Creates an assignment expression.
+   * @param operator - The assignment operator (e.g., '=', '+=', '-=').
+   * @param left - The left-hand side expression (target).
+   * @param right - The right-hand side expression (value).
+   * @param options - Optional factory options.
+   * @returns The created assignment expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Assign expression requires 4 parameters
   public static createAssignExpression(
     operator: AssignExpression['operator'],
@@ -396,6 +514,13 @@ export class NodeFactory {
     return ExpressionFactory.createAssignExpression(operator, left, right, options);
   }
 
+  /**
+   * Creates a field access expression.
+   * @param fieldName - The name of the field to access.
+   * @param target - The target expression to access the field on.
+   * @param options - Optional factory options.
+   * @returns The created field expression.
+   */
   public static createFieldExpression(
     fieldName: string,
     target?: Expression,
@@ -404,6 +529,13 @@ export class NodeFactory {
     return ExpressionFactory.createFieldExpression(fieldName, target, options);
   }
 
+  /**
+   * Creates an array access expression.
+   * @param array - The expression representing the array to access.
+   * @param index - The expression representing the index to access.
+   * @param options - Optional factory options.
+   * @returns The created array expression.
+   */
   public static createArrayExpression(
     array: Expression,
     index: Expression,
@@ -413,10 +545,12 @@ export class NodeFactory {
   }
 
   /**
-   * @param operator
-   * @param left
-   * @param right
-   * @param options
+   * Creates an assignment expression.
+   * @param operator - The assignment operator (e.g., '=', '+=', '-=').
+   * @param left - The left-hand side expression (target).
+   * @param right - The right-hand side expression (value).
+   * @param options - Optional factory options.
+   * @returns The created assignment expression.
    * @deprecated Use createAssignExpression instead.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Assignment expression requires 4 parameters
@@ -430,9 +564,11 @@ export class NodeFactory {
   }
 
   /**
-   * @param fieldName
-   * @param target
-   * @param options
+   * Creates a field access expression.
+   * @param fieldName - The name of the field to access.
+   * @param target - The target expression to access the field on.
+   * @param options - Optional factory options.
+   * @returns The created field expression.
    * @deprecated Use createFieldExpression instead.
    */
   public static createFieldAccessExpression(
@@ -444,9 +580,11 @@ export class NodeFactory {
   }
 
   /**
-   * @param array
-   * @param index
-   * @param options
+   * Creates an array access expression.
+   * @param array - The expression representing the array to access.
+   * @param index - The expression representing the index to access.
+   * @param options - Optional factory options.
+   * @returns The created array expression.
    * @deprecated Use createArrayExpression instead.
    */
   public static createArrayAccessExpression(
@@ -499,10 +637,11 @@ export class NodeFactory {
   }
 
   /**
-   * Initializer factory methods.
-   * @param type
-   * @param args
-   * @param options
+   * Creates a constructor initializer.
+   * @param type - The type to instantiate.
+   * @param args - The constructor arguments.
+   * @param options - Optional factory options.
+   * @returns The created constructor initializer.
    */
   public static createConstructorInitializer(
     type: Readonly<TypeRef>,
@@ -542,9 +681,10 @@ export class NodeFactory {
   }
 
   /**
-   * ElementValue factory methods.
-   * @param value
-   * @param options
+   * Creates an expression element value.
+   * @param value - The expression value.
+   * @param options - Optional factory options.
+   * @returns The created expression element value.
    */
   public static createExpressionElementValue(
     value: Readonly<Expression>,
@@ -631,9 +771,11 @@ export class NodeFactory {
   }
 
   /**
-   * @param query
-   * @param boundExpressions
-   * @param options
+   * Creates a SOQL query expression.
+   * @param query - The SOQL query string.
+   * @param boundExpressions - The bound expressions for the query.
+   * @param options - Optional factory options.
+   * @returns The created SOQL expression.
    * @deprecated Use createSoqlExpression instead.
    */
   public static createSoqlQueryExpression(
@@ -651,9 +793,11 @@ export class NodeFactory {
   }
 
   /**
-   * @param query
-   * @param boundExpressions
-   * @param options
+   * Creates a SOSL query expression.
+   * @param query - The SOSL query string.
+   * @param boundExpressions - The bound expressions for the query.
+   * @param options - Optional factory options.
+   * @returns The created SOSL expression.
    * @deprecated Use createSoslExpression instead.
    */
   public static createSoslQueryExpression(
@@ -678,10 +822,11 @@ export class NodeFactory {
   }
 
   /**
-   * Literal factories.
-   * @param value
-   * @param raw
-   * @param options
+   * Creates a string literal value.
+   * @param value - The string value.
+   * @param raw - The raw string value as it appeared in source.
+   * @param options - Optional factory options.
+   * @returns The created string literal value.
    */
   public static createStringVal(
     value: string,

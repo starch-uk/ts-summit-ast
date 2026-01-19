@@ -70,7 +70,7 @@ describe('CompilationUnit Translation', () => {
   it('parent reverses getChildren', () => {
     const cu = parseAndTranslate('class Test { }');
     // Original: val classDecl = cu.typeDeclaration
-    const classDecl = getNodeChildren(cu)[0];
+    const [classDecl] = getNodeChildren(cu);
     // Original: assertThat(cu.getChildren()).containsExactly(classDecl)
     const children = getNodeChildren(cu);
     expect(children).toHaveLength(1);
@@ -965,7 +965,7 @@ describe('Initializer Translation', () => {
     // Original: assertThat(mapInitializer.pairs).hasSize(2)
     expect(initializer.pairs).toHaveLength(2);
     // Original: val firstKeyValuePair = mapInitializer.pairs.first()
-    const firstKeyValuePair = initializer.pairs[0];
+    const [firstKeyValuePair] = initializer.pairs;
     // Original: assertThat(firstKeyValuePair.first).isInstanceOf(LiteralExpression.StringVal::class.java)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- firstKeyValuePair.key type is narrowed by isStringLiteral check
     expect(isStringLiteral(firstKeyValuePair.key)).toBe(true);

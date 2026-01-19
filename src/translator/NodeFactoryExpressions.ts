@@ -42,6 +42,14 @@ import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
  */
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
 export class ExpressionFactory {
+  /**
+   * Creates a binary expression.
+   * @param operator - The binary operator to apply (e.g., '+', '-', '==', '!=').
+   * @param left - The left-hand side expression.
+   * @param right - The right-hand side expression.
+   * @param options - Optional factory options.
+   * @returns The created binary expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   public static createBinaryExpression(
     operator: BinaryExpression['operator'],
@@ -58,6 +66,15 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a call expression.
+   * @param methodName - The name of the method to call.
+   * @param args - The arguments to pass to the method.
+   * @param target - The target expression on which to call the method.
+   * @param typeArguments - The type arguments for generic method calls.
+   * @param options - Optional factory options.
+   * @returns The created call expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   public static createCallExpression(
     methodName: string,
@@ -78,6 +95,12 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a variable expression.
+   * @param id - The identifier for the variable.
+   * @param options - Optional factory options.
+   * @returns The created variable expression.
+   */
   public static createVariableExpression(
     id: Identifier,
     options?: NodeFactoryOptions
@@ -90,11 +113,13 @@ export class ExpressionFactory {
   }
 
   /**
-   * @param methodName
-   * @param args
-   * @param target
-   * @param typeArguments
-   * @param options
+   * Creates a method call expression.
+   * @param methodName - The name of the method to call.
+   * @param args - The arguments to pass to the method.
+   * @param target - The target expression on which to call the method.
+   * @param typeArguments - The type arguments for generic method calls.
+   * @param options - Optional factory options.
+   * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Method call expression requires 5 parameters
@@ -111,6 +136,14 @@ export class ExpressionFactory {
     return this.createCallExpression(methodName, args, target, typeArguments, options);
   }
 
+  /**
+   * Creates a unary expression.
+   * @param operator - The unary operator to apply (e.g., '!', '++', '--').
+   * @param operand - The expression to apply the operator to.
+   * @param prefix - Whether the operator is prefix (true) or postfix (false).
+   * @param options - Optional factory options.
+   * @returns The created unary expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Unary expression requires 4 parameters
   public static createUnaryExpression(
     operator: UnaryExpression['operator'],
@@ -129,6 +162,14 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates an assignment expression.
+   * @param operator - The assignment operator.
+   * @param left - The left-hand side expression (target).
+   * @param right - The right-hand side expression (value).
+   * @param options - Optional factory options.
+   * @returns The created assignment expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Assign expression requires 4 parameters
   public static createAssignExpression(
     operator: AssignExpression['operator'],
@@ -146,6 +187,13 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a field access expression.
+   * @param fieldName - The name of the field to access.
+   * @param target - The target expression to access the field on.
+   * @param options - Optional factory options.
+   * @returns The created field expression.
+   */
   public static createFieldExpression(
     fieldName: string,
     target?: Expression,
@@ -160,6 +208,13 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates an array access expression.
+   * @param array - The expression representing the array to access.
+   * @param index - The expression representing the index to access.
+   * @param options - Optional factory options.
+   * @returns The created array expression.
+   */
   public static createArrayExpression(
     array: Expression,
     index: Expression,
@@ -174,10 +229,12 @@ export class ExpressionFactory {
   }
 
   /**
-   * @param operator
-   * @param left
-   * @param right
-   * @param options
+   * Creates an assignment expression.
+   * @param operator - The assignment operator (e.g., '=', '+=', '-=').
+   * @param left - The left-hand side expression (target).
+   * @param right - The right-hand side expression (value).
+   * @param options - Optional factory options.
+   * @returns The created assignment expression.
    * @deprecated Use createAssignExpression instead.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Assignment expression requires 4 parameters
@@ -194,9 +251,11 @@ export class ExpressionFactory {
   }
 
   /**
-   * @param fieldName
-   * @param target
-   * @param options
+   * Creates a field access expression.
+   * @param fieldName - The name of the field to access.
+   * @param target - The target expression to access the field on.
+   * @param options - Optional factory options.
+   * @returns The created field expression.
    * @deprecated Use createFieldExpression instead.
    */
   public static createFieldAccessExpression(
@@ -208,9 +267,11 @@ export class ExpressionFactory {
   }
 
   /**
-   * @param array
-   * @param index
-   * @param options
+   * Creates an array access expression.
+   * @param array - The expression representing the array to access.
+   * @param index - The expression representing the index to access.
+   * @param options - Optional factory options.
+   * @returns The created array expression.
    * @deprecated Use createArrayExpression instead.
    */
   public static createArrayAccessExpression(
@@ -221,6 +282,14 @@ export class ExpressionFactory {
     return this.createArrayExpression(array, index, options);
   }
 
+  /**
+   * Creates a ternary (conditional) expression.
+   * @param condition - The boolean expression to evaluate.
+   * @param thenExpression - The expression to evaluate if condition is true.
+   * @param elseExpression - The expression to evaluate if condition is false.
+   * @param options - Optional factory options.
+   * @returns The created ternary expression.
+   */
   // eslint-disable-next-line @typescript-eslint/max-params -- Ternary expression requires 4 parameters
   public static createTernaryExpression(
     condition: Readonly<Expression>,
@@ -238,6 +307,13 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a cast expression.
+   * @param type - The type to cast to.
+   * @param expression - The expression to cast.
+   * @param options - Optional factory options.
+   * @returns The created cast expression.
+   */
   public static createCastExpression(
     type: Readonly<TypeRef>,
 
@@ -253,6 +329,13 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates an instanceof expression.
+   * @param expression - The expression to check.
+   * @param type - The type to check against.
+   * @param options - Optional factory options.
+   * @returns The created instanceof expression.
+   */
   public static createInstanceOfExpression(
     expression: Readonly<Expression>,
     type: Readonly<TypeRef>,
@@ -267,6 +350,12 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a new expression (object instantiation).
+   * @param initializer - The initializer for the new object.
+   * @param options - Optional factory options.
+   * @returns The created new expression.
+   */
   public static createNewExpression(
     initializer: Readonly<Initializer>,
 
@@ -280,6 +369,13 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a new array expression.
+   * @param type - The type of the array elements.
+   * @param size - The size expression for the array.
+   * @param options - Optional factory options.
+   * @returns The created new expression with a sized array initializer.
+   */
   public static createNewArrayExpression(
     type: Readonly<TypeRef>,
 
@@ -292,6 +388,13 @@ export class ExpressionFactory {
     return this.createNewExpression(initializer, options);
   }
 
+  /**
+   * Creates a lambda expression.
+   * @param parameters - The list of parameters for the lambda function.
+   * @param body - The lambda body (expression or statement).
+   * @param options - Optional factory options.
+   * @returns The created lambda expression.
+   */
   public static createLambdaExpression(
     parameters: readonly LambdaParameter[],
 
@@ -309,6 +412,11 @@ export class ExpressionFactory {
     return result;
   }
 
+  /**
+   * Creates a this expression.
+   * @param options - Optional factory options.
+   * @returns The created this expression.
+   */
   public static createThisExpression(options?: NodeFactoryOptions): ThisExpression {
     return {
       kind: 'ThisExpression',
@@ -316,6 +424,11 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a super expression.
+   * @param options - Optional factory options.
+   * @returns The created super expression.
+   */
   public static createSuperExpression(options?: NodeFactoryOptions): SuperExpression {
     return {
       kind: 'SuperExpression',
@@ -323,6 +436,12 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a parenthesized expression.
+   * @param expression - The expression to wrap in parentheses.
+   * @param options - Optional factory options.
+   * @returns The created parenthesized expression.
+   */
   public static createParenthesizedExpression(
     expression: Readonly<Expression>,
 
@@ -335,6 +454,13 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a SOQL expression.
+   * @param query - The SOQL query string.
+   * @param bindings - The list of bindings for the SOQL query.
+   * @param options - Optional factory options.
+   * @returns The created SOQL expression.
+   */
   public static createSoqlExpression(
     query: string,
 
@@ -350,6 +476,13 @@ export class ExpressionFactory {
     };
   }
 
+  /**
+   * Creates a SOSL expression.
+   * @param query - The SOSL query string.
+   * @param bindings - The list of bindings for the SOSL query.
+   * @param options - Optional factory options.
+   * @returns The created SOSL expression.
+   */
   public static createSoslExpression(
     query: string,
 
@@ -366,9 +499,11 @@ export class ExpressionFactory {
   }
 
   /**
-   * @param query
-   * @param boundExpressions
-   * @param options
+   * Creates a SOQL query expression.
+   * @param query - The SOQL query string.
+   * @param boundExpressions - The bound expressions for the query.
+   * @param options - Optional factory options.
+   * @returns The created SOQL expression.
    * @deprecated Use createSoqlExpression instead.
    */
   public static createSoqlQueryExpression(
@@ -386,9 +521,11 @@ export class ExpressionFactory {
   }
 
   /**
-   * @param query
-   * @param boundExpressions
-   * @param options
+   * Creates a SOSL query expression.
+   * @param query - The SOSL query string.
+   * @param boundExpressions - The bound expressions for the query.
+   * @param options - Optional factory options.
+   * @returns The created SOSL expression.
    * @deprecated Use createSoslExpression instead.
    */
   public static createSoslQueryExpression(
@@ -405,6 +542,12 @@ export class ExpressionFactory {
     return this.createSoslExpression(query, bindings, options);
   }
 
+  /**
+   * Creates a trigger context variable expression.
+   * @param variableName - The identifier name for the trigger context variable (e.g., 'isBefore', 'isAfter').
+   * @param options - Optional factory options.
+   * @returns The created trigger context variable expression.
+   */
   public static createTriggerContextVariableExpression(
     variableName: string,
     options?: NodeFactoryOptions

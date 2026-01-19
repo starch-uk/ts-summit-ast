@@ -630,7 +630,7 @@ class ASTTranslator {
         // This handles cases where the parser wraps comma-separated expressions or declarations in a block
         const compoundInit = init as CompoundStatement;
         if (compoundInit.statements.length > 0) {
-          const firstStmt = compoundInit.statements[0];
+          const [firstStmt] = compoundInit.statements;
           if (firstStmt.kind === 'ExpressionStatement') {
             initStatement = firstStmt as ExpressionStatement;
           } else if (firstStmt.kind === 'VariableDeclarationStatement') {
@@ -927,7 +927,7 @@ class ASTTranslator {
           }
 
           const varName = nameNode ? (this.getText(nameNode) ?? undefined) : undefined;
-          if (matchType && varName) {
+          if (matchType && typeof varName === 'string' && varName.length > 0) {
             downcastDeclarations = [
               NodeFactory.createVariableDeclaration(
                 varName,
@@ -960,10 +960,10 @@ class ASTTranslator {
 
             if (translatedValues.length > 0) {
               if (translatedValues.length === 1) {
-                value = translatedValues[0];
+                [value] = translatedValues;
               } else {
                 values = translatedValues;
-                value = translatedValues[0];
+                [value] = translatedValues;
               }
             }
           }
@@ -1371,7 +1371,7 @@ class ASTTranslator {
 
     const methodNameFromProp = this.getProperty<string>(node, 'methodName', 'name');
 
-    if (methodNameFromProp) {
+    if (typeof methodNameFromProp === 'string' && methodNameFromProp.length > 0) {
       methodName = methodNameFromProp;
     }
 
@@ -1819,8 +1819,8 @@ class ASTTranslator {
     let argsNode = this.getChild(node, 'arguments', 'args');
     if (!argsNode) {
       // Check if any child is an 'arguments' node
-      const children = this.getChildren(node);
-      argsNode = children.find((c) => c.type === 'arguments' || c.type === 'args') ?? null;
+      const childNodes = this.getChildren(node);
+      argsNode = childNodes.find((c) => c.type === 'arguments' || c.type === 'args') ?? null;
     }
     const args: Expression[] = [];
     if (argsNode) {
@@ -1837,9 +1837,9 @@ class ASTTranslator {
     let arrayInitNode = this.getChild(node, 'arrayInitializer', 'arrayInit');
     if (!arrayInitNode) {
       // Check if any child is an 'arrayInitializer' node
-      const children = this.getChildren(node);
+      const childNodes = this.getChildren(node);
       arrayInitNode =
-        children.find((c) => c.type === 'arrayInitializer' || c.type === 'arrayInit') ?? null;
+        childNodes.find((c) => c.type === 'arrayInitializer' || c.type === 'arrayInit') ?? null;
     }
     const arrayInit: Expression[] = [];
     // Check if we have an arrayInitializer node (even if empty)
@@ -1852,13 +1852,11 @@ class ASTTranslator {
         if (initChild.type === 'map_entry' || initChild.type.toLowerCase() === 'map_entry') {
           const mapEntryChildren = this.getChildren(initChild);
           if (mapEntryChildren.length >= 2) {
-            const keyExpr = this.tryTranslateExpression(
-              mapEntryChildren[0],
-              mapEntryChildren[0].type.toLowerCase()
-            );
+            const [firstChild, secondChild] = mapEntryChildren;
+            const keyExpr = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
             const valueExpr = this.tryTranslateExpression(
-              mapEntryChildren[1],
-              mapEntryChildren[1].type.toLowerCase()
+              secondChild,
+              secondChild.type.toLowerCase()
             );
             if (keyExpr && valueExpr) {
               // For map entries, we'll add them as a pair - this is a simplification
@@ -1954,7 +1952,7 @@ class ASTTranslator {
     let typeNode = this.getChild(node, 'type');
     if (!typeNode && children.length > 0) {
       // First child is the type
-      typeNode = children[0];
+      [typeNode] = children;
     }
     const type = typeNode ? this.tryTranslateType(typeNode) : null;
     if (!type) {
@@ -1968,7 +1966,7 @@ class ASTTranslator {
     // If not found, try positional children
     if (!size && children.length >= 2) {
       // Try to translate the second child as an expression
-      const sizeChild = children[1];
+      const [, sizeChild] = children;
       // Try translating as expression first
       size = this.tryTranslateExpression(sizeChild, sizeChild.type.toLowerCase()) ?? undefined;
       // If that fails and it's a number literal, translate it directly
@@ -1996,8 +1994,8 @@ class ASTTranslator {
     const paramsNode = this.getChild(node, 'parameters', 'params');
     const parameters: LambdaParameter[] = [];
     if (paramsNode) {
-      const paramChildren = this.getChildren(paramsNode);
-      for (const paramNode of paramChildren) {
+      const parameterNodes = this.getChildren(paramsNode);
+      for (const paramNode of parameterNodes) {
         const name = this.getText(paramNode) ?? this.getProperty<string>(paramNode, 'name') ?? '';
         const typeNode = this.getChild(paramNode, 'type');
         const type = typeNode ? this.tryTranslateType(typeNode) : undefined;
@@ -2036,7 +2034,8 @@ class ASTTranslator {
       // Try first child
       const children = this.getChildren(node);
       if (children.length > 0) {
-        const expr = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
+        const [firstChild] = children;
+        const expr = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
         if (expr) {
           return NodeFactory.createParenthesizedExpression(expr, this.getLocationOption(node));
         }
@@ -2111,7 +2110,8 @@ class ASTTranslator {
       throw new TranslationError('DML statement requires a target expression', node);
     }
 
-    const target = this.tryTranslateExpression(children[0], children[0].type.toLowerCase());
+    const [firstChild] = children;
+    const target = this.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
     if (!target) {
       throw new TranslationError('DML statement requires a target expression', node);
     }
@@ -2149,21 +2149,22 @@ class ASTTranslator {
     if (membersNode) {
       /**
        * Recursively collect all member nodes from blocks (handle nested blocks).
-       * @param node
+       * @param memberNode - The parse tree node to collect members from.
+       * @returns An array of all member nodes found recursively.
        */
-      const collectMemberNodes = (node: ParseTreeNode): ParseTreeNode[] => {
-        const children = this.getChildren(node);
-        const members: ParseTreeNode[] = [];
-        for (const child of children) {
+      const collectMemberNodes = (memberNode: ParseTreeNode): ParseTreeNode[] => {
+        const memberChildrenNodes = this.getChildren(memberNode);
+        const collectedMembers: ParseTreeNode[] = [];
+        for (const child of memberChildrenNodes) {
           if (child.type === 'block') {
             // Recursively process nested blocks
-            members.push(...collectMemberNodes(child));
+            collectedMembers.push(...collectMemberNodes(child));
           } else {
             // This is a member node (field_declaration, method_declaration, etc.)
-            members.push(child);
+            collectedMembers.push(child);
           }
         }
-        return members;
+        return collectedMembers;
       };
       const memberChildren = collectMemberNodes(membersNode);
       // Collect members with their source order index to preserve order within categories
@@ -2194,8 +2195,8 @@ class ASTTranslator {
             const lastLocation = lastFieldDeclarationNode.location;
             const currentLocation = memberNode.location;
             const sameLine =
-              lastLocation &&
-              currentLocation &&
+              !!lastLocation &&
+              !!currentLocation &&
               lastLocation.start.line === currentLocation.start.line;
             if (!sameLine) {
               // Different line = different statement
@@ -2238,8 +2239,10 @@ class ASTTranslator {
       // Sort members by category: inner types < fields < properties < methods
 
       /**
+       * Gets the category order for a declaration (inner types < fields < properties < methods).
        * Within each category, preserve source order.
-       * @param decl
+       * @param decl - The declaration to get the category order for.
+       * @returns The category order number (0 = inner types, 1 = fields, 2 = properties, 3 = methods).
        */
       const getCategoryOrder = (decl: Declaration): number => {
         if (
@@ -2785,8 +2788,8 @@ class ASTTranslator {
     const parameters: Parameter[] = [];
     const paramsNode = this.getChild(node, 'parameters', 'params');
     if (paramsNode) {
-      const paramChildren = this.getChildren(paramsNode);
-      for (const paramNode of paramChildren) {
+      const parameterNodes = this.getChildren(paramsNode);
+      for (const paramNode of parameterNodes) {
         const paramNameNode = this.getChild(paramNode, 'name');
         const paramName = paramNameNode
           ? (this.getText(paramNameNode) ??
@@ -2822,8 +2825,9 @@ class ASTTranslator {
     // "void Test()" is a method (explicit void); "Test()" is a constructor (no return type / void_type).
     const className = this.getClassName(node);
     const hasExplicitReturnType =
-      returnTypeNode && (returnTypeNode as { type?: string }).type !== 'void_type';
-    const isConstructor = !!className && name === className && !hasExplicitReturnType;
+      returnTypeNode != null && (returnTypeNode as { type?: string }).type !== 'void_type';
+    const hasClassName = className != null;
+    const isConstructor = hasClassName && name === className && !hasExplicitReturnType;
 
     return NodeFactory.createMethodDeclaration(
       name,
@@ -2862,7 +2866,8 @@ class ASTTranslator {
   /**
    * Translate instance or static initializer block to a MethodDeclaration
    * (summit-ast models initializer blocks as method-like declarations).
-   * @param node
+   * @param node - The parse tree node representing the initializer block.
+   * @returns The translated method declaration representing the initializer block.
    */
   private translateInitializerBlock(node: Readonly<ParseTreeNode>): Declaration {
     const blockNode = this.getChild(node, 'block');
@@ -3171,11 +3176,11 @@ class ASTTranslator {
   private translateVariableDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     const nameFromProperty = this.getProperty<string>(node, 'name');
     let name = nameFromProperty;
-    if (!name) {
+    if (name == null || name === '') {
       // Try to get name from second child (nameNode) if available
       const children = this.getChildren(node);
       if (children.length >= 2) {
-        const nameNode = children[1];
+        const [, nameNode] = children;
         const nameFromChild = this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name');
         name = nameFromChild ?? 'unknown';
       } else {
@@ -3194,7 +3199,7 @@ class ASTTranslator {
       const children = this.getChildren(node);
       if (children.length >= 3) {
         // Skip type (child[0]) and name (child[1]), third child is initializer
-        const initializerNode = children[2];
+        const [, , initializerNode] = children;
         initializer =
           this.tryTranslateExpression(initializerNode, initializerNode.type.toLowerCase()) ??
           undefined;
@@ -3215,9 +3220,10 @@ class ASTTranslator {
 
   /**
    * This method is kept for reference but throws an error if called.
-   * @param node
+   * @param node - The parse tree node representing the annotation declaration.
+   * @throws {TranslationError} Always throws, as annotation declarations are not supported.
    */
-  private translateAnnotationDeclaration(node: Readonly<ParseTreeNode>): Declaration {
+  private translateAnnotationDeclaration(node: Readonly<ParseTreeNode>): never {
     throw new TranslationError('Annotation declarations are not supported in summit-ast', node);
   }
 
@@ -3229,21 +3235,27 @@ class ASTTranslator {
     altPropertyName?: string
   ): Readonly<ParseTreeNode>[] {
     // Try named property first
-    if (propertyName && propertyName in node) {
+    if (propertyName != null && propertyName in node) {
       const value = (node as unknown as Record<string, unknown>)[propertyName];
       if (Array.isArray(value)) {
         return value as Readonly<ParseTreeNode>[];
       }
-      return value ? [value as Readonly<ParseTreeNode>] : [];
+      if (value !== undefined && value !== null) {
+        return [value as Readonly<ParseTreeNode>];
+      }
+      return [];
     }
 
     // Try alternate property name
-    if (altPropertyName && altPropertyName in node) {
+    if (altPropertyName != null && altPropertyName in node) {
       const value = (node as unknown as Record<string, unknown>)[altPropertyName];
       if (Array.isArray(value)) {
         return value as Readonly<ParseTreeNode>[];
       }
-      return value ? [value as Readonly<ParseTreeNode>] : [];
+      if (value !== undefined && value !== null) {
+        return [value as Readonly<ParseTreeNode>];
+      }
+      return [];
     }
 
     // Fall back to children array
@@ -3259,16 +3271,18 @@ class ASTTranslator {
     // First check if it's a direct property
     if (propertyName in node) {
       const value = (node as unknown as Record<string, unknown>)[propertyName];
-      return value && typeof value === 'object' && 'type' in value
-        ? (value as ParseTreeNode)
-        : null;
+      if (value !== undefined && value !== null && typeof value === 'object' && 'type' in value) {
+        return value as ParseTreeNode;
+      }
+      return null;
     }
 
-    if (altPropertyName && altPropertyName in node) {
+    if (altPropertyName != null && altPropertyName in node) {
       const value = (node as unknown as Record<string, unknown>)[altPropertyName];
-      return value && typeof value === 'object' && 'type' in value
-        ? (value as Readonly<ParseTreeNode>)
-        : null;
+      if (value !== undefined && value !== null && typeof value === 'object' && 'type' in value) {
+        return value as Readonly<ParseTreeNode>;
+      }
+      return null;
     }
 
     // If not a property, search through children for matching type
@@ -3280,7 +3294,7 @@ class ASTTranslator {
     }
 
     // If altPropertyName provided, also search for it
-    if (altPropertyName) {
+    if (altPropertyName != null) {
       for (const child of children) {
         if (
           child.type === altPropertyName ||
@@ -3617,9 +3631,9 @@ class ASTTranslator {
           argChildrenList.find((c) => c.type !== 'name') ??
           argChildrenList[argChildrenList.length - 1];
         const elementValue = this.parseElementValue(valueNode);
-        if (!elementValue) continue;
+        if (elementValue === null) continue;
         args.push({
-          isNameImplicit: !argName,
+          isNameImplicit: argName == null || argName === '',
           kind: 'AnnotationArgument',
           location: argNode.location,
           name: argName,
@@ -3637,7 +3651,7 @@ class ASTTranslator {
 
   /**
    * Parse an annotation argument value (annotation_expression, new_expression/array, or expression) into an ElementValue.
-   * @param valueNode - The parse tree node representing the annotation argument value.
+   * @param valueNode - The parse tree node containing the annotation argument value to parse.
    * @returns The parsed ElementValue node, or null if the value cannot be parsed.
    */
   private parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null {
@@ -3646,7 +3660,7 @@ class ASTTranslator {
       const children = this.getChildren(valueNode);
       const emptyArrayLength = 0;
       if (children.length === emptyArrayLength) return null;
-      const inner = children[0];
+      const [inner] = children;
       const ann = this.buildAnnotationFromNode(inner);
       if (!ann) return null;
       return NodeFactory.createAnnotationElementValue(ann, this.getLocationOption(valueNode));

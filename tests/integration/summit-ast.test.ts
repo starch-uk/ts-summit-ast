@@ -165,7 +165,7 @@ describe('SummitAST Parsing', () => {
     if (result.ast?.kind === 'CompilationUnit') {
       expect(result.ast.declarations).toBeDefined();
       if (result.ast.declarations && result.ast.declarations.length > 0) {
-        const firstDecl = result.ast.declarations[0];
+        const [firstDecl] = result.ast.declarations;
         // Should be InterfaceDeclaration or ClassDeclaration, not TriggerDeclaration
         // This verifies the parser correctly identified the type
         expect(['InterfaceDeclaration', 'ClassDeclaration']).toContain(firstDecl.kind);

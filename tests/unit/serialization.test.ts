@@ -78,7 +78,7 @@ describe('JSON Serialization', () => {
       expect(Array.isArray(parsed.declarations)).toBe(true);
       expect(parsed.declarations.length).toBeGreaterThan(0);
       // Verify declarations have correct structure (matching original's thoroughness)
-      const firstDecl = parsed.declarations[0];
+      const [firstDecl] = parsed.declarations;
       expect(firstDecl).toBeDefined();
       expect(firstDecl['@type']).toBeDefined();
     });
@@ -222,7 +222,7 @@ describe('JSON Serialization', () => {
         expect(parsed.declaration).toBeDefined();
         // Verify declaration has correct structure (matching original's thoroughness)
         expect(parsed.declaration['@type']).toBeDefined();
-        expect(parsed.declaration.name || parsed.declaration.id).toBeDefined();
+        expect(parsed.declaration.name ?? parsed.declaration.id).toBeDefined();
       }
     });
 
@@ -290,16 +290,16 @@ describe('JSON Serialization', () => {
         if (actualParsed.declaration && expectedParsed.declaration) {
           // Original expects exact match, so verify all properties match
           expect(actualParsed.declaration['@type']).toBe(expectedParsed.declaration['@type']);
-          expect(actualParsed.declaration.id || actualParsed.declaration.name).toBeDefined();
-          expect(expectedParsed.declaration.id || expectedParsed.declaration.name).toBeDefined();
+          expect(actualParsed.declaration.id ?? actualParsed.declaration.name).toBeDefined();
+          expect(expectedParsed.declaration.id ?? expectedParsed.declaration.name).toBeDefined();
           // Both should have the same variable name (exact match)
           const actualName =
-            actualParsed.declaration.id?.string ||
-            actualParsed.declaration.id?.name ||
+            actualParsed.declaration.id?.string ??
+            actualParsed.declaration.id?.name ??
             actualParsed.declaration.name;
           const expectedName =
-            expectedParsed.declaration.id?.string ||
-            expectedParsed.declaration.id?.name ||
+            expectedParsed.declaration.id?.string ??
+            expectedParsed.declaration.id?.name ??
             expectedParsed.declaration.name;
           expect(actualName).toBe(expectedName);
           // Verify type matches (if present)
@@ -752,14 +752,14 @@ describe('Comprehensive Serialization', () => {
 
   describe('JsonDeserializer error cases', () => {
     it('should throw error for invalid JSON', () => {
-      const deserializer = new JsonDeserializer();
+      const localDeserializer = new JsonDeserializer();
       expect(() => {
-        deserializer.deserialize('invalid json');
+        localDeserializer.deserialize('invalid json');
       }).toThrow();
     });
 
     it('should throw error for missing @type or kind', () => {
-      const deserializer = new JsonDeserializer();
+      const localDeserializer = new JsonDeserializer();
       expect(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument -- Testing invalid JSON node structure
         deserializer.deserializeNode({} as any);
@@ -767,33 +767,33 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should throw error for invalid modifier keyword', () => {
-      const deserializer = new JsonDeserializer();
+      const localDeserializer = new JsonDeserializer();
       const json = {
         '@type': 'Modifier',
         keyword: 'invalidModifier',
       };
       expect(() => {
-        deserializer.deserializeNode(json);
+        localDeserializer.deserializeNode(json);
       }).toThrow('Invalid modifier keyword: invalidModifier');
     });
 
     it('should validate node type when validation is enabled', () => {
-      const deserializer = new JsonDeserializer({ validate: true });
+      const localDeserializer = new JsonDeserializer({ validate: true });
       const json = {
         '@type': null,
       };
       expect(() => {
-        deserializer.deserializeNode(json);
+        localDeserializer.deserializeNode(json);
       }).toThrow();
     });
 
     it('should skip validation when disabled', () => {
-      const deserializer = new JsonDeserializer({ validate: false });
+      const localDeserializer = new JsonDeserializer({ validate: false });
       const json = {
         '@type': 'StringVal',
         value: 'test',
       };
-      const result = deserializer.deserializeNode(json);
+      const result = localDeserializer.deserializeNode(json);
       expect(result.kind).toBe('StringVal');
     });
 
@@ -804,18 +804,18 @@ describe('Comprehensive Serialization', () => {
         }
         return value;
       };
-      const deserializer = new JsonDeserializer({ reviver });
+      const localDeserializer = new JsonDeserializer({ reviver });
       const json = JSON.stringify({
         '@type': 'StringVal',
         value: 'test',
       });
-      const result = deserializer.deserialize(json);
+      const result = localDeserializer.deserialize(json);
       expect(result.kind).toBe('StringVal');
       // Note: reviver is applied during JSON.parse, but we still verify it doesn't break
     });
 
     it('should handle location with offset', () => {
-      const deserializer = new JsonDeserializer();
+      const localDeserializer = new JsonDeserializer();
       const json = {
         '@type': 'Identifier',
         location: {
@@ -824,46 +824,46 @@ describe('Comprehensive Serialization', () => {
         },
         name: 'test',
       };
-      const result = deserializer.deserializeNode(json);
+      const result = localDeserializer.deserializeNode(json);
       expect(result.location?.start.offset).toBe(0);
       expect(result.location?.end.offset).toBe(4);
     });
 
     it('should throw error for unimplemented node types', () => {
-      const deserializer = new JsonDeserializer();
+      const localDeserializer = new JsonDeserializer();
       const json = {
         '@type': 'EnhancedForLoopStatement',
       };
       expect(() => {
-        deserializer.deserializeNode(json);
+        localDeserializer.deserializeNode(json);
       }).toThrow('Deserialization for EnhancedForLoopStatement not yet implemented');
     });
 
     it('should handle backward compatibility with kind property', () => {
-      const deserializer = new JsonDeserializer();
+      const localDeserializer = new JsonDeserializer();
       const json = {
         kind: 'StringVal',
         value: 'test',
       };
-      const result = deserializer.deserializeNode(json);
+      const result = localDeserializer.deserializeNode(json);
       expect(result.kind).toBe('StringVal');
     });
   });
 
   describe('JsonSerializer additional coverage', () => {
     it('should serialize AssignExpression', () => {
-      const serializer = new JsonSerializer();
+      const localSerializer = new JsonSerializer();
       const left = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const right = NodeFactory.createIntegerVal(5, '5');
       const node = NodeFactory.createAssignExpression('=', left, right);
-      const json = serializer.serialize(node);
+      const json = localSerializer.serialize(node);
       const parsed = JSON.parse(json);
       expect(parsed['@type']).toBe('AssignExpression');
       expect(parsed.operator).toBe('=');
     });
 
     it('should serialize unknown node types using serializeUnknownNode', () => {
-      const serializer = new JsonSerializer();
+      const localSerializer = new JsonSerializer();
       // Create a mock unknown node type
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
@@ -877,7 +877,7 @@ describe('Comprehensive Serialization', () => {
         property4: 'primitive',
       };
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
-      const json = serializer.serialize(unknownNode);
+      const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed['@type']).toBe('UnknownNodeType');
       expect(parsed.property1).toBeDefined();
@@ -887,7 +887,7 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should serialize unknown node with array of TypeRefs', () => {
-      const serializer = new JsonSerializer();
+      const localSerializer = new JsonSerializer();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         kind: 'UnknownNode',
@@ -899,21 +899,21 @@ describe('Comprehensive Serialization', () => {
         ],
       };
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
-      const json = serializer.serialize(unknownNode);
+      const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed.typeRefs).toBeDefined();
       expect(Array.isArray(parsed.typeRefs)).toBe(true);
     });
 
     it('should serialize unknown node with empty array', () => {
-      const serializer = new JsonSerializer();
+      const localSerializer = new JsonSerializer();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         emptyArray: [],
         kind: 'UnknownNode',
       };
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
-      const json = serializer.serialize(unknownNode);
+      const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       // Empty arrays should be serialized as primitives
       expect(Array.isArray(parsed.emptyArray)).toBe(true);
@@ -929,9 +929,9 @@ describe('Comprehensive Serialization', () => {
         }
         return value;
       };
-      const serializer = new JsonSerializer({ replacer });
+      const localSerializer = new JsonSerializer({ replacer });
       const node = NodeFactory.createStringVal('test', '"test"');
-      const json = serializer.serialize(node);
+      const json = localSerializer.serialize(node);
       const parsed = JSON.parse(json);
       // Replacer should still process the value
       expect(parsed.value).toBe('test');
@@ -939,26 +939,26 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should handle location with offset in serialization', () => {
-      const serializer = new JsonSerializer({ includeLocation: true });
+      const localSerializer = new JsonSerializer({ includeLocation: true });
       const location = {
         end: { column: 5, line: 1, offset: 4 },
         start: { column: 1, line: 1, offset: 0 },
       };
       const node = NodeFactory.createIdentifier('test', { location });
-      const json = serializer.serialize(node);
+      const json = localSerializer.serialize(node);
       const parsed = JSON.parse(json);
       expect(parsed.location.start.offset).toBe(0);
       expect(parsed.location.end.offset).toBe(4);
     });
 
     it('should not include offset if undefined', () => {
-      const serializer = new JsonSerializer({ includeLocation: true });
+      const localSerializer = new JsonSerializer({ includeLocation: true });
       const location = {
         end: { column: 5, line: 1 },
         start: { column: 1, line: 1 },
       };
       const node = NodeFactory.createIdentifier('test', { location });
-      const json = serializer.serialize(node);
+      const json = localSerializer.serialize(node);
       const parsed = JSON.parse(json);
       expect(parsed.location.start.offset).toBeUndefined();
       expect(parsed.location.end.offset).toBeUndefined();
@@ -967,21 +967,21 @@ describe('Comprehensive Serialization', () => {
 
   describe('JsonDeserializer comprehensive coverage', () => {
     it('should deserialize VariableDeclarationStatement', () => {
-      const serializer = new JsonSerializer();
-      const deserializer = new JsonDeserializer();
+      const localSerializer = new JsonSerializer();
+      const localDeserializer = new JsonDeserializer();
       const decl = NodeFactory.createVariableDeclaration('x', {
         arrayNesting: 0,
         components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
       });
       const node = NodeFactory.createVariableDeclarationStatement(decl);
-      const json = serializer.serialize(node);
-      const deserialized = deserializer.deserialize(json);
+      const json = localSerializer.serialize(node);
+      const deserialized = localDeserializer.deserialize(json);
       expect(deserialized.kind).toBe('VariableDeclarationStatement');
     });
 
     it('should deserialize VariableDeclaration with modifiers', () => {
-      const serializer = new JsonSerializer();
-      const deserializer = new JsonDeserializer();
+      const localSerializer = new JsonSerializer();
+      const localDeserializer = new JsonDeserializer();
       const modifier: Modifier = {
         keyword: 'public',
         kind: 'Modifier',
@@ -995,8 +995,8 @@ describe('Comprehensive Serialization', () => {
         undefined,
         [modifier]
       );
-      const json = serializer.serialize(decl);
-      const deserialized = deserializer.deserialize(json);
+      const json = localSerializer.serialize(decl);
+      const deserialized = localDeserializer.deserialize(json);
       expect(deserialized.kind).toBe('VariableDeclaration');
       if (deserialized.kind === 'VariableDeclaration') {
         expect(deserialized.modifiers).toBeDefined();
@@ -1005,8 +1005,8 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should deserialize all initializer types', () => {
-      const serializer = new JsonSerializer();
-      const deserializer = new JsonDeserializer();
+      const localSerializer = new JsonSerializer();
+      const localDeserializer = new JsonDeserializer();
 
       // ConstructorInitializer
       const ctorInit = NodeFactory.createConstructorInitializer(
@@ -1017,8 +1017,8 @@ describe('Comprehensive Serialization', () => {
         [NodeFactory.createStringVal('test', '"test"')]
       );
       const ctorExpr = NodeFactory.createNewExpression(ctorInit);
-      const ctorJson = serializer.serialize(ctorExpr);
-      const ctorDeserialized = deserializer.deserialize(ctorJson);
+      const ctorJson = localSerializer.serialize(ctorExpr);
+      const ctorDeserialized = localDeserializer.deserialize(ctorJson);
       expect(ctorDeserialized.kind).toBe('NewExpression');
 
       // ValuesInitializer
@@ -1030,8 +1030,8 @@ describe('Comprehensive Serialization', () => {
         [NodeFactory.createIntegerVal(1, '1'), NodeFactory.createIntegerVal(2, '2')]
       );
       const valuesExpr = NodeFactory.createNewExpression(valuesInit);
-      const valuesJson = serializer.serialize(valuesExpr);
-      const valuesDeserialized = deserializer.deserialize(valuesJson);
+      const valuesJson = localSerializer.serialize(valuesExpr);
+      const valuesDeserialized = localDeserializer.deserialize(valuesJson);
       expect(valuesDeserialized.kind).toBe('NewExpression');
 
       // SizedArrayInitializer
@@ -1043,8 +1043,8 @@ describe('Comprehensive Serialization', () => {
         NodeFactory.createIntegerVal(10, '10')
       );
       const sizedExpr = NodeFactory.createNewExpression(sizedInit);
-      const sizedJson = serializer.serialize(sizedExpr);
-      const sizedDeserialized = deserializer.deserialize(sizedJson);
+      const sizedJson = localSerializer.serialize(sizedExpr);
+      const sizedDeserialized = localDeserializer.deserialize(sizedJson);
       expect(sizedDeserialized.kind).toBe('NewExpression');
 
       // MapInitializer
@@ -1061,21 +1061,21 @@ describe('Comprehensive Serialization', () => {
         ]
       );
       const mapExpr = NodeFactory.createNewExpression(mapInit);
-      const mapJson = serializer.serialize(mapExpr);
-      const mapDeserialized = deserializer.deserialize(mapJson);
+      const mapJson = localSerializer.serialize(mapExpr);
+      const mapDeserialized = localDeserializer.deserialize(mapJson);
       expect(mapDeserialized.kind).toBe('NewExpression');
     });
 
     it('should deserialize all element value types', () => {
-      const serializer = new JsonSerializer();
-      const deserializer = new JsonDeserializer();
+      const localSerializer = new JsonSerializer();
+      const localDeserializer = new JsonDeserializer();
 
       // ExpressionElementValue
       const exprValue = NodeFactory.createExpressionElementValue(
         NodeFactory.createIntegerVal(42, '42')
       );
-      const exprJson = serializer.serialize(exprValue);
-      const exprDeserialized = deserializer.deserialize(exprJson);
+      const exprJson = localSerializer.serialize(exprValue);
+      const exprDeserialized = localDeserializer.deserialize(exprJson);
       expect(exprDeserialized.kind).toBe('ExpressionElementValue');
 
       // ArrayElementValue
@@ -1083,15 +1083,15 @@ describe('Comprehensive Serialization', () => {
         NodeFactory.createExpressionElementValue(NodeFactory.createIntegerVal(1, '1')),
         NodeFactory.createExpressionElementValue(NodeFactory.createIntegerVal(2, '2')),
       ]);
-      const arrayJson = serializer.serialize(arrayValue);
-      const arrayDeserialized = deserializer.deserialize(arrayJson);
+      const arrayJson = localSerializer.serialize(arrayValue);
+      const arrayDeserialized = localDeserializer.deserialize(arrayJson);
       expect(arrayDeserialized.kind).toBe('ArrayElementValue');
     });
   });
 
   describe('JsonSerializer comprehensive coverage', () => {
     it('should serialize all initializer types', () => {
-      const serializer = new JsonSerializer();
+      const localSerializer = new JsonSerializer();
 
       // ConstructorInitializer
       const ctorInit = NodeFactory.createConstructorInitializer(
@@ -1102,7 +1102,7 @@ describe('Comprehensive Serialization', () => {
         []
       );
       const ctorExpr = NodeFactory.createNewExpression(ctorInit);
-      const json = serializer.serialize(ctorExpr);
+      const json = localSerializer.serialize(ctorExpr);
       const parsed = JSON.parse(json);
       expect(parsed.initializer.args).toBeDefined();
 
@@ -1115,7 +1115,7 @@ describe('Comprehensive Serialization', () => {
         []
       );
       const valuesExpr = NodeFactory.createNewExpression(valuesInit);
-      const valuesJson = serializer.serialize(valuesExpr);
+      const valuesJson = localSerializer.serialize(valuesExpr);
       const valuesParsed = JSON.parse(valuesJson);
       expect(valuesParsed.initializer.values).toBeDefined();
 
@@ -1128,7 +1128,7 @@ describe('Comprehensive Serialization', () => {
         NodeFactory.createIntegerVal(10, '10')
       );
       const sizedExpr = NodeFactory.createNewExpression(sizedInit);
-      const sizedJson = serializer.serialize(sizedExpr);
+      const sizedJson = localSerializer.serialize(sizedExpr);
       const sizedParsed = JSON.parse(sizedJson);
       expect(sizedParsed.initializer.size).toBeDefined();
 
@@ -1141,13 +1141,13 @@ describe('Comprehensive Serialization', () => {
         []
       );
       const mapExpr = NodeFactory.createNewExpression(mapInit);
-      const mapJson = serializer.serialize(mapExpr);
+      const mapJson = localSerializer.serialize(mapExpr);
       const mapParsed = JSON.parse(mapJson);
       expect(mapParsed.initializer.pairs).toBeDefined();
     });
 
     it('should serialize VariableDeclaration with modifiers', () => {
-      const serializer = new JsonSerializer();
+      const localSerializer = new JsonSerializer();
       const modifier: Modifier = {
         keyword: 'public',
         kind: 'Modifier',
@@ -1161,7 +1161,7 @@ describe('Comprehensive Serialization', () => {
         undefined,
         [modifier]
       );
-      const json = serializer.serialize(decl);
+      const json = localSerializer.serialize(decl);
       const parsed = JSON.parse(json);
       expect(parsed.modifiers).toBeDefined();
       expect(Array.isArray(parsed.modifiers)).toBe(true);
@@ -1169,7 +1169,7 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should serialize unknown node with array containing non-AST items', () => {
-      const serializer = new JsonSerializer();
+      const localSerializer = new JsonSerializer();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
       const unknownNode: any = {
         kind: 'UnknownNode',
@@ -1181,7 +1181,7 @@ describe('Comprehensive Serialization', () => {
         ],
       };
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
-      const json = serializer.serialize(unknownNode);
+      const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed.mixedArray).toBeDefined();
       expect(Array.isArray(parsed.mixedArray)).toBe(true);
