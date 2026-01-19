@@ -36,6 +36,7 @@ import {
 import { getNodeChildren } from '../../src/utils/traversal.js';
 import type { ASTNode } from '../../src/ast/base.js';
 import type { TypeRef } from '../../src/ast/Type.js';
+import type { VariableExpression } from '../../src/ast/Expression.js';
 
 describe('Statement Translation', () => {
   /**
@@ -102,7 +103,7 @@ describe('Statement Translation', () => {
     expect(isVariableExpression(node!.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.condition as any;
+    const conditionVariable = node.condition as VariableExpression;
     expect(conditionVariable.id.name).toBe('x');
     // Original: assertWithMessage("Without `else`, the statement should be null")
     //           .that(node.elseStatement).isNull()
@@ -130,7 +131,7 @@ describe('Statement Translation', () => {
     expect(isVariableExpression(node.expression)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.expression as any;
+    const conditionVariable = node.expression as VariableExpression;
     expect(conditionVariable.id.name).toBe('x');
     // Original: val whenClause = node.whenClauses.first()
     // Original: assertThat(whenClause).isInstanceOf(SwitchStatement.WhenElse::class.java)
@@ -277,7 +278,7 @@ describe('Statement Translation', () => {
     expect(isVariableExpression(node!.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.condition as any;
+    const conditionVariable = node.condition as VariableExpression;
     expect(conditionVariable.id.name).toBe('x');
   });
 
@@ -292,7 +293,7 @@ describe('Statement Translation', () => {
     expect(isVariableExpression(node!.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.condition as any;
+    const conditionVariable = node.condition as VariableExpression;
     expect(conditionVariable.id.name).toBe('x');
   });
 

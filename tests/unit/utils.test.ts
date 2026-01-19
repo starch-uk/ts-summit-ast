@@ -23,6 +23,15 @@ import {
 import type { Position } from '../../src/utils/source-extraction.js';
 import type { SourceRange } from '../../src/ast/base.js';
 import type { ASTNode } from '../../src/ast/base.js';
+import type { ApexDocParam, ApexDocGroup, ApexDocThrows } from '../../src/ast/ApexDoc.js';
+import type {
+  VariableExpression,
+  CompoundStatement,
+  IfStatement,
+  Identifier,
+} from '../../src/ast/index.js';
+import type { ApexParseError } from '../../src/utils/apex-parser.js';
+import type { ParseTreeNode } from '../../src/parser/ParseTreeTypes.js';
 import { walkAST } from '../../src/utils/traversal.js';
 import type { ASTWalkVisitor } from '../../src/utils/traversal.js';
 import {
@@ -109,7 +118,7 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
       expect(result.blockTags[0].kind).toBe('ApexDocParam');
-      expect((result.blockTags[0] as any).paramName).toBe('name');
+      expect((result.blockTags[0] as ApexDocParam).paramName).toBe('name');
     });
 
     it('should parse ApexDoc comment with multiple @param tags', () => {
@@ -124,9 +133,9 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(2);
       expect(result.blockTags[0].kind).toBe('ApexDocParam');
-      expect((result.blockTags[0] as any).paramName).toBe('x');
+      expect((result.blockTags[0] as ApexDocParam).paramName).toBe('x');
       expect(result.blockTags[1].kind).toBe('ApexDocParam');
-      expect((result.blockTags[1] as any).paramName).toBe('y');
+      expect((result.blockTags[1] as ApexDocParam).paramName).toBe('y');
     });
 
     it('should parse @return tag', () => {
@@ -192,7 +201,7 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
       expect(result.blockTags[0].kind).toBe('ApexDocGroup');
-      expect((result.blockTags[0] as any).groupName).toBe('Utilities');
+      expect((result.blockTags[0] as ApexDocGroup).groupName).toBe('Utilities');
     });
 
     it('should parse @group tag with description', () => {
@@ -205,7 +214,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags[0].kind).toBe('ApexDocGroup');
-      expect((result.blockTags[0] as any).groupName).toBe('Utilities');
+      expect((result.blockTags[0] as ApexDocGroup).groupName).toBe('Utilities');
     });
 
     it('should parse @see tag', () => {
@@ -245,7 +254,7 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
       expect(result.blockTags[0].kind).toBe('ApexDocThrows');
-      expect((result.blockTags[0] as any).exceptionType).toBe('IllegalArgumentException');
+      expect((result.blockTags[0] as ApexDocThrows).exceptionType).toBe('IllegalArgumentException');
     });
 
     it('should parse @throws tag without exception type', () => {
@@ -777,7 +786,7 @@ public void utility() {}`;
           (tag) => tag.kind === 'ApexDocGroup'
         );
         expect(groupTag).toBeDefined();
-        expect((groupTag as any).groupName).toBe('Utilities');
+        expect((groupTag as ApexDocGroup).groupName).toBe('Utilities');
       });
 
       it('should parse ApexDoc with multiple block tags', () => {
@@ -1023,7 +1032,7 @@ function createTestAST(): ASTNode {
 function nodeToId(node: ASTNode): string {
   // NODE_0: Root Block with 2 statements (NODE_1 and NODE_2)
   if (node.kind === 'CompoundStatement') {
-    const stmts = (node as any).statements;
+    const stmts = (node as CompoundStatement).statements;
     if (stmts?.length === 2) {
       // Check if first is a Block (NODE_1) and second is an IfStatement (NODE_2)
       if (stmts[0].kind === 'CompoundStatement' && stmts[1].kind === 'IfStatement') {
@@ -1033,7 +1042,7 @@ function nodeToId(node: ASTNode): string {
   }
   // NODE_1: Block containing an IfStatement with NODE_3
   if (node.kind === 'CompoundStatement') {
-    const stmts = (node as any).statements;
+    const stmts = (node as CompoundStatement).statements;
     if (stmts?.length === 1 && stmts[0].kind === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
@@ -1044,17 +1053,17 @@ function nodeToId(node: ASTNode): string {
   }
   // NODE_2: IfStatement containing NODE_4
   if (node.kind === 'IfStatement') {
-    const ifStmt = node as any;
+    const ifStmt = node as IfStatement;
     if (ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4') {
       return 'NODE_2';
     }
   }
   // NODE_3: Identifier 'node3'
-  if (node.kind === 'Identifier' && (node as any).name === 'node3') {
+  if (node.kind === 'Identifier' && (node as Identifier).name === 'node3') {
     return 'NODE_3';
   }
   // NODE_4: Identifier 'node4'
-  if (node.kind === 'Identifier' && (node as any).name === 'node4') {
+  if (node.kind === 'Identifier' && (node as Identifier).name === 'node4') {
     return 'NODE_4';
   }
   return 'UNKNOWN';
@@ -1068,7 +1077,7 @@ function nodeToId(node: ASTNode): string {
 function nodeIdIs2(node: ASTNode): boolean {
   // NODE_2 is the IfStatement containing NODE_4
   if (node.kind === 'IfStatement') {
-    const ifStmt = node as any;
+    const ifStmt = node as IfStatement;
     return ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4';
   }
   return false;
@@ -1082,7 +1091,7 @@ function nodeIdIs2(node: ASTNode): boolean {
 function nodeIdIs1(node: ASTNode): boolean {
   // NODE_1 is the Block containing an IfStatement with NODE_3
   if (node.kind === 'CompoundStatement') {
-    const stmts = (node as any).statements;
+    const stmts = (node as CompoundStatement).statements;
     if (stmts?.length === 1 && stmts[0].kind === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
@@ -2348,7 +2357,9 @@ describe('AST Traversal Utilities', () => {
     it('should call exitNode when visitor provides it', () => {
       let exitCalled = false;
       const visitor: ASTWalkVisitor = {
-        enterNode: () => {},
+        enterNode: () => {
+          // Empty - testing that exitNode is called even when enterNode is provided
+        },
         exitNode: () => {
           exitCalled = true;
         },
@@ -2496,7 +2507,7 @@ describe('apex-parser batch functions', () => {
     });
 
     it('should call onError callback when provided', () => {
-      const errors: any[] = [];
+      const errors: ApexParseError[] = [];
       const result = parseApexCode('invalid syntax {', {
         onError: (error) => {
           errors.push(error);
@@ -2531,7 +2542,7 @@ describe('apex-parser batch functions', () => {
             ],
             text: source,
             type: 'compilation_unit',
-          } as any;
+          } as ParseTreeNode;
         },
       });
       // Result should be processed

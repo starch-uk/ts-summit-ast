@@ -181,7 +181,9 @@ fetch('http://127.0.0.1:7250/ingest/3c5fc984-5244-4e90-a556-6aa06134b21f', {
   }),
   headers: { 'Content-Type': 'application/json' },
   method: 'POST',
-}).catch(() => {});
+}).catch(() => {
+  // Ignore fetch errors - this is just for debugging/telemetry
+});
 // #endregion
 
 describe('Type Guards', () => {

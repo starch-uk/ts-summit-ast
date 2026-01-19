@@ -22,6 +22,7 @@ import type {
   ClassMember,
   TypeRef,
   Annotation,
+  Modifier,
 } from '../../src/ast/Declaration.js';
 import {
   isAnnotationElementValue,
@@ -94,7 +95,7 @@ function isAnonymousInitializationCode(method: MethodDeclaration): boolean {
  * @param keyword - The keyword to check for (e.g., 'public', 'static').
  * @returns True if any modifier matches the keyword.
  */
-function hasKeyword(modifiers: any[], keyword: string): boolean {
+function hasKeyword(modifiers: Modifier[], keyword: string): boolean {
   return modifiers.some((m) => m.kind === 'Modifier' && m.keyword === keyword);
 }
 
@@ -339,16 +340,17 @@ describe('Class Declaration Translation', () => {
         // created per statement (one parse tree node per statement with comma-separated declarators).
         const sameType = typeRefToCodeString(current.type) === typeRefToCodeString(prev.type);
         const currentModifiers = (current.modifiers ?? [])
-          .map((m) => (m as any).keyword ?? '')
+          .map((m) => (m as Modifier).keyword ?? '')
           .sort()
           .join(',');
         const prevModifiers = (prev.modifiers ?? [])
-          .map((m) => (m as any).keyword ?? '')
+          .map((m) => (m as Modifier).keyword ?? '')
           .sort()
           .join(',');
         const sameModifiers = currentModifiers === prevModifiers;
         const sameLine =
-          (current as any).location?.start?.line === (prev as any).location?.start?.line;
+          (current as VariableDeclaration).location?.start?.line ===
+          (prev as VariableDeclaration).location?.start?.line;
 
         if (sameType && sameModifiers && sameLine) {
           // Same group - fields from the same statement (same line)
@@ -481,10 +483,12 @@ describe('Class Declaration Translation', () => {
     if (classDecl) {
       // Find property declarations
       // Original: propertyDeclarations.singleOrNull() is not null
-      const propDecls = classDecl.members.filter((m) => m.kind === 'PropertyDeclaration');
+      const propDecls = classDecl.members.filter(
+        (m): m is PropertyDeclaration => m.kind === 'PropertyDeclaration'
+      );
       // Properties may not be fully implemented yet, so we check if they exist
       if (propDecls.length > 0) {
-        const propDecl = propDecls.find((p) => (p as any).name === 'property');
+        const propDecl = propDecls.find((p) => p.name === 'property');
         expect(propDecl).toBeDefined();
         if (propDecl) {
           // Original: id.asCodeString() == "property"

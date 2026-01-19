@@ -419,11 +419,13 @@ describe('Source Location Utilities', () => {
       const unknown = UNKNOWN_SOURCE_LOCATION;
       // Original: val withLinesOnly = SourceLocation(1, null, 3, null)
       // In TypeScript, SourceLocation requires column, but spanOf handles undefined columns
-      // We use a workaround to test the behavior with missing column information
-      const withLinesOnly: SourceRange = {
+      // We use a type assertion to test the behavior with missing column information
+      const withLinesOnly = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing undefined columns which spanOf handles at runtime
         end: { column: undefined as any, line: 3 },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing undefined columns which spanOf handles at runtime
         start: { column: undefined as any, line: 1 },
-      };
+      } as SourceRange;
       // Original: val withLinesAndColumns = SourceLocation(withLinesOnly.startLine, 10, withLinesOnly.endLine, 10)
       // Same start/end lines as withLinesOnly, but with columns
       const withLinesAndColumns: SourceRange = {
