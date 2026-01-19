@@ -2210,30 +2210,35 @@ class ASTTranslator {
           lastFieldDeclarationNode = memberNode;
         }
         const decl = this.tryTranslateDeclaration(memberNode, memberNode.type.toLowerCase());
-        if (
-          decl &&
-          (decl.kind === 'ClassDeclaration' ||
-            decl.kind === 'EnumDeclaration' ||
-            decl.kind === 'InterfaceDeclaration' ||
-            decl.kind === 'MethodDeclaration' ||
-            decl.kind === 'PropertyDeclaration' ||
-            decl.kind === 'VariableDeclaration')
-        ) {
-          const declTyped = decl as
-            | ClassDeclaration
-            | EnumDeclaration
-            | InterfaceDeclaration
-            | MethodDeclaration
-            | PropertyDeclaration
-            | VariableDeclaration;
-          // For field declarations, use statementId to preserve grouping
-          // The statementId is based on line numbers - fields on the same line share a statementId
+        if (decl) {
+          // For field declarations, use statementId to preserve grouping.
+          // The statementId is based on line numbers - fields on the same line share a statementId.
           const statementId =
             memberNode.type === 'field_declaration' ? statementCounter : undefined;
-          // Store the parse node so we can check if fields come from the same parse tree node
-          // Fields from the same statement come from the same parse tree node (same parent)
+          // Store the parse node so we can check if fields come from the same parse tree node.
+          // Fields from the same statement come from the same parse tree node (same parent).
           const parseNode = memberNode;
-          membersWithIndex.push({ decl: declTyped, parseNode, sourceIndex: i, statementId });
+
+          switch (decl.kind) {
+            case 'ClassDeclaration':
+            case 'EnumDeclaration':
+            case 'InterfaceDeclaration':
+            case 'MethodDeclaration':
+            case 'PropertyDeclaration':
+            case 'VariableDeclaration': {
+              const declTyped = decl as
+                | ClassDeclaration
+                | EnumDeclaration
+                | InterfaceDeclaration
+                | MethodDeclaration
+                | PropertyDeclaration
+                | VariableDeclaration;
+              membersWithIndex.push({ decl: declTyped, parseNode, sourceIndex: i, statementId });
+              break;
+            }
+            default:
+              break;
+          }
         }
       }
       // Sort members by category: inner types < fields < properties < methods

@@ -3222,7 +3222,6 @@ export class ApexParser {
      *
      * To support these, we apply postfix handling to all expressions as well.
      */
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Loop condition is intentional
     while (expr !== null) {
       const peekOffset = 1;
       const peekToken = this.peek(peekOffset);

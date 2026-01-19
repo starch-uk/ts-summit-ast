@@ -1033,7 +1033,7 @@ function nodeToId(node: ASTNode): string {
   // NODE_0: Root Block with 2 statements (NODE_1 and NODE_2)
   if (node.kind === 'CompoundStatement') {
     const stmts = (node as CompoundStatement).statements;
-    if (stmts?.length === 2) {
+    if (stmts.length === 2) {
       // Check if first is a Block (NODE_1) and second is an IfStatement (NODE_2)
       if (stmts[0].kind === 'CompoundStatement' && stmts[1].kind === 'IfStatement') {
         return 'NODE_0';
@@ -1043,10 +1043,10 @@ function nodeToId(node: ASTNode): string {
   // NODE_1: Block containing an IfStatement with NODE_3
   if (node.kind === 'CompoundStatement') {
     const stmts = (node as CompoundStatement).statements;
-    if (stmts?.length === 1 && stmts[0].kind === 'IfStatement') {
+    if (stmts.length === 1 && stmts[0].kind === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
-      if (ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3') {
+      if (ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3') {
         return 'NODE_1';
       }
     }
@@ -1054,7 +1054,7 @@ function nodeToId(node: ASTNode): string {
   // NODE_2: IfStatement containing NODE_4
   if (node.kind === 'IfStatement') {
     const ifStmt = node as IfStatement;
-    if (ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4') {
+    if (ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4') {
       return 'NODE_2';
     }
   }
@@ -1078,7 +1078,7 @@ function nodeIdIs2(node: ASTNode): boolean {
   // NODE_2 is the IfStatement containing NODE_4
   if (node.kind === 'IfStatement') {
     const ifStmt = node as IfStatement;
-    return ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4';
+    return ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4';
   }
   return false;
 }
@@ -1092,10 +1092,10 @@ function nodeIdIs1(node: ASTNode): boolean {
   // NODE_1 is the Block containing an IfStatement with NODE_3
   if (node.kind === 'CompoundStatement') {
     const stmts = (node as CompoundStatement).statements;
-    if (stmts?.length === 1 && stmts[0].kind === 'IfStatement') {
+    if (stmts.length === 1 && stmts[0].kind === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
-      return ifStmt.thenStatement?.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3';
+      return ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3';
     }
   }
   return false;
@@ -2188,6 +2188,7 @@ describe('AST Traversal Utilities', () => {
           if (node.kind === 'IfStatement') {
             return false; // Skip children
           }
+          return true;
         },
       };
 
