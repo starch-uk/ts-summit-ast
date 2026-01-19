@@ -698,6 +698,7 @@ class ASTTranslator {
 
   private translateCompoundStatement(node: Readonly<ParseTreeNode>): Statement {
     const statements = this.getChildren(node)
+      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
       .filter((child: Readonly<ParseTreeNode>) => {
         // Filter out type-related structural nodes that shouldn't be translated as statements
         const childType = child.type.toLowerCase();
@@ -708,6 +709,7 @@ class ASTTranslator {
           childType !== 'type_parameters'
         );
       })
+      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
       .map((child: Readonly<ParseTreeNode>) => {
         try {
           const translated = this.translateNode(child);
@@ -915,11 +917,14 @@ class ASTTranslator {
         let matchType: TypeRef | undefined = undefined;
         let downcastDeclarations: VariableDeclaration[] | undefined = undefined;
 
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
         const typeMatchNode = this.getChildren(caseNodeReadonly).find(
           (c) => c.type === 'type_match'
         );
         if (typeMatchNode) {
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
           const typeNode = this.getChildren(typeMatchNode).find((c) => c.type === 'type') ?? null;
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
           const nameNode = this.getChildren(typeMatchNode).find((c) => c.type === 'name') ?? null;
 
           if (typeNode) {
@@ -945,11 +950,13 @@ class ASTTranslator {
         // Apex "when value" puts the value expression(s) as first children before the 'statements' node
         if (!value) {
           const ch = this.getChildren(caseNodeReadonly);
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
           const valueNodes = ch.filter(
             (c: Readonly<ParseTreeNode>) => (c as { type?: string }).type !== 'statements'
           );
           if (valueNodes.length > 0) {
             const translatedValues = valueNodes
+              // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
               .map((vn) => {
                 const valueTypeProperty = (vn as { type?: string }).type;
                 const valueType =
@@ -973,11 +980,13 @@ class ASTTranslator {
         if (!statementsNode) {
           // Look for a child with type 'statements' in the children array
           const children = this.getChildren(caseNodeReadonly);
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
           statementsNode =
             children.find((child: Readonly<ParseTreeNode>) => child.type === 'statements') ?? null;
         }
         const statements = statementsNode
           ? this.getChildren(statementsNode)
+              // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
               .map((child: Readonly<ParseTreeNode>) => {
                 const translated = this.translateNode(child);
                 if (
@@ -1022,11 +1031,13 @@ class ASTTranslator {
         // Look for a child with type 'statements' in the children array
         const children = this.getChildren(defaultNode);
 
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
         statementsNode =
           children.find((child: Readonly<ParseTreeNode>) => child.type === 'statements') ?? null;
       }
       const statements = statementsNode
         ? this.getChildren(statementsNode)
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
             .map((child: Readonly<ParseTreeNode>) => {
               const translated = this.translateNode(child);
               if (
@@ -2686,6 +2697,7 @@ class ASTTranslator {
     if (extendsClause) {
       const typeChild =
         this.getChild(extendsClause, 'type') ??
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
         this.getChildren(extendsClause).find((c: Readonly<ParseTreeNode>) => c.type === 'type');
       if (typeChild) {
         extendsType = this.tryTranslateType(typeChild) ?? undefined;

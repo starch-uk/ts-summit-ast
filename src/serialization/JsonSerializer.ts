@@ -479,6 +479,7 @@ export class JsonSerializer {
     json: JsonASTNode
   ): void {
     json.type = this.serializeTypeRef(node.type);
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
     json.args = node.args.map((arg: Readonly<Expression>) => this.serializeNode(arg));
   }
 
@@ -530,6 +531,7 @@ export class JsonSerializer {
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
   private serializeArrayElementValue(node: Readonly<ArrayElementValue>, json: JsonASTNode): void {
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
     json.values = node.values.map((val: Readonly<ElementValue>) => this.serializeNode(val));
   }
 

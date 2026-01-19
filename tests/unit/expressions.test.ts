@@ -904,6 +904,12 @@ describe('Literal Expression Translation', () => {
     if (node) {
       expect(node.methodName).toBe('matches');
       expect(node.arguments).toHaveLength(1);
+      expect(node.target).not.toBeUndefined();
+      expect(node.target).not.toBeNull();
+      expect(isStringLiteral(node.target!)).toBe(true);
+      if (isStringLiteral(node.target!)) {
+        expect(node.target.value).toBe('test');
+      }
     }
   });
 
@@ -915,6 +921,12 @@ describe('Literal Expression Translation', () => {
     if (node) {
       expect(node.methodName).toBe('split');
       expect(node.arguments).toHaveLength(1);
+      expect(node.target).not.toBeUndefined();
+      expect(node.target).not.toBeNull();
+      expect(isStringLiteral(node.target!)).toBe(true);
+      if (isStringLiteral(node.target!)) {
+        expect(node.target.value).toBe('a,b,c');
+      }
     }
   });
 
@@ -926,6 +938,29 @@ describe('Literal Expression Translation', () => {
     if (node) {
       expect(node.methodName).toBe('replaceAll');
       expect(node.arguments).toHaveLength(2);
+      expect(node.target).not.toBeUndefined();
+      expect(node.target).not.toBeNull();
+      expect(isStringLiteral(node.target!)).toBe(true);
+      if (isStringLiteral(node.target!)) {
+        expect(node.target.value).toBe('abc123');
+      }
+    }
+  });
+
+  it('supports regex replaceFirst on string literals', () => {
+    const root = parseApexExpressionInCode("'abc123'.replaceFirst('\\\\d', 'X')");
+    const node = findFirstNodeOfType(root, isMethodCallExpression);
+
+    expect(node).not.toBeNull();
+    if (node) {
+      expect(node.methodName).toBe('replaceFirst');
+      expect(node.arguments).toHaveLength(2);
+      expect(node.target).not.toBeUndefined();
+      expect(node.target).not.toBeNull();
+      expect(isStringLiteral(node.target!)).toBe(true);
+      if (isStringLiteral(node.target!)) {
+        expect(node.target.value).toBe('abc123');
+      }
     }
   });
 });

@@ -28,7 +28,7 @@ export class TypeFactory {
   static createClassType(
     name: string,
     packageName?: string,
-    options?: NodeFactoryOptions
+    options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
     const fullName = packageName != null && packageName !== '' ? `${packageName}.${name}` : name;
     return {
@@ -45,9 +45,9 @@ export class TypeFactory {
   }
 
   static createArrayType(
-    elementType: TypeRef,
+    elementType: Readonly<TypeRef>,
     dimensions = 1,
-    options?: NodeFactoryOptions
+    options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
     return {
       arrayNesting: elementType.arrayNesting + dimensions,
@@ -58,9 +58,9 @@ export class TypeFactory {
   }
 
   static createGenericType(
-    baseType: TypeRef,
-    typeArguments: TypeRef[],
-    options?: NodeFactoryOptions
+    baseType: Readonly<TypeRef>,
+    typeArguments: readonly TypeRef[],
+    options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
     const lastComponentIndex = baseType.components.length - 1;
     const lastComponent: TypeRefComponent = {

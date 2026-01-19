@@ -812,6 +812,7 @@ export class ApexParser {
 
     // Static initializer: static { } or check if static was consumed as modifier
     // Check if we have static modifier and next token is {
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
     const hasStaticModifier = modifiers.some(
       (m: Readonly<ParseTreeNode>) => m.text === 'static' || m.text === 'STATIC'
     );
@@ -2179,6 +2180,7 @@ export class ApexParser {
             });
           } else if (whenValues.length > this.zeroIndex) {
             // Value matching case(s): "when value1, value2" or "when value"
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
             whenValues.forEach((val: Readonly<ParseTreeNode>) => {
               caseChildren.push(val);
             });
