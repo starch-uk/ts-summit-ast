@@ -1,0 +1,2013 @@
+{
+  "@type": "CompilationUnit",
+  "location": {
+    "end": {
+      "column": 2,
+      "line": 41
+    },
+    "start": {
+      "column": 1,
+      "line": 2
+    }
+  },
+  "declarations": [
+    {
+      "@type": "ClassDeclaration",
+      "location": {
+        "end": {
+          "column": 1,
+          "line": 41
+        },
+        "start": {
+          "column": 8,
+          "line": 2
+        }
+      },
+      "members": [
+        {
+          "@type": "VariableDeclaration",
+          "location": {
+            "end": {
+              "column": 71,
+              "line": 3
+            },
+            "start": {
+              "column": 9,
+              "line": 3
+            }
+          },
+          "name": "instancePattern",
+          "type": {
+            "@type": "TypeRef",
+            "location": {
+              "end": {
+                "column": 17,
+                "line": 3
+              },
+              "start": {
+                "column": 10,
+                "line": 3
+              }
+            },
+            "components": [
+              {
+                "args": [],
+                "id": {
+                  "@type": "Identifier",
+                  "name": "Pattern"
+                }
+              }
+            ],
+            "arrayNesting": 0
+          },
+          "initializer": {
+            "@type": "CallExpression",
+            "location": {
+              "end": {
+                "column": 70,
+                "line": 3
+              },
+              "start": {
+                "column": 36,
+                "line": 3
+              }
+            },
+            "methodName": "compile",
+            "target": {
+              "@type": "VariableExpression",
+              "location": {
+                "end": {
+                  "column": 36,
+                  "line": 3
+                },
+                "start": {
+                  "column": 36,
+                  "line": 3
+                }
+              },
+              "id": {
+                "@type": "Identifier",
+                "location": {
+                  "end": {
+                    "column": 36,
+                    "line": 3
+                  },
+                  "start": {
+                    "column": 36,
+                    "line": 3
+                  }
+                },
+                "name": "Pattern"
+              }
+            },
+            "arguments": [
+              {
+                "@type": "StringVal",
+                "location": {
+                  "end": {
+                    "column": 52,
+                    "line": 3
+                  },
+                  "start": {
+                    "column": 52,
+                    "line": 3
+                  }
+                },
+                "value": "instance",
+                "raw": "'instance'"
+              }
+            ]
+          },
+          "modifiers": [
+            {
+              "@type": "Modifier",
+              "location": {
+                "end": {
+                  "column": 2,
+                  "line": 3
+                },
+                "start": {
+                  "column": 2,
+                  "line": 3
+                }
+              },
+              "keyword": "private"
+            }
+          ]
+        },
+        {
+          "@type": "VariableDeclaration",
+          "location": {
+            "end": {
+              "column": 72,
+              "line": 4
+            },
+            "start": {
+              "column": 16,
+              "line": 4
+            }
+          },
+          "name": "staticPattern",
+          "type": {
+            "@type": "TypeRef",
+            "location": {
+              "end": {
+                "column": 24,
+                "line": 4
+              },
+              "start": {
+                "column": 17,
+                "line": 4
+              }
+            },
+            "components": [
+              {
+                "args": [],
+                "id": {
+                  "@type": "Identifier",
+                  "name": "Pattern"
+                }
+              }
+            ],
+            "arrayNesting": 0
+          },
+          "initializer": {
+            "@type": "CallExpression",
+            "location": {
+              "end": {
+                "column": 71,
+                "line": 4
+              },
+              "start": {
+                "column": 41,
+                "line": 4
+              }
+            },
+            "methodName": "compile",
+            "target": {
+              "@type": "VariableExpression",
+              "location": {
+                "end": {
+                  "column": 41,
+                  "line": 4
+                },
+                "start": {
+                  "column": 41,
+                  "line": 4
+                }
+              },
+              "id": {
+                "@type": "Identifier",
+                "location": {
+                  "end": {
+                    "column": 41,
+                    "line": 4
+                  },
+                  "start": {
+                    "column": 41,
+                    "line": 4
+                  }
+                },
+                "name": "Pattern"
+              }
+            },
+            "arguments": [
+              {
+                "@type": "StringVal",
+                "location": {
+                  "end": {
+                    "column": 57,
+                    "line": 4
+                  },
+                  "start": {
+                    "column": 57,
+                    "line": 4
+                  }
+                },
+                "value": "static",
+                "raw": "'static'"
+              }
+            ]
+          },
+          "modifiers": [
+            {
+              "@type": "Modifier",
+              "location": {
+                "end": {
+                  "column": 2,
+                  "line": 4
+                },
+                "start": {
+                  "column": 2,
+                  "line": 4
+                }
+              },
+              "keyword": "private"
+            },
+            {
+              "@type": "Modifier",
+              "location": {
+                "end": {
+                  "column": 10,
+                  "line": 4
+                },
+                "start": {
+                  "column": 10,
+                  "line": 4
+                }
+              },
+              "keyword": "static"
+            }
+          ]
+        },
+        {
+          "@type": "MethodDeclaration",
+          "location": {
+            "end": {
+              "column": 2,
+              "line": 40
+            },
+            "start": {
+              "column": 14,
+              "line": 6
+            }
+          },
+          "body": {
+            "@type": "CompoundStatement",
+            "location": {
+              "end": {
+                "column": 2,
+                "line": 40
+              },
+              "start": {
+                "column": 41,
+                "line": 6
+              }
+            },
+            "statements": [
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 60,
+                    "line": 7
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 7
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 59,
+                      "line": 7
+                    },
+                    "start": {
+                      "column": 11,
+                      "line": 7
+                    }
+                  },
+                  "name": "p",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 59,
+                        "line": 7
+                      },
+                      "start": {
+                        "column": 15,
+                        "line": 7
+                      }
+                    },
+                    "methodName": "compile",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 15,
+                          "line": 7
+                        },
+                        "start": {
+                          "column": 15,
+                          "line": 7
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 15,
+                            "line": 7
+                          },
+                          "start": {
+                            "column": 15,
+                            "line": 7
+                          }
+                        },
+                        "name": "Pattern"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 31,
+                            "line": 7
+                          },
+                          "start": {
+                            "column": 31,
+                            "line": 7
+                          }
+                        },
+                        "value": "test.*pattern",
+                        "raw": "'test.*pattern'"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 30,
+                    "line": 10
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 10
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 20,
+                      "line": 10
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 10
+                    }
+                  },
+                  "name": "testStr",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "StringVal",
+                    "location": {
+                      "end": {
+                        "column": 20,
+                        "line": 10
+                      },
+                      "start": {
+                        "column": 20,
+                        "line": 10
+                      }
+                    },
+                    "value": "test",
+                    "raw": "'test'"
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 66,
+                    "line": 11
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 11
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 65,
+                      "line": 11
+                    },
+                    "start": {
+                      "column": 11,
+                      "line": 11
+                    }
+                  },
+                  "name": "matches",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 65,
+                        "line": 11
+                      },
+                      "start": {
+                        "column": 21,
+                        "line": 11
+                      }
+                    },
+                    "methodName": "matches",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 21,
+                          "line": 11
+                        },
+                        "start": {
+                          "column": 21,
+                          "line": 11
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 21,
+                            "line": 11
+                          },
+                          "start": {
+                            "column": 21,
+                            "line": 11
+                          }
+                        },
+                        "name": "testStr"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 37,
+                            "line": 11
+                          },
+                          "start": {
+                            "column": 37,
+                            "line": 11
+                          }
+                        },
+                        "value": "test.*pattern",
+                        "raw": "'test.*pattern'"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 48,
+                    "line": 13
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 13
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 20,
+                      "line": 13
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 13
+                    }
+                  },
+                  "name": "pattern",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "StringVal",
+                    "location": {
+                      "end": {
+                        "column": 20,
+                        "line": 13
+                      },
+                      "start": {
+                        "column": 20,
+                        "line": 13
+                      }
+                    },
+                    "value": "test.*pattern",
+                    "raw": "'test.*pattern'"
+                  }
+                }
+              },
+              {
+                "@type": "ExpressionStatement",
+                "location": {
+                  "end": {
+                    "column": 26,
+                    "line": 14
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 14
+                  }
+                },
+                "expression": {
+                  "@type": "CallExpression",
+                  "location": {
+                    "end": {
+                      "column": 26,
+                      "line": 14
+                    },
+                    "start": {
+                      "column": 3,
+                      "line": 14
+                    }
+                  },
+                  "methodName": "compile",
+                  "target": {
+                    "@type": "VariableExpression",
+                    "location": {
+                      "end": {
+                        "column": 3,
+                        "line": 14
+                      },
+                      "start": {
+                        "column": 3,
+                        "line": 14
+                      }
+                    },
+                    "id": {
+                      "@type": "Identifier",
+                      "location": {
+                        "end": {
+                          "column": 3,
+                          "line": 14
+                        },
+                        "start": {
+                          "column": 3,
+                          "line": 14
+                        }
+                      },
+                      "name": "Pattern"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 19,
+                          "line": 14
+                        },
+                        "start": {
+                          "column": 19,
+                          "line": 14
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 19,
+                            "line": 14
+                          },
+                          "start": {
+                            "column": 19,
+                            "line": 14
+                          }
+                        },
+                        "name": "pattern"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 37,
+                    "line": 16
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 16
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 25,
+                      "line": 16
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 16
+                    }
+                  },
+                  "name": "localPattern",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "StringVal",
+                    "location": {
+                      "end": {
+                        "column": 25,
+                        "line": 16
+                      },
+                      "start": {
+                        "column": 25,
+                        "line": 16
+                      }
+                    },
+                    "value": "local",
+                    "raw": "'local'"
+                  }
+                }
+              },
+              {
+                "@type": "ExpressionStatement",
+                "location": {
+                  "end": {
+                    "column": 31,
+                    "line": 17
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 17
+                  }
+                },
+                "expression": {
+                  "@type": "CallExpression",
+                  "location": {
+                    "end": {
+                      "column": 31,
+                      "line": 17
+                    },
+                    "start": {
+                      "column": 3,
+                      "line": 17
+                    }
+                  },
+                  "methodName": "compile",
+                  "target": {
+                    "@type": "VariableExpression",
+                    "location": {
+                      "end": {
+                        "column": 3,
+                        "line": 17
+                      },
+                      "start": {
+                        "column": 3,
+                        "line": 17
+                      }
+                    },
+                    "id": {
+                      "@type": "Identifier",
+                      "location": {
+                        "end": {
+                          "column": 3,
+                          "line": 17
+                        },
+                        "start": {
+                          "column": 3,
+                          "line": 17
+                        }
+                      },
+                      "name": "Pattern"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 19,
+                          "line": 17
+                        },
+                        "start": {
+                          "column": 19,
+                          "line": 17
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 19,
+                            "line": 17
+                          },
+                          "start": {
+                            "column": 19,
+                            "line": 17
+                          }
+                        },
+                        "name": "localPattern"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 57,
+                    "line": 19
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 19
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 56,
+                      "line": 19
+                    },
+                    "start": {
+                      "column": 11,
+                      "line": 19
+                    }
+                  },
+                  "name": "existing",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 56,
+                        "line": 19
+                      },
+                      "start": {
+                        "column": 22,
+                        "line": 19
+                      }
+                    },
+                    "methodName": "compile",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 22,
+                          "line": 19
+                        },
+                        "start": {
+                          "column": 22,
+                          "line": 19
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 22,
+                            "line": 19
+                          },
+                          "start": {
+                            "column": 22,
+                            "line": 19
+                          }
+                        },
+                        "name": "Pattern"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 38,
+                            "line": 19
+                          },
+                          "start": {
+                            "column": 38,
+                            "line": 19
+                          }
+                        },
+                        "value": "existing",
+                        "raw": "'existing'"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 51,
+                    "line": 20
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 20
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 50,
+                      "line": 20
+                    },
+                    "start": {
+                      "column": 11,
+                      "line": 20
+                    }
+                  },
+                  "name": "p2",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 50,
+                        "line": 20
+                      },
+                      "start": {
+                        "column": 16,
+                        "line": 20
+                      }
+                    },
+                    "methodName": "compile",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 16,
+                          "line": 20
+                        },
+                        "start": {
+                          "column": 16,
+                          "line": 20
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 16,
+                            "line": 20
+                          },
+                          "start": {
+                            "column": 16,
+                            "line": 20
+                          }
+                        },
+                        "name": "Pattern"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "CallExpression",
+                        "location": {
+                          "end": {
+                            "column": 49,
+                            "line": 20
+                          },
+                          "start": {
+                            "column": 32,
+                            "line": 20
+                          }
+                        },
+                        "methodName": "pattern",
+                        "target": {
+                          "@type": "VariableExpression",
+                          "location": {
+                            "end": {
+                              "column": 32,
+                              "line": 20
+                            },
+                            "start": {
+                              "column": 32,
+                              "line": 20
+                            }
+                          },
+                          "id": {
+                            "@type": "Identifier",
+                            "location": {
+                              "end": {
+                                "column": 32,
+                                "line": 20
+                              },
+                              "start": {
+                                "column": 32,
+                                "line": 20
+                              }
+                            },
+                            "name": "existing"
+                          }
+                        },
+                        "arguments": []
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 85,
+                    "line": 22
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 22
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 84,
+                      "line": 22
+                    },
+                    "start": {
+                      "column": 11,
+                      "line": 22
+                    }
+                  },
+                  "name": "matches3",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 84,
+                        "line": 22
+                      },
+                      "start": {
+                        "column": 22,
+                        "line": 22
+                      }
+                    },
+                    "methodName": "matches",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 22,
+                          "line": 22
+                        },
+                        "start": {
+                          "column": 22,
+                          "line": 22
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 22,
+                            "line": 22
+                          },
+                          "start": {
+                            "column": 22,
+                            "line": 22
+                          }
+                        },
+                        "name": "Pattern"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 38,
+                            "line": 22
+                          },
+                          "start": {
+                            "column": 38,
+                            "line": 22
+                          }
+                        },
+                        "value": "test.*pattern",
+                        "raw": "'test.*pattern'"
+                      },
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 68,
+                            "line": 22
+                          },
+                          "start": {
+                            "column": 68,
+                            "line": 22
+                          }
+                        },
+                        "value": "test123",
+                        "raw": "'test123'"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 64,
+                    "line": 23
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 23
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 63,
+                      "line": 23
+                    },
+                    "start": {
+                      "column": 11,
+                      "line": 23
+                    }
+                  },
+                  "name": "matches4",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 63,
+                        "line": 23
+                      },
+                      "start": {
+                        "column": 22,
+                        "line": 23
+                      }
+                    },
+                    "methodName": "matches",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 22,
+                          "line": 23
+                        },
+                        "start": {
+                          "column": 22,
+                          "line": 23
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 22,
+                            "line": 23
+                          },
+                          "start": {
+                            "column": 22,
+                            "line": 23
+                          }
+                        },
+                        "name": "Pattern"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 38,
+                            "line": 23
+                          },
+                          "start": {
+                            "column": 38,
+                            "line": 23
+                          }
+                        },
+                        "value": "^[A-Z]+$",
+                        "raw": "'^[A-Z]+$'"
+                      },
+                      {
+                        "@type": "VariableExpression",
+                        "location": {
+                          "end": {
+                            "column": 58,
+                            "line": 23
+                          },
+                          "start": {
+                            "column": 58,
+                            "line": 23
+                          }
+                        },
+                        "id": {
+                          "@type": "Identifier",
+                          "location": {
+                            "end": {
+                              "column": 58,
+                              "line": 23
+                            },
+                            "start": {
+                              "column": 58,
+                              "line": 23
+                            }
+                          },
+                          "name": "input"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 31,
+                    "line": 26
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 26
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 19,
+                      "line": 26
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 26
+                    }
+                  },
+                  "name": "csvStr",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "StringVal",
+                    "location": {
+                      "end": {
+                        "column": 19,
+                        "line": 26
+                      },
+                      "start": {
+                        "column": 19,
+                        "line": 26
+                      }
+                    },
+                    "value": "a,b,c",
+                    "raw": "'a,b,c'"
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 43,
+                    "line": 27
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 27
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 42,
+                      "line": 27
+                    },
+                    "start": {
+                      "column": 15,
+                      "line": 27
+                    }
+                  },
+                  "name": "parts2",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 42,
+                        "line": 27
+                      },
+                      "start": {
+                        "column": 25,
+                        "line": 27
+                      }
+                    },
+                    "methodName": "split",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 25,
+                          "line": 27
+                        },
+                        "start": {
+                          "column": 25,
+                          "line": 27
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 25,
+                            "line": 27
+                          },
+                          "start": {
+                            "column": 25,
+                            "line": 27
+                          }
+                        },
+                        "name": "csvStr"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 38,
+                            "line": 27
+                          },
+                          "start": {
+                            "column": 38,
+                            "line": 27
+                          }
+                        },
+                        "value": ",",
+                        "raw": "','"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 31,
+                    "line": 30
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 30
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 21,
+                      "line": 30
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 30
+                    }
+                  },
+                  "name": "testStr2",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "StringVal",
+                    "location": {
+                      "end": {
+                        "column": 21,
+                        "line": 30
+                      },
+                      "start": {
+                        "column": 21,
+                        "line": 30
+                      }
+                    },
+                    "value": "test",
+                    "raw": "'test'"
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 54,
+                    "line": 31
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 31
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 53,
+                      "line": 31
+                    },
+                    "start": {
+                      "column": 11,
+                      "line": 31
+                    }
+                  },
+                  "name": "matches2",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 53,
+                        "line": 31
+                      },
+                      "start": {
+                        "column": 22,
+                        "line": 31
+                      }
+                    },
+                    "methodName": "matches",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 22,
+                          "line": 31
+                        },
+                        "start": {
+                          "column": 22,
+                          "line": 31
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 22,
+                            "line": 31
+                          },
+                          "start": {
+                            "column": 22,
+                            "line": 31
+                          }
+                        },
+                        "name": "testStr2"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 39,
+                            "line": 31
+                          },
+                          "start": {
+                            "column": 39,
+                            "line": 31
+                          }
+                        },
+                        "value": "test.*",
+                        "raw": "'test.*'"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 33,
+                    "line": 34
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 34
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 19,
+                      "line": 34
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 34
+                    }
+                  },
+                  "name": "numStr",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "StringVal",
+                    "location": {
+                      "end": {
+                        "column": 19,
+                        "line": 34
+                      },
+                      "start": {
+                        "column": 19,
+                        "line": 34
+                      }
+                    },
+                    "value": "abc123",
+                    "raw": "'abc123'"
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 54,
+                    "line": 35
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 35
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 53,
+                      "line": 35
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 35
+                    }
+                  },
+                  "name": "replaced",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 53,
+                        "line": 35
+                      },
+                      "start": {
+                        "column": 21,
+                        "line": 35
+                      }
+                    },
+                    "methodName": "replaceAll",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 21,
+                          "line": 35
+                        },
+                        "start": {
+                          "column": 21,
+                          "line": 35
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 21,
+                            "line": 35
+                          },
+                          "start": {
+                            "column": 21,
+                            "line": 35
+                          }
+                        },
+                        "name": "numStr"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 39,
+                            "line": 35
+                          },
+                          "start": {
+                            "column": 39,
+                            "line": 35
+                          }
+                        },
+                        "value": "\\\\d",
+                        "raw": "'\\\\d'"
+                      },
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 49,
+                            "line": 35
+                          },
+                          "start": {
+                            "column": 49,
+                            "line": 35
+                          }
+                        },
+                        "value": "X",
+                        "raw": "'X'"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 34,
+                    "line": 38
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 38
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 20,
+                      "line": 38
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 38
+                    }
+                  },
+                  "name": "numStr2",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "StringVal",
+                    "location": {
+                      "end": {
+                        "column": 20,
+                        "line": 38
+                      },
+                      "start": {
+                        "column": 20,
+                        "line": 38
+                      }
+                    },
+                    "value": "abc123",
+                    "raw": "'abc123'"
+                  }
+                }
+              },
+              {
+                "@type": "VariableDeclarationStatement",
+                "location": {
+                  "end": {
+                    "column": 58,
+                    "line": 39
+                  },
+                  "start": {
+                    "column": 3,
+                    "line": 39
+                  }
+                },
+                "declaration": {
+                  "@type": "VariableDeclaration",
+                  "location": {
+                    "end": {
+                      "column": 57,
+                      "line": 39
+                    },
+                    "start": {
+                      "column": 10,
+                      "line": 39
+                    }
+                  },
+                  "name": "replaced2",
+                  "type": {
+                    "@type": "TypeRef",
+                    "components": [
+                      {
+                        "args": [],
+                        "id": {
+                          "@type": "Identifier",
+                          "name": "Object"
+                        }
+                      }
+                    ],
+                    "arrayNesting": 0
+                  },
+                  "initializer": {
+                    "@type": "CallExpression",
+                    "location": {
+                      "end": {
+                        "column": 57,
+                        "line": 39
+                      },
+                      "start": {
+                        "column": 22,
+                        "line": 39
+                      }
+                    },
+                    "methodName": "replaceFirst",
+                    "target": {
+                      "@type": "VariableExpression",
+                      "location": {
+                        "end": {
+                          "column": 22,
+                          "line": 39
+                        },
+                        "start": {
+                          "column": 22,
+                          "line": 39
+                        }
+                      },
+                      "id": {
+                        "@type": "Identifier",
+                        "location": {
+                          "end": {
+                            "column": 22,
+                            "line": 39
+                          },
+                          "start": {
+                            "column": 22,
+                            "line": 39
+                          }
+                        },
+                        "name": "numStr2"
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 43,
+                            "line": 39
+                          },
+                          "start": {
+                            "column": 43,
+                            "line": 39
+                          }
+                        },
+                        "value": "\\\\d",
+                        "raw": "'\\\\d'"
+                      },
+                      {
+                        "@type": "StringVal",
+                        "location": {
+                          "end": {
+                            "column": 53,
+                            "line": 39
+                          },
+                          "start": {
+                            "column": 53,
+                            "line": 39
+                          }
+                        },
+                        "value": "X",
+                        "raw": "'X'"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "isConstructor": false,
+          "modifiers": [
+            {
+              "@type": "Modifier",
+              "location": {
+                "end": {
+                  "column": 2,
+                  "line": 6
+                },
+                "start": {
+                  "column": 2,
+                  "line": 6
+                }
+              },
+              "keyword": "public"
+            }
+          ],
+          "name": "processInput",
+          "parameters": [
+            {
+              "@type": "Parameter",
+              "location": {
+                "end": {
+                  "column": 34,
+                  "line": 6
+                },
+                "start": {
+                  "column": 27,
+                  "line": 6
+                }
+              },
+              "name": "input",
+              "type": {
+                "@type": "TypeRef",
+                "location": {
+                  "end": {
+                    "column": 33,
+                    "line": 6
+                  },
+                  "start": {
+                    "column": 27,
+                    "line": 6
+                  }
+                },
+                "components": [
+                  {
+                    "args": [],
+                    "id": {
+                      "@type": "Identifier",
+                      "name": "String"
+                    }
+                  }
+                ],
+                "arrayNesting": 0
+              }
+            }
+          ],
+          "returnType": {
+            "@type": "TypeRef",
+            "location": {
+              "end": {
+                "column": 13,
+                "line": 6
+              },
+              "start": {
+                "column": 9,
+                "line": 6
+              }
+            },
+            "components": [],
+            "arrayNesting": 0
+          }
+        }
+      ],
+      "modifiers": [
+        {
+          "@type": "Modifier",
+          "location": {
+            "end": {
+              "column": 1,
+              "line": 2
+            },
+            "start": {
+              "column": 1,
+              "line": 2
+            }
+          },
+          "keyword": "public"
+        }
+      ],
+      "name": "Example"
+    }
+  ]
+}

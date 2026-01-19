@@ -3210,6 +3210,113 @@ export class ApexParser {
       }
     }
 
+    /**
+     * Generic postfix handling (method calls, field access, array access) for any primary expression.
+     *
+     * The block above is a legacy special case for `this`/`super` constructor-style calls.
+     * Apex also allows method calls and field access on literals and other expressions, e.g.:
+     *
+     *   'test'.matches('test.*');
+     *   'a,b,c'.split(',');
+     *   'abc123'.replaceAll('\\d', 'X');
+     *
+     * To support these, we apply postfix handling to all expressions as well.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Loop condition is intentional
+    while (expr !== null) {
+      const peekOffset = 1;
+      const peekToken = this.peek(peekOffset);
+      const isSafe =
+        this.check(TokenType.QUESTION) &&
+        (peekToken.type === TokenType.DOT || peekToken.type === TokenType.LEFT_PAREN);
+
+      if (isSafe) {
+        this.advance(); // Consume QUESTION
+      }
+
+      if (this.match(TokenType.LEFT_PAREN)) {
+        // Method call
+        const args: ParseTreeNode[] = [];
+        if (!this.check(TokenType.RIGHT_PAREN)) {
+          do {
+            const beforeArg = this.current;
+            const arg = this.parseExpression();
+            if (arg) {
+              args.push(arg);
+            }
+            if (this.current === beforeArg && !this.isAtEnd()) {
+              this.advance();
+            }
+          } while (this.match(TokenType.COMMA));
+        }
+        this.consume(TokenType.RIGHT_PAREN, 'Expected ) after arguments');
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
+        const methodCallNode: any = {
+          children: [expr, { children: args, type: 'arguments' }],
+          location:
+            expr.location ??
+            ((): SourceRange => {
+              const previousTokenOffset = 1;
+              return this.getLocation(this.current - previousTokenOffset, this.current);
+            })(),
+          type: 'method_call_expression',
+        };
+        if (isSafe) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
+          methodCallNode.isSafe = true;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
+        expr = methodCallNode;
+      } else if (this.match(TokenType.DOT)) {
+        // Field access
+        let field: Token;
+        if (this.check(TokenType.CLASS)) {
+          field = this.advance();
+        } else {
+          field = this.consume(TokenType.IDENTIFIER, 'Expected field name');
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
+        const fieldAccessNode: any = {
+          children: [
+            expr,
+            { location: this.locationToRange(field.location), text: field.text, type: 'field' },
+          ],
+          location: this.combineLocations(
+            expr.location ?? this.locationToRange(field.location),
+            this.locationToRange(field.location)
+          ),
+          type: 'field_access_expression',
+        };
+        if (isSafe) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
+          fieldAccessNode.isSafe = true;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
+        expr = fieldAccessNode;
+      } else if (this.match(TokenType.LEFT_BRACKET)) {
+        // Array access
+        const index = this.parseExpression();
+        if (!index) {
+          break;
+        }
+        this.consume(TokenType.RIGHT_BRACKET, 'Expected ] after array index');
+        expr = {
+          children: [expr, index],
+          location:
+            expr.location ??
+            ((): SourceRange => {
+              const previousTokenOffset = 1;
+              return this.getLocation(this.current - previousTokenOffset, this.current);
+            })(),
+          type: 'array_access_expression',
+        };
+      } else {
+        break;
+      }
+    }
+
     return expr;
   }
 

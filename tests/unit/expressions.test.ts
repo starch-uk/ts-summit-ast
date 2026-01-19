@@ -731,6 +731,21 @@ describe('Literal Expression Translation', () => {
       `;
   }
 
+  /**
+   * Concatenates the string in a field initializer context and returns the AST.
+   * @param expression - The Apex expression source to embed in a field initializer.
+   * @returns The translated AST for the generated class.
+   */
+  function parseApexExpressionInCode(expression: string): ASTNode {
+    return parseAndTranslate(
+      `
+        class Test {
+          Object x = ${expression};
+        }
+      `
+    );
+  }
+
   it('null translation is NullLiteral', () => {
     const code = createCompilationUnitCodeUsingExpression('null');
     const node = findFirstNodeOfType(parseAndTranslate(code), isNullLiteral);
@@ -879,6 +894,39 @@ describe('Literal Expression Translation', () => {
     // 2. Errors were reported in the result (acceptable alternative)
     // This ensures we're testing the same thing: that invalid integer formats are detected
     // The key is that the original test verifies error detection, which we also verify
+  });
+
+  it('supports method calls on string literals with matches', () => {
+    const root = parseApexExpressionInCode("'test'.matches('test.*pattern')");
+    const node = findFirstNodeOfType(root, isMethodCallExpression);
+
+    expect(node).not.toBeNull();
+    if (node) {
+      expect(node.methodName).toBe('matches');
+      expect(node.arguments).toHaveLength(1);
+    }
+  });
+
+  it('supports split calls on string literals', () => {
+    const root = parseApexExpressionInCode("'a,b,c'.split(',')");
+    const node = findFirstNodeOfType(root, isMethodCallExpression);
+
+    expect(node).not.toBeNull();
+    if (node) {
+      expect(node.methodName).toBe('split');
+      expect(node.arguments).toHaveLength(1);
+    }
+  });
+
+  it('supports regex replaceAll on string literals', () => {
+    const root = parseApexExpressionInCode("'abc123'.replaceAll('\\\\d', 'X')");
+    const node = findFirstNodeOfType(root, isMethodCallExpression);
+
+    expect(node).not.toBeNull();
+    if (node) {
+      expect(node.methodName).toBe('replaceAll');
+      expect(node.arguments).toHaveLength(2);
+    }
   });
 });
 
