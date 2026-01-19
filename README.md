@@ -573,12 +573,14 @@ const result = translator.translate(adaptedTree);
 ### Prerequisites
 
 - Node.js >= 18.0.0
-- npm
+- npm or pnpm
 
 ### Setup
 
 ```bash
 npm install
+# or
+pnpm install
 ```
 
 ### Build
@@ -610,17 +612,49 @@ Run tests with UI:
 npm run test:ui
 ```
 
+Run tests with coverage:
+
+```bash
+npm run test:coverage
+```
+
+**Test Status**: 675 tests passing across 14 test files
+
+### Code Quality
+
+This project maintains high code quality standards with:
+
+- **Strict TypeScript compliance** - Full type safety with strict compiler options
+- **Comprehensive ESLint rules** - All TypeScript ESLint recommended, strict, and type-checked rules enabled
+- **JSDoc documentation** - Complete JSDoc coverage with strict validation
+- **Explicit null/undefined handling** - Uses strict boolean expressions and nullish coalescing for robustness
+- **Zero lint errors** - All code passes strict linting rules
+
 ### Lint
 
 ```bash
 npm run lint
 ```
 
-Fix linting issues:
+Fix linting issues automatically:
 
 ```bash
 npm run lint:fix
 ```
+
+The project uses:
+- **TypeScript ESLint** - All recommended, strict, stylistic, and type-checked rules
+- **JSDoc ESLint** - Comprehensive JSDoc validation and documentation requirements
+- **Import/Export linting** - Ensures proper module organization
+- **Code style rules** - Consistent formatting and naming conventions
+
+### Type Checking
+
+```bash
+npm run typecheck
+```
+
+Runs TypeScript compiler in check-only mode to verify type safety without generating output.
 
 ### Format
 
@@ -641,6 +675,14 @@ Generate API documentation:
 ```bash
 npm run docs
 ```
+
+All public APIs are fully documented with JSDoc comments, including:
+- Function/method descriptions
+- Parameter documentation with types and descriptions
+- Return value documentation
+- Thrown error documentation
+- Template type parameters
+- File-level overview comments
 
 ## Project Structure
 
@@ -686,9 +728,12 @@ ts-summit-ast/
 
 - **Parser-agnostic**: Works with any parser that provides parse trees. Includes built-in parser for convenience.
 - **Zero runtime dependencies**: Core library has no external runtime dependencies.
-- **Type-safe**: Full TypeScript type safety throughout with discriminated unions.
+- **Type-safe**: Full TypeScript type safety throughout with discriminated unions and strict compiler options.
 - **Immutable**: AST nodes are immutable (readonly properties).
 - **Extensible**: Easy to add new node types or extend existing ones.
+- **Robust error handling**: Explicit null/undefined checks and strict boolean expressions throughout.
+- **Comprehensive documentation**: Full JSDoc coverage with strict validation for all public APIs.
+- **High code quality**: Strict linting rules, comprehensive test coverage (675 tests), and zero lint errors.
 
 ## Supported AST Node Types
 
@@ -725,6 +770,26 @@ See [docs/json-schema.md](./docs/json-schema.md) for complete JSON schema docume
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Development Guidelines
+
+When contributing, please ensure:
+
+1. **All tests pass**: Run `npm test` before submitting
+2. **No lint errors**: Run `npm run lint` and fix any issues
+3. **Type checking passes**: Run `npm run typecheck` to verify type safety
+4. **Code is formatted**: Run `npm run format` to ensure consistent formatting
+5. **JSDoc is complete**: All public functions, methods, and classes must have complete JSDoc documentation
+6. **Follow strict TypeScript practices**: Use explicit null checks, nullish coalescing, and strict boolean expressions
+
+### Code Quality Standards
+
+- Use explicit null/undefined checks instead of truthy/falsy checks
+- Use nullish coalescing (`??`) instead of logical OR (`||`) for default values
+- Use strict boolean expressions (explicit comparisons) in conditionals
+- Avoid variable shadowing
+- Prefer destructuring for array/object access
+- Complete JSDoc documentation for all public APIs
 
 ## License
 
