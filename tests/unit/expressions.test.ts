@@ -12,12 +12,9 @@ import { parseApexCode } from '../../src/utils/apex-parser.js';
 import {
   isEnumDeclaration,
   isClassDeclaration,
-  isMethodDeclaration,
-  isTypeRef,
   isSoqlQueryExpression,
   isSoslQueryExpression,
   isMethodCallExpression,
-  isCallExpression,
   isNewExpression,
   isThisExpression,
   isSuperExpression,
@@ -42,9 +39,7 @@ import {
   isMapInitializer,
 } from '../../src/ast/type-guards.js';
 import type { ASTNode } from '../../src/ast/base.js';
-import type { Statement } from '../../src/ast/Statement.js';
 import { typeRefToCodeString, type TypeRef } from '../../src/ast/Type.js';
-import { isStatement } from '../../src/ast/type-guards.js';
 import { getNodeChildren, getParentNode } from '../../src/utils/traversal.js';
 
 /**
@@ -66,7 +61,8 @@ describe('CompilationUnit Translation', () => {
     // Original: assertThat(cu.typeDeclaration).isInstanceOf(EnumDeclaration::class.java)
     // In TypeScript, the root AST node is the type declaration itself or contains it
     const enumDecl = findFirstNodeOfType(cu, isEnumDeclaration);
-    // Original: assertNotNull(enumDecl) - implicit in isInstanceOf check
+    // Original: assertThat(cu.typeDeclaration).isInstanceOf(EnumDeclaration::class.java)
+    // Our port ensures there's exactly one top-level EnumDeclaration child.
     expect(enumDecl).not.toBeNull();
     expect(isEnumDeclaration(enumDecl)).toBe(true);
   });
@@ -77,8 +73,8 @@ describe('CompilationUnit Translation', () => {
     const classDecl = getNodeChildren(cu)[0];
     // Original: assertThat(cu.getChildren()).containsExactly(classDecl)
     const children = getNodeChildren(cu);
-    expect(children).toContainEqual(classDecl);
-    expect(children.length).toBeGreaterThanOrEqual(1);
+    expect(children).toHaveLength(1);
+    expect(children[0]).toEqual(classDecl);
     // Original: assertThat(classDecl.parent).isEqualTo(cu)
     const parent = getParentNode(cu, classDecl);
     expect(parent).toBe(cu);
@@ -91,16 +87,13 @@ describe('CompilationUnit Translation', () => {
   it('trigger translates to expected tree', () => {
     const cu = parseAndTranslate('trigger MyTrigger on MyObject(before update, after delete) { }');
     // Original: val triggerDecl = cu.typeDeclaration as TriggerDeclaration
-    // Note: TriggerDeclaration may not be implemented in TypeScript version
-    // If implemented, we would check:
-    // const triggerDecl = findFirstNodeOfType(cu, isTriggerDeclaration);
-    // Original: assertThat(cu.getChildren()).containsExactly(triggerDecl)
-    // Original: assertThat(triggerDecl.id.asCodeString()).isEqualTo("MyTrigger")
-    // Original: assertThat(triggerDecl.target.asCodeString()).isEqualTo("MyObject")
-    // Original: assertThat(triggerDecl.cases).containsExactly(
-    //             TriggerDeclaration.TriggerCase.TRIGGER_BEFORE_UPDATE,
-    //             TriggerDeclaration.TriggerCase.TRIGGER_AFTER_DELETE)
-    expect(cu).toBeDefined();
+    // Our TypeScript port does not yet model TriggerDeclaration; the translator currently
+    // emits a placeholder ClassDeclaration named `MyTrigger_trigger_placeholder`.
+    const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
+    expect(classDecl).not.toBeNull();
+    if (classDecl) {
+      expect(classDecl.name).toBe('MyTrigger_trigger_placeholder');
+    }
   });
 
   it('trigger with statement translates to expected tree', () => {
@@ -108,9 +101,11 @@ describe('CompilationUnit Translation', () => {
       "trigger MyTrigger on MyObject(before update, after delete) { System.debug(''); }"
     );
     // Original: val triggerDecl = cu.typeDeclaration as TriggerDeclaration
-    // Original: val statement = triggerDecl.body.first() as Statement
-    // Original: assertThat(triggerDecl.body).containsExactly(statement)
-    expect(cu).toBeDefined();
+    //           val statement = triggerDecl.body.first() as Statement
+    //           assertThat(triggerDecl.body).containsExactly(statement)
+    // In our placeholder implementation, we at least assert we still create a single top-level class.
+    const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
+    expect(classDecl).not.toBeNull();
   });
 
   it('trigger with declaration translates to expected tree', () => {
@@ -118,9 +113,11 @@ describe('CompilationUnit Translation', () => {
       'trigger MyTrigger on MyObject(before update, after delete) { public void func() {} }'
     );
     // Original: val triggerDecl = cu.typeDeclaration as TriggerDeclaration
-    // Original: val methodDeclaration = triggerDecl.body.first() as MethodDeclaration
-    // Original: assertThat(triggerDecl.body).containsExactly(methodDeclaration)
-    expect(cu).toBeDefined();
+    //           val methodDeclaration = triggerDecl.body.first() as MethodDeclaration
+    //           assertThat(triggerDecl.body).containsExactly(methodDeclaration)
+    // Our placeholder trigger translation still exposes a single top-level class declaration.
+    const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
+    expect(classDecl).not.toBeNull();
   });
 });
 
@@ -209,17 +206,6 @@ describe('TypeRef Translation', () => {
 
 describe('Expression Translation', () => {
   /**
-   * Counts the number of untranslated expression nodes in the AST.
-   * @param node
-   */
-  function countUntranslatedExpressions(node: ASTNode): number {
-    return countNodesOfType(
-      node,
-      (n) => n.kind === 'UntranslatedExpression' || n.kind === 'Untranslated'
-    );
-  }
-
-  /**
    * Concatenates the string in a field initializer context and returns the AST.
    * @param expression
    */
@@ -304,30 +290,30 @@ describe('Expression Translation', () => {
   it('all operators match binary expression op', () => {
     // Original: Test all binary operators and also the translation of all binary expression rules
     // Original: for (op in BinaryExpression.Operator.values())
-    const operators: { op: string; expected: string }[] = [
-      { expected: '+', op: '+' },
-      { expected: '-', op: '-' },
-      { expected: '*', op: '*' },
-      { expected: '/', op: '/' },
-      { expected: '%', op: '%' },
-      { expected: '==', op: '==' },
-      { expected: '!=', op: '!=' },
-      { expected: '<', op: '<' },
-      { expected: '>', op: '>' },
-      { expected: '<=', op: '<=' },
-      { expected: '>=', op: '>=' },
-      { expected: '&&', op: '&&' },
-      { expected: '||', op: '||' },
+    const operators: { op: string; expectedOp: string }[] = [
+      { expectedOp: '+', op: '+' },
+      { expectedOp: '-', op: '-' },
+      { expectedOp: '*', op: '*' },
+      { expectedOp: '/', op: '/' },
+      { expectedOp: '%', op: '%' },
+      { expectedOp: '==', op: '==' },
+      { expectedOp: '!=', op: '!=' },
+      { expectedOp: '<', op: '<' },
+      { expectedOp: '>', op: '>' },
+      { expectedOp: '<=', op: '<=' },
+      { expectedOp: '>=', op: '>=' },
+      { expectedOp: '&&', op: '&&' },
+      { expectedOp: '||', op: '||' },
     ];
 
-    for (const { op, expected } of operators) {
+    for (const { op, expectedOp } of operators) {
       const root = parseApexExpressionInCode(`y ${op} z`);
       const node = findFirstNodeOfType(root, isBinaryExpression);
 
       // Original: assertNotNull(node)
       expect(node).not.toBeNull();
       // Original: assertThat(node.op).isEqualTo(op)
-      expect(node.operator).toBe(expected);
+      expect(node.operator).toBe(expectedOp);
     }
   });
 
@@ -429,23 +415,23 @@ describe('Expression Translation', () => {
     // Original: Test all assignment operators
     // Original maps: null to "=", BinaryExpression.Operator.ADDITION to "+=", etc.
     // In TypeScript, we verify the operator matches
-    const assignOperations: { op: string; expected: string }[] = [
-      { expected: '=', op: '=' },
-      { expected: '+=', op: '+=' },
-      { expected: '-=', op: '-=' },
-      { expected: '*=', op: '*=' },
-      { expected: '/=', op: '/=' },
-      { expected: '&=', op: '&=' },
-      { expected: '|=', op: '|=' },
-      { expected: '^=', op: '^=' },
-      { expected: '>>=', op: '>>=' },
-      { expected: '>>>=', op: '>>>=' },
-      { expected: '<<=', op: '<<=' },
+    const assignOperations: { op: string }[] = [
+      { op: '=' },
+      { op: '+=' },
+      { op: '-=' },
+      { op: '*=' },
+      { op: '/=' },
+      { op: '&=' },
+      { op: '|=' },
+      { op: '^=' },
+      { op: '>>=' },
+      { op: '>>>=' },
+      { op: '<<=' },
     ];
 
     // Note: Original test parses assignment as statement: "void f() { x $operator y; }"
     // We parse as expression in field initializer, which may produce different structure
-    for (const { op, expected } of assignOperations) {
+    for (const { op } of assignOperations) {
       const root = parseAndTranslate(
         `
         class Test {
@@ -455,7 +441,7 @@ describe('Expression Translation', () => {
       );
       // Original: assertNotNull(node)
       // Original: assertThat(node.preOperation).isEqualTo(op)
-      // In TypeScript, we verify the assignment is parsed correctly
+      // In TypeScript, we verify the assignment parsed without throwing
       expect(root).toBeDefined();
     }
   });

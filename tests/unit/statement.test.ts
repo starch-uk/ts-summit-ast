@@ -6,7 +6,6 @@
 import {
   parseAndTranslate,
   findFirstNodeOfType,
-  countNodesOfType,
   assertFullyTranslated,
 } from '../translate-helpers.js';
 import {
@@ -24,34 +23,21 @@ import {
   isDmlStatement,
   isVariableDeclarationStatement,
   isExpressionStatement,
-  isBlock,
   isMethodDeclaration,
   isClassDeclaration,
   isVariableExpression,
-  isCompoundStatement,
 } from '../../src/ast/type-guards.js';
 import {
   isNullLiteral,
   isStringLiteral,
   isIntegerLiteral,
   isLongLiteral,
-  isVariableDeclaration,
 } from '../../src/ast/type-guards.js';
 import { getNodeChildren } from '../../src/utils/traversal.js';
 import type { ASTNode } from '../../src/ast/base.js';
+import type { TypeRef } from '../../src/ast/Type.js';
 
 describe('Statement Translation', () => {
-  /**
-   * Counts the number of untranslated statement nodes in the AST.
-   * @param node
-   */
-  function countUntranslatedStatements(node: ASTNode): number {
-    return countNodesOfType(
-      node,
-      (n) => n.kind === 'UntranslatedStatement' || n.kind === 'Untranslated'
-    );
-  }
-
   /**
    * Concatenates the string into a method body and returns the AST.
    * @param statement
@@ -66,6 +52,22 @@ describe('Statement Translation', () => {
         }
       `
     );
+  }
+
+  /**
+   * Helper to convert TypeRef to code string (equivalent to summit-ast asCodeString()).
+   * @param typeRef
+   */
+  function typeRefToCodeString(typeRef: TypeRef): string {
+    if (typeRef.components.length === 0) return 'void';
+    const base = typeRef.components
+      .map((c) => {
+        const args =
+          c.args && c.args.length > 0 ? `<${c.args.map(typeRefToCodeString).join(', ')}>` : '';
+        return `${c.id.name}${args}`;
+      })
+      .join('.');
+    return base + '[]'.repeat(typeRef.arrayNesting || 0);
   }
 
   it('method body is compound statement', () => {
@@ -138,15 +140,17 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
-    // Original: assertThat(node.values).hasSize(2)
-    // Note: TypeScript switch cases may have a single value expression, multiple values would be in separate cases
-    // We verify that cases exist and contain the expected values
-    expect(node.cases.length).toBeGreaterThanOrEqual(1);
-    // Original: assertWithMessage("Identifiers in `when` clauses are enum values, which should be a `VariableExpression`")
-    //           .that(node.values.first()).isInstanceOf(VariableExpression::class.java)
-    // Verify at least one case has a value that's a VariableExpression
-    const hasVariableExpression = node.cases.some((c) => c.value && isVariableExpression(c.value));
-    expect(hasVariableExpression).toBe(true);
+    // Upstream asserts a WhenValue with two values.
+    // Our TS port records multi-value when clauses on the first case as `values`.
+    expect(node.cases).toHaveLength(1);
+    const whenValueCase = node.cases[0];
+    expect(whenValueCase.values).toBeDefined();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- values is asserted above
+    expect(whenValueCase.values!).toHaveLength(2);
+
+    // Identifiers in `when` clauses are enum values, which should be a VariableExpression.
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- values is asserted above
+    expect(isVariableExpression(whenValueCase.values![0])).toBe(true);
   });
 
   it('switch statement when clause has literal values', () => {
@@ -184,17 +188,23 @@ describe('Statement Translation', () => {
     // Original expects: varDecl.type.asCodeString() == "Type"
     // Original expects: varDecl.id.asCodeString() == "variable"
     // Original expects: varDecl.initializer == null
-    // Note: TypeScript switch cases with type matching may be represented differently
-    // We verify the switch statement is parsed and has cases
-    expect(node.cases.length).toBeGreaterThan(0);
-    // Verify at least one case has a variable declaration
-    const hasVariable = node.cases.some((c) => {
-      // Check if case has a variable declaration (structure may vary)
-      return c.statements.some((s) => isVariableDeclarationStatement(s));
-    });
-    // The original test verifies type matching with variable declaration
-    // This is a complex feature that may need special handling
-    expect(node).toBeDefined();
+    // Kotlin summit-ast uses WhenType with `type` and `downcast.declarations`.
+    // Our TS port records this on the SwitchCase as `matchType` and `downcastDeclarations`.
+    expect(node.cases).toHaveLength(1);
+
+    const whenTypeCase = node.cases[0];
+    expect(whenTypeCase.matchType).toBeDefined();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- matchType is asserted above
+    expect(typeRefToCodeString(whenTypeCase.matchType!)).toBe('Type');
+
+    expect(whenTypeCase.downcastDeclarations).toBeDefined();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- downcastDeclarations is asserted above
+    expect(whenTypeCase.downcastDeclarations!).toHaveLength(1);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- downcastDeclarations is asserted above
+    const varDecl = whenTypeCase.downcastDeclarations![0];
+    expect(typeRefToCodeString(varDecl.type)).toBe('Type');
+    expect(varDecl.name).toBe('variable');
+    expect(varDecl.initializer).toBeUndefined();
   });
 
   it('traditional for statement declares two variables', () => {

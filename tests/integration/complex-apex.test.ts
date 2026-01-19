@@ -4,20 +4,13 @@
  */
 
 import { parseApexCode } from '../../src/utils/apex-parser.js';
-import { findFirstNodeOfType, parseAndTranslate } from '../translate-helpers.js';
+import { findFirstNodeOfType } from '../translate-helpers.js';
 import {
   isClassDeclaration,
   isMethodDeclaration,
-  isVariableDeclaration,
-  isIfStatement,
-  isForLoopStatement,
-  isWhileLoopStatement,
   isTryStatement,
-  isBinaryExpression,
-  isCallExpression,
   isNewExpression,
   isTernaryExpression,
-  isLambdaExpression,
 } from '../../src/ast/type-guards.js';
 
 describe('Complex Apex Code Parsing', () => {

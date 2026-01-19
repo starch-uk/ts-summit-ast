@@ -6,6 +6,7 @@
 import type { ASTNode } from './base.js';
 import type { Expression } from './Expression.js';
 import type { VariableDeclaration } from './Declaration.js';
+import type { TypeRef } from './Type.js';
 
 /**
  * Alias for backward compatibility during migration.
@@ -106,6 +107,26 @@ interface SwitchCase extends ASTNode {
    * Undefined for default case.
    */
   readonly value?: Expression;
+
+  /**
+   * Present for Apex `when a, b, c { ... }` (multi-value when clause).
+   * This corresponds to summit-ast's WhenValue `values`.
+   *
+   * Note: for single-value cases, `value` may be used instead.
+   */
+  readonly values?: readonly Expression[];
+
+  /**
+   * Present for Apex `when <Type> <variable>` (type match / downcast) cases.
+   * This corresponds to summit-ast's WhenType `type`.
+   */
+  readonly matchType?: TypeRef;
+
+  /**
+   * Present for Apex `when <Type> <variable>` (type match / downcast) cases.
+   * This corresponds to summit-ast's WhenType `downcast.declarations`.
+   */
+  readonly downcastDeclarations?: readonly VariableDeclaration[];
   readonly statements: Statement[];
 }
 

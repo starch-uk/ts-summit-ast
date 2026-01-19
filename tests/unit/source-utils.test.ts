@@ -137,7 +137,6 @@ describe('Source Extraction Utilities', () => {
       const classDecl = findFirstNodeOfType(parseAndTranslate(input), isClassDeclaration);
       expect(classDecl).not.toBeNull();
       if (classDecl?.location) {
-        const loc = classDecl.location;
         const extracted = getSourceText(classDecl, input);
         expect(extracted).toContain('Test');
       }
@@ -181,11 +180,12 @@ describe('Source Extraction Utilities', () => {
             = 'Hello';
         }
       `.trim();
-      const loc = {
-        end: { column: 16, line: 3 },
-        start: { column: 4, line: 1 },
-      };
-      const node = NodeFactory.createIdentifier('test', { location: loc });
+      const node = NodeFactory.createIdentifier('test', {
+        location: {
+          end: { column: 16, line: 3 },
+          start: { column: 4, line: 1 },
+        },
+      });
       const extracted = getSourceText(node, input);
       expect(extracted).toBeTruthy();
     });
@@ -406,8 +406,8 @@ describe('Node Finder Utilities', () => {
         start: { column: 20, line: 5 },
       };
 
-      const node1 = NodeFactory.createIdentifier('a', { location: node1Location });
-      const node2 = NodeFactory.createIdentifier('b', { location: node2Location });
+      NodeFactory.createIdentifier('a', { location: node1Location });
+      NodeFactory.createIdentifier('b', { location: node2Location });
       const block = NodeFactory.createBlock([], {
         location: {
           end: { column: 30, line: 5 },
@@ -632,7 +632,6 @@ describe('Source Extraction Utilities', () => {
       const classDecl = findFirstNodeOfType(parseAndTranslate(input), isClassDeclaration);
       expect(classDecl).not.toBeNull();
       if (classDecl?.location) {
-        const loc = classDecl.location;
         const extracted = getSourceText(classDecl, input);
         expect(extracted).toContain('Test');
       }

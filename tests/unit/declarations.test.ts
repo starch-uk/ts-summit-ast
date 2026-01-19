@@ -22,9 +22,7 @@ import type {
   ClassMember,
   TypeRef,
   Annotation,
-  AnnotationArgument,
 } from '../../src/ast/Declaration.js';
-import type { ElementValue } from '../../src/ast/ElementValue.js';
 import {
   isAnnotationElementValue,
   isArrayElementValue,
@@ -677,9 +675,8 @@ describe('Class Declaration Translation', () => {
       expect(methodDecl.parameters.length).toBe(1);
 
       // Original: returnType.isVoid() is true
-      // In TypeScript, constructors may have void return type or it may be represented differently
-      const isVoid = isVoidType(methodDecl.returnType);
-      // If not void, it might be a different representation - we still verify it exists.
+      // In TypeScript, constructors may have void return type or it may be represented differently;
+      // we at least verify a return type node is present.
       expect(methodDecl.returnType).toBeDefined();
     }
   });
@@ -812,7 +809,6 @@ describe('Class Declaration Translation', () => {
       const upPropertyIndex = memberNames.indexOf('upProperty');
       const downPropertyIndex = memberNames.indexOf('downProperty');
       const aMethodIndex = memberNames.indexOf('aMethod');
-      const otherMethodIndex = memberNames.indexOf('otherMethod');
 
       // Verify inner types come before fields
       if (innerClassIndex >= 0 && positiveFieldIndex >= 0) {

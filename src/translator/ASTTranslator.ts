@@ -910,20 +910,62 @@ class ASTTranslator {
       const caseChildren = this.getChildren(casesNode);
       for (const caseNode of caseChildren) {
         const caseNodeReadonly = caseNode;
+        // Apex supports both `when <expr>` and `when <Type> <variable>` (type match / downcast).
+        // For `type_match`, the parse tree contains a `type_match` child with `type` and `name`.
+        let matchType: TypeRef | undefined = undefined;
+        let downcastDeclarations: VariableDeclaration[] | undefined = undefined;
+
+        const typeMatchNode = this.getChildren(caseNodeReadonly).find(
+          (c) => c.type === 'type_match'
+        );
+        if (typeMatchNode) {
+          const typeNode = this.getChildren(typeMatchNode).find((c) => c.type === 'type') ?? null;
+          const nameNode = this.getChildren(typeMatchNode).find((c) => c.type === 'name') ?? null;
+
+          if (typeNode) {
+            matchType = this.tryTranslateType(typeNode) ?? undefined;
+          }
+
+          const varName = nameNode ? (this.getText(nameNode) ?? undefined) : undefined;
+          if (matchType && varName) {
+            downcastDeclarations = [
+              NodeFactory.createVariableDeclaration(
+                varName,
+                matchType,
+                undefined,
+                undefined,
+                this.getLocationOption(typeMatchNode)
+              ),
+            ];
+          }
+        }
+
+        let values: Expression[] | undefined = undefined;
         let value = this.getChildExpression(caseNodeReadonly, 'value', true);
         // Apex "when value" puts the value expression(s) as first children before the 'statements' node
         if (!value) {
           const ch = this.getChildren(caseNodeReadonly);
-          const valueNode = ch.find(
+          const valueNodes = ch.filter(
             (c: Readonly<ParseTreeNode>) => (c as { type?: string }).type !== 'statements'
           );
-          if (valueNode) {
-            const valueNodeReadonly = valueNode;
-            const valueTypeProperty = (valueNodeReadonly as { type?: string }).type;
-            const valueType =
-              typeof valueTypeProperty === 'string' ? valueTypeProperty.toLowerCase() : '';
-            const v = this.tryTranslateExpression(valueNodeReadonly, valueType);
-            if (v) value = v;
+          if (valueNodes.length > 0) {
+            const translatedValues = valueNodes
+              .map((vn) => {
+                const valueTypeProperty = (vn as { type?: string }).type;
+                const valueType =
+                  typeof valueTypeProperty === 'string' ? valueTypeProperty.toLowerCase() : '';
+                return this.tryTranslateExpression(vn, valueType);
+              })
+              .filter((v): v is Expression => v !== null);
+
+            if (translatedValues.length > 0) {
+              if (translatedValues.length === 1) {
+                value = translatedValues[0];
+              } else {
+                values = translatedValues;
+                value = translatedValues[0];
+              }
+            }
           }
         }
         // Get statements - try property first, then look for child with type 'statements'
@@ -965,6 +1007,9 @@ class ASTTranslator {
           location: caseNode.location,
           statements,
           value,
+          values,
+          matchType,
+          downcastDeclarations,
         });
       }
     }

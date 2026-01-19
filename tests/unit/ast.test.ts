@@ -110,7 +110,7 @@ describe('Visitor Pattern', () => {
     it('should implement ASTVisitor interface', () => {
       const visitor: ASTVisitor<string> = {
         visit: (node: ASTNode) => node.kind,
-        visitChildren: (node: ASTNode) => {
+        visitChildren: (_node: ASTNode) => {
           return [];
         },
       };

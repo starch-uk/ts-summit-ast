@@ -19,33 +19,11 @@ import {
   isMethodCallExpression,
   isIfStatement,
   isReturnStatement,
-  isCompoundStatement,
   isBlock,
   isForStatement,
   isWhileStatement,
-  isClassType,
   isVariableDeclaration,
 } from '../../src/ast/type-guards.js';
-import {
-  getSourceText,
-  getSourceRange,
-  locationToOffset,
-  offsetToLocation,
-  UNKNOWN_SOURCE_LOCATION,
-  isUnknownLocation,
-  isPositionInRange,
-  isPositionBefore,
-  isPositionAfter,
-  getDistanceToRange,
-} from '../../src/utils/source-extraction.js';
-import type { Position } from '../../src/utils/source-extraction.js';
-import type { SourceRange } from '../../src/ast/base.js';
-import {
-  parseApexCode,
-  parseMultipleFiles,
-  extractCommentsBatch,
-  isUsableParseResult,
-} from '../../src/utils/apex-parser.js';
 
 describe('JSON Serialization', () => {
   const serializer = new JsonSerializer({ includeLocation: true });
@@ -151,7 +129,7 @@ describe('JSON Serialization', () => {
         expect(testTree).not.toBeNull();
         // If deserialization succeeds, verify the kind matches original
         expect(testTree.kind).toBe('CompilationUnit');
-      } catch (error) {
+      } catch {
         // If CompilationUnit deserialization isn't supported yet,
         // we still verify that serialization works correctly
         // and that the JSON structure is valid

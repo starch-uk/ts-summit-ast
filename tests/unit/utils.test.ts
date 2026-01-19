@@ -7,14 +7,7 @@ import {
   isApexDocCommentString,
   type ApexDocParseOptions,
 } from '../../src/utils/apexdoc-parser.js';
-import type { ApexDocComment } from '../../src/ast/ApexDoc.js';
-import { JsonSerializer, JsonDeserializer } from '../../src/serialization/index.js';
-import {
-  isBinaryExpression,
-  isIdentifier,
-  isClassDeclaration,
-  isVariableDeclaration,
-} from '../../src/ast/type-guards.js';
+import { isClassDeclaration, isVariableDeclaration } from '../../src/ast/type-guards.js';
 import {
   getSourceText,
   getSourceRange,
@@ -1135,7 +1128,7 @@ describe('DFS Walker', () => {
     const visited: string[] = [];
 
     const visitor: ASTWalkVisitor = {
-      enterNode: (node: ASTNode) => {
+      enterNode: (_node: ASTNode) => {
         return true;
       },
       exitNode: (node: ASTNode) => {
@@ -1444,8 +1437,8 @@ describe('Node Finder Utilities', () => {
         start: { column: 20, line: 5 },
       };
 
-      const node1 = NodeFactory.createIdentifier('a', { location: node1Location });
-      const node2 = NodeFactory.createIdentifier('b', { location: node2Location });
+      NodeFactory.createIdentifier('a', { location: node1Location });
+      NodeFactory.createIdentifier('b', { location: node2Location });
       const block = NodeFactory.createBlock([], {
         location: {
           end: { column: 30, line: 5 },
@@ -1943,7 +1936,6 @@ describe('Source Extraction Utilities', () => {
       const classDecl = findFirstNodeOfType(parseAndTranslate(input), isClassDeclaration);
       expect(classDecl).not.toBeNull();
       if (classDecl?.location) {
-        const loc = classDecl.location;
         const extracted = getSourceText(classDecl, input);
         expect(extracted).toContain('Test');
       }
