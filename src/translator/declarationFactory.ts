@@ -17,9 +17,10 @@ import type {
   Parameter,
 } from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
-import type { TypeRef, Identifier } from '../ast/baseNode.js';
+import type { TypeRef, Identifier, TypeRefComponent } from '../ast/baseNode.js';
 import type { CompoundStatement } from '../ast/statement.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
+import { NodeFactory } from './nodeFactory.js';
 
 /**
  * Options for creating AST nodes.

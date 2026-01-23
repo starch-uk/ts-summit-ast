@@ -12,7 +12,6 @@ import type {
   DecimalVal,
   BooleanVal,
 } from '../ast/literal.js';
-import type { TypeRef } from '../ast/baseNode.js';
 import type {
   ConstructorInitializer,
   ValuesInitializer,

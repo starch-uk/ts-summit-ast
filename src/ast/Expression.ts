@@ -359,3 +359,6 @@ export type {
   TriggerContextVariableExpression,
   SoqlOrSoslBinding,
 };
+
+// Re-export Initializer for convenience
+export type { Initializer } from './initializer.js';

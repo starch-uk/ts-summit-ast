@@ -267,7 +267,6 @@ export function parseInterfaceDeclaration(
  */
 export function parseTriggerDeclaration(ctx: ParserContext): ParseTreeNode {
   const singleIndexOffset = 1;
-  const zeroIndex = 0;
   const start = ctx.current - singleIndexOffset;
   // TRIGGER keyword was already consumed by match() in parseDeclaration()
   // So we don't need to consume it again
@@ -1201,16 +1200,18 @@ export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
     let typeName = savedTypeName;
     if (!typeName) {
       // Try to get the type name from the type node
-      const baseTypeNode = ctx.getChild(type, 'base_type');
+      // Access children directly since we're in the parser, not translator
+      const children = type.children ?? [];
+      const baseTypeNode = children.find((c) => c.type === 'base_type');
       if (baseTypeNode) {
-        typeName =
-          ctx.getText(baseTypeNode) ?? ctx.getProperty<string>(baseTypeNode, 'text') ?? null;
+        typeName = baseTypeNode.text ?? (baseTypeNode as { text?: string }).text ?? null;
       }
       if (!typeName) {
-        const typeNameNode = ctx.getChild(type, 'name') ?? ctx.getChild(type, 'identifier');
+        const typeNameNode =
+          children.find((c) => c.type === 'name') ?? children.find((c) => c.type === 'identifier');
         typeName = typeNameNode
-          ? (ctx.getText(typeNameNode) ??
-            ctx.getProperty<string>(typeNameNode, 'name') ??
+          ? (typeNameNode.text ??
+            (typeNameNode as { name?: string }).name ??
             'Unknown')
           : 'Unknown';
       }
@@ -1230,9 +1231,12 @@ export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
     // This is a constructor - use the saved type name
     if (!savedTypeName || !savedTypeLocation) {
       // Fallback: try to extract from type node
-      const typeNameNode = ctx.getChild(type, 'name') ?? ctx.getChild(type, 'identifier');
+      // Access children directly since we're in the parser, not translator
+      const children = type.children ?? [];
+      const typeNameNode =
+        children.find((c) => c.type === 'name') ?? children.find((c) => c.type === 'identifier');
       savedTypeName = typeNameNode
-        ? (ctx.getText(typeNameNode) ?? ctx.getProperty<string>(typeNameNode, 'name') ?? 'Unknown')
+        ? (typeNameNode.text ?? (typeNameNode as { name?: string }).name ?? 'Unknown')
         : 'Unknown';
       savedTypeLocation = type.location;
     }
@@ -1240,10 +1244,10 @@ export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
     const nameToken: Token = {
       location: savedTypeLocation
         ? {
-            start: { line: savedTypeLocation.start.line, column: savedTypeLocation.start.column },
-            end: { line: savedTypeLocation.end.line, column: savedTypeLocation.end.column },
+            line: savedTypeLocation.start.line,
+            column: savedTypeLocation.start.column,
           }
-        : type.location,
+        : (type.location?.start ?? { line: 1, column: 1 }),
       text: savedTypeName ?? 'Unknown',
       type: TokenType.IDENTIFIER,
     };

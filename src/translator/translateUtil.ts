@@ -5,7 +5,7 @@
 
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
-import type { TypeRef, ASTNode, SourceRange } from '../ast/baseNode.js';
+import type { TypeRef, ASTNode } from '../ast/baseNode.js';
 import type {
   Modifier,
   ModifierKeyword,

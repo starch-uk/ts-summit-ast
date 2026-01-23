@@ -136,13 +136,9 @@ export function findAssociatedNode(
 function findPrecedingNode(
   ast: ASTNode,
   position: Position,
-  source: string,
+  _source: string,
   maxDistance: number
 ): AssociatedNodeResult | null {
-  const lines = source.split(/\r?\n/);
-  const lineIndexOffset = 1;
-  const line = lines[position.line - lineIndexOffset] ?? '';
-
   let bestMatch: AssociatedNodeResult | null = null;
   let bestDistance = Infinity;
 

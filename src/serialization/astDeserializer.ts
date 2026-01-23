@@ -16,7 +16,6 @@ import type {
 } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import type { VariableDeclaration } from '../ast/declaration.js';
-import type { Identifier } from '../ast/baseNode.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
 import { NodeFactory } from '../translator/nodeFactory.js';

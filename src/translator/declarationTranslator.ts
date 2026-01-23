@@ -12,17 +12,13 @@ import type {
   InterfaceDeclaration,
   MethodDeclaration,
   PropertyDeclaration,
-  Annotation,
-  AnnotationArgument,
-  TypeParameter,
   EnumValue,
   Parameter,
 } from '../ast/declaration.js';
-import type { Modifier, ModifierKeyword } from '../ast/declaration.js';
 import type { TypeRef } from '../ast/baseNode.js';
-import type { ElementValue } from '../ast/initializer.js';
+import type { CompoundStatement } from '../ast/statement.js';
+import type { Expression } from '../ast/expression.js';
 import type { TranslateContext } from './translateUtil.js';
-import { TranslationError } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
 export function translateClassDeclaration(
   ctx: TranslateContext,
@@ -693,32 +689,6 @@ export function translateEnumDeclaration(
  * @returns The translated VariableDeclaration AST node.
  * @throws {TranslationError} If the variable declaration is malformed.
  */
-/**
- * @file Declaration translation helpers.
- * Translates parse tree declaration nodes to AST declaration nodes.
- */
-
-import type { ParseTreeNode } from '../parser/parseTree.js';
-import type {
-  Declaration,
-  VariableDeclaration,
-  ClassDeclaration,
-  EnumDeclaration,
-  InterfaceDeclaration,
-  MethodDeclaration,
-  PropertyDeclaration,
-  Annotation,
-  AnnotationArgument,
-  TypeParameter,
-  EnumValue,
-  Parameter,
-} from '../ast/declaration.js';
-import type { Modifier, ModifierKeyword } from '../ast/declaration.js';
-import type { TypeRef } from '../ast/baseNode.js';
-import type { ElementValue } from '../ast/initializer.js';
-import type { TranslateContext } from './translateUtil.js';
-import { TranslationError } from './translateUtil.js';
-import { NodeFactory } from './nodeFactory.js';
 export function translateInterfaceDeclaration(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>

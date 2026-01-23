@@ -90,9 +90,17 @@ import {
   SoqlOrSoslBindingFactory,
 } from './expressionFactory.js';
 import { DeclarationFactory } from './declarationFactory.js';
-import type { NodeFactoryOptions } from './nodeFactory.js';
+import type { SourceRange } from '../ast/baseNode.js';
 
-export type { NodeFactoryOptions };
+/**
+ * Options for creating AST nodes.
+ */
+export interface NodeFactoryOptions {
+  /**
+   * Optional source location information.
+   */
+  readonly location?: SourceRange;
+}
 
 /**
  * Unified factory class for creating AST nodes

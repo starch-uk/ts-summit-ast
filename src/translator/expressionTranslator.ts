@@ -698,7 +698,9 @@ export function translateNewArrayExpression(
     size = ctx.tryTranslateExpression(sizeChild, sizeChild.type.toLowerCase()) ?? undefined;
     // If that fails and it's a number literal, translate it directly
     if (!size && (sizeChild.type === 'number_literal' || sizeChild.type === 'number')) {
-      size = ctx.translateIntegerVal(sizeChild);
+      // translateIntegerVal is a method on ASTTranslator, not TranslateContext
+      // Use tryTranslateExpression instead which should handle number literals
+      size = ctx.tryTranslateExpression(sizeChild, sizeChild.type.toLowerCase()) ?? undefined;
     }
   }
   if (!size) {

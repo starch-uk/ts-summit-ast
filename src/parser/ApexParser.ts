@@ -3,11 +3,10 @@
  * Parses Apex source code into a parse tree structure.
  */
 
-import type { SourceRange, SourceLocation } from './tree/baseNode.js';
+import type { SourceRange, SourceLocation } from '../ast/baseNode.js';
 import { ApexLexer } from './apexLexer.js';
 import { TokenType, type Token } from './tokenType.js';
 import type { ParseTreeNode } from './parseTree.js';
-import type { ParserContext } from './ParserContext.js';
 
 // Import helper modules
 import { parseCompilationUnit } from './declarationParser.js';
@@ -34,6 +33,46 @@ import {
   parseNewExpression,
 } from './expressionParser.js';
 import { parseStatement, parseVariableDeclaration } from './statementParser.js';
+
+/**
+ * Parser context interface that provides parsing methods and token utilities.
+ */
+export interface ParserContext {
+  readonly tokens: Token[];
+  readonly source: string;
+  current: number;
+  pendingGreaterThan: number;
+
+  parseDeclaration(): ParseTreeNode | null;
+  parseClassMember(): ParseTreeNode | null;
+  parseParameter(): ParseTreeNode | null;
+  parseAnnotation(): ParseTreeNode | null;
+  parseAnnotationArgument(): ParseTreeNode | null;
+  parseEnumConstant(): ParseTreeNode | null;
+  parseTypeParameters(): ParseTreeNode[];
+  parseTypeParameter(): ParseTreeNode | null;
+  parseType(): ParseTreeNode | null;
+  checkType(): boolean;
+  parseBlock(isClassBody?: boolean): ParseTreeNode;
+  parseStatement(): ParseTreeNode | null;
+  parseExpression(): ParseTreeNode | null;
+  parseVariableDeclaration(): ParseTreeNode | null;
+  parseSoqlSoslQuery(): ParseTreeNode;
+  parseNewExpression(): ParseTreeNode;
+  parseLambdaParameter(): ParseTreeNode | null;
+  parsePrimary(): ParseTreeNode | null;
+  match(...types: TokenType[]): boolean;
+  check(type: TokenType, ...types: TokenType[]): boolean;
+  advance(): Token;
+  isAtEnd(): boolean;
+  peek(offset?: number): Token;
+  previous(): Token;
+  consume(type: TokenType, message: string): Token;
+  skipWhitespaceAndComments(): void;
+  getLocation(start: number, end: number): SourceRange;
+  locationToRange(location: SourceLocation): SourceRange;
+  combineLocations(loc1: SourceRange, loc2: SourceRange): SourceRange;
+}
 
 /**
  * Simple recursive descent parser for Apex.

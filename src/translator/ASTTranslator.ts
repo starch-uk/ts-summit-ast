@@ -7,38 +7,14 @@
 
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type { ASTNode } from '../ast/baseNode.js';
-import type {
-  Statement,
-  CompoundStatement,
-  SwitchCase,
-  CatchClause,
-  ExpressionStatement,
-  VariableDeclarationStatement,
-} from '../ast/statement.js';
-import type {
-  Expression,
-  LambdaParameter,
-  BinaryExpression,
-  UnaryExpression,
-  AssignExpression,
-  FieldExpression,
-  NewExpression,
-} from '../ast/expression.js';
+import type { Statement } from '../ast/statement.js';
+import type { Expression } from '../ast/expression.js';
 import type {
   Declaration,
-  VariableDeclaration,
-  ClassDeclaration,
-  EnumDeclaration,
-  InterfaceDeclaration,
-  MethodDeclaration,
-  PropertyDeclaration,
   Annotation,
-  AnnotationArgument,
   TypeParameter,
-  EnumValue,
-  Parameter,
 } from '../ast/declaration.js';
-import type { Modifier, ModifierKeyword } from '../ast/declaration.js';
+import type { Modifier } from '../ast/declaration.js';
 import type { TypeRef } from '../ast/baseNode.js';
 import type { ElementValue } from '../ast/initializer.js';
 import { NodeFactory } from './nodeFactory.js';
@@ -480,23 +456,25 @@ class ASTTranslator implements TranslateContext {
 
   // Statement translation methods
 
-  private translateIfStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateIfStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateIfStatement(this, node);
   }
 
-  private translateIfStatementOld(node: Readonly<ParseTreeNode>): Statement {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for reference
+  // @ts-expect-error -- Kept for reference
+  private translateIfStatementOld(_node: Readonly<ParseTreeNode>): Statement {
     // Try to get named properties first (for integration tests)
-    let condition = this.getChildExpression(node, 'condition', true);
-    let thenStatement = this.getChildStatement(node, 'thenStatement', 'thenBody', true);
-    let elseStatement = this.getChildStatement(node, 'elseStatement', 'elseBody', true);
+    let condition = this.getChildExpression(_node, 'condition', true);
+    let thenStatement = this.getChildStatement(_node, 'thenStatement', 'thenBody', true);
+    let elseStatement = this.getChildStatement(_node, 'elseStatement', 'elseBody', true);
 
     // If named properties not found, try positional children (for parser output)
     if (!condition || !thenStatement) {
-      const children = this.getChildren(node);
+      const children = this.getChildren(_node);
 
       const minimumChildrenCount = 2;
       if (children.length < minimumChildrenCount) {
-        throw new TranslationError('If statement requires at least condition and then body', node);
+        throw new TranslationError('If statement requires at least condition and then body', _node);
       }
 
       if (!condition) {
@@ -504,7 +482,7 @@ class ASTTranslator implements TranslateContext {
         const conditionChild = children[zeroIndex];
         const cond = this.tryTranslateExpression(conditionChild, conditionChild.type.toLowerCase());
         if (!cond) {
-          throw new TranslationError('If statement requires a condition', node);
+          throw new TranslationError('If statement requires a condition', _node);
         }
         condition = cond;
       }
@@ -514,7 +492,7 @@ class ASTTranslator implements TranslateContext {
         const thenChild = children[secondChildIndex];
         const then = this.tryTranslateStatement(thenChild, thenChild.type.toLowerCase());
         if (!then) {
-          throw new TranslationError('If statement requires a then body', node);
+          throw new TranslationError('If statement requires a then body', _node);
         }
         thenStatement = then;
       }
@@ -531,159 +509,157 @@ class ASTTranslator implements TranslateContext {
       condition,
       thenStatement,
       elseStatement,
-      this.getLocationOption(node)
+      this.getLocationOption(_node)
     );
   }
 
-  private translateForLoopStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateForLoopStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateForLoopStatement(this, node);
   }
 
-  private translateWhileLoopStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateWhileLoopStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateWhileLoopStatement(this, node);
   }
 
-  private translateReturnStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateReturnStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateReturnStatement(this, node);
   }
 
-  private translateExpressionStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateExpressionStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateExpressionStatement(this, node);
   }
 
   private translateEnhancedForLoopStatement(
     node: Readonly<ParseTreeNode>
-  ): Readonly<ParseTreeNode> {
+  ): Statement {
     return stmtTranslate.translateEnhancedForLoopStatement(this, node);
   }
 
-  private translateDoWhileLoopStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateDoWhileLoopStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateDoWhileLoopStatement(this, node);
   }
 
-  private translateSwitchStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateSwitchStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateSwitchStatement(this, node);
   }
 
-  private translateTryStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateTryStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateTryStatement(this, node);
   }
 
-  private translateBreakStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateBreakStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateBreakStatement(this, node);
   }
 
-  private translateContinueStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateContinueStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateContinueStatement(this, node);
   }
 
-  private translateThrowStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateThrowStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateThrowStatement(this, node);
   }
 
   private translateVariableDeclarationStatement(
     node: Readonly<ParseTreeNode>
-  ): Readonly<ParseTreeNode> {
+  ): Statement {
     return stmtTranslate.translateVariableDeclarationStatement(this, node);
   }
 
   // Expression translation methods
 
-  private translateStringVal(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateStringVal(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateStringVal(this, node);
   }
 
-  private translateIntegerVal(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateIntegerVal(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateIntegerVal(this, node);
   }
 
-  private translateBooleanVal(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateBooleanVal(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateBooleanVal(this, node);
   }
 
-  private translateMethodCall(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateMethodCall(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateMethodCall(this, node);
   }
 
-  private translateBinaryExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateBinaryExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateBinaryExpression(this, node);
   }
 
-  private translateUnaryExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateUnaryExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateUnaryExpression(this, node);
   }
 
-  private translateAssignExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateAssignExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateAssignExpression(this, node);
   }
 
-  private translateFieldAccess(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateFieldAccess(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateFieldAccess(this, node);
   }
 
-  private translateArrayAccess(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateArrayAccess(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateArrayAccess(this, node);
   }
 
-  private translateTernaryExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateTernaryExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateTernaryExpression(this, node);
   }
 
-  private translateCastExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateCastExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateCastExpression(this, node);
   }
 
-  private translateInstanceOfExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateInstanceOfExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateInstanceOfExpression(this, node);
   }
 
-  private translateNewExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateNewExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateNewExpression(this, node);
   }
 
-  private translateNewArrayExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateNewArrayExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateNewArrayExpression(this, node);
   }
 
-  private translateLambdaExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateLambdaExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateLambdaExpression(this, node);
   }
 
-  private translateParenthesizedExpression(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateParenthesizedExpression(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateParenthesizedExpression(this, node);
   }
 
-  private translateSoqlQuery(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateSoqlQuery(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateSoqlQuery(this, node);
   }
 
-  private translateSoslQuery(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateSoslQuery(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateSoslQuery(this, node);
   }
 
-  private translateTriggerContextVariable(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateTriggerContextVariable(node: Readonly<ParseTreeNode>): Expression {
     return exprTranslate.translateTriggerContextVariable(this, node);
   }
 
-  private translateDmlStatement(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateDmlStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateDmlStatement(this, node);
   }
 
   // Declaration translation methods
 
-  private translateClassDeclaration(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateClassDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return classTranslate.translateClassDeclaration(this, node);
   }
 
-  private translateInterfaceDeclaration(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateInterfaceDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return memberTranslate.translateInterfaceDeclaration(this, node);
   }
 
-  private translateMethodDeclaration(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateMethodDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return memberTranslate.translateMethodDeclaration(this, node);
   }
-
-  /**
 
   /**
    * Translate instance or static initializer block to a MethodDeclaration
@@ -691,19 +667,19 @@ class ASTTranslator implements TranslateContext {
    * @param node - The parse tree node representing the initializer block.
    * @returns The translated method declaration representing the initializer block.
    */
-  private translateInitializerBlock(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateInitializerBlock(node: Readonly<ParseTreeNode>): Declaration {
     return memberTranslate.translateInitializerBlock(this, node);
   }
 
-  private translateFieldDeclaration(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateFieldDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return memberTranslate.translateFieldDeclaration(this, node);
   }
 
-  private translatePropertyDeclaration(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translatePropertyDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return memberTranslate.translatePropertyDeclaration(this, node);
   }
 
-  private translateEnumDeclaration(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateEnumDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return classTranslate.translateEnumDeclaration(this, node);
   }
 
@@ -713,7 +689,7 @@ class ASTTranslator implements TranslateContext {
    * @returns The translated VariableDeclaration AST node.
    * @throws {TranslationError} If the variable declaration is malformed.
    */
-  private translateVariableDeclaration(node: Readonly<ParseTreeNode>): Readonly<ParseTreeNode> {
+  private translateVariableDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return memberTranslate.translateVariableDeclaration(this, node);
   }
 

@@ -654,7 +654,6 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
   // Cast expression: (Type) expression
   // Parenthesized expression: (expression)
   if (ctx.match(TokenType.LEFT_PAREN)) {
-    const singleIndexOffset = 1;
     const savedPos = ctx.current;
 
     // Try to parse as lambda: check if we have parameters followed by =>
@@ -711,7 +710,7 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
       ctx.consume(TokenType.ARROW, 'Expected => after lambda parameters');
 
       // Lambda body can be an expression or a block
-      let body: ParseTreeNode | undefined = undefined;
+      let body: ParseTreeNode;
       if (ctx.check(TokenType.LEFT_BRACE)) {
         // Block body: { statements }
         body = ctx.parseBlock();
@@ -797,7 +796,7 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
       ctx.match(TokenType.DOT)
     ) {
       // Trigger context variables can be keywords (new) or identifiers (old, isInsert, etc.)
-      let triggerVar: Token | undefined = undefined;
+      let triggerVar: Token;
       const nextToken = ctx.peek();
       if (nextToken.type === TokenType.NEW) {
         // Consume NEW keyword token

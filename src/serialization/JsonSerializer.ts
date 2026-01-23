@@ -6,50 +6,7 @@
 
 /* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
 
-import type { ASTNode, SourceRange } from '../ast/baseNode.js';
-import type {
-  Statement,
-  IfStatement,
-  ForLoopStatement,
-  WhileLoopStatement,
-  ReturnStatement,
-  CompoundStatement,
-  ExpressionStatement,
-  VariableDeclarationStatement,
-} from '../ast/statement.js';
-import type {
-  Expression,
-  BinaryExpression,
-  CallExpression,
-  FieldExpression,
-  ArrayExpression,
-  AssignExpression,
-  NewExpression,
-  VariableExpression,
-} from '../ast/expression.js';
-import type { TypeRef, TypeRefComponent } from '../ast/baseNode.js';
-import type { ElementValue } from '../ast/initializer.js';
-import type { Modifier } from '../ast/declaration.js';
-import type {
-  StringVal,
-  IntegerVal,
-  DoubleVal,
-  LongVal,
-  DecimalVal,
-  BooleanVal,
-} from '../ast/literal.js';
-import type {
-  ConstructorInitializer,
-  ValuesInitializer,
-  SizedArrayInitializer,
-  MapInitializer,
-} from '../ast/initializer.js';
-import type {
-  ExpressionElementValue,
-  AnnotationElementValue,
-  ArrayElementValue,
-} from '../ast/initializer.js';
-import type { VariableDeclaration, AnnotationArgument } from '../ast/declaration.js';
+import type { ASTNode } from '../ast/baseNode.js';
 import { serializeNodeProperties } from './astSerializer.js';
 
 /**
