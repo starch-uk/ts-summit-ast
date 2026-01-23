@@ -3,7 +3,7 @@
  * Utilities for traversing AST trees with visitor patterns.
  */
 
-import type { ASTNode } from '../ast/base.js';
+import type { ASTNode } from '../ast/baseNode.js';
 import type {
   IfStatement,
   ForLoopStatement,
@@ -17,7 +17,7 @@ import type {
   ThrowStatement,
   SwitchStatement,
   SwitchCase,
-} from '../ast/Statement.js';
+} from '../ast/statement.js';
 import type {
   BinaryExpression,
   CallExpression,
@@ -29,26 +29,24 @@ import type {
   TernaryExpression,
   SoqlExpression,
   SoslExpression,
-} from '../ast/Expression.js';
+} from '../ast/expression.js';
 import type {
   VariableDeclaration,
   ClassDeclaration,
   MethodDeclaration,
-} from '../ast/Declaration.js';
-import type { TypeRef } from '../ast/Type.js';
+} from '../ast/declaration.js';
+import type { TypeRef } from '../ast/baseNode.js';
 import type {
   ConstructorInitializer,
   ValuesInitializer,
   SizedArrayInitializer,
   MapInitializer,
-} from '../ast/Initializer.js';
-import type {
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
-} from '../ast/ElementValue.js';
-import type { AnnotationArgument } from '../ast/Declaration.js';
-import type { SoqlOrSoslBinding } from '../ast/SoqlOrSoslBinding.js';
+} from '../ast/initializer.js';
+import type { AnnotationArgument } from '../ast/declaration.js';
+import type { SoqlOrSoslBinding } from '../ast/expression.js';
 
 /**
  * Visitor interface for AST traversal
@@ -449,6 +447,8 @@ function buildParentMap(root: Readonly<ASTNode>): Map<ASTNode, ASTNode | null> {
   return parentMap;
 }
 
+export { walkAST, getNodeChildren, buildParentMap };
+
 /**
  * Get all ancestors of a node.
  * @param node - The AST node to get ancestors for.
@@ -517,12 +517,4 @@ function getChildNodesByType(node: Readonly<ASTNode>, nodeType: string): ASTNode
   return children.filter((child) => child.kind === nodeType);
 }
 
-export {
-  walkAST,
-  getNodeChildren,
-  buildParentMap,
-  getAncestors,
-  findNodesByType,
-  getParentNode,
-  getChildNodesByType,
-};
+export { getAncestors, findNodesByType, getParentNode, getChildNodesByType };

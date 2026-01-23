@@ -11,5 +11,10 @@ export * from './tool/index.js';
 export * from './utils/index.js';
 
 // Apex parser exports (re-exported with specific names to avoid conflicts)
-export { ApexLexer, ApexParser, TokenType, parseApexSource } from './parser/index.js';
+export {
+  ApexLexer as apexLexer,
+  ApexParser as apexParser,
+  TokenType,
+  parseApexSource,
+} from './parser/index.js';
 export type { Token as ApexToken } from './parser/index.js';

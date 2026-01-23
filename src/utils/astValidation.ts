@@ -5,7 +5,7 @@
 
 /* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
 
-import type { ASTNode } from '../ast/base.js';
+import type { ASTNode } from '../ast/baseNode.js';
 import { walkAST, buildParentMap, getNodeChildren } from './traversal.js';
 
 /**

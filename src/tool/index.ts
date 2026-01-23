@@ -3,4 +3,4 @@
  * Main export file for tool components.
  */
 
-export * from './SummitTool.js';
+export * from './summitTool.js';

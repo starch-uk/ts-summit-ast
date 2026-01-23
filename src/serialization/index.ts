@@ -3,5 +3,5 @@
  * Main export file for serialization components.
  */
 
-export * from './JsonSerializer.js';
-export * from './JsonDeserializer.js';
+export * from './jsonSerializer.js';
+export * from './jsonDeserializer.js';

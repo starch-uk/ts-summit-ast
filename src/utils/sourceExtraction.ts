@@ -3,7 +3,7 @@
  * Utilities for extracting source text, position calculations, and source range operations.
  */
 
-import type { ASTNode, SourceRange } from '../ast/base.js';
+import type { ASTNode, SourceRange } from '../ast/baseNode.js';
 
 /**
  * Constants for array indexing and offsets.

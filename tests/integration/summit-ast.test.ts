@@ -3,7 +3,7 @@
  * Ported from com.google.summit.SummitASTTest.
  */
 
-import { parseApexCode } from '../../src/utils/apex-parser.js';
+import { parseApexCode } from '../../src/utils/apexParser.js';
 
 describe('SummitAST Parsing', () => {
   const classString = 'global with sharing interface Test { }';

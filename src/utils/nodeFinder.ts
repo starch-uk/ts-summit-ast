@@ -5,9 +5,9 @@
 
 /* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
 
-import type { ASTNode, SourceRange } from '../ast/base.js';
-import type { Position } from './source-extraction.js';
-import { isPositionInRange } from './source-extraction.js';
+import type { ASTNode, SourceRange } from '../ast/baseNode.js';
+import type { Position } from './sourceExtraction.js';
+import { isPositionInRange } from './sourceExtraction.js';
 import { walkAST, getAncestors, buildParentMap } from './traversal.js';
 
 /**
@@ -252,7 +252,7 @@ export function findNodesInRange(
  * AST node information utilities.
  */
 
-import { getSourceRange } from './source-extraction.js';
+import { getSourceRange } from './sourceExtraction.js';
 
 /**
  * Node path information.

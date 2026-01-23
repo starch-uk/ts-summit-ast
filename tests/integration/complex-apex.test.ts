@@ -3,15 +3,15 @@
  * Tests end-to-end parsing scenarios with complex Apex constructs.
  */
 
-import { parseApexCode } from '../../src/utils/apex-parser.js';
-import { findFirstNodeOfType } from '../translate-helpers.js';
+import { parseApexCode } from '../../src/utils/apexParser.js';
+import { findFirstNodeOfType } from '../translateHelpers.js';
 import {
   isClassDeclaration,
   isMethodDeclaration,
   isTryStatement,
   isNewExpression,
   isTernaryExpression,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 
 describe('Complex Apex Code Parsing', () => {
   describe('Complex Classes', () => {

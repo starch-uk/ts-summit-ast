@@ -14,12 +14,12 @@ import {
   isPositionBefore,
   isPositionAfter,
   getDistanceToRange,
-} from '../../src/utils/source-extraction.js';
-import type { Position } from '../../src/utils/source-extraction.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
-import { isClassDeclaration, isVariableDeclaration } from '../../src/ast/type-guards.js';
-import type { SourceRange } from '../../src/ast/base.js';
+} from '../../src/utils/sourceExtraction.js';
+import type { Position } from '../../src/utils/sourceExtraction.js';
+import { NodeFactory } from '../../src/translator/nodeFactory.js';
+import { parseAndTranslate, findFirstNodeOfType } from '../translateHelpers.js';
+import { isClassDeclaration, isVariableDeclaration } from '../../src/guard/index.js';
+import type { SourceRange } from '../../src/ast/baseNode.js';
 
 describe('Source Extraction Utilities', () => {
   const sourceCode = `public class Test {
@@ -326,7 +326,7 @@ import {
   getNodePath,
   getNodeMetadata,
   isNodeType,
-} from '../../src/utils/node-finder.js';
+} from '../../src/utils/nodeFinder.js';
 
 describe('Node Finder Utilities', () => {
   describe('findNodeAtPosition', () => {

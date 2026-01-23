@@ -3,10 +3,10 @@
  * Tests how the parser handles malformed or invalid Apex code.
  */
 
-import { parseApexCode } from '../../src/utils/apex-parser.js';
-import { validateAST } from '../../src/utils/ast-validation.js';
-import { findFirstNodeOfType } from '../translate-helpers.js';
-import { isClassDeclaration, isMethodDeclaration } from '../../src/ast/type-guards.js';
+import { parseApexCode } from '../../src/utils/apexParser.js';
+import { validateAST } from '../../src/utils/astValidation.js';
+import { findFirstNodeOfType } from '../translateHelpers.js';
+import { isClassDeclaration, isMethodDeclaration } from '../../src/guard/index.js';
 
 describe('Error Recovery and Partial Parsing', () => {
   describe('Syntax Errors', () => {

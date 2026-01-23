@@ -2,9 +2,9 @@
  * @file Comprehensive unit tests for NodeFactory.
  */
 
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { ExpressionFactory } from '../../src/translator/NodeFactoryExpressions.js';
-import { LiteralFactory } from '../../src/translator/NodeFactoryLiterals.js';
+import { NodeFactory } from '../../src/translator/nodeFactory.js';
+import { ExpressionFactory } from '../../src/translator/expressionFactory.js';
+import { LiteralFactory } from '../../src/translator/expressionFactory.js';
 import {
   isIfStatement,
   isForLoopStatement,
@@ -19,7 +19,7 @@ import {
   isBooleanVal,
   isNullVal,
   isVariableDeclaration,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 
 describe('NodeFactory', () => {
   describe('Statement Creation', () => {

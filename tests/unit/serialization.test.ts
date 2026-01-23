@@ -4,9 +4,9 @@
  */
 
 import { JsonSerializer, JsonDeserializer } from '../../src/serialization/index.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
-import type { Modifier } from '../../src/ast/Declaration.js';
+import { NodeFactory } from '../../src/translator/nodeFactory.js';
+import { parseAndTranslate, findFirstNodeOfType } from '../translateHelpers.js';
+import type { Modifier } from '../../src/ast/declaration.js';
 import {
   isVariableDeclarationStatement,
   isIdentifier,
@@ -23,7 +23,7 @@ import {
   isForStatement,
   isWhileStatement,
   isVariableDeclaration,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 
 describe('JSON Serialization', () => {
   const serializer = new JsonSerializer({ includeLocation: true });

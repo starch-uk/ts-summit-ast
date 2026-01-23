@@ -3,7 +3,7 @@
  * AST node types for literal values (string, number, boolean, null).
  */
 
-import type { Expression } from './Expression.js';
+import type { Expression } from './expression.js';
 
 /**
  * Base interface for all literal expressions

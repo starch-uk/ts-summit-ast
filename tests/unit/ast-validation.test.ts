@@ -2,9 +2,9 @@
  * @file Unit tests for AST validation utilities.
  */
 
-import { validateAST, compareASTs, getASTStatistics } from '../../src/utils/ast-validation.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { parseApexCode } from '../../src/utils/apex-parser.js';
+import { validateAST, compareASTs, getASTStatistics } from '../../src/utils/astValidation.js';
+import { NodeFactory } from '../../src/translator/nodeFactory.js';
+import { parseApexCode } from '../../src/utils/apexParser.js';
 
 describe('AST Validation', () => {
   describe('validateAST', () => {

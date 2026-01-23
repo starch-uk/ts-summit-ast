@@ -10,9 +10,9 @@
 
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { join, extname } from 'path';
-import { ASTTranslator } from '../translator/ASTTranslator.js';
-import { JsonSerializer } from '../serialization/JsonSerializer.js';
-import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
+import { ASTTranslator } from '../translator/astTranslator.js';
+import { JsonSerializer } from '../serialization/jsonSerializer.js';
+import type { ParseTreeNode } from '../parser/parseTree.js';
 
 /**
  * Options for SummitTool.

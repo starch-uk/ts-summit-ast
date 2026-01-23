@@ -3,10 +3,10 @@
  * AST node types for statements (if, for, while, return, etc.).
  */
 
-import type { ASTNode } from './base.js';
-import type { Expression } from './Expression.js';
-import type { VariableDeclaration } from './Declaration.js';
-import type { TypeRef } from './Type.js';
+import type { ASTNode } from './baseNode.js';
+import type { Expression } from './expression.js';
+import type { VariableDeclaration } from './declaration.js';
+import type { TypeRef } from './baseNode.js';
 
 /**
  * Alias for backward compatibility during migration.

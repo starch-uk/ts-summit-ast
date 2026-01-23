@@ -7,7 +7,7 @@ import {
   parseAndTranslate,
   findFirstNodeOfType,
   assertFullyTranslated,
-} from '../translate-helpers.js';
+} from '../translateHelpers.js';
 import {
   isIfStatement,
   isForStatement,
@@ -26,17 +26,17 @@ import {
   isMethodDeclaration,
   isClassDeclaration,
   isVariableExpression,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 import {
   isNullLiteral,
   isStringLiteral,
   isIntegerLiteral,
   isLongLiteral,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 import { getNodeChildren } from '../../src/utils/traversal.js';
-import type { ASTNode } from '../../src/ast/base.js';
-import type { TypeRef } from '../../src/ast/Type.js';
-import type { VariableExpression } from '../../src/ast/Expression.js';
+import type { ASTNode } from '../../src/ast/baseNode.js';
+import type { TypeRef } from '../../src/ast/baseNode.js';
+import type { VariableExpression } from '../../src/ast/expression.js';
 
 describe('Statement Translation', () => {
   /**

@@ -1,14 +1,13 @@
 /**
  * @file Expression node types.
- * AST node types for expressions (binary, unary, method calls, etc.).
+ * AST node types for expressions (binary, unary, method calls, etc.) and SOQL/SOSL bindings.
  */
 
-import type { ASTNode } from './base.js';
-import type { TypeRef } from './Type.js';
-import type { Statement } from './Statement.js';
-import type { Identifier } from './Identifier.js';
-import type { Initializer } from './Initializer.js';
-import type { SoqlOrSoslBinding } from './SoqlOrSoslBinding.js';
+import type { ASTNode, SourceRange } from './baseNode.js';
+import type { TypeRef } from './baseNode.js';
+import type { Statement } from './statement.js';
+import type { Identifier } from './baseNode.js';
+import type { Initializer } from './initializer.js';
 
 /**
  * Base interface for all expression nodes.
@@ -76,10 +75,6 @@ interface BinaryExpression extends Expression {
 }
 
 /**
- * Binary operators.
- */
-
-/**
  * Unary expression: operator operand or operand operator.
  */
 interface UnaryExpression extends Expression {
@@ -92,10 +87,6 @@ interface UnaryExpression extends Expression {
    */
   readonly prefix: boolean;
 }
-
-/**
- * Unary operators.
- */
 
 /**
  * Assignment expression: left = right.
@@ -122,10 +113,6 @@ interface AssignExpression extends Expression {
   readonly left: Expression;
   readonly right: Expression;
 }
-
-/**
- * Assignment operators.
- */
 
 /**
  * Call expression: target.method(args).
@@ -189,10 +176,6 @@ interface ArrayExpression extends Expression {
 interface NewExpression extends Expression {
   readonly kind: 'NewExpression';
   readonly initializer: Initializer;
-
-  /**
-   * Convenience properties for accessing initializer data.
-   */
 
   /**
    * Type from the initializer.
@@ -334,6 +317,25 @@ interface TriggerContextVariableExpression extends Expression {
   readonly variableName: string;
 }
 
+/**
+ * A SOQL or SOSL expression binding.
+ * In summit-ast, this extends Node() (not NodeWithSourceLocation),
+ * but the source location comes from the bound expression.
+ */
+interface SoqlOrSoslBinding extends ASTNode {
+  readonly kind: 'SoqlOrSoslBinding';
+
+  /**
+   * The bound expression (e.g., :variableName in SOQL).
+   */
+  readonly expr: Expression;
+
+  /**
+   * Optional source location (typically from the bound expression).
+   */
+  readonly location?: SourceRange;
+}
+
 export type {
   Expression,
   BinaryExpression,
@@ -355,4 +357,5 @@ export type {
   SoqlExpression,
   SoslExpression,
   TriggerContextVariableExpression,
+  SoqlOrSoslBinding,
 };

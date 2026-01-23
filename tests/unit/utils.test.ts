@@ -6,8 +6,8 @@ import {
   parseApexDocComment,
   isApexDocCommentString,
   type ApexDocParseOptions,
-} from '../../src/utils/apexdoc-parser.js';
-import { isClassDeclaration, isVariableDeclaration } from '../../src/ast/type-guards.js';
+} from '../../src/utils/apexdocParser.js';
+import { isClassDeclaration, isVariableDeclaration } from '../../src/guard/index.js';
 import {
   getSourceText,
   getSourceRange,
@@ -19,19 +19,19 @@ import {
   isPositionBefore,
   isPositionAfter,
   getDistanceToRange,
-} from '../../src/utils/source-extraction.js';
-import type { Position } from '../../src/utils/source-extraction.js';
-import type { SourceRange } from '../../src/ast/base.js';
-import type { ASTNode } from '../../src/ast/base.js';
-import type { ApexDocParam, ApexDocGroup, ApexDocThrows } from '../../src/ast/ApexDoc.js';
+} from '../../src/utils/sourceExtraction.js';
+import type { Position } from '../../src/utils/sourceExtraction.js';
+import type { SourceRange } from '../../src/ast/baseNode.js';
+import type { ASTNode } from '../../src/ast/baseNode.js';
+import type { ApexDocParam, ApexDocGroup, ApexDocThrows } from '../../src/ast/apexDoc.js';
 import type {
   VariableExpression,
   CompoundStatement,
   IfStatement,
   Identifier,
 } from '../../src/ast/index.js';
-import type { ApexParseError } from '../../src/utils/apex-parser.js';
-import type { ParseTreeNode } from '../../src/parser/ParseTreeTypes.js';
+import type { ApexParseError } from '../../src/utils/apexParser.js';
+import type { ParseTreeNode } from '../../src/parser/parseTree.js';
 import { walkAST } from '../../src/utils/traversal.js';
 import type { ASTWalkVisitor } from '../../src/utils/traversal.js';
 import {
@@ -40,14 +40,14 @@ import {
   getNodePath,
   getNodeMetadata,
   isNodeType,
-} from '../../src/utils/node-finder.js';
+} from '../../src/utils/nodeFinder.js';
 import {
   wouldTriggerRule,
   findRuleMatches,
   validateXPath,
   getXPathFeatureSupport,
-} from '../../src/utils/rule-matching.js';
-import { parseAndTranslate, findFirstNodeOfType } from '../translate-helpers.js';
+} from '../../src/utils/ruleMatching.js';
+import { parseAndTranslate, findFirstNodeOfType } from '../translateHelpers.js';
 import {
   getAncestors,
   buildParentMap,
@@ -56,15 +56,15 @@ import {
   getChildNodesByType,
   getNodeChildren,
 } from '../../src/utils/traversal.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
-import { extractComments, findAssociatedNode } from '../../src/utils/comment-utils.js';
-import type { CommentInfo } from '../../src/utils/comment-utils.js';
+import { NodeFactory } from '../../src/translator/nodeFactory.js';
+import { extractComments, findAssociatedNode } from '../../src/utils/commentUtils.js';
+import type { CommentInfo } from '../../src/utils/commentUtils.js';
 import {
   parseApexCode,
   parseMultipleFiles,
   extractCommentsBatch,
   isUsableParseResult,
-} from '../../src/utils/apex-parser.js';
+} from '../../src/utils/apexParser.js';
 
 describe('ApexDoc Parser', () => {
   describe('isApexDocCommentString', () => {

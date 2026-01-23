@@ -3,7 +3,7 @@
  * Token type enum and Token interface for the Apex lexer.
  */
 
-import type { SourceLocation } from '../ast/base.js';
+import type { SourceLocation } from '../ast/baseNode.js';
 
 /**
  * Token types.

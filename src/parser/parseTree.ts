@@ -5,7 +5,7 @@
  * The translator will work with any parse tree that conforms to this interface.
  */
 
-import type { SourceRange } from '../ast/base.js';
+import type { SourceRange } from '../ast/baseNode.js';
 
 /**
  * Base interface for parse tree nodes

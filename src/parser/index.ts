@@ -3,9 +3,8 @@
  * Main export file for parser components.
  */
 
-export type * from './ParseTreeTypes.js';
-export type { Token } from './TokenTypes.js';
-export { ApexLexer } from './ApexLexer.js';
-export { TokenType } from './TokenTypes.js';
-export { ApexParser } from './ApexParser.js';
-export { parseApex as parseApexSource } from './parseApex.js';
+export type * from './parseTree.js';
+export type { Token } from './tokenType.js';
+export { ApexLexer } from './apexLexer.js';
+export { TokenType } from './tokenType.js';
+export { ApexParser, type ParserContext, parseApex as parseApexSource } from './apexParser.js';

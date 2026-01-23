@@ -3,7 +3,7 @@
  * Ported from com.google.summit.translation.ClassDeclarationTest.
  */
 
-import { parseAndTranslate, findFirstNodeOfType, countNodesOfType } from '../translate-helpers.js';
+import { parseAndTranslate, findFirstNodeOfType, countNodesOfType } from '../translateHelpers.js';
 import {
   isClassDeclaration,
   isEnumDeclaration,
@@ -12,7 +12,7 @@ import {
   isVariableDeclaration,
   isPropertyDeclaration,
   isCompoundStatement,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 import type {
   ClassDeclaration,
   MethodDeclaration,
@@ -23,13 +23,13 @@ import type {
   TypeRef,
   Annotation,
   Modifier,
-} from '../../src/ast/Declaration.js';
+} from '../../src/ast/declaration.js';
 import {
   isAnnotationElementValue,
   isArrayElementValue,
   isExpressionElementValue,
-} from '../../src/ast/type-guards.js';
-import type { ASTNode } from '../../src/ast/base.js';
+} from '../../src/guard/index.js';
+import type { ASTNode } from '../../src/ast/baseNode.js';
 import { getNodeChildren } from '../../src/utils/traversal.js';
 
 /**

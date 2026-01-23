@@ -3,7 +3,7 @@
  * Handles basic Apex syntax without external dependencies.
  */
 
-import { TokenType, type Token } from './TokenTypes.js';
+import { TokenType, type Token } from './tokenType.js';
 
 /**
  * Simple Apex lexer.

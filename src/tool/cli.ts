@@ -5,8 +5,8 @@
  * Command-line interface for the SummitTool.
  */
 
-import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
-import { SummitTool } from './SummitTool.js';
+import type { ParseTreeNode } from '../parser/parseTree.js';
+import { SummitTool } from './summitTool.js';
 
 /**
  * Parse command line arguments.

@@ -3,7 +3,7 @@
  * ApexDoc comment parsing and AST representation.
  */
 
-import type { ASTNode } from './base.js';
+import type { ASTNode } from './baseNode.js';
 
 /**
  * ApexDoc comment block - represents a complete ApexDoc comment (starts with /**).

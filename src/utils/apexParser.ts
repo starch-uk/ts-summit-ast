@@ -8,16 +8,16 @@
 
 /* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
 
-import type { ASTNode } from '../ast/base.js';
-import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
-import { ASTTranslator } from '../translator/ASTTranslator.js';
+import type { ASTNode } from '../ast/baseNode.js';
+import type { ParseTreeNode } from '../parser/parseTree.js';
+import { ASTTranslator } from '../translator/astTranslator.js';
 import { parseApexSource } from '../parser/index.js';
-import type { ExtractedComment, ExtractCommentsOptions } from './comment-utils.js';
-import { extractComments } from './comment-utils.js';
+import type { ExtractedComment, ExtractCommentsOptions } from './commentUtils.js';
+import { extractComments } from './commentUtils.js';
 
 /**
  * Apex parse error information
- * Note: This is different from ParseError in parser/ParseTreeTypes.ts
+ * Note: This is different from ParseError in parser/parseTree.ts
  * This one is for Apex parsing results, the other is for parse tree errors.
  */
 export interface ApexParseError {
@@ -84,7 +84,7 @@ export interface ApexParseOptions {
 
 /**
  * Apex parse result
- * Note: This is different from ParseResult in parser/ParseTreeTypes.ts
+ * Note: This is different from ParseResult in parser/parseTree.ts
  * This one is for Apex parsing results, the other is for parse tree results.
  */
 export interface ApexParseResult {

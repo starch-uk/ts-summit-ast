@@ -4,8 +4,8 @@
  */
 
 import { parseApexSource } from '../src/parser/index.js';
-import { ASTTranslator } from '../src/translator/ASTTranslator.js';
-import type { ASTNode } from '../src/ast/base.js';
+import { ASTTranslator } from '../src/translator/astTranslator.js';
+import type { ASTNode } from '../src/ast/baseNode.js';
 import { walkAST } from '../src/utils/traversal.js';
 import type { ASTWalkVisitor } from '../src/utils/traversal.js';
 

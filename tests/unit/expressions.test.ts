@@ -7,8 +7,8 @@ import {
   parseAndTranslate,
   findFirstNodeOfType,
   assertFullyTranslated,
-} from '../translate-helpers.js';
-import { parseApexCode } from '../../src/utils/apex-parser.js';
+} from '../translateHelpers.js';
+import { parseApexCode } from '../../src/utils/apexParser.js';
 import {
   isEnumDeclaration,
   isClassDeclaration,
@@ -37,9 +37,9 @@ import {
   isValuesInitializer,
   isSizedArrayInitializer,
   isMapInitializer,
-} from '../../src/ast/type-guards.js';
-import type { ASTNode } from '../../src/ast/base.js';
-import { typeRefToCodeString, type TypeRef } from '../../src/ast/Type.js';
+} from '../../src/guard/index.js';
+import type { ASTNode } from '../../src/ast/baseNode.js';
+import { typeRefToCodeString, type TypeRef } from '../../src/ast/baseNode.js';
 import { getNodeChildren, getParentNode } from '../../src/utils/traversal.js';
 
 /**
@@ -970,7 +970,7 @@ describe('Literal Expression Translation', () => {
  * Ported from com.google.summit.translation.InitializerTest.
  */
 
-import type { NewExpression } from '../../src/ast/Expression.js';
+import type { NewExpression } from '../../src/ast/expression.js';
 
 describe('Initializer Translation', () => {
   /**

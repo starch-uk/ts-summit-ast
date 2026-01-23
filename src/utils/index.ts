@@ -3,11 +3,10 @@
  * Main export file for utility functions.
  */
 
-// Re-export ASTVisitor from ast for convenience (the one from utils is ASTWalkVisitor)
-export type { ASTVisitor } from '../ast/base.js';
+// Note: do not re-export ASTVisitor here; it is already exported from ../ast/index.js
 
 // All type exports
-export type { Position, SourceTextOptions } from './source-extraction.js';
+export type { Position, SourceTextOptions } from './sourceExtraction.js';
 export type { ASTWalkVisitor } from './traversal.js';
 export type {
   NodeAtPositionResult,
@@ -16,7 +15,7 @@ export type {
   NodeMetadata,
   NodesInRangeResult,
   FindNodesInRangeOptions,
-} from './node-finder.js';
+} from './nodeFinder.js';
 export type {
   CommentInfo,
   CommentPattern,
@@ -24,7 +23,7 @@ export type {
   FindAssociatedNodeOptions,
   ExtractedComment,
   ExtractCommentsOptions,
-} from './comment-utils.js';
+} from './commentUtils.js';
 export type {
   RuleMatchResult,
   WouldTriggerRuleOptions,
@@ -32,17 +31,17 @@ export type {
   FindRuleMatchesOptions,
   XPathValidationResult,
   XPathFeatureSupport,
-} from './rule-matching.js';
-export type { ApexParseError, ApexParseOptions, ApexParseResult } from './apex-parser.js';
-export type { ApexDocParseOptions } from './apexdoc-parser.js';
-export type { ASTValidationResult, ASTComparisonResult, ASTStatistics } from './ast-validation.js';
+} from './ruleMatching.js';
+export type { ApexParseError, ApexParseOptions, ApexParseResult } from './apexParser.js';
+export type { ApexDocParseOptions } from './apexdocParser.js';
+export type { ASTValidationResult, ASTComparisonResult, ASTStatistics } from './astValidation.js';
 
 // All value exports
-export * from './source-extraction.js';
+export * from './sourceExtraction.js';
 export * from './traversal.js';
-export * from './node-finder.js';
-export * from './comment-utils.js';
-export * from './rule-matching.js';
-export * from './apex-parser.js';
-export * from './apexdoc-parser.js';
-export * from './ast-validation.js';
+export * from './nodeFinder.js';
+export * from './commentUtils.js';
+export * from './ruleMatching.js';
+export * from './apexParser.js';
+export * from './apexdocParser.js';
+export * from './astValidation.js';

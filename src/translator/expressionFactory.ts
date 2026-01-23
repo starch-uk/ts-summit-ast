@@ -23,15 +23,33 @@ import type {
   SoslExpression,
   TriggerContextVariableExpression,
   LambdaParameter,
-} from '../ast/Expression.js';
+} from '../ast/expression.js';
 import type { Expression, Statement } from '../ast/index.js';
-import type { TypeRef } from '../ast/Type.js';
-import type { Identifier } from '../ast/Identifier.js';
-import type { Initializer } from '../ast/Initializer.js';
-import type { SoqlOrSoslBinding } from '../ast/SoqlOrSoslBinding.js';
-import { InitializerFactory } from './NodeFactoryInitializers.js';
-import { SoqlOrSoslBindingFactory } from './NodeFactorySoqlOrSoslBinding.js';
-import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
+import type { TypeRef, Identifier } from '../ast/baseNode.js';
+import type { Initializer, SoqlOrSoslBinding } from '../ast/expression.js';
+import type { NodeFactoryOptions } from './nodeFactory.js';
+import type {
+  StringVal,
+  IntegerVal,
+  DoubleVal,
+  LongVal,
+  DecimalVal,
+  BooleanVal,
+  NullVal,
+} from '../ast/literal.js';
+import type {
+  ConstructorInitializer,
+  ValuesInitializer,
+  SizedArrayInitializer,
+  MapInitializer,
+} from '../ast/initializer.js';
+import type {
+  ExpressionElementValue,
+  AnnotationElementValue,
+  ArrayElementValue,
+  ElementValue,
+} from '../ast/initializer.js';
+import type { Annotation } from '../ast/declaration.js';
 
 /**
  * Options for creating AST nodes.
@@ -556,6 +574,258 @@ export class ExpressionFactory {
       kind: 'TriggerContextVariableExpression',
       location: options?.location,
       variableName,
+    };
+  }
+}
+
+// ============================================================================
+// SoqlOrSoslBinding Factory
+// ============================================================================
+
+/**
+ * Factory for creating SoqlOrSoslBinding AST nodes.
+ */
+export const SoqlOrSoslBindingFactory = {
+  /**
+   * Creates a SoqlOrSoslBinding AST node.
+   * @param expr - The expression to bind.
+   * @param options - Optional factory options.
+   * @returns The created SoqlOrSoslBinding node.
+   */
+  createSoqlOrSoslBinding(expr: Expression, options?: NodeFactoryOptions): SoqlOrSoslBinding {
+    return {
+      expr,
+      kind: 'SoqlOrSoslBinding',
+      // Use the expression's location if available
+      location: options?.location ?? expr.location,
+    };
+  },
+};
+
+// ============================================================================
+// Literal Factory
+// ============================================================================
+
+/**
+ * Factory for literal nodes.
+ */
+export class LiteralFactory {
+  public static createStringVal(
+    value: string,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): StringVal {
+    return {
+      kind: 'StringVal',
+      location: options?.location,
+      raw: raw ?? `"${value}"`,
+      value,
+    };
+  }
+
+  public static createIntegerVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): IntegerVal {
+    return {
+      kind: 'IntegerVal',
+      location: options?.location,
+      raw: raw ?? String(value),
+      value,
+    };
+  }
+
+  public static createDoubleVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): DoubleVal {
+    return {
+      kind: 'DoubleVal',
+      location: options?.location,
+      raw: raw ?? String(value),
+      value,
+    };
+  }
+
+  public static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
+    return {
+      kind: 'LongVal',
+      location: options?.location,
+      raw: raw ?? String(value),
+      value,
+    };
+  }
+
+  public static createDecimalVal(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): DecimalVal {
+    return {
+      kind: 'DecimalVal',
+      location: options?.location,
+      raw: raw ?? String(value),
+      value,
+    };
+  }
+
+  public static createBooleanVal(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+    return {
+      kind: 'BooleanVal',
+      location: options?.location,
+      value,
+    };
+  }
+
+  public static createNullVal(options?: NodeFactoryOptions): NullVal {
+    return {
+      kind: 'NullVal',
+      location: options?.location,
+    };
+  }
+
+  /**
+   * Creates a string literal node (deprecated).
+   * @deprecated Use createStringVal instead.
+   */
+  public static createStringLiteral(
+    value: string,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): StringVal {
+    return this.createStringVal(value, raw, options);
+  }
+
+  /**
+   * Creates a numeric literal node (deprecated).
+   * @deprecated Use createIntegerVal, createDoubleVal, createLongVal, or createDecimalVal instead.
+   */
+  public static createNumberLiteral(
+    value: number,
+    raw?: string,
+    options?: NodeFactoryOptions
+  ): IntegerVal {
+    return this.createIntegerVal(value, raw, options);
+  }
+
+  /**
+   * Creates a boolean literal node (deprecated).
+   * @deprecated Use createBooleanVal instead.
+   */
+  public static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+    return this.createBooleanVal(value, options);
+  }
+
+  /**
+   * Creates a null literal node (deprecated).
+   * @deprecated Use createNullVal instead.
+   */
+  public static createNullLiteral(options?: NodeFactoryOptions): NullVal {
+    return this.createNullVal(options);
+  }
+}
+
+// ============================================================================
+// Initializer Factory
+// ============================================================================
+
+/**
+ * Factory for creating Initializer AST nodes.
+ */
+export class InitializerFactory {
+  public static createConstructorInitializer(
+    type: Readonly<TypeRef>,
+    args: readonly Readonly<Expression>[] = [],
+    options?: Readonly<NodeFactoryOptions>
+  ): ConstructorInitializer {
+    return {
+      args: [...args],
+      kind: 'ConstructorInitializer',
+      location: options?.location,
+      type,
+    };
+  }
+
+  public static createValuesInitializer(
+    type: Readonly<TypeRef>,
+    values: readonly Expression[] = [],
+    options?: Readonly<NodeFactoryOptions>
+  ): ValuesInitializer {
+    return {
+      kind: 'ValuesInitializer',
+      location: options?.location,
+      type,
+      values: [...values],
+    };
+  }
+
+  public static createSizedArrayInitializer(
+    type: Readonly<TypeRef>,
+    size: Readonly<Expression>,
+    options?: Readonly<NodeFactoryOptions>
+  ): SizedArrayInitializer {
+    return {
+      kind: 'SizedArrayInitializer',
+      location: options?.location,
+      size,
+      type,
+    };
+  }
+
+  public static createMapInitializer(
+    type: Readonly<TypeRef>,
+    pairs: readonly { key: Expression; value: Expression }[],
+    options?: Readonly<NodeFactoryOptions>
+  ): MapInitializer {
+    return {
+      kind: 'MapInitializer',
+      location: options?.location,
+      pairs: [...pairs],
+      type,
+    };
+  }
+}
+
+// ============================================================================
+// ElementValue Factory
+// ============================================================================
+
+/**
+ * Factory for creating ElementValue AST nodes.
+ */
+export class ElementValueFactory {
+  public static createExpressionElementValue(
+    value: Readonly<Expression>,
+    options?: Readonly<NodeFactoryOptions>
+  ): ExpressionElementValue {
+    return {
+      kind: 'ExpressionElementValue',
+      location: options?.location,
+      value,
+    };
+  }
+
+  public static createAnnotationElementValue(
+    value: Readonly<Annotation>,
+    options?: Readonly<NodeFactoryOptions>
+  ): AnnotationElementValue {
+    return {
+      kind: 'AnnotationElementValue',
+      location: options?.location,
+      value,
+    };
+  }
+
+  public static createArrayElementValue(
+    values: readonly ElementValue[],
+    options?: Readonly<NodeFactoryOptions>
+  ): ArrayElementValue {
+    return {
+      kind: 'ArrayElementValue',
+      location: options?.location,
+      values: [...values],
     };
   }
 }

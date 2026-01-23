@@ -21,7 +21,7 @@ import type {
   DmlStatement,
   SwitchCase,
   CatchClause,
-} from '../ast/Statement.js';
+} from '../ast/statement.js';
 import type {
   BinaryExpression,
   UnaryExpression,
@@ -42,7 +42,7 @@ import type {
   SoqlExpression,
   SoslExpression,
   TriggerContextVariableExpression,
-} from '../ast/Expression.js';
+} from '../ast/expression.js';
 import type {
   StringVal,
   IntegerVal,
@@ -51,8 +51,8 @@ import type {
   DecimalVal,
   BooleanVal,
   NullVal,
-} from '../ast/Literal.js';
-import type { TypeRef } from '../ast/Type.js';
+} from '../ast/literal.js';
+import type { TypeRef } from '../ast/baseNode.js';
 import type {
   VariableDeclaration,
   ClassDeclaration,
@@ -65,32 +65,32 @@ import type {
   Modifier,
   Annotation,
   Parameter,
-} from '../ast/Declaration.js';
+} from '../ast/declaration.js';
 import type {
   Initializer,
   ConstructorInitializer,
   ValuesInitializer,
   SizedArrayInitializer,
   MapInitializer,
-} from '../ast/Initializer.js';
-import type { Identifier } from '../ast/Identifier.js';
-import type { Expression } from '../ast/Expression.js';
-import type { Statement } from '../ast/Statement.js';
-import type {
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
   ElementValue,
-} from '../ast/ElementValue.js';
-import type { SoqlOrSoslBinding } from '../ast/SoqlOrSoslBinding.js';
-import { StatementFactory } from './NodeFactoryStatements.js';
-import { ExpressionFactory } from './NodeFactoryExpressions.js';
-import { LiteralFactory } from './NodeFactoryLiterals.js';
-import { DeclarationFactory } from './NodeFactoryDeclarations.js';
-import { InitializerFactory } from './NodeFactoryInitializers.js';
-import { ElementValueFactory } from './NodeFactoryElementValues.js';
-import { SoqlOrSoslBindingFactory } from './NodeFactorySoqlOrSoslBinding.js';
-import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
+} from '../ast/initializer.js';
+import type { Identifier } from '../ast/baseNode.js';
+import type { Expression } from '../ast/expression.js';
+import type { Statement } from '../ast/statement.js';
+import type { SoqlOrSoslBinding } from '../ast/expression.js';
+import { StatementFactory } from './statementFactory.js';
+import {
+  ExpressionFactory,
+  LiteralFactory,
+  InitializerFactory,
+  ElementValueFactory,
+  SoqlOrSoslBindingFactory,
+} from './expressionFactory.js';
+import { DeclarationFactory } from './declarationFactory.js';
+import type { NodeFactoryOptions } from './nodeFactory.js';
 
 export type { NodeFactoryOptions };
 

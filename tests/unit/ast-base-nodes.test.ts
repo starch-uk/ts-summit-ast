@@ -2,8 +2,8 @@
  * @file Unit tests for base AST types and node creation.
  */
 
-import type { ASTNode, SourceLocation, SourceRange } from '../../src/ast/base.js';
-import { NodeFactory } from '../../src/translator/NodeFactory.js';
+import type { ASTNode, SourceLocation, SourceRange } from '../../src/ast/baseNode.js';
+import { NodeFactory } from '../../src/translator/nodeFactory.js';
 import {
   isIfStatement,
   isForStatement,
@@ -18,12 +18,12 @@ import {
   isBooleanLiteral,
   isNullLiteral,
   isVariableDeclaration,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 import {
   spanOf,
   UNKNOWN_SOURCE_LOCATION,
   isUnknownLocation,
-} from '../../src/utils/source-extraction.js';
+} from '../../src/utils/sourceExtraction.js';
 
 describe('AST Base Types', () => {
   describe('SourceLocation', () => {

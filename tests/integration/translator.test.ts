@@ -2,8 +2,8 @@
  * @file Integration tests for AST translator.
  */
 
-import { ASTTranslator } from '../../src/translator/ASTTranslator.js';
-import type { ParseTreeNode } from '../../src/parser/ParseTreeTypes.js';
+import { ASTTranslator } from '../../src/translator/astTranslator.js';
+import type { ParseTreeNode } from '../../src/parser/parseTree.js';
 import {
   isIfStatement,
   isReturnStatement,
@@ -15,7 +15,7 @@ import {
   isNullLiteral,
   isBinaryExpression,
   isMethodCallExpression,
-} from '../../src/ast/type-guards.js';
+} from '../../src/guard/index.js';
 
 describe('AST Translator', () => {
   const translator = new ASTTranslator();

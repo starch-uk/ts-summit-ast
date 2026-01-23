@@ -3,12 +3,12 @@
  * AST node types for declarations (classes, interfaces, methods, etc.).
  */
 
-import type { ASTNode, SourceRange } from './base.js';
-import type { TypeRef } from './Type.js';
-import type { Expression } from './Expression.js';
-import type { CompoundStatement } from './Statement.js';
-import type { Identifier } from './Identifier.js';
-import type { ElementValue } from './ElementValue.js';
+import type { ASTNode, SourceRange } from './baseNode.js';
+import type { TypeRef } from './baseNode.js';
+import type { Expression } from './expression.js';
+import type { CompoundStatement } from './statement.js';
+import type { Identifier } from './baseNode.js';
+import type { ElementValue } from './initializer.js';
 
 /**
  * Modifier node types.

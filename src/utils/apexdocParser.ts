@@ -3,8 +3,8 @@
  * Parses ApexDoc comments (starting with /**) into ApexDoc AST nodes.
  */
 
-import type { ASTNode } from '../ast/base.js';
-import type { ParseTreeNode } from '../parser/ParseTreeTypes.js';
+import type { ASTNode } from '../ast/baseNode.js';
+import type { ParseTreeNode } from '../parser/parseTree.js';
 import type {
   ApexDocComment,
   ApexDocBlockTag,
@@ -25,9 +25,9 @@ import type {
   ApexDocLiteral,
   ApexDocContent,
   ApexDocText,
-} from '../ast/ApexDoc.js';
-import type { SourceRange } from '../ast/base.js';
-import { parseApexCode } from './apex-parser.js';
+} from '../ast/apexDoc.js';
+import type { SourceRange } from '../ast/baseNode.js';
+import { parseApexCode } from './apexParser.js';
 
 /**
  * Options for parsing ApexDoc comments.

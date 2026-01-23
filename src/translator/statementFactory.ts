@@ -20,12 +20,12 @@ import type {
   VariableDeclarationStatement,
   DmlStatement,
   CatchClause,
-} from '../ast/Statement.js';
-import type { Expression } from '../ast/Expression.js';
-import type { VariableDeclaration } from '../ast/Declaration.js';
-import type { Statement, SwitchCase } from '../ast/Statement.js';
+} from '../ast/statement.js';
+import type { Expression } from '../ast/expression.js';
+import type { VariableDeclaration } from '../ast/declaration.js';
+import type { Statement, SwitchCase } from '../ast/statement.js';
 
-import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
+import type { NodeFactoryOptions } from './nodeFactory.js';
 
 /**
  * Factory for statement nodes.

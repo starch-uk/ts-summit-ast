@@ -1,20 +1,18 @@
 /**
- * @file Comment-to-node association utilities.
+ * @file Comment utilities.
  * Functions for finding AST nodes associated with comments and extracting comments from source code.
  */
 
-/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
-
-import type { ApexDocComment } from '../ast/ApexDoc.js';
-import type { ASTNode, SourceRange } from '../ast/base.js';
-import type { ApexDocParseOptions } from './apexdoc-parser.js';
-import { findNodeAtPosition } from './node-finder.js';
-import { getDistanceToRange, getSourceRange } from './source-extraction.js';
-import type { Position } from './source-extraction.js';
+import type { ASTNode, SourceRange } from '../ast/baseNode.js';
+import type { ApexDocComment } from '../ast/apexDoc.js';
+import type { ApexDocParseOptions } from './apexdocParser.js';
+import { findNodeAtPosition } from './nodeFinder.js';
+import { getDistanceToRange, getSourceRange } from './sourceExtraction.js';
+import type { Position } from './sourceExtraction.js';
 import {
   isApexDocCommentString as isApexDocComment,
   parseApexDocComment,
-} from './apexdoc-parser.js';
+} from './apexdocParser.js';
 
 /**
  * Comment information.
@@ -52,25 +50,85 @@ export interface AssociatedNodeResult {
 }
 
 /**
- * Options for finding associated node.
+ * Options for finding associated nodes.
  */
 export interface FindAssociatedNodeOptions {
   /**
-   * Maximum character distance to search.
+   * Maximum character distance to search for associated nodes.
+   * @default 100
    */
   readonly maxDistance?: number;
 
   /**
-   * Prefer preceding node over following.
+   * Whether to prefer preceding nodes over following nodes.
+   * @default true
    */
   readonly preferPreceding?: boolean;
+}
+
+/**
+ * Find the AST node associated with a comment.
+ * @param ast - The root AST node to search in.
+ * @param comment - The comment information.
+ * @param source - The source code string.
+ * @param options - Options for finding the associated node.
+ * @returns The associated node result, or null if not found.
+ */
+// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
+export function findAssociatedNode(
+  ast: ASTNode,
+  comment: CommentInfo,
+  source: string,
+  options: FindAssociatedNodeOptions = {}
+): AssociatedNodeResult | null {
+  const defaultMaxDistance = 100;
+  const { maxDistance = defaultMaxDistance, preferPreceding = true } = options;
+  const position: Position = { column: comment.column, line: comment.line };
+
+  // First, try to find a node at the comment position (for inline comments)
+  const nodeAtPosition = findNodeAtPosition(ast, position, { preferLeaf: true });
+  if (nodeAtPosition) {
+    const nodeRange = getSourceRange(nodeAtPosition.node);
+    if (nodeRange) {
+      const distance = getDistanceToRange(position, nodeRange);
+      return {
+        distance,
+        node: nodeAtPosition.node,
+        relationship: 'enclosing',
+      };
+    }
+  }
+
+  // Try to find preceding node (on same line, before comment)
+  if (preferPreceding) {
+    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
+    if (precedingNode) {
+      return precedingNode;
+    }
+  }
+
+  // Try to find following node (on same line or next line, after comment)
+  const followingNode = findFollowingNode(ast, position, source, maxDistance);
+  if (followingNode) {
+    return followingNode;
+  }
+
+  // If preferPreceding was false and we didn't find following, try preceding
+  if (!preferPreceding) {
+    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
+    if (precedingNode) {
+      return precedingNode;
+    }
+  }
+
+  return null;
 }
 
 /**
  * Find a node preceding the comment position.
  * @param ast - The root AST node to search in.
  * @param position - The comment position.
- * @param _source - The source code string (unused).
+ * @param source - The source code string.
  * @param maxDistance - Maximum character distance to search.
  * @returns The preceding node result, or null if not found.
  */
@@ -78,17 +136,18 @@ export interface FindAssociatedNodeOptions {
 function findPrecedingNode(
   ast: ASTNode,
   position: Position,
-  _source: string,
+  source: string,
   maxDistance: number
 ): AssociatedNodeResult | null {
-  // Search backwards on the same line
+  const lines = source.split(/\r?\n/);
+  const lineIndexOffset = 1;
+  const line = lines[position.line - lineIndexOffset] ?? '';
+
   let bestMatch: AssociatedNodeResult | null = null;
   let bestDistance = Infinity;
 
   // Try positions before the comment on the same line
-  const columnDecrement = 1;
-  const minColumn = 1;
-  for (let col = position.column - columnDecrement; col >= minColumn; col--) {
+  for (let col = position.column - 1; col >= 1; col--) {
     const testPosition: Position = { column: col, line: position.line };
     const result = findNodeAtPosition(ast, testPosition, { preferLeaf: false });
 
@@ -96,7 +155,7 @@ function findPrecedingNode(
       const nodeRange = getSourceRange(result.node);
       if (nodeRange?.end.line === position.line && nodeRange.end.column < position.column) {
         const distance = position.column - nodeRange.end.column;
-        if (distance < bestDistance && distance <= maxDistance) {
+        if (distance <= maxDistance && distance < bestDistance) {
           bestDistance = distance;
           bestMatch = {
             distance,
@@ -175,69 +234,6 @@ function findFollowingNode(
 
   return null;
 }
-
-/**
- * Find the AST node associated with a comment.
- * @param ast - The root AST node to search in.
- * @param comment - The comment information.
- * @param source - The source code string.
- * @param options - Options for finding the associated node.
- * @returns The associated node result, or null if not found.
- */
-// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
-export function findAssociatedNode(
-  ast: ASTNode,
-  comment: CommentInfo,
-  source: string,
-  options: FindAssociatedNodeOptions = {}
-): AssociatedNodeResult | null {
-  const defaultMaxDistance = 100;
-  const { maxDistance = defaultMaxDistance, preferPreceding = true } = options;
-  const position: Position = { column: comment.column, line: comment.line };
-
-  // First, try to find a node at the comment position (for inline comments)
-  const nodeAtPosition = findNodeAtPosition(ast, position, { preferLeaf: true });
-  if (nodeAtPosition) {
-    const nodeRange = getSourceRange(nodeAtPosition.node);
-    if (nodeRange) {
-      const distance = getDistanceToRange(position, nodeRange);
-      return {
-        distance,
-        node: nodeAtPosition.node,
-        relationship: 'enclosing',
-      };
-    }
-  }
-
-  // Try to find preceding node (on same line, before comment)
-  if (preferPreceding) {
-    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
-    if (precedingNode) {
-      return precedingNode;
-    }
-  }
-
-  // Try to find following node (on same line or next line, after comment)
-  const followingNode = findFollowingNode(ast, position, source, maxDistance);
-  if (followingNode) {
-    return followingNode;
-  }
-
-  // If preferPreceding was false and we didn't find following, try preceding
-  if (!preferPreceding) {
-    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
-    if (precedingNode) {
-      return precedingNode;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Comment extraction utilities
- * Functions for extracting comments from source code.
- */
 
 /**
  * Comment pattern configuration for recognizing special comment types.
@@ -361,13 +357,6 @@ export interface ExtractCommentsOptions {
    */
   readonly commentPatterns?: CommentPattern[];
 }
-
-/**
- * Match a comment against provided patterns.
- * @param commentText - The comment text to match.
- * @param patterns - The patterns to match against.
- * @returns The match result, or null if no match.
- */
 
 /**
  * Matches a comment against a set of patterns.

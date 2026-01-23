@@ -1,17 +1,12 @@
 /**
- * @file Initializer node types.
- * AST node types for object initializers (constructor calls, array/list/map initialization).
- * In summit-ast, Initializer extends NodeWithSourceLocation, so it IS an AST node.
+ * @file Initializer and element value node types.
+ * AST node types for object initializers and annotation element values.
  */
 
-import type { ASTNode, SourceRange } from './base.js';
-import type { TypeRef } from './Type.js';
-import type { Expression } from './Expression.js';
-
-/**
- * Base type for all initializer nodes.
- * An initializer is an action that occurs after object allocation to setup its initial state.
- */
+import type { ASTNode, SourceRange } from './baseNode.js';
+import type { TypeRef } from './baseNode.js';
+import type { Expression } from './expression.js';
+import type { Annotation } from './declaration.js';
 
 /**
  * Object initializer via a constructor call.
@@ -63,10 +58,49 @@ type Initializer =
   | SizedArrayInitializer
   | ValuesInitializer;
 
+/**
+ * Base type for all element value nodes.
+ * A value that can be assigned to an annotation element.
+ */
+type ElementValue = AnnotationElementValue | ArrayElementValue | ExpressionElementValue;
+
+/**
+ * An element value that is an Expression.
+ */
+interface ExpressionElementValue extends ASTNode {
+  readonly kind: 'ExpressionElementValue';
+  readonly value: Expression;
+  readonly location?: SourceRange;
+}
+
+/**
+ * An element value that is an AnnotationModifier.
+ * In summit-ast, this contains an AnnotationModifier (which extends Modifier).
+ * In ts-summit-ast, we use Annotation directly.
+ */
+interface AnnotationElementValue extends ASTNode {
+  readonly kind: 'AnnotationElementValue';
+  readonly value: Annotation;
+  readonly location?: SourceRange;
+}
+
+/**
+ * An element value that is an array of ElementValues.
+ */
+interface ArrayElementValue extends ASTNode {
+  readonly kind: 'ArrayElementValue';
+  readonly values: ElementValue[];
+  readonly location?: SourceRange;
+}
+
 export type {
   ConstructorInitializer,
   ValuesInitializer,
   SizedArrayInitializer,
   MapInitializer,
   Initializer,
+  ElementValue,
+  ExpressionElementValue,
+  AnnotationElementValue,
+  ArrayElementValue,
 };

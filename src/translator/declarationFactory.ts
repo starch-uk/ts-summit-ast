@@ -15,12 +15,11 @@ import type {
   Modifier,
   Annotation,
   Parameter,
-} from '../ast/Declaration.js';
-import type { Expression } from '../ast/Expression.js';
-import type { TypeRef } from '../ast/Type.js';
-import type { CompoundStatement } from '../ast/Statement.js';
-import type { Identifier } from '../ast/Identifier.js';
-import type { NodeFactoryOptions } from './NodeFactoryOptions.js';
+} from '../ast/declaration.js';
+import type { Expression } from '../ast/expression.js';
+import type { TypeRef, Identifier } from '../ast/baseNode.js';
+import type { CompoundStatement } from '../ast/statement.js';
+import type { NodeFactoryOptions } from './nodeFactory.js';
 
 /**
  * Options for creating AST nodes.
@@ -211,6 +210,79 @@ export class DeclarationFactory {
       kind: 'TypeParameter',
       location: options?.location,
       name,
+    };
+  }
+}
+
+// ============================================================================
+// Type Factory
+// ============================================================================
+
+/**
+ * Factory for type nodes.
+ */
+export class TypeFactory {
+  static createPrimitiveType(name: string, options?: NodeFactoryOptions): TypeRef {
+    return {
+      arrayNesting: 0,
+      components: [
+        {
+          args: [],
+          id: NodeFactory.createIdentifier(name, options),
+        },
+      ],
+      kind: 'TypeRef',
+      location: options?.location,
+    };
+  }
+
+  static createClassType(
+    name: string,
+    packageName?: string,
+    options?: Readonly<NodeFactoryOptions>
+  ): TypeRef {
+    const fullName = packageName != null && packageName !== '' ? `${packageName}.${name}` : name;
+    return {
+      arrayNesting: 0,
+      components: [
+        {
+          args: [],
+          id: NodeFactory.createIdentifier(fullName, options),
+        },
+      ],
+      kind: 'TypeRef',
+      location: options?.location,
+    };
+  }
+
+  static createArrayType(
+    elementType: Readonly<TypeRef>,
+    dimensions = 1,
+    options?: Readonly<NodeFactoryOptions>
+  ): TypeRef {
+    return {
+      arrayNesting: elementType.arrayNesting + dimensions,
+      components: elementType.components,
+      kind: 'TypeRef',
+      location: options?.location ?? elementType.location,
+    };
+  }
+
+  static createGenericType(
+    baseType: Readonly<TypeRef>,
+    typeArguments: readonly TypeRef[],
+    options?: Readonly<NodeFactoryOptions>
+  ): TypeRef {
+    const lastComponentIndex = baseType.components.length - 1;
+    const lastComponent: TypeRefComponent = {
+      ...baseType.components[lastComponentIndex],
+      args: typeArguments,
+    };
+    return {
+      arrayNesting: baseType.arrayNesting,
+      components: [...baseType.components.slice(0, lastComponentIndex), lastComponent],
+      kind: 'TypeRef',
+      location: options?.location ?? baseType.location,
     };
   }
 }
