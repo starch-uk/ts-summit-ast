@@ -81,6 +81,7 @@ import type { Identifier } from '../ast/baseNode.js';
 import type { Expression } from '../ast/expression.js';
 import type { Statement } from '../ast/statement.js';
 import type { SoqlOrSoslBinding } from '../ast/expression.js';
+import type { SourceRange } from '../ast/baseNode.js';
 import { StatementFactory } from './statementFactory.js';
 import {
   ExpressionFactory,
@@ -90,7 +91,6 @@ import {
   SoqlOrSoslBindingFactory,
 } from './expressionFactory.js';
 import { DeclarationFactory } from './declarationFactory.js';
-import type { SourceRange } from '../ast/baseNode.js';
 
 /**
  * Options for creating AST nodes.

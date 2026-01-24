@@ -53,7 +53,11 @@ import type { JsonSerializer } from './jsonSerializer.js';
 // Statement Serialization
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeIfStatement(
   node: Readonly<IfStatement>,
   json: JsonASTNode,
@@ -66,7 +70,11 @@ export function serializeIfStatement(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeForLoopStatement(
   node: Readonly<ForLoopStatement>,
   json: JsonASTNode,
@@ -84,7 +92,11 @@ export function serializeForLoopStatement(
   json.body = serializer.serializeNode(node.body);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeWhileLoopStatement(
   node: Readonly<WhileLoopStatement>,
   json: JsonASTNode,
@@ -94,7 +106,11 @@ export function serializeWhileLoopStatement(
   json.body = serializer.serializeNode(node.body);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeReturnStatement(
   node: Readonly<ReturnStatement>,
   json: JsonASTNode,
@@ -105,7 +121,11 @@ export function serializeReturnStatement(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeCompoundStatement(
   node: Readonly<CompoundStatement>,
   json: JsonASTNode,
@@ -116,6 +136,11 @@ export function serializeCompoundStatement(
   );
 }
 
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeExpressionStatement(
   node: Readonly<ExpressionStatement>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -125,6 +150,11 @@ export function serializeExpressionStatement(
   json.expression = serializer.serializeNode(node.expression);
 }
 
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeVariableDeclarationStatement(
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
   node: Readonly<VariableDeclarationStatement>,
@@ -139,7 +169,11 @@ export function serializeVariableDeclarationStatement(
 // Expression Serialization
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeBinaryExpression(
   node: Readonly<BinaryExpression>,
   json: JsonASTNode,
@@ -150,7 +184,11 @@ export function serializeBinaryExpression(
   json.right = serializer.serializeNode(node.right);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeCallExpression(
   node: Readonly<CallExpression>,
   json: JsonASTNode,
@@ -168,7 +206,11 @@ export function serializeCallExpression(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeFieldExpression(
   node: Readonly<FieldExpression>,
   json: JsonASTNode,
@@ -180,7 +222,11 @@ export function serializeFieldExpression(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeArrayExpression(
   node: Readonly<ArrayExpression>,
   json: JsonASTNode,
@@ -190,7 +236,11 @@ export function serializeArrayExpression(
   json.index = serializer.serializeNode(node.index);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeAssignExpression(
   node: Readonly<AssignExpression>,
   json: JsonASTNode,
@@ -201,7 +251,11 @@ export function serializeAssignExpression(
   json.right = serializer.serializeNode(node.right);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeNewExpression(
   node: Readonly<NewExpression>,
   json: JsonASTNode,
@@ -210,7 +264,11 @@ export function serializeNewExpression(
   json.initializer = serializer.serializeNode(node.initializer);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeVariableExpression(
   node: Readonly<VariableExpression>,
   json: JsonASTNode,
@@ -230,7 +288,11 @@ export function serializeTypeRef(typeRef: Readonly<TypeRef>, serializer: JsonSer
   return serializer.serializeNode(typeRef);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeTypeRefNode(
   node: Readonly<TypeRef>,
   json: JsonASTNode,
@@ -247,12 +309,19 @@ export function serializeTypeRefNode(
 // Literal Serialization
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ */
 export function serializeStringVal(node: Readonly<StringVal>, json: JsonASTNode): void {
   json.value = node.value;
   json.raw = node.raw;
 }
 
+/**
+ * @param node
+ * @param json
+ */
 export function serializeNumericLiteral(
   node: Readonly<DecimalVal | DoubleVal | IntegerVal | LongVal>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -262,6 +331,10 @@ export function serializeNumericLiteral(
   json.raw = node.raw;
 }
 
+/**
+ * @param node
+ * @param json
+ */
 export function serializeBooleanVal(
   node: Readonly<BooleanVal>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -274,6 +347,11 @@ export function serializeBooleanVal(
 // Initializer Serialization
 // ============================================================================
 
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeConstructorInitializer(
   node: Readonly<ConstructorInitializer>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -281,11 +359,15 @@ export function serializeConstructorInitializer(
   serializer: JsonSerializer
 ): void {
   json.type = serializeTypeRef(node.type, serializer);
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
   json.args = node.args.map((arg: Readonly<Expression>) => serializer.serializeNode(arg));
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeValuesInitializer(
   node: Readonly<ValuesInitializer>,
   json: JsonASTNode,
@@ -295,6 +377,11 @@ export function serializeValuesInitializer(
   json.values = node.values.map((val) => serializer.serializeNode(val));
 }
 
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeSizedArrayInitializer(
   node: Readonly<SizedArrayInitializer>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -305,7 +392,11 @@ export function serializeSizedArrayInitializer(
   json.size = serializer.serializeNode(node.size);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeMapInitializer(
   node: Readonly<MapInitializer>,
   json: JsonASTNode,
@@ -322,6 +413,11 @@ export function serializeMapInitializer(
 // ElementValue Serialization
 // ============================================================================
 
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeExpressionElementValue(
   node: Readonly<ExpressionElementValue>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -331,6 +427,11 @@ export function serializeExpressionElementValue(
   json.value = serializer.serializeNode(node.value);
 }
 
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeAnnotationElementValue(
   node: Readonly<AnnotationElementValue>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -340,7 +441,11 @@ export function serializeAnnotationElementValue(
   json.value = serializer.serializeNode(node.value);
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeArrayElementValue(
   node: Readonly<ArrayElementValue>,
   json: JsonASTNode,
@@ -354,7 +459,11 @@ export function serializeArrayElementValue(
 // Declaration Serialization
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeAnnotationArgument(
   node: Readonly<AnnotationArgument>,
   json: JsonASTNode,
@@ -370,6 +479,11 @@ export function serializeAnnotationArgument(
   }
 }
 
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeVariableDeclaration(
   node: Readonly<VariableDeclaration>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -391,6 +505,10 @@ export function serializeVariableDeclaration(
 
 // Modifier serialization
 
+/**
+ * @param node
+ * @param json
+ */
 export function serializeModifier(
   node: Readonly<Modifier>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
@@ -409,7 +527,12 @@ export function serializeModifier(
  * @param json - The JSON object to populate with serialized properties.
  * @param serializer - The serializer instance to use for recursive serialization.
  */
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 export function serializeNodeProperties(
   node: ASTNode,
   json: JsonASTNode,
@@ -568,7 +691,11 @@ export function serializeNodeProperties(
 
 // Fallback for unknown node types
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
+/**
+ * @param node
+ * @param json
+ * @param serializer
+ */
 function serializeUnknownNode(node: ASTNode, json: JsonASTNode, serializer: JsonSerializer): void {
   // Try to serialize all enumerable properties
   for (const key in node) {

@@ -3,8 +3,8 @@
  * Parses expressions: assignment, ternary, logical, equality, comparison, arithmetic, unary, primary.
  */
 
-import type { ParseTreeNode } from './parseTree.js';
 import type { SourceRange } from '../ast/baseNode.js';
+import type { ParseTreeNode } from './parseTree.js';
 import { TokenType, type Token } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
 

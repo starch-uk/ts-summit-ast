@@ -9,11 +9,7 @@ import type { ParseTreeNode } from '../parser/parseTree.js';
 import type { ASTNode } from '../ast/baseNode.js';
 import type { Statement } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
-import type {
-  Declaration,
-  Annotation,
-  TypeParameter,
-} from '../ast/declaration.js';
+import type { Declaration, Annotation, TypeParameter } from '../ast/declaration.js';
 import type { Modifier } from '../ast/declaration.js';
 import type { TypeRef } from '../ast/baseNode.js';
 import type { ElementValue } from '../ast/initializer.js';
@@ -460,7 +456,6 @@ class ASTTranslator implements TranslateContext {
     return stmtTranslate.translateIfStatement(this, node);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for reference
   // @ts-expect-error -- Kept for reference
   private translateIfStatementOld(_node: Readonly<ParseTreeNode>): Statement {
     // Try to get named properties first (for integration tests)
@@ -529,9 +524,7 @@ class ASTTranslator implements TranslateContext {
     return stmtTranslate.translateExpressionStatement(this, node);
   }
 
-  private translateEnhancedForLoopStatement(
-    node: Readonly<ParseTreeNode>
-  ): Statement {
+  private translateEnhancedForLoopStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateEnhancedForLoopStatement(this, node);
   }
 
@@ -559,9 +552,7 @@ class ASTTranslator implements TranslateContext {
     return stmtTranslate.translateThrowStatement(this, node);
   }
 
-  private translateVariableDeclarationStatement(
-    node: Readonly<ParseTreeNode>
-  ): Statement {
+  private translateVariableDeclarationStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateVariableDeclarationStatement(this, node);
   }
 
@@ -791,7 +782,7 @@ class ASTTranslator implements TranslateContext {
           ? (this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name'))
           : undefined;
       }
-      current = (current as { parent?: ParseTreeNode }).parent as ParseTreeNode | undefined;
+      current = (current as { parent?: ParseTreeNode }).parent;
     }
     return undefined;
   }

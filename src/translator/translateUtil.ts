@@ -4,7 +4,6 @@
  */
 
 import type { ParseTreeNode } from '../parser/parseTree.js';
-import type { NodeFactoryOptions } from './nodeFactory.js';
 import type { TypeRef, ASTNode } from '../ast/baseNode.js';
 import type {
   Modifier,
@@ -17,6 +16,7 @@ import type { ElementValue } from '../ast/initializer.js';
 import type { Expression } from '../ast/expression.js';
 import type { Statement } from '../ast/statement.js';
 import type { Declaration } from '../ast/declaration.js';
+import type { NodeFactoryOptions } from './nodeFactory.js';
 import { NodeFactory } from './nodeFactory.js';
 
 /**
@@ -41,62 +41,62 @@ export interface TranslateContext {
   /**
    * Translate a parse tree node to an AST node.
    */
-  translateNode(node: Readonly<ParseTreeNode>): ASTNode;
+  translateNode: (node: Readonly<ParseTreeNode>) => ASTNode;
 
   /**
    * Try to translate node as a statement.
    */
-  tryTranslateStatement(node: Readonly<ParseTreeNode>, nodeType: string): Statement | null;
+  tryTranslateStatement: (node: Readonly<ParseTreeNode>, nodeType: string) => Statement | null;
 
   /**
    * Translate compound statement (block).
    */
-  translateCompoundStatement(node: Readonly<ParseTreeNode>): Statement;
+  translateCompoundStatement: (node: Readonly<ParseTreeNode>) => Statement;
 
   /**
    * Try to translate node as an expression.
    */
-  tryTranslateExpression(node: Readonly<ParseTreeNode>, nodeType: string): Expression | null;
+  tryTranslateExpression: (node: Readonly<ParseTreeNode>, nodeType: string) => Expression | null;
 
   /**
    * Try to translate node as a declaration.
    */
-  tryTranslateDeclaration(node: Readonly<ParseTreeNode>, nodeType: string): Declaration | null;
+  tryTranslateDeclaration: (node: Readonly<ParseTreeNode>, nodeType: string) => Declaration | null;
 
   /**
    * Try to translate node as a type reference.
    */
-  tryTranslateType(node: Readonly<ParseTreeNode>): TypeRef | null;
+  tryTranslateType: (node: Readonly<ParseTreeNode>) => TypeRef | null;
 
   /**
    * Get child expression from node.
    */
-  getChildExpression(
+  getChildExpression: (
     node: Readonly<ParseTreeNode>,
     propertyName: string,
     optionalOrAlt?: boolean | string,
     altPropertyName?: string
-  ): Expression | undefined;
+  ) => Expression | undefined;
 
   /**
    * Get child statement from node.
    */
-  getChildStatement(
+  getChildStatement: (
     node: Readonly<ParseTreeNode>,
     propertyName: string,
     altPropertyName?: string,
     optional?: boolean
-  ): Statement | undefined;
+  ) => Statement | undefined;
 
   /**
    * Get location option for node factory.
    */
-  getLocationOption(node: Readonly<ParseTreeNode>): Readonly<NodeFactoryOptions> | undefined;
+  getLocationOption: (node: Readonly<ParseTreeNode>) => Readonly<NodeFactoryOptions> | undefined;
 
   /**
    * Get current class name (for constructor detection).
    */
-  getClassName(node: Readonly<ParseTreeNode>): string | undefined;
+  getClassName: (node: Readonly<ParseTreeNode>) => string | undefined;
 
   /**
    * Whether to include location information.
@@ -106,45 +106,45 @@ export interface TranslateContext {
   /**
    * Get children from node.
    */
-  getChildren(
+  getChildren: (
     node: Readonly<ParseTreeNode>,
     propertyName?: string,
     altPropertyName?: string
-  ): Readonly<ParseTreeNode>[];
+  ) => Readonly<ParseTreeNode>[];
 
   /**
    * Get child from node.
    */
-  getChild(
+  getChild: (
     node: Readonly<ParseTreeNode>,
     propertyName: string,
     altPropertyName?: string
-  ): Readonly<ParseTreeNode> | null;
+  ) => Readonly<ParseTreeNode> | null;
 
   /**
    * Get property from node.
    */
-  getProperty<T>(node: Readonly<ParseTreeNode>, ...names: string[]): T | undefined;
+  getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
 
   /**
    * Get text from node.
    */
-  getText(node: Readonly<ParseTreeNode>): string | undefined;
+  getText: (node: Readonly<ParseTreeNode>) => string | undefined;
 
   /**
    * Extract modifiers from node.
    */
-  extractModifiers(node: Readonly<ParseTreeNode>): Modifier[];
+  extractModifiers: (node: Readonly<ParseTreeNode>) => Modifier[];
 
   /**
    * Extract annotations from node.
    */
-  extractAnnotations(node: Readonly<ParseTreeNode>): Annotation[];
+  extractAnnotations: (node: Readonly<ParseTreeNode>) => Annotation[];
 
   /**
    * Extract type parameters from node.
    */
-  extractTypeParameters(node: Readonly<ParseTreeNode>): TypeParameter[];
+  extractTypeParameters: (node: Readonly<ParseTreeNode>) => TypeParameter[];
 
   /**
    * Current class name (for constructor detection).
@@ -393,23 +393,27 @@ export function tryTranslateType(
 /**
  * Extract modifiers from a parse tree node.
  * @param ctx - Translation context with helper methods.
+ * @param ctx.getChild
+ * @param ctx.getChildren
+ * @param ctx.getText
+ * @param ctx.getProperty
  * @param node - The parse tree node to extract modifiers from.
  * @returns An array of Modifier nodes found in the parse tree.
  */
 export function extractModifiers(
   ctx: {
-    getChild(
+    getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode> | null;
-    getChildren(
+    ) => Readonly<ParseTreeNode> | null;
+    getChildren: (
       node: Readonly<ParseTreeNode>,
       propertyName?: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode>[];
-    getText(node: Readonly<ParseTreeNode>): string | undefined;
-    getProperty<T>(node: Readonly<ParseTreeNode>, ...names: string[]): T | undefined;
+    ) => Readonly<ParseTreeNode>[];
+    getText: (node: Readonly<ParseTreeNode>) => string | undefined;
+    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
   },
   node: Readonly<ParseTreeNode>
 ): Modifier[] {
@@ -458,24 +462,29 @@ export function extractModifiers(
 /**
  * Extract type parameters from a parse tree node.
  * @param ctx - Translation context with helper methods.
+ * @param ctx.getChild
+ * @param ctx.getChildren
+ * @param ctx.getText
+ * @param ctx.getProperty
+ * @param ctx.tryTranslateType
  * @param node - The parse tree node to extract type parameters from.
  * @returns An array of TypeParameter nodes found in the parse tree.
  */
 export function extractTypeParameters(
   ctx: {
-    getChild(
+    getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode> | null;
-    getChildren(
+    ) => Readonly<ParseTreeNode> | null;
+    getChildren: (
       node: Readonly<ParseTreeNode>,
       propertyName?: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode>[];
-    getText(node: Readonly<ParseTreeNode>): string | undefined;
-    getProperty<T>(node: Readonly<ParseTreeNode>, ...names: string[]): T | undefined;
-    tryTranslateType(node: Readonly<ParseTreeNode>): TypeRef | null;
+    ) => Readonly<ParseTreeNode>[];
+    getText: (node: Readonly<ParseTreeNode>) => string | undefined;
+    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
+    tryTranslateType: (node: Readonly<ParseTreeNode>) => TypeRef | null;
   },
   node: Readonly<ParseTreeNode>
 ): TypeParameter[] {
@@ -522,24 +531,29 @@ export function extractTypeParameters(
  * Build a single Annotation from an annotation parse node.
  * Used by extractAnnotations and recursively by parseElementValue for nested annotations.
  * @param ctx - Translation context with helper methods.
+ * @param ctx.getChild
+ * @param ctx.getChildren
+ * @param ctx.getText
+ * @param ctx.getProperty
+ * @param ctx.parseElementValue
  * @param annotationNode - The parse tree node representing the annotation.
  * @returns The built Annotation node, or null if the annotation cannot be built.
  */
 export function buildAnnotationFromNode(
   ctx: {
-    getChild(
+    getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode> | null;
-    getChildren(
+    ) => Readonly<ParseTreeNode> | null;
+    getChildren: (
       node: Readonly<ParseTreeNode>,
       propertyName?: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode>[];
-    getText(node: Readonly<ParseTreeNode>): string | undefined;
-    getProperty<T>(node: Readonly<ParseTreeNode>, ...names: string[]): T | undefined;
-    parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null;
+    ) => Readonly<ParseTreeNode>[];
+    getText: (node: Readonly<ParseTreeNode>) => string | undefined;
+    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
+    parseElementValue: (valueNode: Readonly<ParseTreeNode>) => ElementValue | null;
   },
   annotationNode: Readonly<ParseTreeNode>
 ): Annotation | null {
@@ -587,25 +601,31 @@ export function buildAnnotationFromNode(
 /**
  * Parse an annotation argument value (annotation_expression, new_expression/array, or expression) into an ElementValue.
  * @param ctx - Translation context with helper methods.
+ * @param ctx.getChild
+ * @param ctx.getChildren
+ * @param ctx.getLocationOption
+ * @param ctx.buildAnnotationFromNode
+ * @param ctx.tryTranslateExpression
+ * @param ctx.parseElementValue
  * @param valueNode - The parse tree node containing the annotation argument value to parse.
  * @returns The parsed ElementValue node, or null if the value cannot be parsed.
  */
 export function parseElementValue(
   ctx: {
-    getChild(
+    getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode> | null;
-    getChildren(
+    ) => Readonly<ParseTreeNode> | null;
+    getChildren: (
       node: Readonly<ParseTreeNode>,
       propertyName?: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode>[];
-    getLocationOption(node: Readonly<ParseTreeNode>): Readonly<NodeFactoryOptions> | undefined;
-    buildAnnotationFromNode(annotationNode: Readonly<ParseTreeNode>): Annotation | null;
-    tryTranslateExpression(node: Readonly<ParseTreeNode>, nodeType: string): Expression | null;
-    parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null;
+    ) => Readonly<ParseTreeNode>[];
+    getLocationOption: (node: Readonly<ParseTreeNode>) => Readonly<NodeFactoryOptions> | undefined;
+    buildAnnotationFromNode: (annotationNode: Readonly<ParseTreeNode>) => Annotation | null;
+    tryTranslateExpression: (node: Readonly<ParseTreeNode>, nodeType: string) => Expression | null;
+    parseElementValue: (valueNode: Readonly<ParseTreeNode>) => ElementValue | null;
   },
   valueNode: Readonly<ParseTreeNode>
 ): ElementValue | null {
@@ -640,22 +660,25 @@ export function parseElementValue(
 /**
  * Extract annotations from a parse tree node.
  * @param ctx - Translation context with helper methods.
+ * @param ctx.getChild
+ * @param ctx.getChildren
+ * @param ctx.buildAnnotationFromNode
  * @param node - The parse tree node to extract annotations from.
  * @returns An array of Annotation nodes found in the parse tree.
  */
 export function extractAnnotations(
   ctx: {
-    getChild(
+    getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode> | null;
-    getChildren(
+    ) => Readonly<ParseTreeNode> | null;
+    getChildren: (
       node: Readonly<ParseTreeNode>,
       propertyName?: string,
       altPropertyName?: string
-    ): Readonly<ParseTreeNode>[];
-    buildAnnotationFromNode(annotationNode: Readonly<ParseTreeNode>): Annotation | null;
+    ) => Readonly<ParseTreeNode>[];
+    buildAnnotationFromNode: (annotationNode: Readonly<ParseTreeNode>) => Annotation | null;
   },
   node: Readonly<ParseTreeNode>
 ): Annotation[] {

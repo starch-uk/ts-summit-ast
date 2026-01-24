@@ -871,6 +871,7 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
   }
 
   // Traditional for loop
+
   /**
    * Initialization: Could be variable declaration or expression(s).
    * Can be multiple expressions separated by commas: i=0, j=0.

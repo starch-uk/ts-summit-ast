@@ -191,6 +191,8 @@ export function parseDeclaration(ctx: ParserContext): ParseTreeNode | null {
 /**
  * Parses an interface declaration from the token stream.
  * @param ctx - The parser context.
+ * @param preAnnotations
+ * @param preModifiers
  * @returns The interface declaration parse tree node.
  * @throws {Error} If the interface declaration is malformed or unexpected tokens are encountered.
  */
@@ -339,6 +341,8 @@ export function parseTriggerDeclaration(ctx: ParserContext): ParseTreeNode {
 /**
  * Parses an enum declaration from the token stream.
  * @param ctx - The parser context.
+ * @param preAnnotations
+ * @param preModifiers
  * @returns The enum declaration parse tree node.
  */
 export function parseEnumDeclaration(
@@ -608,6 +612,7 @@ export function checkType(ctx: ParserContext): boolean {
 // ============================================================================
 // Annotation Parsing
 // ============================================================================
+
 /**
  * Parse annotation type declaration: `@interface` Name { members }.
  * @param ctx - The parser context.
@@ -859,6 +864,7 @@ export function parseAnnotationArgument(ctx: ParserContext): ParseTreeNode | nul
     }
   } else if (ctx.check(TokenType.LEFT_BRACE)) {
     // Parse array initializer: {1, 2, 3} or {@Y, @Z}
+
     /**
      * Position before consuming {.
      */
@@ -1210,9 +1216,7 @@ export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
         const typeNameNode =
           children.find((c) => c.type === 'name') ?? children.find((c) => c.type === 'identifier');
         typeName = typeNameNode
-          ? (typeNameNode.text ??
-            (typeNameNode as { name?: string }).name ??
-            'Unknown')
+          ? (typeNameNode.text ?? (typeNameNode as { name?: string }).name ?? 'Unknown')
           : 'Unknown';
       }
     }
@@ -1220,8 +1224,7 @@ export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
     // Qualified types like "System.debug" are method calls, not constructors
     // Also check the type node's text property directly
     const typeText = type.text ?? (type.children?.[0] as { text?: string })?.text;
-    const isQualified =
-      (typeName && typeName.includes('.')) || (typeText && typeText.includes('.'));
+    const isQualified = (typeName && typeName.includes('.')) || typeText?.includes('.');
     if (isQualified) {
       // This is not a constructor, restore position and return null
       // so it can be parsed as a statement
@@ -1244,10 +1247,10 @@ export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
     const nameToken: Token = {
       location: savedTypeLocation
         ? {
-            line: savedTypeLocation.start.line,
             column: savedTypeLocation.start.column,
+            line: savedTypeLocation.start.line,
           }
-        : (type.location?.start ?? { line: 1, column: 1 }),
+        : (type.location?.start ?? { column: 1, line: 1 }),
       text: savedTypeName ?? 'Unknown',
       type: TokenType.IDENTIFIER,
     };

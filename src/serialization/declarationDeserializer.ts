@@ -28,9 +28,9 @@ import type { AnnotationArgument, VariableDeclaration, Modifier } from '../ast/d
 import type { Annotation } from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
 import type { Identifier } from '../ast/baseNode.js';
+import { NodeFactory } from '../translator/nodeFactory.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
-import { NodeFactory } from '../translator/nodeFactory.js';
 import { getStringProperty, getNumberProperty } from './astDeserializer.js';
 import { deserializeTypeRefNode } from './expressionDeserializer.js';
 
@@ -374,6 +374,7 @@ export function deserializeAnnotationArgument(
  * Deserializes a VariableDeclaration.
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
+ * @param locationOption.location
  * @param deserializer - The deserializer instance.
  * @returns The deserialized VariableDeclaration node.
  */

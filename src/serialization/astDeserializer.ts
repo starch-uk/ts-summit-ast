@@ -16,10 +16,10 @@ import type {
 } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import type { VariableDeclaration } from '../ast/declaration.js';
-import type { JsonASTNode } from './jsonSerializer.js';
-import type { JsonDeserializer } from './jsonDeserializer.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
 import { isExpression, isStatement, isIdentifier } from '../guard/index.js';
+import type { JsonASTNode } from './jsonSerializer.js';
+import type { JsonDeserializer } from './jsonDeserializer.js';
 import {
   deserializeBinaryExpression,
   deserializeCallExpression,

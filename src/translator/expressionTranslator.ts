@@ -17,6 +17,11 @@ import type { TypeRef } from '../ast/baseNode.js';
 import type { TranslateContext } from './translateUtil.js';
 import { TranslationError } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
+
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateStringVal(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -27,6 +32,10 @@ export function translateStringVal(
   return NodeFactory.createStringVal(value, text, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateIntegerVal(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -51,6 +60,10 @@ export function translateIntegerVal(
   return NodeFactory.createIntegerVal(value, text, opts);
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateBooleanVal(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -60,6 +73,10 @@ export function translateBooleanVal(
   return NodeFactory.createBooleanVal(value, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateMethodCall(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -186,6 +203,10 @@ export function translateMethodCall(
   return callExpr;
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateBinaryExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -259,6 +280,10 @@ export function translateBinaryExpression(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateUnaryExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -294,6 +319,10 @@ export function translateUnaryExpression(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateAssignExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -314,6 +343,10 @@ export function translateAssignExpression(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateFieldAccess(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -376,6 +409,10 @@ export function translateFieldAccess(
   return fieldExpr;
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateArrayAccess(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -418,6 +455,10 @@ export function translateArrayAccess(
   return NodeFactory.createArrayExpression(array, index, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateTernaryExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -459,6 +500,10 @@ export function translateTernaryExpression(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateCastExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -494,6 +539,10 @@ export function translateCastExpression(
   return NodeFactory.createCastExpression(type, expression, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateInstanceOfExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -524,6 +573,10 @@ export function translateInstanceOfExpression(
   return NodeFactory.createInstanceOfExpression(expression, type, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateNewExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -670,6 +723,10 @@ export function translateNewExpression(
   return newExpr;
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateNewArrayExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -719,6 +776,10 @@ export function translateNewArrayExpression(
   return NodeFactory.createNewExpression(initializer, locationOption);
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateLambdaExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -759,6 +820,10 @@ export function translateLambdaExpression(
   return NodeFactory.createLambdaExpression(parameters, body, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateParenthesizedExpression(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -781,6 +846,10 @@ export function translateParenthesizedExpression(
   return NodeFactory.createParenthesizedExpression(expression, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateSoqlQuery(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -805,6 +874,10 @@ export function translateSoqlQuery(
   return NodeFactory.createSoqlExpression(query, bindings, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateSoslQuery(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -829,6 +902,10 @@ export function translateSoslQuery(
   return NodeFactory.createSoslExpression(query, bindings, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateTriggerContextVariable(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>

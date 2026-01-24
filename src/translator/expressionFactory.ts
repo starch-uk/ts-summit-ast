@@ -27,7 +27,6 @@ import type {
 import type { Expression, Statement } from '../ast/index.js';
 import type { TypeRef, Identifier } from '../ast/baseNode.js';
 import type { Initializer, SoqlOrSoslBinding } from '../ast/expression.js';
-import type { NodeFactoryOptions } from './nodeFactory.js';
 import type {
   StringVal,
   IntegerVal,
@@ -50,6 +49,7 @@ import type {
   ElementValue,
 } from '../ast/initializer.js';
 import type { Annotation } from '../ast/declaration.js';
+import type { NodeFactoryOptions } from './nodeFactory.js';
 
 /**
  * Options for creating AST nodes.
@@ -688,6 +688,9 @@ export class LiteralFactory {
 
   /**
    * Creates a string literal node (deprecated).
+   * @param value
+   * @param raw
+   * @param options
    * @deprecated Use createStringVal instead.
    */
   public static createStringLiteral(
@@ -700,6 +703,9 @@ export class LiteralFactory {
 
   /**
    * Creates a numeric literal node (deprecated).
+   * @param value
+   * @param raw
+   * @param options
    * @deprecated Use createIntegerVal, createDoubleVal, createLongVal, or createDecimalVal instead.
    */
   public static createNumberLiteral(
@@ -712,6 +718,8 @@ export class LiteralFactory {
 
   /**
    * Creates a boolean literal node (deprecated).
+   * @param value
+   * @param options
    * @deprecated Use createBooleanVal instead.
    */
   public static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
@@ -720,6 +728,7 @@ export class LiteralFactory {
 
   /**
    * Creates a null literal node (deprecated).
+   * @param options
    * @deprecated Use createNullVal instead.
    */
   public static createNullLiteral(options?: NodeFactoryOptions): NullVal {

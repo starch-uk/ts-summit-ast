@@ -340,17 +340,15 @@ describe('Class Declaration Translation', () => {
         // created per statement (one parse tree node per statement with comma-separated declarators).
         const sameType = typeRefToCodeString(current.type) === typeRefToCodeString(prev.type);
         const currentModifiers = (current.modifiers ?? [])
-          .map((m) => (m as Modifier).keyword)
+          .map((m) => m.keyword)
           .sort()
           .join(',');
         const prevModifiers = (prev.modifiers ?? [])
-          .map((m) => (m as Modifier).keyword)
+          .map((m) => m.keyword)
           .sort()
           .join(',');
         const sameModifiers = currentModifiers === prevModifiers;
-        const sameLine =
-          (current as VariableDeclaration).location?.start.line ===
-          (prev as VariableDeclaration).location?.start.line;
+        const sameLine = current.location?.start.line === prev.location?.start.line;
 
         if (sameType && sameModifiers && sameLine) {
           // Same group - fields from the same statement (same line)

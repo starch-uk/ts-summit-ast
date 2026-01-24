@@ -129,6 +129,7 @@ export function findAssociatedNode(
  * @param ast - The root AST node to search in.
  * @param position - The comment position.
  * @param source - The source code string.
+ * @param _source
  * @param maxDistance - Maximum character distance to search.
  * @returns The preceding node result, or null if not found.
  */

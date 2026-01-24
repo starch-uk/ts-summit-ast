@@ -20,6 +20,11 @@ import type { CompoundStatement } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import type { TranslateContext } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
+
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateClassDeclaration(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -620,6 +625,10 @@ export function translateClassDeclaration(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateEnumDeclaration(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -685,6 +694,7 @@ export function translateEnumDeclaration(
 
 /**
  * Translate a variable declaration from parse tree to AST.
+ * @param ctx
  * @param node - The parse tree node representing the variable declaration.
  * @returns The translated VariableDeclaration AST node.
  * @throws {TranslationError} If the variable declaration is malformed.
@@ -741,6 +751,10 @@ export function translateInterfaceDeclaration(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateMethodDeclaration(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -824,6 +838,7 @@ export function translateMethodDeclaration(
 /**
  * Translate instance or static initializer block to a MethodDeclaration
  * (summit-ast models initializer blocks as method-like declarations).
+ * @param ctx
  * @param node - The parse tree node representing the initializer block.
  * @returns The translated method declaration representing the initializer block.
  */
@@ -849,6 +864,10 @@ export function translateInitializerBlock(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateFieldDeclaration(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -1036,6 +1055,10 @@ export function translateFieldDeclaration(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translatePropertyDeclaration(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -1072,6 +1095,7 @@ export function translatePropertyDeclaration(
 
 /**
  * Translate a variable declaration from parse tree to AST.
+ * @param ctx
  * @param node - The parse tree node representing the variable declaration.
  * @returns The translated VariableDeclaration AST node.
  * @throws {TranslationError} If the variable declaration is malformed.

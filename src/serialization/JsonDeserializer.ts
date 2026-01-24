@@ -8,6 +8,7 @@ import type { ASTNode, SourceRange } from '../ast/baseNode.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 
 import { deserializeNodeByKind } from './astDeserializer.js';
+
 /**
  * Options for JSON deserialization.
  */
@@ -31,7 +32,6 @@ export class JsonDeserializer {
     // Options are currently unused but kept for future use
     void _options;
   }
-
 
   /**
    * Deserialize a JSON string to an AST node.

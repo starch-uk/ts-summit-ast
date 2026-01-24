@@ -786,7 +786,7 @@ public void utility() {}`;
           (tag) => tag.kind === 'ApexDocGroup'
         );
         expect(groupTag).toBeDefined();
-        expect((groupTag as ApexDocGroup).groupName).toBe('Utilities');
+        expect(groupTag!.groupName).toBe('Utilities');
       });
 
       it('should parse ApexDoc with multiple block tags', () => {

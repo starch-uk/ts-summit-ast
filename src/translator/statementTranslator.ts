@@ -19,6 +19,10 @@ import type { TranslateContext } from './translateUtil.js';
 import { TranslationError } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateIfStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -73,6 +77,10 @@ export function translateIfStatement(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateWhileLoopStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -97,6 +105,10 @@ export function translateWhileLoopStatement(
   return NodeFactory.createWhileLoopStatement(condition, body, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateReturnStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -119,6 +131,10 @@ export function translateReturnStatement(
   return NodeFactory.createReturnStatement(expression, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateCompoundStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -178,6 +194,10 @@ export function translateCompoundStatement(
   return NodeFactory.createCompoundStatement(statements, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateExpressionStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -203,6 +223,10 @@ export function translateExpressionStatement(
   return NodeFactory.createExpressionStatement(expression, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateForLoopStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -344,6 +368,10 @@ export function translateForLoopStatement(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateEnhancedForLoopStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -447,6 +475,10 @@ export function translateEnhancedForLoopStatement(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateDoWhileLoopStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -475,6 +507,10 @@ export function translateDoWhileLoopStatement(
   return NodeFactory.createDoWhileLoopStatement(body, condition, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateSwitchStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -535,7 +571,7 @@ export function translateSwitchStatement(
       // Apex "when value" puts the value expression(s) as first children before the 'statements' node
       if (!value) {
         const ch = ctx.getChildren(caseNodeReadonly);
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
         const valueNodes = ch.filter(
           (c: Readonly<ParseTreeNode>) => (c as { type?: string }).type !== 'statements'
         );
@@ -565,7 +601,7 @@ export function translateSwitchStatement(
       if (!statementsNode) {
         // Look for a child with type 'statements' in the children array
         const children = ctx.getChildren(caseNodeReadonly);
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
         statementsNode =
           children.find((child: Readonly<ParseTreeNode>) => child.type === 'statements') ?? null;
       }
@@ -598,13 +634,13 @@ export function translateSwitchStatement(
             .filter((stmt): stmt is Statement => stmt !== null)
         : [];
       cases.push({
+        downcastDeclarations,
         kind: 'SwitchCase',
         location: caseNode.location,
+        matchType,
         statements,
         value,
         values,
-        matchType,
-        downcastDeclarations,
       });
     }
   }
@@ -635,7 +671,6 @@ export function translateSwitchStatement(
       // Look for a child with type 'statements' in the children array
       const children = ctx.getChildren(defaultNode);
 
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
       statementsNode =
         children.find((child: Readonly<ParseTreeNode>) => child.type === 'statements') ?? null;
     }
@@ -683,6 +718,10 @@ export function translateSwitchStatement(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateTryStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -861,6 +900,10 @@ export function translateTryStatement(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateBreakStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -869,6 +912,10 @@ export function translateBreakStatement(
   return NodeFactory.createBreakStatement(label, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateContinueStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -877,6 +924,10 @@ export function translateContinueStatement(
   return NodeFactory.createContinueStatement(label, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateThrowStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -909,6 +960,10 @@ export function translateThrowStatement(
   return NodeFactory.createThrowStatement(expression, ctx.getLocationOption(node));
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateVariableDeclarationStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
@@ -947,6 +1002,10 @@ export function translateVariableDeclarationStatement(
   );
 }
 
+/**
+ * @param ctx
+ * @param node
+ */
 export function translateDmlStatement(
   ctx: TranslateContext,
   node: Readonly<ParseTreeNode>
