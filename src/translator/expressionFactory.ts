@@ -420,14 +420,12 @@ export class ExpressionFactory {
 
     options?: Readonly<NodeFactoryOptions>
   ): LambdaExpression {
-    const result: LambdaExpression = {
+    return {
       body,
       kind: 'LambdaExpression',
       location: options?.location,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- readonly array is assignable to mutable array for readonly property
-      parameters: parameters as any,
+      parameters: [...parameters],
     };
-    return result;
   }
 
   /**

@@ -56,6 +56,7 @@ const allRules = {
 	// All individual plugin rules not in configs
 	...allPluginRules,
 	// Customize specific rules (these override any config defaults)
+	'@typescript-eslint/no-deprecated': 'off',
 	'@typescript-eslint/naming-convention': [
 		'error',
 		{
@@ -181,6 +182,8 @@ export default [
 			'@typescript-eslint/no-unsafe-member-access': 'off',
 			// Disable no-unsafe-call for test files (Vitest globals/matchers are type-safe but ESLint can't resolve them)
 			'@typescript-eslint/no-unsafe-call': 'off',
+			// Disable no-unsafe-assignment for test files (tests often work with loosely typed values such as errors or JSON)
+			'@typescript-eslint/no-unsafe-assignment': 'off',
 		},
 	},
 	{
