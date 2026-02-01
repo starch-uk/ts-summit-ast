@@ -9,11 +9,42 @@ import { TokenType, type Token } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
 
 /**
+ * Stub used before real parser is assigned (mutually recursive).
+ * @throws {Error} Always, if called before assignment.
+ */
+const parserStubNull = (): ParseTreeNode | null => {
+  throw new Error('parser used before assignment');
+};
+
+/**
+ * Stub used before real parser is assigned (returns node).
+ * @throws {Error} Always, if called before assignment.
+ */
+const parserStubNode = (): ParseTreeNode => {
+  throw new Error('parser used before assignment');
+};
+
+/** Forward declarations for mutually recursive expression parsers. */
+let parseAssignment: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseTernary: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseOr: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseAnd: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseEquality: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseComparison: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseAddition: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseMultiplication: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseUnary: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parsePrimary: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+let parseNewExpression: (ctx: Readonly<ParserContext>) => ParseTreeNode = parserStubNode;
+let parseSoqlSoslQuery: (ctx: Readonly<ParserContext>) => ParseTreeNode = parserStubNode;
+let parseLambdaParameter: (ctx: Readonly<ParserContext>) => ParseTreeNode | null = parserStubNull;
+
+/**
  * Parse expression (entry point - delegates to assignment).
  * @param ctx - The parser context.
  * @returns The parsed expression parse tree node, or null if parsing fails.
  */
-export function parseExpression(ctx: ParserContext): ParseTreeNode | null {
+function parseExpression(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   return parseAssignment(ctx);
 }
 
@@ -22,7 +53,7 @@ export function parseExpression(ctx: ParserContext): ParseTreeNode | null {
  * @param ctx - The parser context.
  * @returns The parsed assignment expression parse tree node, or null if parsing fails.
  */
-export function parseAssignment(ctx: ParserContext): ParseTreeNode | null {
+parseAssignment = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseTernary(ctx);
 
   if (
@@ -53,14 +84,14 @@ export function parseAssignment(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parse ternary/null-coalescing expression.
  * @param ctx - The parser context.
  * @returns The parsed ternary expression parse tree node, or null if parsing fails.
  */
-export function parseTernary(ctx: ParserContext): ParseTreeNode | null {
+parseTernary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseOr(ctx);
 
   // Null coalescing operator ??
@@ -90,7 +121,10 @@ export function parseTernary(ctx: ParserContext): ParseTreeNode | null {
             ? ctx.combineLocations(expr.location, elseExpr.location)
             : ((): SourceRange => {
                 const ternaryExpressionOffset = 3;
-                return ctx.getLocation(ctx.current - ternaryExpressionOffset, ctx.current);
+                return ctx.getLocation(
+                  ctx.getCurrent() - ternaryExpressionOffset,
+                  ctx.getCurrent()
+                );
               })(),
         type: 'ternary_expression',
       };
@@ -98,14 +132,14 @@ export function parseTernary(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parse logical OR expression.
  * @param ctx - The parser context.
  * @returns The parsed OR expression parse tree node, or null if parsing fails.
  */
-export function parseOr(ctx: ParserContext): ParseTreeNode | null {
+parseOr = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseAnd(ctx);
 
   while (ctx.match(TokenType.OR)) {
@@ -122,14 +156,14 @@ export function parseOr(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parse logical AND expression.
  * @param ctx - The parser context.
  * @returns The parsed AND expression parse tree node, or null if parsing fails.
  */
-export function parseAnd(ctx: ParserContext): ParseTreeNode | null {
+parseAnd = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseEquality(ctx);
 
   while (ctx.match(TokenType.AND)) {
@@ -144,7 +178,7 @@ export function parseAnd(ctx: ParserContext): ParseTreeNode | null {
             : (right.location ??
               ((): SourceRange => {
                 const previousTokenOffset = 1;
-                return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+                return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
               })()),
         operator: operator.text,
         type: 'binary_expression',
@@ -153,14 +187,14 @@ export function parseAnd(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parse equality expression (==, !=).
  * @param ctx - The parser context.
  * @returns The parsed equality expression parse tree node, or null if parsing fails.
  */
-export function parseEquality(ctx: ParserContext): ParseTreeNode | null {
+parseEquality = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseComparison(ctx);
 
   while (ctx.match(TokenType.EQUALS, TokenType.NOT_EQUALS)) {
@@ -175,7 +209,7 @@ export function parseEquality(ctx: ParserContext): ParseTreeNode | null {
             : (right.location ??
               ((): SourceRange => {
                 const previousTokenOffset = 1;
-                return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+                return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
               })()),
         operator: operator.text,
         type: 'binary_expression',
@@ -184,14 +218,14 @@ export function parseEquality(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parse comparison expression (<, >, <=, >=, instanceof).
  * @param ctx - The parser context.
  * @returns The parsed comparison expression parse tree node, or null if parsing fails.
  */
-export function parseComparison(ctx: ParserContext): ParseTreeNode | null {
+parseComparison = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseAddition(ctx);
 
   while (
@@ -213,7 +247,7 @@ export function parseComparison(ctx: ParserContext): ParseTreeNode | null {
             : (right.location ??
               ((): SourceRange => {
                 const previousTokenOffset = 1;
-                return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+                return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
               })()),
         operator: operator.text,
         type: 'binary_expression',
@@ -236,7 +270,7 @@ export function parseComparison(ctx: ParserContext): ParseTreeNode | null {
               : (right.location ??
                 ((): SourceRange => {
                   const previousTokenOffset = 1;
-                  return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+                  return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
                 })()),
           type: 'instanceof_expression',
         };
@@ -245,14 +279,14 @@ export function parseComparison(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parse addition/subtraction expression (+, -).
  * @param ctx - The parser context.
  * @returns The parsed addition expression parse tree node, or null if parsing fails.
  */
-export function parseAddition(ctx: ParserContext): ParseTreeNode | null {
+parseAddition = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseMultiplication(ctx);
 
   while (ctx.match(TokenType.PLUS, TokenType.MINUS)) {
@@ -267,7 +301,7 @@ export function parseAddition(ctx: ParserContext): ParseTreeNode | null {
             : (right.location ??
               ((): SourceRange => {
                 const previousTokenOffset = 1;
-                return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+                return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
               })()),
         operator: operator.text,
         type: 'binary_expression',
@@ -276,14 +310,14 @@ export function parseAddition(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parse multiplication/division/modulo expression (*, /, %).
  * @param ctx - The parser context.
  * @returns The parsed multiplication expression parse tree node, or null if parsing fails.
  */
-export function parseMultiplication(ctx: ParserContext): ParseTreeNode | null {
+parseMultiplication = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   let expr = parseUnary(ctx);
 
   while (ctx.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)) {
@@ -298,7 +332,7 @@ export function parseMultiplication(ctx: ParserContext): ParseTreeNode | null {
             : (right.location ??
               ((): SourceRange => {
                 const previousTokenOffset = 1;
-                return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+                return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
               })()),
         operator: operator.text,
         type: 'binary_expression',
@@ -307,14 +341,14 @@ export function parseMultiplication(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 /**
  * Parses a unary expression (prefix and postfix operators).
  * @param ctx - The parser context.
  * @returns The parsed unary expression parse tree node, or null if parsing fails.
  */
-export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
+parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   const singleIndexOffset = 1;
   // Prefix operators
   if (
@@ -350,7 +384,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
     expr = {
       children: [expr],
       location: ctx.combineLocations(
-        expr.location ?? ctx.getLocation(ctx.current - singleIndexOffset, ctx.current),
+        expr.location ?? ctx.getLocation(ctx.getCurrent() - singleIndexOffset, ctx.getCurrent()),
         ctx.locationToRange(operator.location)
       ),
       operator: operator.text,
@@ -364,7 +398,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
   if (expr !== null && (expr.type === 'super_expression' || expr.type === 'this_expression')) {
     // Get the token that created this expression (super or this)
     const previousTokenIndex = 1;
-    const token = ctx.tokens[ctx.current - previousTokenIndex];
+    const token = ctx.tokens[ctx.getCurrent() - previousTokenIndex];
     // Parse postfix operations (method calls, field access, array access)
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Loop condition is intentional
     while (true) {
@@ -384,13 +418,13 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
         const args: ParseTreeNode[] = [];
         if (!ctx.check(TokenType.RIGHT_PAREN)) {
           do {
-            const beforeArg = ctx.current;
+            const beforeArg = ctx.getCurrent();
             const arg = parseExpression(ctx);
             if (arg) {
               args.push(arg);
             }
             // Safety check: ensure we always advance
-            if (ctx.current === beforeArg && !ctx.isAtEnd()) {
+            if (ctx.getCurrent() === beforeArg && !ctx.isAtEnd()) {
               ctx.advance();
             }
           } while (ctx.match(TokenType.COMMA));
@@ -407,7 +441,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
             expr.location ?? ctx.locationToRange(token.location),
             ((): SourceRange => {
               const previousTokenOffset = 1;
-              return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+              return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
             })()
           ),
           type: 'method_call_expression',
@@ -424,13 +458,9 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
           break;
         }
         // Special case: .class is a class literal (e.g., Object.class)
-        let field: { location: { line: number; column: number }; text: string; type: TokenType };
-        if (ctx.check(TokenType.CLASS)) {
-          // Handle .class as a special field access
-          field = ctx.advance();
-        } else {
-          field = ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
-        }
+        const field = ctx.check(TokenType.CLASS)
+          ? ctx.advance()
+          : ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
         const fieldAccessNode: any = {
           children: [
@@ -465,7 +495,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
             expr.location ?? ctx.locationToRange(token.location),
             ((): SourceRange => {
               const previousTokenOffset = 1;
-              return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+              return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
             })()
           ),
           type: 'array_access_expression',
@@ -495,12 +525,12 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
       const args: ParseTreeNode[] = [];
       if (!ctx.check(TokenType.RIGHT_PAREN)) {
         do {
-          const beforeArg = ctx.current;
+          const beforeArg = ctx.getCurrent();
           const arg = parseExpression(ctx);
           if (arg) {
             args.push(arg);
           }
-          if (ctx.current === beforeArg && !ctx.isAtEnd()) {
+          if (ctx.getCurrent() === beforeArg && !ctx.isAtEnd()) {
             ctx.advance();
           }
         } while (ctx.match(TokenType.COMMA));
@@ -514,7 +544,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
           expr.location ??
           ((): SourceRange => {
             const previousTokenOffset = 1;
-            return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+            return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
           })(),
         type: 'method_call_expression',
       };
@@ -526,12 +556,9 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
       expr = methodCallNode;
     } else if (ctx.match(TokenType.DOT)) {
       // Field access
-      let field: { location: { line: number; column: number }; text: string; type: TokenType };
-      if (ctx.check(TokenType.CLASS)) {
-        field = ctx.advance();
-      } else {
-        field = ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
-      }
+      const field = ctx.check(TokenType.CLASS)
+        ? ctx.advance()
+        : ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
       const fieldAccessNode: any = {
@@ -564,7 +591,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
           expr.location ??
           ((): SourceRange => {
             const previousTokenOffset = 1;
-            return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+            return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
           })(),
         type: 'array_access_expression',
       };
@@ -574,7 +601,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return expr;
-}
+};
 
 // ============================================================================
 // Primary Expression Parsing
@@ -586,7 +613,7 @@ export function parseUnary(ctx: ParserContext): ParseTreeNode | null {
  * @returns The parsed primary expression parse tree node, or null if parsing fails.
  * @throws {Error} If the primary expression is malformed or unexpected tokens are encountered.
  */
-export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
+parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   if (ctx.match(TokenType.BOOLEAN_LITERAL, TokenType.TRUE, TokenType.FALSE)) {
     const token = ctx.previous();
     return {
@@ -654,7 +681,7 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
   // Cast expression: (Type) expression
   // Parenthesized expression: (expression)
   if (ctx.match(TokenType.LEFT_PAREN)) {
-    const savedPos = ctx.current;
+    const savedPos = ctx.getCurrent();
 
     // Try to parse as lambda: check if we have parameters followed by =>
     const lambdaParams: ParseTreeNode[] = [];
@@ -683,11 +710,11 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
             isLambda = true;
           } else {
             // Not a lambda, reset
-            ctx.current = savedPos;
+            ctx.setCurrent(savedPos);
           }
         } else {
           // No closing paren, not a lambda
-          ctx.current = savedPos;
+          ctx.setCurrent(savedPos);
         }
       } else {
         // Could be empty lambda: () =>
@@ -696,11 +723,11 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
           if (ctx.check(TokenType.ARROW)) {
             isLambda = true;
           } else {
-            ctx.current = savedPos;
+            ctx.setCurrent(savedPos);
           }
         } else {
           // Reset to check for cast or parenthesized
-          ctx.current = savedPos;
+          ctx.setCurrent(savedPos);
         }
       }
     }
@@ -710,23 +737,20 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
       ctx.consume(TokenType.ARROW, 'Expected => after lambda parameters');
 
       // Lambda body can be an expression or a block
-      let body: ParseTreeNode;
-      if (ctx.check(TokenType.LEFT_BRACE)) {
-        // Block body: { statements }
-        body = ctx.parseBlock();
-      } else {
-        // Expression body
-        const expr = parseExpression(ctx);
-        if (!expr) {
-          throw new Error('Expected lambda body expression or block');
-        }
-        body = expr;
-      }
+      const body: ParseTreeNode = ctx.check(TokenType.LEFT_BRACE)
+        ? ctx.parseBlock()
+        : ((): ParseTreeNode => {
+            const expr = parseExpression(ctx);
+            if (!expr) {
+              throw new Error('Expected lambda body expression or block');
+            }
+            return expr;
+          })();
 
       return {
         children: [{ children: lambdaParams, type: 'parameters' }, body],
         // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous position offset
-        location: ctx.getLocation(savedPos - 1, ctx.current),
+        location: ctx.getLocation(savedPos - 1, ctx.getCurrent()),
         type: 'lambda_expression',
       };
     }
@@ -746,7 +770,7 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
       }
     }
     // Not a cast, reset to before type parsing and parse as parenthesized expression
-    ctx.current = savedPos;
+    ctx.setCurrent(savedPos);
     // Now parse as parenthesized expression - we're at the position after LEFT_PAREN
     const expr = parseExpression(ctx);
     if (expr === null) {
@@ -757,7 +781,7 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
     const arrayIndexOffset = 1;
     return {
       children: [expr],
-      location: ctx.getLocation(savedPos - arrayIndexOffset, ctx.current),
+      location: ctx.getLocation(savedPos - arrayIndexOffset, ctx.getCurrent()),
       type: 'parenthesized_expression',
     };
   }
@@ -796,15 +820,11 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
       ctx.match(TokenType.DOT)
     ) {
       // Trigger context variables can be keywords (new) or identifiers (old, isInsert, etc.)
-      let triggerVar: Token;
       const nextToken = ctx.peek();
-      if (nextToken.type === TokenType.NEW) {
-        // Consume NEW keyword token
-        triggerVar = ctx.advance();
-      } else {
-        // Consume identifier token (for old, isInsert, etc.)
-        triggerVar = ctx.consume(TokenType.IDENTIFIER, 'Expected trigger context variable');
-      }
+      const triggerVar: Token =
+        nextToken.type === TokenType.NEW
+          ? ctx.advance()
+          : ctx.consume(TokenType.IDENTIFIER, 'Expected trigger context variable');
       const triggerVarName = triggerVar.text.toLowerCase();
       if (
         [
@@ -843,7 +863,8 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
             },
           ],
           location: ctx.combineLocations(
-            expr.location ?? ctx.getLocation(ctx.current - singleIndexOffset, ctx.current),
+            expr.location ??
+              ctx.getLocation(ctx.getCurrent() - singleIndexOffset, ctx.getCurrent()),
             ctx.locationToRange(triggerVar.location)
           ),
           type: 'field_access_expression',
@@ -870,13 +891,13 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
         const args: ParseTreeNode[] = [];
         if (!ctx.check(TokenType.RIGHT_PAREN)) {
           do {
-            const beforeArg = ctx.current;
+            const beforeArg = ctx.getCurrent();
             const arg = parseExpression(ctx);
             if (arg) {
               args.push(arg);
             }
             // Safety check: ensure we always advance
-            if (ctx.current === beforeArg && !ctx.isAtEnd()) {
+            if (ctx.getCurrent() === beforeArg && !ctx.isAtEnd()) {
               ctx.advance();
             }
           } while (ctx.match(TokenType.COMMA));
@@ -888,7 +909,7 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
           children: [expr, { children: args, type: 'arguments' }],
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
-            ctx.getLocation(ctx.current - singleIndexOffset, ctx.current)
+            ctx.getLocation(ctx.getCurrent() - singleIndexOffset, ctx.getCurrent())
           ),
           type: 'method_call_expression',
         };
@@ -901,13 +922,9 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
       } else if (ctx.match(TokenType.DOT)) {
         // Field access
         // Special case: .class is a class literal (e.g., Object.class)
-        let field: Token;
-        if (ctx.check(TokenType.CLASS)) {
-          // Handle .class as a special field access
-          field = ctx.advance();
-        } else {
-          field = ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
-        }
+        const field = ctx.check(TokenType.CLASS)
+          ? ctx.advance()
+          : ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
         const fieldAccessNode: any = {
           children: [
@@ -939,7 +956,7 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
             expr.location ?? ctx.locationToRange(token.location),
             ((): SourceRange => {
               const previousTokenOffset = 1;
-              return ctx.getLocation(ctx.current - previousTokenOffset, ctx.current);
+              return ctx.getLocation(ctx.getCurrent() - previousTokenOffset, ctx.getCurrent());
             })()
           ),
           type: 'array_access_expression',
@@ -962,23 +979,23 @@ export function parsePrimary(ctx: ParserContext): ParseTreeNode | null {
       children: [expr],
       location: ((): SourceRange => {
         const parenthesizedExpressionOffset = 2;
-        return ctx.getLocation(ctx.current - parenthesizedExpressionOffset, ctx.current);
+        return ctx.getLocation(ctx.getCurrent() - parenthesizedExpressionOffset, ctx.getCurrent());
       })(),
       type: 'parenthesized_expression',
     };
   }
 
   return null;
-}
+};
 
 /**
  * Parses a lambda parameter from lambda expressions. Can be either a simple identifier or a typed parameter (Type identifier).
  * @param ctx - The parser context.
  * @returns The parsed lambda parameter parse tree node, or null if parsing fails.
  */
-export function parseLambdaParameter(ctx: ParserContext): ParseTreeNode | null {
+parseLambdaParameter = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   // Try to parse as typed parameter: Type name
-  const savedPos = ctx.current;
+  const savedPos = ctx.getCurrent();
   const type = ctx.parseType();
   if (type && ctx.check(TokenType.IDENTIFIER)) {
     const name = ctx.consume(TokenType.IDENTIFIER, 'Expected parameter name');
@@ -987,13 +1004,13 @@ export function parseLambdaParameter(ctx: ParserContext): ParseTreeNode | null {
         type,
         { location: ctx.locationToRange(name.location), text: name.text, type: 'name' },
       ],
-      location: ctx.getLocation(savedPos, ctx.current),
+      location: ctx.getLocation(savedPos, ctx.getCurrent()),
       type: 'lambda_parameter',
     };
   }
 
   // Reset and try as untyped parameter: just identifier
-  ctx.current = savedPos;
+  ctx.setCurrent(savedPos);
 
   if (ctx.check(TokenType.IDENTIFIER)) {
     const name = ctx.consume(TokenType.IDENTIFIER, 'Expected parameter name');
@@ -1005,7 +1022,7 @@ export function parseLambdaParameter(ctx: ParserContext): ParseTreeNode | null {
   }
 
   return null;
-}
+};
 
 /**
  * Parses a bracketed SOQL/SOSL query (e.g., `[SELECT ...]`) into a parse tree node.
@@ -1013,15 +1030,15 @@ export function parseLambdaParameter(ctx: ParserContext): ParseTreeNode | null {
  * @returns The parsed SOQL/SOSL query parse tree node.
  * @throws {Error} If the query is malformed or unexpected tokens are encountered.
  */
-export function parseSoqlSoslQuery(ctx: ParserContext): ParseTreeNode {
+parseSoqlSoslQuery = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
 
   /**
    * Start of actual query text (after [).
    */
-  const queryStart = ctx.current;
+  const queryStart = ctx.getCurrent();
   let queryText = '';
 
   // Read until matching ]
@@ -1084,11 +1101,11 @@ export function parseSoqlSoslQuery(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     text: queryText, // Query text without brackets
     type: queryType,
   };
-}
+};
 
 /**
  * Parses a new object instantiation expression from the source code.
@@ -1096,10 +1113,10 @@ export function parseSoqlSoslQuery(ctx: ParserContext): ParseTreeNode {
  * @returns The parsed new expression parse tree node.
  * @throws {Error} If the new expression is malformed or unexpected tokens are encountered.
  */
-export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
+parseNewExpression = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   // Don't skip whitespace here - parseType() will do it
   const type = ctx.parseType();
   if (!type) {
@@ -1119,7 +1136,7 @@ export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
     ctx.consume(TokenType.RIGHT_BRACKET, 'Expected ] after array size');
     return {
       children: [type, size],
-      location: ctx.getLocation(start, ctx.current),
+      location: ctx.getLocation(start, ctx.getCurrent()),
       type: 'new_array_expression',
     };
   }
@@ -1130,7 +1147,7 @@ export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
     if (!ctx.check(TokenType.RIGHT_BRACE)) {
       do {
         // For Map, entries are key => value, for List/Set just values
-        const savedPos = ctx.current;
+        const savedPos = ctx.getCurrent();
         const firstExpr = parseExpression(ctx);
         if (firstExpr && ctx.match(TokenType.ARROW)) {
           // It's a Map entry: key => value
@@ -1139,9 +1156,9 @@ export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
             initializers.push({
               children: [firstExpr, secondExpr],
               location: ctx.combineLocations(
-                firstExpr.location ?? ctx.getLocation(savedPos, ctx.current),
+                firstExpr.location ?? ctx.getLocation(savedPos, ctx.getCurrent()),
                 // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous position offset
-                secondExpr.location ?? ctx.getLocation(ctx.current - 1, ctx.current)
+                secondExpr.location ?? ctx.getLocation(ctx.getCurrent() - 1, ctx.getCurrent())
               ),
               type: 'map_entry',
             });
@@ -1152,7 +1169,7 @@ export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
         }
         // Safety check: ensure we always advance
         if (
-          ctx.current === savedPos &&
+          ctx.getCurrent() === savedPos &&
           !ctx.isAtEnd() &&
           !ctx.check(TokenType.COMMA) &&
           !ctx.check(TokenType.RIGHT_BRACE)
@@ -1169,7 +1186,7 @@ export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
 
     const newNode = {
       children,
-      location: ctx.getLocation(start, ctx.current),
+      location: ctx.getLocation(start, ctx.getCurrent()),
       type: 'new_expression',
     };
     return newNode;
@@ -1180,13 +1197,13 @@ export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
   const args: ParseTreeNode[] = [];
   if (!ctx.check(TokenType.RIGHT_PAREN)) {
     do {
-      const beforeArg = ctx.current;
+      const beforeArg = ctx.getCurrent();
       const arg = parseExpression(ctx);
       if (arg) {
         args.push(arg);
       }
       // Safety check: ensure we always advance
-      if (ctx.current === beforeArg && !ctx.isAtEnd()) {
+      if (ctx.getCurrent() === beforeArg && !ctx.isAtEnd()) {
         ctx.advance();
       }
     } while (ctx.match(TokenType.COMMA));
@@ -1200,7 +1217,24 @@ export function parseNewExpression(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'new_expression',
   };
-}
+};
+
+export {
+  parseExpression,
+  parseAssignment,
+  parseTernary,
+  parseOr,
+  parseAnd,
+  parseEquality,
+  parseComparison,
+  parseAddition,
+  parseMultiplication,
+  parseUnary,
+  parsePrimary,
+  parseLambdaParameter,
+  parseSoqlSoslQuery,
+  parseNewExpression,
+};

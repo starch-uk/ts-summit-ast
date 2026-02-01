@@ -21,7 +21,7 @@ import type {
  * @param node - The AST node to check.
  * @returns True if the node is a Declaration.
  */
-export function isDeclaration(node: ASTNode): node is Declaration {
+function isDeclaration(node: ASTNode): node is Declaration {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -41,7 +41,7 @@ export function isDeclaration(node: ASTNode): node is Declaration {
  * @param node - The AST node to check.
  * @returns True if the node is a Modifier.
  */
-export function isModifier(node: ASTNode): node is Modifier {
+function isModifier(node: ASTNode): node is Modifier {
   return 'kind' in node && node.kind === 'Modifier';
 }
 
@@ -50,7 +50,7 @@ export function isModifier(node: ASTNode): node is Modifier {
  * @param node - The AST node to check.
  * @returns True if the node is an Identifier.
  */
-export function isIdentifier(node: ASTNode): node is Identifier {
+function isIdentifier(node: ASTNode): node is Identifier {
   return 'kind' in node && node.kind === 'Identifier';
 }
 
@@ -60,7 +60,7 @@ export function isIdentifier(node: ASTNode): node is Identifier {
  * @param node - The AST node to check.
  * @returns True if the node is a TypeRef.
  */
-export function isTypeRef(node: ASTNode): node is TypeRef {
+function isTypeRef(node: ASTNode): node is TypeRef {
   return 'kind' in node && node.kind === 'TypeRef';
 }
 
@@ -69,7 +69,7 @@ export function isTypeRef(node: ASTNode): node is TypeRef {
  * @param node - The AST node to check.
  * @returns True if the node is a TypeRef.
  */
-export function isType(node: ASTNode): node is TypeRef {
+function isType(node: ASTNode): node is TypeRef {
   return isTypeRef(node);
 }
 
@@ -78,7 +78,7 @@ export function isType(node: ASTNode): node is TypeRef {
  * @param node - The AST node to check.
  * @returns True if the node is a ClassDeclaration.
  */
-export function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
+function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
   return 'kind' in node && node.kind === 'ClassDeclaration';
 }
 
@@ -87,7 +87,7 @@ export function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
  * @param node - The AST node to check.
  * @returns True if the node is a MethodDeclaration.
  */
-export function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
+function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
   return 'kind' in node && node.kind === 'MethodDeclaration';
 }
 
@@ -96,7 +96,7 @@ export function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
  * @param node - The AST node to check.
  * @returns True if the node is a VariableDeclaration.
  */
-export function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
+function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
   return 'kind' in node && node.kind === 'VariableDeclaration';
 }
 
@@ -105,7 +105,7 @@ export function isVariableDeclaration(node: ASTNode): node is VariableDeclaratio
  * @param node - The AST node to check.
  * @returns True if the node is an EnumDeclaration.
  */
-export function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
+function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
   return 'kind' in node && node.kind === 'EnumDeclaration';
 }
 
@@ -114,7 +114,7 @@ export function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
  * @param node - The AST node to check.
  * @returns True if the node is an InterfaceDeclaration.
  */
-export function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
+function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
   return 'kind' in node && node.kind === 'InterfaceDeclaration';
 }
 
@@ -123,7 +123,7 @@ export function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclarat
  * @param node - The AST node to check.
  * @returns True if the node is a PropertyDeclaration.
  */
-export function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaration {
+function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaration {
   return 'kind' in node && node.kind === 'PropertyDeclaration';
 }
 
@@ -132,6 +132,21 @@ export function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaratio
  * @param node - The AST node to check.
  * @returns True if the node is an EnumValue.
  */
-export function isEnumValue(node: ASTNode): node is EnumValue {
+function isEnumValue(node: ASTNode): node is EnumValue {
   return 'kind' in node && node.kind === 'EnumValue';
 }
+
+export {
+  isDeclaration,
+  isModifier,
+  isIdentifier,
+  isTypeRef,
+  isType,
+  isClassDeclaration,
+  isMethodDeclaration,
+  isVariableDeclaration,
+  isEnumDeclaration,
+  isInterfaceDeclaration,
+  isPropertyDeclaration,
+  isEnumValue,
+};

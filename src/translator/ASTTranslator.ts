@@ -34,6 +34,14 @@ import * as exprTranslate from './expressionTranslator.js';
 import * as classTranslate from './declarationTranslator.js';
 import * as memberTranslate from './declarationTranslator.js';
 
+/** Readonly view of translation error for callback params (satisfies prefer-readonly-parameter-types). */
+interface ReadonlyTranslationErrorLike {
+  readonly message: string;
+  readonly name: string;
+  readonly node?: Readonly<ParseTreeNode>;
+  readonly cause?: Readonly<Error>;
+}
+
 /**
  * Options for translation.
  */
@@ -46,7 +54,7 @@ interface TranslationOptions {
   /**
    * Custom error handler.
    */
-  onError?: (error: Readonly<TranslationError>) => void;
+  onError?: (error: ReadonlyTranslationErrorLike) => void;
 
   /**
    * Whether to continue translation on errors.
@@ -58,13 +66,14 @@ interface TranslationOptions {
  * Error thrown during AST translation from parse tree to AST nodes.
  */
 class TranslationError extends Error {
-  public constructor(
-    message: string,
-    public readonly node?: Readonly<ParseTreeNode>,
-    public readonly cause?: Error
-  ) {
+  public readonly node?: Readonly<ParseTreeNode>;
+  public readonly cause?: Error;
+
+  public constructor(message: string, node?: Readonly<ParseTreeNode>, cause?: Readonly<Error>) {
     super(message);
     this.name = 'TranslationError';
+    this.node = node;
+    this.cause = cause;
   }
 }
 
@@ -81,8 +90,8 @@ interface TranslationResult {
  * Converts parse trees to AST nodes.
  */
 class ASTTranslator implements TranslateContext {
-  private readonly options: Required<TranslationOptions>;
   public currentClassName: string | undefined = undefined;
+  private readonly options: Required<TranslationOptions>;
 
   public constructor(options: Readonly<TranslationOptions> = {}) {
     this.options = {
@@ -90,11 +99,15 @@ class ASTTranslator implements TranslateContext {
       includeLocation: options.includeLocation ?? true,
       onError:
         options.onError ??
-        (() => {
+        ((): void => {
           // Default empty error handler
         }),
       ...options,
     };
+  }
+
+  public get includeLocation(): boolean {
+    return this.options.includeLocation;
   }
 
   /**
@@ -169,6 +182,7 @@ class ASTTranslator implements TranslateContext {
             translatedNode.kind === 'VariableDeclaration' ||
             translatedNode.kind === 'AnnotationDeclaration'
           ) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check above
             const decl = translatedNode as Declaration;
             declarations.push(decl);
           }
@@ -224,10 +238,9 @@ class ASTTranslator implements TranslateContext {
   }
 
   /**
-   * Try to translate node as a statement.
+   * Translate a compound statement node.
    * @param node - The parse tree node to translate.
-   * @param nodeType - The type of the node (normalized to lowercase).
-   * @returns The translated statement node, or null if the node is not a statement.
+   * @returns The translated statement node.
    */
   public translateCompoundStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateCompoundStatement(this, node);
@@ -450,62 +463,156 @@ class ASTTranslator implements TranslateContext {
     }
   }
 
+  // Helper methods (public instance methods before private)
+
+  public getChildren(
+    node: Readonly<ParseTreeNode>,
+    propertyName?: string,
+    altPropertyName?: string
+  ): Readonly<ParseTreeNode>[] {
+    void this;
+    return getChildren(node, propertyName, altPropertyName);
+  }
+
+  public getChild(
+    node: Readonly<ParseTreeNode>,
+    propertyName: string,
+    altPropertyName?: string
+  ): Readonly<ParseTreeNode> | null {
+    void this;
+    return getChild(node, propertyName, altPropertyName);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
+  public getChildExpression(
+    node: Readonly<ParseTreeNode>,
+    propertyName: string,
+    optionalOrAlt: boolean | string = false,
+    altPropertyName?: string
+  ): Expression | undefined {
+    // Handle case where optionalOrAlt is actually altPropertyName
+    let optional = false;
+    if (typeof optionalOrAlt === 'string') {
+      altPropertyName = optionalOrAlt;
+    } else {
+      optional = optionalOrAlt;
+    }
+    const child = this.getChild(node, propertyName, altPropertyName);
+    if (!child) {
+      if (optional) {
+        return undefined;
+      }
+      throw new TranslationError(`Required expression child '${propertyName}' not found`, node);
+    }
+
+    const expression = this.tryTranslateExpression(child, child.type.toLowerCase());
+    if (!expression) {
+      if (optional) {
+        return undefined;
+      }
+      throw new TranslationError(`Failed to translate expression child '${propertyName}'`, child);
+    }
+
+    return expression;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
+  public getChildStatement(
+    node: Readonly<ParseTreeNode>,
+    propertyName: string,
+    altPropertyName?: string,
+    optional = false
+  ): Statement | undefined {
+    const child = this.getChild(node, propertyName, altPropertyName);
+    if (!child) {
+      if (optional) {
+        return undefined;
+      }
+      throw new TranslationError(`Required statement child '${propertyName}' not found`, node);
+    }
+
+    const statement = this.tryTranslateStatement(child, child.type.toLowerCase());
+    if (!statement) {
+      if (optional) {
+        return undefined;
+      }
+      throw new TranslationError(`Failed to translate statement child '${propertyName}'`, child);
+    }
+
+    return statement;
+  }
+
+  public setCurrentClassName(value: string | undefined): void {
+    this.currentClassName = value;
+  }
+
+  public getClassName(node: Readonly<ParseTreeNode>): string | undefined {
+    if (this.currentClassName != null) return this.currentClassName;
+    // Try to find parent class declaration
+    let current: ParseTreeNode | undefined = node;
+    while (current) {
+      if (current.type === 'class_declaration' || current.type === 'class') {
+        const nameNode = this.getChild(current, 'name');
+        return nameNode
+          ? (this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name'))
+          : undefined;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by ParseTreeNode structure
+      current = (current as { parent?: ParseTreeNode }).parent;
+    }
+    return undefined;
+  }
+
+  public tryTranslateType(node: Readonly<ParseTreeNode>): TypeRef | null {
+    return tryTranslateTypeUtil(node, this.options.includeLocation);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
+  public getProperty<T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]): T | undefined {
+    void this;
+    return getProperty<T>(node, ...names);
+  }
+
+  public getText(node: Readonly<ParseTreeNode>): string | undefined {
+    void this;
+    return getText(node);
+  }
+
+  /**
+   * Get location option for node factory if location is enabled.
+   * @param node - The parse tree node containing location information.
+   * @returns The location option object if location is enabled and available, otherwise undefined.
+   */
+  public getLocationOption(
+    node: Readonly<ParseTreeNode>
+  ): Readonly<NodeFactoryOptions> | undefined {
+    return getLocationOptionUtil(node, this.options.includeLocation);
+  }
+
+  public extractModifiers(node: Readonly<ParseTreeNode>): Modifier[] {
+    return extractModifiers(this, node);
+  }
+
+  public extractTypeParameters(node: Readonly<ParseTreeNode>): TypeParameter[] {
+    return extractTypeParameters(this, node);
+  }
+
+  public buildAnnotationFromNode(annotationNode: Readonly<ParseTreeNode>): Annotation | null {
+    return buildAnnotationFromNode(this, annotationNode);
+  }
+
+  public parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null {
+    return parseElementValue(this, valueNode);
+  }
+
+  public extractAnnotations(node: Readonly<ParseTreeNode>): Annotation[] {
+    return extractAnnotations(this, node);
+  }
+
   // Statement translation methods
 
   private translateIfStatement(node: Readonly<ParseTreeNode>): Statement {
     return stmtTranslate.translateIfStatement(this, node);
-  }
-
-  // @ts-expect-error -- Kept for reference
-  private translateIfStatementOld(_node: Readonly<ParseTreeNode>): Statement {
-    // Try to get named properties first (for integration tests)
-    let condition = this.getChildExpression(_node, 'condition', true);
-    let thenStatement = this.getChildStatement(_node, 'thenStatement', 'thenBody', true);
-    let elseStatement = this.getChildStatement(_node, 'elseStatement', 'elseBody', true);
-
-    // If named properties not found, try positional children (for parser output)
-    if (!condition || !thenStatement) {
-      const children = this.getChildren(_node);
-
-      const minimumChildrenCount = 2;
-      if (children.length < minimumChildrenCount) {
-        throw new TranslationError('If statement requires at least condition and then body', _node);
-      }
-
-      if (!condition) {
-        const zeroIndex = 0;
-        const conditionChild = children[zeroIndex];
-        const cond = this.tryTranslateExpression(conditionChild, conditionChild.type.toLowerCase());
-        if (!cond) {
-          throw new TranslationError('If statement requires a condition', _node);
-        }
-        condition = cond;
-      }
-
-      if (!thenStatement) {
-        const secondChildIndex = 1;
-        const thenChild = children[secondChildIndex];
-        const then = this.tryTranslateStatement(thenChild, thenChild.type.toLowerCase());
-        if (!then) {
-          throw new TranslationError('If statement requires a then body', _node);
-        }
-        thenStatement = then;
-      }
-
-      const elseChildIndex = 2;
-      if (!elseStatement && children.length > elseChildIndex) {
-        const elseChild = children[elseChildIndex];
-        const els = this.tryTranslateStatement(elseChild, elseChild.type.toLowerCase());
-        elseStatement = els ?? undefined;
-      }
-    }
-
-    return NodeFactory.createIfStatement(
-      condition,
-      thenStatement,
-      elseStatement,
-      this.getLocationOption(_node)
-    );
   }
 
   private translateForLoopStatement(node: Readonly<ParseTreeNode>): Statement {
@@ -693,145 +800,8 @@ class ASTTranslator implements TranslateContext {
    * @throws {TranslationError} Always throws, as annotation declarations are not supported.
    */
   private translateAnnotationDeclaration(node: Readonly<ParseTreeNode>): never {
+    void this;
     throw new TranslationError('Annotation declarations are not supported in summit-ast', node);
-  }
-
-  // Helper methods
-
-  public getChildren(
-    node: Readonly<ParseTreeNode>,
-    propertyName?: string,
-    altPropertyName?: string
-  ): Readonly<ParseTreeNode>[] {
-    return getChildren(node, propertyName, altPropertyName);
-  }
-
-  public getChild(
-    node: Readonly<ParseTreeNode>,
-    propertyName: string,
-    altPropertyName?: string
-  ): Readonly<ParseTreeNode> | null {
-    return getChild(node, propertyName, altPropertyName);
-  }
-
-  public getChildExpression(
-    node: Readonly<ParseTreeNode>,
-    propertyName: string,
-    optionalOrAlt: boolean | string = false,
-    altPropertyName?: string
-  ): Expression | undefined {
-    // Handle case where optionalOrAlt is actually altPropertyName
-    let optional = false;
-    if (typeof optionalOrAlt === 'string') {
-      altPropertyName = optionalOrAlt;
-    } else {
-      optional = optionalOrAlt;
-    }
-    const child = this.getChild(node, propertyName, altPropertyName);
-    if (!child) {
-      if (optional) {
-        return undefined;
-      }
-      throw new TranslationError(`Required expression child '${propertyName}' not found`, node);
-    }
-
-    const expression = this.tryTranslateExpression(child, child.type.toLowerCase());
-    if (!expression) {
-      if (optional) {
-        return undefined;
-      }
-      throw new TranslationError(`Failed to translate expression child '${propertyName}'`, child);
-    }
-
-    return expression;
-  }
-
-  public getChildStatement(
-    node: Readonly<ParseTreeNode>,
-    propertyName: string,
-    altPropertyName?: string,
-    optional = false
-  ): Statement | undefined {
-    const child = this.getChild(node, propertyName, altPropertyName);
-    if (!child) {
-      if (optional) {
-        return undefined;
-      }
-      throw new TranslationError(`Required statement child '${propertyName}' not found`, node);
-    }
-
-    const statement = this.tryTranslateStatement(child, child.type.toLowerCase());
-    if (!statement) {
-      if (optional) {
-        return undefined;
-      }
-      throw new TranslationError(`Failed to translate statement child '${propertyName}'`, child);
-    }
-
-    return statement;
-  }
-
-  public getClassName(node: Readonly<ParseTreeNode>): string | undefined {
-    if (this.currentClassName != null) return this.currentClassName;
-    // Try to find parent class declaration
-    let current: ParseTreeNode | undefined = node;
-    while (current) {
-      if (current.type === 'class_declaration' || current.type === 'class') {
-        const nameNode = this.getChild(current, 'name');
-        return nameNode
-          ? (this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name'))
-          : undefined;
-      }
-      current = (current as { parent?: ParseTreeNode }).parent;
-    }
-    return undefined;
-  }
-
-  public tryTranslateType(node: Readonly<ParseTreeNode>): TypeRef | null {
-    return tryTranslateTypeUtil(node, this.options.includeLocation);
-  }
-
-  public getProperty<T>(node: Readonly<ParseTreeNode>, ...names: string[]): T | undefined {
-    return getProperty<T>(node, ...names);
-  }
-
-  public getText(node: Readonly<ParseTreeNode>): string | undefined {
-    return getText(node);
-  }
-
-  /**
-   * Get location option for node factory if location is enabled.
-   * @param node - The parse tree node containing location information.
-   * @returns The location option object if location is enabled and available, otherwise undefined.
-   */
-  public getLocationOption(
-    node: Readonly<ParseTreeNode>
-  ): Readonly<NodeFactoryOptions> | undefined {
-    return getLocationOptionUtil(node, this.options.includeLocation);
-  }
-
-  public get includeLocation(): boolean {
-    return this.options.includeLocation;
-  }
-
-  public extractModifiers(node: Readonly<ParseTreeNode>): Modifier[] {
-    return extractModifiers(this, node);
-  }
-
-  public extractTypeParameters(node: Readonly<ParseTreeNode>): TypeParameter[] {
-    return extractTypeParameters(this, node);
-  }
-
-  public buildAnnotationFromNode(annotationNode: Readonly<ParseTreeNode>): Annotation | null {
-    return buildAnnotationFromNode(this, annotationNode);
-  }
-
-  public parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null {
-    return parseElementValue(this, valueNode);
-  }
-
-  public extractAnnotations(node: Readonly<ParseTreeNode>): Annotation[] {
-    return extractAnnotations(this, node);
   }
 }
 

@@ -15,7 +15,7 @@ import type { ASTWalkVisitor } from '../src/utils/traversal.js';
  * @returns The translated AST node.
  * @throws {Error} If parsing fails or translation returns errors or no AST.
  */
-export function parseAndTranslate(input: string): ASTNode {
+function parseAndTranslate(input: string): ASTNode {
   const parseTree = parseApexSource(input);
   if (!parseTree) {
     // Try to provide more helpful error message
@@ -27,7 +27,7 @@ export function parseAndTranslate(input: string): ASTNode {
   const result = translator.translate(parseTree);
 
   if (result.errors.length > 0) {
-    const errorMessages = result.errors.map((e) => e.message).join(', ');
+    const errorMessages = result.errors.map((e: Readonly<Error>) => e.message).join(', ');
     const preview = input.length > 100 ? input.substring(0, 100) + '...' : input;
     throw new Error(`Translation failed for "${preview}": ${errorMessages}`);
   }
@@ -45,14 +45,23 @@ export function parseAndTranslate(input: string): ASTNode {
  * The AST is searched in depth-first pre-order.
  * @template T - The desired AST node type.
  * @param root - The AST to search.
- * @param predicate - Function to check if a node matches the desired type.
+ * @param predicate - Type guard function to check if a node matches the desired type.
  * @returns The first instance matching the predicate or null if none.
  */
-export function findFirstNodeOfType<T extends ASTNode>(
+function findFirstNodeOfType<T extends ASTNode>(
   root: ASTNode,
   predicate: (node: ASTNode) => node is T
-): T | null {
-  let found: T | null = null;
+): T | null;
+
+/**
+ * Finds and returns the first AST node matching a boolean predicate.
+ * @param root - The AST to search.
+ * @param predicate - Boolean predicate to check if a node matches.
+ * @returns The first matching node or null if none.
+ */
+function findFirstNodeOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): ASTNode | null;
+function findFirstNodeOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): ASTNode | null {
+  let found: ASTNode | null = null;
 
   const visitor: ASTWalkVisitor = {
     enterNode: (node: ASTNode) => {
@@ -74,8 +83,8 @@ export function findFirstNodeOfType<T extends ASTNode>(
  * @param predicate - Function to check if a node matches the type to assert non-presence.
  * @throws {Error} If a matching node is found.
  */
-export function assertNoNodeOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): void {
-  const found = findFirstNodeOfType(root, predicate as (node: ASTNode) => node is ASTNode);
+function assertNoNodeOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): void {
+  const found = findFirstNodeOfType(root, predicate);
   if (found) {
     throw new Error(
       `AST should have no node of this type. Found one at location: ${JSON.stringify(found.location)}`
@@ -89,7 +98,7 @@ export function assertNoNodeOfType(root: ASTNode, predicate: (node: ASTNode) => 
  * @param predicate - Function to check if a node matches.
  * @returns The count of matching nodes.
  */
-export function countNodesOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): number {
+function countNodesOfType(root: ASTNode, predicate: (node: ASTNode) => boolean): number {
   let count = 0;
 
   const visitor: ASTWalkVisitor = {
@@ -111,7 +120,7 @@ export function countNodesOfType(root: ASTNode, predicate: (node: ASTNode) => bo
  * @param root - The AST to search.
  * @throws {Error} If any untranslated nodes are found.
  */
-export function assertFullyTranslated(root: ASTNode): void {
+function assertFullyTranslated(root: ASTNode): void {
   // In the original, this checks for Untranslated nodes
   // We'll check for nodes with kind 'Untranslated' or similar
   const untranslatedCount = countNodesOfType(
@@ -123,6 +132,14 @@ export function assertFullyTranslated(root: ASTNode): void {
   );
 
   if (untranslatedCount > 0) {
-    throw new Error(`AST should have no untranslated nodes. Found ${untranslatedCount}`);
+    throw new Error(`AST should have no untranslated nodes. Found ${String(untranslatedCount)}`);
   }
 }
+
+export {
+  parseAndTranslate,
+  findFirstNodeOfType,
+  assertNoNodeOfType,
+  countNodesOfType,
+  assertFullyTranslated,
+};

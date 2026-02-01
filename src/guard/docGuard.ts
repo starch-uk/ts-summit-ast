@@ -19,7 +19,7 @@ import type {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocComment.
  */
-export function isApexDocComment(node: ASTNode): node is ApexDocComment {
+function isApexDocComment(node: ASTNode): node is ApexDocComment {
   return 'kind' in node && node.kind === 'ApexDocComment';
 }
 
@@ -28,7 +28,7 @@ export function isApexDocComment(node: ASTNode): node is ApexDocComment {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocBlockTag.
  */
-export function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
+function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -52,7 +52,7 @@ export function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocInlineTag.
  */
-export function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
+function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -65,7 +65,7 @@ export function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocParam.
  */
-export function isApexDocParam(node: ASTNode): node is ApexDocParam {
+function isApexDocParam(node: ASTNode): node is ApexDocParam {
   return 'kind' in node && node.kind === 'ApexDocParam';
 }
 
@@ -74,7 +74,7 @@ export function isApexDocParam(node: ASTNode): node is ApexDocParam {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocReturn.
  */
-export function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
+function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
   return 'kind' in node && node.kind === 'ApexDocReturn';
 }
 
@@ -83,7 +83,7 @@ export function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocGroup.
  */
-export function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
+function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
   return 'kind' in node && node.kind === 'ApexDocGroup';
 }
 
@@ -92,6 +92,16 @@ export function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocCode.
  */
-export function isApexDocCode(node: ASTNode): node is ApexDocCode {
+function isApexDocCode(node: ASTNode): node is ApexDocCode {
   return 'kind' in node && node.kind === 'ApexDocCode';
 }
+
+export {
+  isApexDocComment,
+  isApexDocBlockTag,
+  isApexDocInlineTag,
+  isApexDocParam,
+  isApexDocReturn,
+  isApexDocGroup,
+  isApexDocCode,
+};

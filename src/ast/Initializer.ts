@@ -14,7 +14,7 @@ import type { Annotation } from './declaration.js';
 interface ConstructorInitializer extends ASTNode {
   readonly kind: 'ConstructorInitializer';
   readonly type: TypeRef;
-  readonly args: Expression[];
+  readonly args: readonly Expression[];
   readonly location?: SourceRange;
 }
 
@@ -25,7 +25,7 @@ interface ConstructorInitializer extends ASTNode {
 interface ValuesInitializer extends ASTNode {
   readonly kind: 'ValuesInitializer';
   readonly type: TypeRef;
-  readonly values: Expression[];
+  readonly values: readonly Expression[];
   readonly location?: SourceRange;
 }
 
@@ -45,23 +45,26 @@ interface SizedArrayInitializer extends ASTNode {
 interface MapInitializer extends ASTNode {
   readonly kind: 'MapInitializer';
   readonly type: TypeRef;
-  readonly pairs: { key: Expression; value: Expression }[];
+  readonly pairs: readonly { readonly key: Expression; readonly value: Expression }[];
   readonly location?: SourceRange;
 }
 
 /**
  * Union type for all initializer node types.
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Union type alias needed for type safety and clarity */
 type Initializer =
   | ConstructorInitializer
   | MapInitializer
   | SizedArrayInitializer
   | ValuesInitializer;
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Base type for all element value nodes.
  * A value that can be assigned to an annotation element.
  */
+// eslint-disable-next-line @typescript-eslint/no-type-alias -- Union type alias needed for type safety and clarity
 type ElementValue = AnnotationElementValue | ArrayElementValue | ExpressionElementValue;
 
 /**
@@ -89,7 +92,7 @@ interface AnnotationElementValue extends ASTNode {
  */
 interface ArrayElementValue extends ASTNode {
   readonly kind: 'ArrayElementValue';
-  readonly values: ElementValue[];
+  readonly values: readonly ElementValue[];
   readonly location?: SourceRange;
 }
 

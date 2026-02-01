@@ -5,6 +5,7 @@
 
 import { parseApexCode } from '../../src/utils/apexParser.js';
 import { findFirstNodeOfType } from '../translateHelpers.js';
+import type { ClassDeclaration } from '../../src/ast/declaration.js';
 import {
   isClassDeclaration,
   isMethodDeclaration,
@@ -372,7 +373,10 @@ describe('Complex Apex Code Parsing', () => {
         const classDecl = findFirstNodeOfType(result.ast, isClassDeclaration);
         expect(classDecl).not.toBeNull();
         if (classDecl) {
-          const methods = classDecl.members.filter((m) => isMethodDeclaration(m));
+          const methods = classDecl.members.filter(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+            (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) => isMethodDeclaration(m)
+          );
           expect(methods.length).toBeGreaterThanOrEqual(2);
         }
       }

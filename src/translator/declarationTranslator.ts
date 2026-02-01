@@ -15,18 +15,20 @@ import type {
   EnumValue,
   Parameter,
 } from '../ast/declaration.js';
-import type { TypeRef } from '../ast/baseNode.js';
+import type { TypeRef, TypeRefComponent } from '../ast/baseNode.js';
 import type { CompoundStatement } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import type { TranslateContext } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
 
 /**
- * @param ctx
- * @param node
+ * Translate a class declaration from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated class declaration.
  */
-export function translateClassDeclaration(
-  ctx: TranslateContext,
+function translateClassDeclaration(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
@@ -34,7 +36,7 @@ export function translateClassDeclaration(
     ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? 'Unknown')
     : 'Unknown';
   const prevClassName = ctx.currentClassName;
-  ctx.currentClassName = name;
+  ctx.setCurrentClassName(name);
   const modifiers = ctx.extractModifiers(node);
   const annotations = ctx.extractAnnotations(node);
   const typeParameters = ctx.extractTypeParameters(node);
@@ -112,6 +114,7 @@ export function translateClassDeclaration(
           // If same line, keep the same statementId (fields from same statement)
         } else {
           // First field_declaration
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial statement counter
           statementCounter = 1;
         }
         lastFieldDeclarationNode = memberNode;
@@ -132,6 +135,7 @@ export function translateClassDeclaration(
           case 'MethodDeclaration':
           case 'PropertyDeclaration':
           case 'VariableDeclaration': {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check in switch
             const declTyped = decl as
               | ClassDeclaration
               | EnumDeclaration
@@ -161,14 +165,18 @@ export function translateClassDeclaration(
         decl.kind === 'InterfaceDeclaration' ||
         decl.kind === 'EnumDeclaration'
       ) {
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: inner types
         return 0; // Inner types
       }
       if (decl.kind === 'VariableDeclaration') {
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: fields
         return 1; // Fields
       }
       if (decl.kind === 'PropertyDeclaration') {
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: properties
         return 2; // Properties
       }
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: methods
       return 3; // Methods
     };
     // CRITICAL: The original Kotlin implementation preserves source order for members
@@ -522,36 +530,41 @@ export function translateClassDeclaration(
     // so fields from different statements are never adjacent. In TypeScript, we create
     // separate VariableDeclaration nodes, so we need to ensure they're not adjacent
     // by sorting by statementId within the category.
-    membersWithIndex.sort((a, b) => {
-      const categoryA = getCategoryOrder(a.decl);
-      const categoryB = getCategoryOrder(b.decl);
-      if (categoryA !== categoryB) {
-        return categoryA - categoryB;
-      }
-      // Within same category, preserve source order (syntactic order as in original).
-      // The original Kotlin preserves syntactic order within each category.
-      // For fields specifically, we need to ensure fields from different statements
-      // (different statementId) are not adjacent, matching the original Kotlin behavior
-      // where FieldDeclarationGroup objects from different statements are already separated.
-      // We do this by sorting by statementId first for fields, then by source order within each statement.
-      // This ensures fields from the same statement are grouped together, and fields from
-      // different statements are separated and not adjacent.
-      if (a.decl.kind === 'VariableDeclaration' && b.decl.kind === 'VariableDeclaration') {
-        if (a.statementId !== undefined && b.statementId !== undefined) {
-          if (a.statementId !== b.statementId) {
-            // Different statements - sort by statementId to separate them
-            // This ensures fields from different statements are not adjacent in the final array
-            return a.statementId - b.statementId;
+    membersWithIndex.sort(
+      (
+        a: Readonly<{ decl: Declaration; sourceIndex: number; statementId?: number }>,
+        b: Readonly<{ decl: Declaration; sourceIndex: number; statementId?: number }>
+      ) => {
+        const categoryA = getCategoryOrder(a.decl);
+        const categoryB = getCategoryOrder(b.decl);
+        if (categoryA !== categoryB) {
+          return categoryA - categoryB;
+        }
+        // Within same category, preserve source order (syntactic order as in original).
+        // The original Kotlin preserves syntactic order within each category.
+        // For fields specifically, we need to ensure fields from different statements
+        // (different statementId) are not adjacent, matching the original Kotlin behavior
+        // where FieldDeclarationGroup objects from different statements are already separated.
+        // We do this by sorting by statementId first for fields, then by source order within each statement.
+        // This ensures fields from the same statement are grouped together, and fields from
+        // different statements are separated and not adjacent.
+        if (a.decl.kind === 'VariableDeclaration' && b.decl.kind === 'VariableDeclaration') {
+          if (a.statementId !== undefined && b.statementId !== undefined) {
+            if (a.statementId !== b.statementId) {
+              // Different statements - sort by statementId to separate them
+              // This ensures fields from different statements are not adjacent in the final array
+              return a.statementId - b.statementId;
+            }
+            // Same statement - preserve source order within the statement
+            return a.sourceIndex - b.sourceIndex;
           }
-          // Same statement - preserve source order within the statement
+          // If one has statementId and the other doesn't, preserve source order
           return a.sourceIndex - b.sourceIndex;
         }
-        // If one has statementId and the other doesn't, preserve source order
+        // For non-field declarations, preserve source order
         return a.sourceIndex - b.sourceIndex;
       }
-      // For non-field declarations, preserve source order
-      return a.sourceIndex - b.sourceIndex;
-    });
+    );
     // CRITICAL FIX: The test's grouping logic groups by type/modifiers and adjacency.
     // To match the original Kotlin behavior where FieldDeclarationGroup objects are
     // already separated, we need to ensure fields from different statements are NOT
@@ -583,7 +596,18 @@ export function translateClassDeclaration(
     // Let me try a different approach: Use location information to ensure fields
     // from different statements are separated in the final order.
     // Extract sorted declarations and filter to valid ClassMembers
-    const sortedDecls = membersWithIndex.map((m) => m.decl);
+    // Sorted decls are class body members; type assertion narrows Declaration to class member union
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- class body members are valid ClassDeclaration members
+    const sortedDecls = membersWithIndex.map(
+      (m: Readonly<{ decl: Declaration; sourceIndex: number; statementId?: number }>) => m.decl
+    ) as (
+      | ClassDeclaration
+      | EnumDeclaration
+      | InterfaceDeclaration
+      | MethodDeclaration
+      | PropertyDeclaration
+      | VariableDeclaration
+    )[];
     members.push(...sortedDecls);
   }
 
@@ -592,7 +616,6 @@ export function translateClassDeclaration(
   if (extendsClause) {
     const typeChild =
       ctx.getChild(extendsClause, 'type') ??
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
       ctx.getChildren(extendsClause).find((c: Readonly<ParseTreeNode>) => c.type === 'type');
     if (typeChild) {
       extendsType = ctx.tryTranslateType(typeChild) ?? undefined;
@@ -605,6 +628,7 @@ export function translateClassDeclaration(
     const typeChildren = ctx
       .getChildren(implementsClause)
       .filter((c: Readonly<ParseTreeNode>) => c.type === 'type');
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
     if (typeChildren.length > 0) {
       implementsTypes = typeChildren
         .map((c) => ctx.tryTranslateType(c))
@@ -612,25 +636,29 @@ export function translateClassDeclaration(
     }
   }
 
-  ctx.currentClassName = prevClassName;
+  ctx.setCurrentClassName(prevClassName);
   return NodeFactory.createClassDeclaration(
     name,
     members,
     modifiers,
     extendsType,
     implementsTypes,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
     typeParameters.length > 0 ? typeParameters : undefined,
     ctx.getLocationOption(node),
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
     annotations.length > 0 ? annotations : undefined
   );
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate an enum declaration from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated enum declaration.
  */
-export function translateEnumDeclaration(
-  ctx: TranslateContext,
+function translateEnumDeclaration(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
@@ -670,6 +698,7 @@ export function translateEnumDeclaration(
         const decl = ctx.tryTranslateDeclaration(childNode, childNode.type.toLowerCase());
         if (decl) {
           members.push(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
             decl as
               | ClassDeclaration
               | EnumDeclaration
@@ -683,24 +712,25 @@ export function translateEnumDeclaration(
     }
   }
 
-  return NodeFactory.createEnumDeclaration(
-    name,
-    constants,
+  return NodeFactory.createEnumDeclaration({
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
+    members: members.length > 0 ? members : undefined,
     modifiers,
-    members.length > 0 ? members : undefined,
-    ctx.getLocationOption(node)
-  );
+    name,
+    options: ctx.getLocationOption(node),
+    values: constants,
+  });
 }
 
 /**
  * Translate a variable declaration from parse tree to AST.
- * @param ctx
- * @param node - The parse tree node representing the variable declaration.
+ * @param ctx - The translation context. - The translation context.
+ * @param node - The parse tree node to translate. - The parse tree node representing the variable declaration.
  * @returns The translated VariableDeclaration AST node.
- * @throws {TranslationError} If the variable declaration is malformed.
+ * @throws {Error} If the variable declaration is malformed.
  */
-export function translateInterfaceDeclaration(
-  ctx: TranslateContext,
+function translateInterfaceDeclaration(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
@@ -730,6 +760,7 @@ export function translateInterfaceDeclaration(
           decl.kind === 'VariableDeclaration')
       ) {
         members.push(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
           decl as ClassDeclaration | InterfaceDeclaration | MethodDeclaration | PropertyDeclaration
         );
       }
@@ -746,17 +777,20 @@ export function translateInterfaceDeclaration(
           .map((c) => ctx.tryTranslateType(c))
           .filter((type): type is TypeRef => type !== null)
       : undefined,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
     typeParameters.length > 0 ? typeParameters : undefined,
     ctx.getLocationOption(node)
   );
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a method declaration from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated method declaration.
  */
-export function translateMethodDeclaration(
-  ctx: TranslateContext,
+function translateMethodDeclaration(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
@@ -777,9 +811,21 @@ export function translateMethodDeclaration(
       ) ??
     null;
   const translatedType = returnTypeNode ? ctx.tryTranslateType(returnTypeNode) : null;
+  // Empty array and zero array nesting for default type
+  const emptyTypeComponents: TypeRefComponent[] = [];
+  const defaultArrayNesting = 0;
   const returnType = returnTypeNode
-    ? (translatedType ?? NodeFactory.createTypeRef([], 0, ctx.getLocationOption(returnTypeNode)))
-    : NodeFactory.createTypeRef([], 0, ctx.getLocationOption(node));
+    ? (translatedType ??
+      NodeFactory.createTypeRef(
+        emptyTypeComponents,
+        defaultArrayNesting,
+        ctx.getLocationOption(returnTypeNode)
+      ))
+    : NodeFactory.createTypeRef(
+        emptyTypeComponents,
+        defaultArrayNesting,
+        ctx.getLocationOption(node)
+      );
   const parameters: Parameter[] = [];
   const paramsNode = ctx.getChild(node, 'parameters', 'params');
   if (paramsNode) {
@@ -801,9 +847,11 @@ export function translateMethodDeclaration(
       const paramModifiers = ctx.extractModifiers(paramNode);
       const paramAnnotations = ctx.extractAnnotations(paramNode);
       parameters.push({
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
         annotations: paramAnnotations.length > 0 ? paramAnnotations : undefined,
         kind: 'Parameter',
         location: paramNode.location,
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
         modifiers: paramModifiers.length > 0 ? paramModifiers : undefined,
         name: paramName,
         type: paramType,
@@ -822,54 +870,58 @@ export function translateMethodDeclaration(
   const hasClassName = className != null;
   const isConstructor = hasClassName && name === className && !hasExplicitReturnType;
 
-  return NodeFactory.createMethodDeclaration(
-    name,
-    returnType,
-    parameters,
-    body as CompoundStatement | undefined,
-    modifiers,
-    typeParameters.length > 0 ? typeParameters : undefined,
-    annotations.length > 0 ? annotations : undefined,
+  return NodeFactory.createMethodDeclaration({
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
+    annotations: annotations.length > 0 ? annotations : undefined,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
+    body: body as CompoundStatement | undefined,
     isConstructor,
-    ctx.getLocationOption(node)
-  );
+    modifiers,
+    name,
+    options: ctx.getLocationOption(node),
+    parameters,
+    returnType,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
+    typeParameters: typeParameters.length > 0 ? typeParameters : undefined,
+  });
 }
 
 /**
  * Translate instance or static initializer block to a MethodDeclaration
  * (summit-ast models initializer blocks as method-like declarations).
- * @param ctx
+ * @param ctx - The translation context. - The translation context.
  * @param node - The parse tree node representing the initializer block.
  * @returns The translated method declaration representing the initializer block.
  */
-export function translateInitializerBlock(
-  ctx: TranslateContext,
+function translateInitializerBlock(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const blockNode = ctx.getChild(node, 'block');
   const body = blockNode
-    ? (ctx.translateCompoundStatement(blockNode) as CompoundStatement)
+    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
+      (ctx.translateCompoundStatement(blockNode) as CompoundStatement)
     : undefined;
   const modifiers = ctx.extractModifiers(node);
-  return NodeFactory.createMethodDeclaration(
-    '<initializer>',
-    NodeFactory.createSimpleTypeRef('void'),
-    [],
+  return NodeFactory.createMethodDeclaration({
     body,
+    isConstructor: false,
     modifiers,
-    undefined,
-    undefined,
-    false,
-    ctx.getLocationOption(node)
-  );
+    name: '<initializer>',
+    options: ctx.getLocationOption(node),
+    parameters: [],
+    returnType: NodeFactory.createSimpleTypeRef('void'),
+  });
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a field declaration from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated field declaration.
  */
-export function translateFieldDeclaration(
-  ctx: TranslateContext,
+function translateFieldDeclaration(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
@@ -1022,7 +1074,7 @@ export function translateFieldDeclaration(
   // that helps.
 
   // Look for initializer - it could be a direct child expression or in an 'initializer' property
-  let initializer: Expression | undefined;
+  let initializer: Expression | undefined = undefined;
   // Try to find an expression child that's not type, name, modifiers, or annotations
   const children = ctx.getChildren(node);
   for (const child of children) {
@@ -1050,17 +1102,20 @@ export function translateFieldDeclaration(
     name,
     type,
     initializer,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
     modifiers.length > 0 ? modifiers : undefined,
     ctx.getLocationOption(node)
   );
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a property declaration from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated property declaration.
  */
-export function translatePropertyDeclaration(
-  ctx: TranslateContext,
+function translatePropertyDeclaration(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
@@ -1075,33 +1130,36 @@ export function translatePropertyDeclaration(
     : NodeFactory.createSimpleTypeRef('Object');
   const getterNode = ctx.getChild(node, 'getter');
   const getter = getterNode
-    ? (ctx.translateCompoundStatement(getterNode) as CompoundStatement)
+    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
+      (ctx.translateCompoundStatement(getterNode) as CompoundStatement)
     : undefined;
   const setterNode = ctx.getChild(node, 'setter');
   const setter = setterNode
-    ? (ctx.translateCompoundStatement(setterNode) as CompoundStatement)
+    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
+      (ctx.translateCompoundStatement(setterNode) as CompoundStatement)
     : undefined;
 
-  return NodeFactory.createPropertyDeclaration(
-    name,
-    type,
-    modifiers,
+  return NodeFactory.createPropertyDeclaration({
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
+    annotations: annotations.length > 0 ? annotations : undefined,
     getter,
+    modifiers,
+    name,
+    options: ctx.getLocationOption(node),
     setter,
-    annotations.length > 0 ? annotations : undefined,
-    ctx.getLocationOption(node)
-  );
+    type,
+  });
 }
 
 /**
  * Translate a variable declaration from parse tree to AST.
- * @param ctx
- * @param node - The parse tree node representing the variable declaration.
+ * @param ctx - The translation context. - The translation context.
+ * @param node - The parse tree node to translate. - The parse tree node representing the variable declaration.
  * @returns The translated VariableDeclaration AST node.
- * @throws {TranslationError} If the variable declaration is malformed.
+ * @throws {Error} If the variable declaration is malformed.
  */
-export function translateVariableDeclaration(
-  ctx: TranslateContext,
+function translateVariableDeclaration(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const nameFromProperty = ctx.getProperty<string>(node, 'name');
@@ -1109,6 +1167,7 @@ export function translateVariableDeclaration(
   if (name == null || name === '') {
     // Try to get name from second child (nameNode) if available
     const children = ctx.getChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 2 children (type and name)
     if (children.length >= 2) {
       const [, nameNode] = children;
       const nameFromChild = ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name');
@@ -1127,6 +1186,7 @@ export function translateVariableDeclaration(
   if (!initializer) {
     // Try positional: third child after type and name
     const children = ctx.getChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 3 children (type, name, initializer)
     if (children.length >= 3) {
       // Skip type (child[0]) and name (child[1]), third child is initializer
       const [, , initializerNode] = children;
@@ -1144,3 +1204,14 @@ export function translateVariableDeclaration(
     ctx.getLocationOption(node)
   );
 }
+
+export {
+  translateClassDeclaration,
+  translateEnumDeclaration,
+  translateInterfaceDeclaration,
+  translateMethodDeclaration,
+  translateInitializerBlock,
+  translateFieldDeclaration,
+  translatePropertyDeclaration,
+  translateVariableDeclaration,
+};

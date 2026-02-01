@@ -22,17 +22,27 @@ import type {
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
-  ElementValue,
 } from '../ast/initializer.js';
 import type { AnnotationArgument, VariableDeclaration, Modifier } from '../ast/declaration.js';
 import type { Annotation } from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
 import type { Identifier } from '../ast/baseNode.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
+import { isElementValue, isExpression, isModifier } from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
-import { getStringProperty, getNumberProperty } from './astDeserializer.js';
+import {
+  getStringProperty,
+  getNumberProperty,
+  getJsonASTNodeProperty,
+  getJsonASTNodeArrayProperty,
+  isJsonASTNode,
+} from './astDeserializer.js';
 import { deserializeTypeRefNode } from './expressionDeserializer.js';
+
+// ============================================================================
+// Deserialization Functions
+// ============================================================================
 
 /**
  * Deserializes a StringVal literal.
@@ -40,7 +50,7 @@ import { deserializeTypeRefNode } from './expressionDeserializer.js';
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized StringVal node.
  */
-export function deserializeStringVal(
+function deserializeStringVal(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): StringVal {
@@ -61,7 +71,7 @@ export function deserializeStringVal(
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized IntegerVal node.
  */
-export function deserializeIntegerVal(
+function deserializeIntegerVal(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): IntegerVal {
@@ -82,7 +92,7 @@ export function deserializeIntegerVal(
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized DoubleVal node.
  */
-export function deserializeDoubleVal(
+function deserializeDoubleVal(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): DoubleVal {
@@ -103,7 +113,7 @@ export function deserializeDoubleVal(
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized LongVal node.
  */
-export function deserializeLongVal(
+function deserializeLongVal(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): LongVal {
@@ -124,7 +134,7 @@ export function deserializeLongVal(
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized DecimalVal node.
  */
-export function deserializeDecimalVal(
+function deserializeDecimalVal(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): DecimalVal {
@@ -144,8 +154,9 @@ export function deserializeDecimalVal(
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized BooleanVal node.
+ * @throws {Error} If the JSON value is not a boolean.
  */
-export function deserializeBooleanVal(
+function deserializeBooleanVal(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): BooleanVal {
@@ -159,27 +170,69 @@ export function deserializeBooleanVal(
 }
 
 /**
+ * Deserialize a single expression node from JSON.
+ * @param node - The JSON node to deserialize.
+ * @param deserializer - The deserializer instance.
+ * @param context - The context string for error messages.
+ * @returns The deserialized expression AST node.
+ * @throws {Error} If the deserialized node is not an Expression.
+ */
+function deserializeExpressionFromJsonNode(
+  node: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>,
+  context: string
+): Expression {
+  const deserialized = deserializer.deserializeNode(node);
+  if (!isExpression(deserialized)) {
+    throw new Error(`Invalid ${context}: node is not an Expression`);
+  }
+  return deserialized;
+}
+
+/**
+ * Deserialize an array of expression nodes from JSON.
+ * @param nodes - The array of JSON nodes to deserialize.
+ * @param deserializer - The deserializer instance.
+ * @param context - The context string for error messages.
+ * @returns The array of deserialized expressions.
+ */
+function deserializeExpressionArrayFromJson(
+  nodes: readonly Readonly<JsonASTNode>[],
+  deserializer: Readonly<JsonDeserializer>,
+  context: string
+): Expression[] {
+  return nodes.map((node: Readonly<JsonASTNode>) =>
+    deserializeExpressionFromJsonNode(node, deserializer, context)
+  );
+}
+
+/**
  * Deserializes a ConstructorInitializer from JSON.
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ConstructorInitializer node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeConstructorInitializer(
+function deserializeConstructorInitializer(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ConstructorInitializer {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const type = deserializeTypeRefNode(json.type as JsonASTNode, undefined, deserializer);
+  const typeNode = getJsonASTNodeProperty(json, 'type');
+  const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
 
-  const args =
-    json.args !== null && json.args !== undefined
-      ? ((json.args as JsonASTNode[]).map((arg: Readonly<JsonASTNode>) =>
-          deserializer.deserializeNode(arg)
-        ) as Expression[])
+  const argsProperty = json.args;
+  const args: Expression[] =
+    argsProperty !== null && argsProperty !== undefined
+      ? deserializeExpressionArrayFromJson(
+          getJsonASTNodeArrayProperty(json, 'args'),
+          deserializer,
+          'ConstructorInitializer.args'
+        )
       : [];
 
   return NodeFactory.createConstructorInitializer(type, args, locationOption);
@@ -191,22 +244,27 @@ export function deserializeConstructorInitializer(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ValuesInitializer node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeValuesInitializer(
+function deserializeValuesInitializer(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ValuesInitializer {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const type = deserializeTypeRefNode(json.type as JsonASTNode, undefined, deserializer);
+  const typeNode = getJsonASTNodeProperty(json, 'type');
+  const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
 
-  const values =
-    json.values !== null && json.values !== undefined
-      ? ((json.values as JsonASTNode[]).map((val: Readonly<JsonASTNode>) =>
-          deserializer.deserializeNode(val)
-        ) as Expression[])
+  const valuesProperty = json.values;
+  const values: Expression[] =
+    valuesProperty !== null && valuesProperty !== undefined
+      ? deserializeExpressionArrayFromJson(
+          getJsonASTNodeArrayProperty(json, 'values'),
+          deserializer,
+          'ValuesInitializer.values'
+        )
       : [];
 
   return NodeFactory.createValuesInitializer(type, values, locationOption);
@@ -218,18 +276,25 @@ export function deserializeValuesInitializer(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized SizedArrayInitializer node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeSizedArrayInitializer(
+function deserializeSizedArrayInitializer(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): SizedArrayInitializer {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const type = deserializeTypeRefNode(json.type as JsonASTNode, undefined, deserializer);
+  const typeNode = getJsonASTNodeProperty(json, 'type');
+  const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
 
-  const size = deserializer.deserializeNode(json.size as JsonASTNode) as Expression;
+  const sizeNode = getJsonASTNodeProperty(json, 'size');
+  const size = deserializeExpressionFromJsonNode(
+    sizeNode,
+    deserializer,
+    'SizedArrayInitializer.size'
+  );
 
   return NodeFactory.createSizedArrayInitializer(type, size, locationOption);
 }
@@ -240,30 +305,40 @@ export function deserializeSizedArrayInitializer(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized MapInitializer node.
+ * @throws {Error} If the deserializer instance is not provided or if pair key/value is invalid.
  */
-export function deserializeMapInitializer(
+function deserializeMapInitializer(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): MapInitializer {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const type = deserializeTypeRefNode(json.type as JsonASTNode, undefined, deserializer);
+  const typeNode = getJsonASTNodeProperty(json, 'type');
+  const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
 
-  const pairs =
-    json.pairs !== null && json.pairs !== undefined
-      ? (json.pairs as JsonASTNode[]).map((pair: Readonly<JsonASTNode>) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-          const pairObj = pair as { key?: unknown; value?: unknown };
-          return {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-            key: deserializer.deserializeNode(pairObj.key as JsonASTNode) as Expression,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-            value: deserializer.deserializeNode(pairObj.value as JsonASTNode) as Expression,
-          };
-        })
+  const pairsProperty = json.pairs;
+  const pairsArray =
+    pairsProperty !== null && pairsProperty !== undefined && Array.isArray(pairsProperty)
+      ? pairsProperty
       : [];
+  const pairs: { key: Expression; value: Expression }[] = pairsArray.map(
+    (pair: Readonly<{ key?: unknown; value?: unknown }>) => {
+      const rawKey = pair.key;
+      const rawValue = pair.value;
+      if (!isJsonASTNode(rawKey) || !isJsonASTNode(rawValue)) {
+        throw new Error('Invalid MapInitializer: pair key/value is not a JsonASTNode');
+      }
+      const key = deserializeExpressionFromJsonNode(rawKey, deserializer, 'MapInitializer.key');
+      const value = deserializeExpressionFromJsonNode(
+        rawValue,
+        deserializer,
+        'MapInitializer.value'
+      );
+      return { key, value };
+    }
+  );
 
   return NodeFactory.createMapInitializer(type, pairs, locationOption);
 }
@@ -274,16 +349,22 @@ export function deserializeMapInitializer(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ExpressionElementValue node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeExpressionElementValue(
+function deserializeExpressionElementValue(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ExpressionElementValue {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const value = deserializer.deserializeNode(json.value as JsonASTNode) as Expression;
+  const valueNode = getJsonASTNodeProperty(json, 'value');
+  const value = deserializeExpressionFromJsonNode(
+    valueNode,
+    deserializer,
+    'ExpressionElementValue.value'
+  );
   return NodeFactory.createExpressionElementValue(value, locationOption);
 }
 
@@ -293,11 +374,12 @@ export function deserializeExpressionElementValue(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized AnnotationElementValue node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeAnnotationElementValue(
+function deserializeAnnotationElementValue(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): AnnotationElementValue {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -316,21 +398,25 @@ export function deserializeAnnotationElementValue(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ArrayElementValue node.
+ * @throws {Error} If the deserializer instance is not provided or if child is not an ElementValue node.
  */
-export function deserializeArrayElementValue(
+function deserializeArrayElementValue(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ArrayElementValue {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
   const values =
     json.values !== null && json.values !== undefined
-      ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access returns unknown due to index signature
-        ((json.values as JsonASTNode[]).map((val: Readonly<JsonASTNode>) =>
-          deserializer.deserializeNode(val)
-        ) as ElementValue[])
+      ? getJsonASTNodeArrayProperty(json, 'values').map((val: Readonly<JsonASTNode>) => {
+          const deserialized = deserializer.deserializeNode(val);
+          if (!isElementValue(deserialized)) {
+            throw new Error('Invalid ArrayElementValue: child is not an ElementValue node');
+          }
+          return deserialized;
+        })
       : [];
   return NodeFactory.createArrayElementValue(values, locationOption);
 }
@@ -341,24 +427,29 @@ export function deserializeArrayElementValue(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized AnnotationArgument node.
+ * @throws {Error} If the deserializer instance is not provided or if value is not an ElementValue node.
  */
-export function deserializeAnnotationArgument(
+function deserializeAnnotationArgument(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): AnnotationArgument {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-  const name = json.name as string | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-  const value = deserializer.deserializeNode(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-    json.value as JsonASTNode
-  ) as ElementValue;
+  const nameProp = json.name;
+  const name = typeof nameProp === 'string' ? nameProp : undefined;
 
-  const isNameImplicitValue = json.isNameImplicit as boolean | undefined;
+  const valueNode = getJsonASTNodeProperty(json, 'value');
+  const rawValue = deserializer.deserializeNode(valueNode);
+  if (!isElementValue(rawValue)) {
+    throw new Error('Invalid AnnotationArgument: value is not an ElementValue node');
+  }
+  const value = rawValue;
+
+  const isNameImplicitValueRaw = json.isNameImplicit;
+  const isNameImplicitValue =
+    typeof isNameImplicitValueRaw === 'boolean' ? isNameImplicitValueRaw : undefined;
   const isNameImplicit = (isNameImplicitValue ?? name === undefined) || name === '';
 
   return {
@@ -374,42 +465,46 @@ export function deserializeAnnotationArgument(
  * Deserializes a VariableDeclaration.
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
- * @param locationOption.location
+ * @param locationOption.location - The source location range.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized VariableDeclaration node.
+ * @throws {Error} If the deserializer instance is not provided or if modifier is not a Modifier node.
  */
-export function deserializeVariableDeclaration(
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- JSON deserialization requires mutable object
-  json: JsonASTNode,
+function deserializeVariableDeclaration(
+  json: Readonly<JsonASTNode>,
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
   locationOption?: { location: SourceRange },
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): VariableDeclaration {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-  const name = json.name as string;
+  const name = getStringProperty(json, 'name');
 
-  const type = deserializeTypeRefNode(json.type as JsonASTNode, undefined, deserializer);
+  const typeNode = getJsonASTNodeProperty(json, 'type');
+  const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
 
   const initializer =
     json.initializer !== null && json.initializer !== undefined && json.initializer !== false
-      ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-        (deserializer.deserializeNode(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-          json.initializer as JsonASTNode
-        ) as Expression)
+      ? ((): Expression => {
+          const initNode = getJsonASTNodeProperty(json, 'initializer');
+          return deserializeExpressionFromJsonNode(
+            initNode,
+            deserializer,
+            'VariableDeclaration.initializer'
+          );
+        })()
       : undefined;
 
   const modifiers =
     json.modifiers !== null && json.modifiers !== undefined
-      ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-        (json.modifiers as JsonASTNode[]).map(
-          (mod: Readonly<JsonASTNode>) =>
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-            deserializer.deserializeNode(mod) as Modifier
-        )
+      ? getJsonASTNodeArrayProperty(json, 'modifiers').map((mod: Readonly<JsonASTNode>) => {
+          const deserialized = deserializer.deserializeNode(mod);
+          if (!isModifier(deserialized)) {
+            throw new Error('Invalid VariableDeclaration: modifier is not a Modifier node');
+          }
+          return deserialized;
+        })
       : undefined;
 
   return NodeFactory.createVariableDeclaration(name, type, initializer, modifiers, locationOption);
@@ -420,8 +515,9 @@ export function deserializeVariableDeclaration(
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized Modifier node.
+ * @throws {Error} If the modifier keyword is invalid.
  */
-export function deserializeModifier(
+function deserializeModifier(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): Modifier {
@@ -465,7 +561,7 @@ export function deserializeModifier(
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized Identifier node.
  */
-export function deserializeIdentifier(
+function deserializeIdentifier(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): Identifier {
@@ -473,3 +569,23 @@ export function deserializeIdentifier(
 
   return NodeFactory.createIdentifier(name, locationOption);
 }
+
+export {
+  deserializeStringVal,
+  deserializeIntegerVal,
+  deserializeDoubleVal,
+  deserializeLongVal,
+  deserializeDecimalVal,
+  deserializeBooleanVal,
+  deserializeConstructorInitializer,
+  deserializeValuesInitializer,
+  deserializeSizedArrayInitializer,
+  deserializeMapInitializer,
+  deserializeExpressionElementValue,
+  deserializeAnnotationElementValue,
+  deserializeArrayElementValue,
+  deserializeAnnotationArgument,
+  deserializeVariableDeclaration,
+  deserializeModifier,
+  deserializeIdentifier,
+};

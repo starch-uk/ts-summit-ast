@@ -14,10 +14,14 @@ import {
   parseApexDocComment,
 } from './apexdocParser.js';
 
+// ============================================================================
+// Comment Utilities
+// ============================================================================
+
 /**
  * Comment information.
  */
-export interface CommentInfo {
+interface CommentInfo {
   readonly line: number;
 
   /**
@@ -39,7 +43,7 @@ export interface CommentInfo {
 /**
  * Result of finding an associated node.
  */
-export interface AssociatedNodeResult {
+interface AssociatedNodeResult {
   readonly node: ASTNode;
   readonly relationship: 'attached' | 'enclosing' | 'following' | 'preceding';
 
@@ -52,7 +56,7 @@ export interface AssociatedNodeResult {
 /**
  * Options for finding associated nodes.
  */
-export interface FindAssociatedNodeOptions {
+interface FindAssociatedNodeOptions {
   /**
    * Maximum character distance to search for associated nodes.
    * @default 100
@@ -67,69 +71,10 @@ export interface FindAssociatedNodeOptions {
 }
 
 /**
- * Find the AST node associated with a comment.
- * @param ast - The root AST node to search in.
- * @param comment - The comment information.
- * @param source - The source code string.
- * @param options - Options for finding the associated node.
- * @returns The associated node result, or null if not found.
- */
-// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
-export function findAssociatedNode(
-  ast: ASTNode,
-  comment: CommentInfo,
-  source: string,
-  options: FindAssociatedNodeOptions = {}
-): AssociatedNodeResult | null {
-  const defaultMaxDistance = 100;
-  const { maxDistance = defaultMaxDistance, preferPreceding = true } = options;
-  const position: Position = { column: comment.column, line: comment.line };
-
-  // First, try to find a node at the comment position (for inline comments)
-  const nodeAtPosition = findNodeAtPosition(ast, position, { preferLeaf: true });
-  if (nodeAtPosition) {
-    const nodeRange = getSourceRange(nodeAtPosition.node);
-    if (nodeRange) {
-      const distance = getDistanceToRange(position, nodeRange);
-      return {
-        distance,
-        node: nodeAtPosition.node,
-        relationship: 'enclosing',
-      };
-    }
-  }
-
-  // Try to find preceding node (on same line, before comment)
-  if (preferPreceding) {
-    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
-    if (precedingNode) {
-      return precedingNode;
-    }
-  }
-
-  // Try to find following node (on same line or next line, after comment)
-  const followingNode = findFollowingNode(ast, position, source, maxDistance);
-  if (followingNode) {
-    return followingNode;
-  }
-
-  // If preferPreceding was false and we didn't find following, try preceding
-  if (!preferPreceding) {
-    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
-    if (precedingNode) {
-      return precedingNode;
-    }
-  }
-
-  return null;
-}
-
-/**
  * Find a node preceding the comment position.
  * @param ast - The root AST node to search in.
  * @param position - The comment position.
- * @param source - The source code string.
- * @param _source
+ * @param _source - The source code string.
  * @param maxDistance - Maximum character distance to search.
  * @returns The preceding node result, or null if not found.
  */
@@ -144,7 +89,9 @@ function findPrecedingNode(
   let bestDistance = Infinity;
 
   // Try positions before the comment on the same line
-  for (let col = position.column - 1; col >= 1; col--) {
+  const previousColumnOffset = 1;
+  const minimumColumnValue = 1;
+  for (let col = position.column - previousColumnOffset; col >= minimumColumnValue; col--) {
     const testPosition: Position = { column: col, line: position.line };
     const result = findNodeAtPosition(ast, testPosition, { preferLeaf: false });
 
@@ -233,9 +180,67 @@ function findFollowingNode(
 }
 
 /**
+ * Find the AST node associated with a comment.
+ * @param ast - The root AST node to search in.
+ * @param comment - The comment information.
+ * @param source - The source code string.
+ * @param options - Options for finding the associated node.
+ * @returns The associated node result, or null if not found.
+ */
+// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
+function findAssociatedNode(
+  ast: ASTNode,
+  comment: CommentInfo,
+  source: string,
+  options: FindAssociatedNodeOptions = {}
+): AssociatedNodeResult | null {
+  const defaultMaxDistance = 100;
+  const { maxDistance = defaultMaxDistance, preferPreceding = true } = options;
+  const position: Position = { column: comment.column, line: comment.line };
+
+  // First, try to find a node at the comment position (for inline comments)
+  const nodeAtPosition = findNodeAtPosition(ast, position, { preferLeaf: true });
+  if (nodeAtPosition) {
+    const nodeRange = getSourceRange(nodeAtPosition.node);
+    if (nodeRange) {
+      const distance = getDistanceToRange(position, nodeRange);
+      return {
+        distance,
+        node: nodeAtPosition.node,
+        relationship: 'enclosing',
+      };
+    }
+  }
+
+  // Try to find preceding node (on same line, before comment)
+  if (preferPreceding) {
+    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
+    if (precedingNode) {
+      return precedingNode;
+    }
+  }
+
+  // Try to find following node (on same line or next line, after comment)
+  const followingNode = findFollowingNode(ast, position, source, maxDistance);
+  if (followingNode) {
+    return followingNode;
+  }
+
+  // If preferPreceding was false and we didn't find following, try preceding
+  if (!preferPreceding) {
+    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
+    if (precedingNode) {
+      return precedingNode;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Comment pattern configuration for recognizing special comment types.
  */
-export interface CommentPattern {
+interface CommentPattern {
   /**
    * Pattern to match comments (e.g., /^\/\/\s*(TODO|FIXME):\s*(.+)$/i).
    */
@@ -256,7 +261,7 @@ export interface CommentPattern {
 /**
  * Extracted comment with node association.
  */
-export interface ExtractedComment extends CommentInfo {
+interface ExtractedComment extends CommentInfo {
   /**
    * Full comment text including any description after the marker
    * Example: "// ❌ Invalid field access" instead of just "// ❌"
@@ -328,7 +333,7 @@ export interface ExtractedComment extends CommentInfo {
 /**
  * Options for extracting comments.
  */
-export interface ExtractCommentsOptions {
+interface ExtractCommentsOptions {
   readonly includeBlockComments?: boolean;
   readonly includeLineComments?: boolean;
 
@@ -352,8 +357,10 @@ export interface ExtractCommentsOptions {
    * When provided, comments matching these patterns are categorized accordingly
    * Example: [{ pattern: /^\/\/\s*(TODO|FIXME):\s*(.+)$/i, type: 'todo' }].
    */
-  readonly commentPatterns?: CommentPattern[];
+  readonly commentPatterns?: readonly CommentPattern[];
 }
+
+const EMPTY_EXTRACT_OPTIONS: Readonly<ExtractCommentsOptions> = {};
 
 /**
  * Matches a comment against a set of patterns.
@@ -362,8 +369,9 @@ export interface ExtractCommentsOptions {
  * @returns The match result if a pattern matches, or null if no match.
  */
 function matchCommentPattern(
-  commentText: Readonly<string>,
-  patterns?: readonly Readonly<CommentPattern>[]
+  commentText: string,
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- patterns use Readonly<> but rule still flags
+  patterns?: Readonly<readonly Readonly<CommentPattern>[]>
 ): { type: string; matches: RegExpMatchArray } | null {
   const emptyArrayLength = 0;
   if (!patterns || patterns.length === emptyArrayLength) {
@@ -410,10 +418,11 @@ function matchCommentPattern(
  * });
  * ```
  */
-export function extractComments(
+function extractComments(
   ast: Readonly<ASTNode>,
-  source: Readonly<string>,
-  options: Readonly<ExtractCommentsOptions> = {}
+  source: string,
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- options use Readonly<> and const default but rule still flags
+  options: Readonly<Readonly<ExtractCommentsOptions>> = EMPTY_EXTRACT_OPTIONS
 ): ExtractedComment[] {
   const {
     includeBlockComments = true,
@@ -722,6 +731,7 @@ export function extractComments(
  * @param commentText - The full comment text (may span multiple lines).
  * @returns The source range for the comment.
  */
+// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
 function calculateCommentLocation(
   _source: string,
   startLine: number,
@@ -729,8 +739,9 @@ function calculateCommentLocation(
   commentText: string
 ): SourceRange {
   const commentLines = commentText.split(/\r?\n/);
-  const endLine = startLine + commentLines.length - 1;
-  const endLineText = commentLines[commentLines.length - 1] ?? '';
+  const lastIndexOffset = 1;
+  const endLine = startLine + commentLines.length - lastIndexOffset;
+  const endLineText = commentLines[commentLines.length - lastIndexOffset] ?? '';
   const endColumn = startColumn + endLineText.length;
 
   return {
@@ -744,3 +755,14 @@ function calculateCommentLocation(
     },
   };
 }
+
+export type {
+  CommentInfo,
+  AssociatedNodeResult,
+  FindAssociatedNodeOptions,
+  CommentPattern,
+  ExtractedComment,
+  ExtractCommentsOptions,
+};
+
+export { findAssociatedNode, extractComments };

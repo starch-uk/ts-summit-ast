@@ -28,7 +28,7 @@ import type {
  * @param node - The AST node to check.
  * @returns True if the node is an Expression.
  */
-export function isExpression(node: ASTNode): node is Expression {
+function isExpression(node: ASTNode): node is Expression {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -68,7 +68,7 @@ export function isExpression(node: ASTNode): node is Expression {
  * @param node - The AST node to check.
  * @returns True if the node is a BinaryExpression.
  */
-export function isBinaryExpression(node: ASTNode): node is BinaryExpression {
+function isBinaryExpression(node: ASTNode): node is BinaryExpression {
   return 'kind' in node && node.kind === 'BinaryExpression';
 }
 
@@ -77,7 +77,7 @@ export function isBinaryExpression(node: ASTNode): node is BinaryExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a UnaryExpression.
  */
-export function isUnaryExpression(node: ASTNode): node is UnaryExpression {
+function isUnaryExpression(node: ASTNode): node is UnaryExpression {
   return 'kind' in node && node.kind === 'UnaryExpression';
 }
 
@@ -86,7 +86,7 @@ export function isUnaryExpression(node: ASTNode): node is UnaryExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a CallExpression.
  */
-export function isCallExpression(node: ASTNode): node is CallExpression {
+function isCallExpression(node: ASTNode): node is CallExpression {
   return 'kind' in node && node.kind === 'CallExpression';
 }
 
@@ -96,7 +96,7 @@ export function isCallExpression(node: ASTNode): node is CallExpression {
  * @returns True if the node is a CallExpression.
  * @deprecated Use isCallExpression instead.
  */
-export function isMethodCallExpression(node: ASTNode): node is CallExpression {
+function isMethodCallExpression(node: ASTNode): node is CallExpression {
   return isCallExpression(node);
 }
 
@@ -105,7 +105,7 @@ export function isMethodCallExpression(node: ASTNode): node is CallExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a VariableExpression.
  */
-export function isVariableExpression(node: ASTNode): node is VariableExpression {
+function isVariableExpression(node: ASTNode): node is VariableExpression {
   return 'kind' in node && node.kind === 'VariableExpression';
 }
 
@@ -114,7 +114,7 @@ export function isVariableExpression(node: ASTNode): node is VariableExpression 
  * @param node - The AST node to check.
  * @returns True if the node is a FieldExpression.
  */
-export function isFieldExpression(node: ASTNode): node is FieldExpression {
+function isFieldExpression(node: ASTNode): node is FieldExpression {
   return 'kind' in node && node.kind === 'FieldExpression';
 }
 
@@ -124,7 +124,7 @@ export function isFieldExpression(node: ASTNode): node is FieldExpression {
  * @returns True if the node is a FieldExpression.
  * @deprecated Use isFieldExpression instead.
  */
-export function isFieldAccessExpression(node: ASTNode): node is FieldExpression {
+function isFieldAccessExpression(node: ASTNode): node is FieldExpression {
   return isFieldExpression(node);
 }
 
@@ -133,7 +133,7 @@ export function isFieldAccessExpression(node: ASTNode): node is FieldExpression 
  * @param node - The AST node to check.
  * @returns True if the node is an ArrayExpression.
  */
-export function isArrayExpression(node: ASTNode): node is ArrayExpression {
+function isArrayExpression(node: ASTNode): node is ArrayExpression {
   return 'kind' in node && node.kind === 'ArrayExpression';
 }
 
@@ -143,7 +143,7 @@ export function isArrayExpression(node: ASTNode): node is ArrayExpression {
  * @returns True if the node is an ArrayExpression.
  * @deprecated Use isArrayExpression instead.
  */
-export function isArrayAccessExpression(node: ASTNode): node is ArrayExpression {
+function isArrayAccessExpression(node: ASTNode): node is ArrayExpression {
   return isArrayExpression(node);
 }
 
@@ -152,7 +152,7 @@ export function isArrayAccessExpression(node: ASTNode): node is ArrayExpression 
  * @param node - The AST node to check.
  * @returns True if the node is a NewExpression.
  */
-export function isNewExpression(node: ASTNode): node is NewExpression {
+function isNewExpression(node: ASTNode): node is NewExpression {
   return 'kind' in node && node.kind === 'NewExpression';
 }
 
@@ -161,7 +161,7 @@ export function isNewExpression(node: ASTNode): node is NewExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a CastExpression.
  */
-export function isCastExpression(node: ASTNode): node is CastExpression {
+function isCastExpression(node: ASTNode): node is CastExpression {
   return 'kind' in node && node.kind === 'CastExpression';
 }
 
@@ -170,7 +170,7 @@ export function isCastExpression(node: ASTNode): node is CastExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a TernaryExpression.
  */
-export function isTernaryExpression(node: ASTNode): node is TernaryExpression {
+function isTernaryExpression(node: ASTNode): node is TernaryExpression {
   return 'kind' in node && node.kind === 'TernaryExpression';
 }
 
@@ -179,7 +179,7 @@ export function isTernaryExpression(node: ASTNode): node is TernaryExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a ParenthesizedExpression.
  */
-export function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpression {
+function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpression {
   return 'kind' in node && node.kind === 'ParenthesizedExpression';
 }
 
@@ -188,7 +188,7 @@ export function isParenthesizedExpression(node: ASTNode): node is ParenthesizedE
  * @param node - The AST node to check.
  * @returns True if the node is a SoqlExpression.
  */
-export function isSoqlExpression(node: ASTNode): node is SoqlExpression {
+function isSoqlExpression(node: ASTNode): node is SoqlExpression {
   return 'kind' in node && node.kind === 'SoqlExpression';
 }
 
@@ -198,7 +198,7 @@ export function isSoqlExpression(node: ASTNode): node is SoqlExpression {
  * @returns True if the node is a SoqlExpression.
  * @deprecated Use isSoqlExpression instead.
  */
-export function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
+function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
   return isSoqlExpression(node);
 }
 
@@ -207,7 +207,7 @@ export function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a SoslExpression.
  */
-export function isSoslExpression(node: ASTNode): node is SoslExpression {
+function isSoslExpression(node: ASTNode): node is SoslExpression {
   return 'kind' in node && node.kind === 'SoslExpression';
 }
 
@@ -217,7 +217,7 @@ export function isSoslExpression(node: ASTNode): node is SoslExpression {
  * @returns True if the node is a SoslExpression.
  * @deprecated Use isSoslExpression instead.
  */
-export function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
+function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
   return isSoslExpression(node);
 }
 
@@ -226,7 +226,7 @@ export function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a TriggerContextVariableExpression.
  */
-export function isTriggerContextVariableExpression(
+function isTriggerContextVariableExpression(
   node: ASTNode
 ): node is TriggerContextVariableExpression {
   return 'kind' in node && node.kind === 'TriggerContextVariableExpression';
@@ -237,7 +237,7 @@ export function isTriggerContextVariableExpression(
  * @param node - The AST node to check.
  * @returns True if the node is a ThisExpression.
  */
-export function isThisExpression(node: ASTNode): node is ThisExpression {
+function isThisExpression(node: ASTNode): node is ThisExpression {
   return 'kind' in node && node.kind === 'ThisExpression';
 }
 
@@ -246,6 +246,30 @@ export function isThisExpression(node: ASTNode): node is ThisExpression {
  * @param node - The AST node to check.
  * @returns True if the node is a SuperExpression.
  */
-export function isSuperExpression(node: ASTNode): node is SuperExpression {
+function isSuperExpression(node: ASTNode): node is SuperExpression {
   return 'kind' in node && node.kind === 'SuperExpression';
 }
+
+export {
+  isExpression,
+  isBinaryExpression,
+  isUnaryExpression,
+  isCallExpression,
+  isMethodCallExpression,
+  isVariableExpression,
+  isFieldExpression,
+  isFieldAccessExpression,
+  isArrayExpression,
+  isArrayAccessExpression,
+  isNewExpression,
+  isCastExpression,
+  isTernaryExpression,
+  isParenthesizedExpression,
+  isSoqlExpression,
+  isSoqlQueryExpression,
+  isSoslExpression,
+  isSoslQueryExpression,
+  isTriggerContextVariableExpression,
+  isThisExpression,
+  isSuperExpression,
+};

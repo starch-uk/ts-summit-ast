@@ -7,6 +7,8 @@ import {
   isApexDocCommentString,
   type ApexDocParseOptions,
 } from '../../src/utils/apexdocParser.js';
+import type { ApexDocBlockTag } from '../../src/ast/apexDoc.js';
+import type { CommentInfo } from '../../src/utils/commentUtils.js';
 import { isClassDeclaration, isVariableDeclaration } from '../../src/guard/index.js';
 import {
   getSourceText,
@@ -23,13 +25,6 @@ import {
 import type { Position } from '../../src/utils/sourceExtraction.js';
 import type { SourceRange } from '../../src/ast/baseNode.js';
 import type { ASTNode } from '../../src/ast/baseNode.js';
-import type { ApexDocParam, ApexDocGroup, ApexDocThrows } from '../../src/ast/apexDoc.js';
-import type {
-  VariableExpression,
-  CompoundStatement,
-  IfStatement,
-  Identifier,
-} from '../../src/ast/index.js';
 import type { ApexParseError } from '../../src/utils/apexParser.js';
 import type { ParseTreeNode } from '../../src/parser/parseTree.js';
 import { walkAST } from '../../src/utils/traversal.js';
@@ -47,6 +42,7 @@ import {
   validateXPath,
   getXPathFeatureSupport,
 } from '../../src/utils/ruleMatching.js';
+import type { RuleMatch } from '../../src/utils/ruleMatching.js';
 import { parseAndTranslate, findFirstNodeOfType } from '../translateHelpers.js';
 import {
   getAncestors,
@@ -58,7 +54,6 @@ import {
 } from '../../src/utils/traversal.js';
 import { NodeFactory } from '../../src/translator/nodeFactory.js';
 import { extractComments, findAssociatedNode } from '../../src/utils/commentUtils.js';
-import type { CommentInfo } from '../../src/utils/commentUtils.js';
 import {
   parseApexCode,
   parseMultipleFiles,
@@ -118,7 +113,9 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
       expect(result.blockTags[0].kind).toBe('ApexDocParam');
-      expect((result.blockTags[0] as ApexDocParam).paramName).toBe('name');
+      if (result.blockTags[0].kind === 'ApexDocParam') {
+        expect(result.blockTags[0].paramName).toBe('name');
+      }
     });
 
     it('should parse ApexDoc comment with multiple @param tags', () => {
@@ -133,9 +130,13 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(2);
       expect(result.blockTags[0].kind).toBe('ApexDocParam');
-      expect((result.blockTags[0] as ApexDocParam).paramName).toBe('x');
+      if (result.blockTags[0].kind === 'ApexDocParam') {
+        expect(result.blockTags[0].paramName).toBe('x');
+      }
       expect(result.blockTags[1].kind).toBe('ApexDocParam');
-      expect((result.blockTags[1] as ApexDocParam).paramName).toBe('y');
+      if (result.blockTags[1].kind === 'ApexDocParam') {
+        expect(result.blockTags[1].paramName).toBe('y');
+      }
     });
 
     it('should parse @return tag', () => {
@@ -201,7 +202,9 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
       expect(result.blockTags[0].kind).toBe('ApexDocGroup');
-      expect((result.blockTags[0] as ApexDocGroup).groupName).toBe('Utilities');
+      if (result.blockTags[0].kind === 'ApexDocGroup') {
+        expect(result.blockTags[0].groupName).toBe('Utilities');
+      }
     });
 
     it('should parse @group tag with description', () => {
@@ -214,7 +217,9 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags[0].kind).toBe('ApexDocGroup');
-      expect((result.blockTags[0] as ApexDocGroup).groupName).toBe('Utilities');
+      if (result.blockTags[0].kind === 'ApexDocGroup') {
+        expect(result.blockTags[0].groupName).toBe('Utilities');
+      }
     });
 
     it('should parse @see tag', () => {
@@ -254,7 +259,9 @@ describe('ApexDoc Parser', () => {
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
       expect(result.blockTags[0].kind).toBe('ApexDocThrows');
-      expect((result.blockTags[0] as ApexDocThrows).exceptionType).toBe('IllegalArgumentException');
+      if (result.blockTags[0].kind === 'ApexDocThrows') {
+        expect(result.blockTags[0].exceptionType).toBe('IllegalArgumentException');
+      }
     });
 
     it('should parse @throws tag without exception type', () => {
@@ -528,9 +535,24 @@ describe('ApexDoc Parser', () => {
 
         expect(result).not.toBeNull();
         if (!result) throw new Error('Expected parseApexDocComment to return a result');
-        expect(result.blockTags.some((tag) => tag.kind === 'ApexDocGroup')).toBe(true);
-        expect(result.blockTags.some((tag) => tag.kind === 'ApexDocAuthor')).toBe(true);
-        expect(result.blockTags.some((tag) => tag.kind === 'ApexDocVersion')).toBe(true);
+        expect(
+          result.blockTags.some(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocGroup'
+          )
+        ).toBe(true);
+        expect(
+          result.blockTags.some(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocAuthor'
+          )
+        ).toBe(true);
+        expect(
+          result.blockTags.some(
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocVersion'
+          )
+        ).toBe(true);
       });
     });
   });
@@ -682,7 +704,9 @@ public class Test {
       });
 
       expect(comments.length).toBeGreaterThan(0);
-      expect(comments.some((c) => c.text.includes('This is a comment'))).toBe(true);
+      expect(
+        comments.some((c: Readonly<CommentInfo>) => c.text.includes('This is a comment'))
+      ).toBe(true);
     });
 
     it('should extract block comments', () => {
@@ -783,10 +807,13 @@ public void utility() {}`;
 
         expect(comments[0].apexDocComment).toBeDefined();
         const groupTag = comments[0].apexDocComment?.blockTags.find(
-          (tag) => tag.kind === 'ApexDocGroup'
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+          (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocGroup'
         );
         expect(groupTag).toBeDefined();
-        expect(groupTag!.groupName).toBe('Utilities');
+        if (groupTag) {
+          expect(groupTag.groupName).toBe('Utilities');
+        }
       });
 
       it('should parse ApexDoc with multiple block tags', () => {
@@ -953,7 +980,7 @@ public class Test {}`;
         includeLineComments: false,
       });
 
-      expect(comments.every((c) => c.type === 'block')).toBe(true);
+      expect(comments.every((c: Readonly<CommentInfo>) => c.type === 'block')).toBe(true);
     });
 
     it('should handle includeBlockComments false', () => {
@@ -966,7 +993,7 @@ public class Test {}`;
         includeLineComments: true,
       });
 
-      expect(comments.every((c) => c.type === 'line')).toBe(true);
+      expect(comments.every((c: Readonly<CommentInfo>) => c.type === 'line')).toBe(true);
     });
 
     it('should handle comments with no text after marker', () => {
@@ -977,7 +1004,7 @@ public class Test {}`;
       const comments = extractComments(ast, source);
 
       expect(comments.length).toBeGreaterThan(0);
-      comments.forEach((c) => {
+      comments.forEach((c: Readonly<CommentInfo>) => {
         expect(c.marker).toBeDefined();
         expect(c.description).toBeDefined();
       });
@@ -1013,12 +1040,18 @@ function createTestAST(): ASTNode {
   const node3 = NodeFactory.createIdentifier('node3');
   // NODE_1: Block containing IfStatement with NODE_3
   const node1 = NodeFactory.createBlock([
-    NodeFactory.createIfStatement(NodeFactory.createBooleanLiteral(true), node3),
+    NodeFactory.createIfStatement({
+      condition: NodeFactory.createBooleanLiteral(true),
+      thenStatement: node3,
+    }),
   ]);
   // NODE_4: Identifier
   const node4 = NodeFactory.createIdentifier('node4');
   // NODE_2: IfStatement containing NODE_4
-  const node2 = NodeFactory.createIfStatement(NodeFactory.createBooleanLiteral(true), node4);
+  const node2 = NodeFactory.createIfStatement({
+    condition: NodeFactory.createBooleanLiteral(true),
+    thenStatement: node4,
+  });
   // NODE_0: Root Block containing NODE_1 and NODE_2
   const node0 = NodeFactory.createBlock([node1, node2]);
   return node0;
@@ -1032,7 +1065,7 @@ function createTestAST(): ASTNode {
 function nodeToId(node: ASTNode): string {
   // NODE_0: Root Block with 2 statements (NODE_1 and NODE_2)
   if (node.kind === 'CompoundStatement') {
-    const stmts = (node as CompoundStatement).statements;
+    const stmts = node.statements;
     if (stmts.length === 2) {
       // Check if first is a Block (NODE_1) and second is an IfStatement (NODE_2)
       if (stmts[0].kind === 'CompoundStatement' && stmts[1].kind === 'IfStatement') {
@@ -1042,7 +1075,7 @@ function nodeToId(node: ASTNode): string {
   }
   // NODE_1: Block containing an IfStatement with NODE_3
   if (node.kind === 'CompoundStatement') {
-    const stmts = (node as CompoundStatement).statements;
+    const stmts = node.statements;
     if (stmts.length === 1 && stmts[0].kind === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
@@ -1053,17 +1086,17 @@ function nodeToId(node: ASTNode): string {
   }
   // NODE_2: IfStatement containing NODE_4
   if (node.kind === 'IfStatement') {
-    const ifStmt = node as IfStatement;
+    const ifStmt = node;
     if (ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4') {
       return 'NODE_2';
     }
   }
   // NODE_3: Identifier 'node3'
-  if (node.kind === 'Identifier' && (node as Identifier).name === 'node3') {
+  if (node.kind === 'Identifier' && node.name === 'node3') {
     return 'NODE_3';
   }
   // NODE_4: Identifier 'node4'
-  if (node.kind === 'Identifier' && (node as Identifier).name === 'node4') {
+  if (node.kind === 'Identifier' && node.name === 'node4') {
     return 'NODE_4';
   }
   return 'UNKNOWN';
@@ -1077,7 +1110,7 @@ function nodeToId(node: ASTNode): string {
 function nodeIdIs2(node: ASTNode): boolean {
   // NODE_2 is the IfStatement containing NODE_4
   if (node.kind === 'IfStatement') {
-    const ifStmt = node as IfStatement;
+    const ifStmt = node;
     return ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4';
   }
   return false;
@@ -1091,7 +1124,7 @@ function nodeIdIs2(node: ASTNode): boolean {
 function nodeIdIs1(node: ASTNode): boolean {
   // NODE_1 is the Block containing an IfStatement with NODE_3
   if (node.kind === 'CompoundStatement') {
-    const stmts = (node as CompoundStatement).statements;
+    const stmts = node.statements;
     if (stmts.length === 1 && stmts[0].kind === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
@@ -1686,7 +1719,8 @@ describe('Rule Matching Utilities', () => {
       expect(matches.length).toBeGreaterThan(0);
       // Sibling nodes should be populated when parent has statements
       const matchWithSiblings = matches.find(
-        (m) => m.siblingNodes != null && m.siblingNodes.length > 0
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<RuleMatch>>) => m.siblingNodes != null && m.siblingNodes.length > 0
       );
       if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
@@ -1694,26 +1728,27 @@ describe('Rule Matching Utilities', () => {
     });
 
     it('should include sibling nodes when parent has members property', () => {
-      const member1 = NodeFactory.createMethodDeclaration(
-        'public',
-        'method1',
-        [],
-        undefined,
-        NodeFactory.createBlock([])
-      );
-      const member2 = NodeFactory.createMethodDeclaration(
-        'public',
-        'method2',
-        [],
-        undefined,
-        NodeFactory.createBlock([])
-      );
+      const member1 = NodeFactory.createMethodDeclaration({
+        body: NodeFactory.createCompoundStatement([]),
+        modifiers: [],
+        name: 'method1',
+        parameters: [],
+        returnType: NodeFactory.createSimpleTypeRef('void'),
+      });
+      const member2 = NodeFactory.createMethodDeclaration({
+        body: NodeFactory.createCompoundStatement([]),
+        modifiers: [],
+        name: 'method2',
+        parameters: [],
+        returnType: NodeFactory.createSimpleTypeRef('void'),
+      });
       const classDecl = NodeFactory.createClassDeclaration('Test', [member1, member2], []);
 
       const matches = findRuleMatches(classDecl, '//MethodDeclaration', { includeContext: true });
       expect(matches.length).toBeGreaterThan(0);
       const matchWithSiblings = matches.find(
-        (m) => m.siblingNodes != null && m.siblingNodes.length > 0
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<RuleMatch>>) => m.siblingNodes != null && m.siblingNodes.length > 0
       );
       if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
@@ -1728,7 +1763,8 @@ describe('Rule Matching Utilities', () => {
       const matches = findRuleMatches(methodCall, '//Identifier', { includeContext: true });
       expect(matches.length).toBeGreaterThan(0);
       const matchWithSiblings = matches.find(
-        (m) => m.siblingNodes != null && m.siblingNodes.length > 0
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<RuleMatch>>) => m.siblingNodes != null && m.siblingNodes.length > 0
       );
       if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
@@ -2152,10 +2188,10 @@ describe('AST Traversal Utilities', () => {
         },
       };
 
-      const ast = NodeFactory.createIfStatement(
-        NodeFactory.createBooleanLiteral(true),
-        NodeFactory.createReturnStatement()
-      );
+      const ast = NodeFactory.createIfStatement({
+        condition: NodeFactory.createBooleanLiteral(true),
+        thenStatement: NodeFactory.createReturnStatement(),
+      });
 
       walkAST(ast, visitor);
       expect(visited.length).toBeGreaterThan(0);
@@ -2192,10 +2228,10 @@ describe('AST Traversal Utilities', () => {
         },
       };
 
-      const ast = NodeFactory.createIfStatement(
-        NodeFactory.createBooleanLiteral(true),
-        NodeFactory.createReturnStatement()
-      );
+      const ast = NodeFactory.createIfStatement({
+        condition: NodeFactory.createBooleanLiteral(true),
+        thenStatement: NodeFactory.createReturnStatement(),
+      });
 
       walkAST(ast, visitor);
       // Should only visit IfStatement, not its children

@@ -4,7 +4,7 @@
  */
 
 import type { ParseTreeNode } from '../parser/parseTree.js';
-import type { TypeRef, ASTNode } from '../ast/baseNode.js';
+import type { TypeRef, TypeRefComponent, ASTNode } from '../ast/baseNode.js';
 import type {
   Modifier,
   ModifierKeyword,
@@ -22,14 +22,15 @@ import { NodeFactory } from './nodeFactory.js';
 /**
  * Error thrown during AST translation from parse tree to AST nodes.
  */
-export class TranslationError extends Error {
-  public constructor(
-    message: string,
-    public readonly node?: Readonly<ParseTreeNode>,
-    public readonly cause?: Error
-  ) {
+class TranslationError extends Error {
+  public readonly node?: Readonly<ParseTreeNode>;
+  public readonly cause?: Error;
+
+  public constructor(message: string, node?: Readonly<ParseTreeNode>, cause?: Readonly<Error>) {
     super(message);
     this.name = 'TranslationError';
+    this.node = node;
+    this.cause = cause;
   }
 }
 
@@ -71,6 +72,7 @@ export interface TranslateContext {
   /**
    * Get child expression from node.
    */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
   getChildExpression: (
     node: Readonly<ParseTreeNode>,
     propertyName: string,
@@ -81,6 +83,7 @@ export interface TranslateContext {
   /**
    * Get child statement from node.
    */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
   getChildStatement: (
     node: Readonly<ParseTreeNode>,
     propertyName: string,
@@ -124,7 +127,8 @@ export interface TranslateContext {
   /**
    * Get property from node.
    */
-  getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
+  getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
 
   /**
    * Get text from node.
@@ -150,6 +154,11 @@ export interface TranslateContext {
    * Current class name (for constructor detection).
    */
   currentClassName: string | undefined;
+
+  /**
+   * Set current class name (for constructor detection during translation).
+   */
+  setCurrentClassName: (value: string | undefined) => void;
 }
 
 /**
@@ -159,18 +168,21 @@ export interface TranslateContext {
  * @param altPropertyName - Optional alternate property name.
  * @returns Array of child nodes.
  */
-export function getChildren(
+function getChildren(
   node: Readonly<ParseTreeNode>,
   propertyName?: string,
   altPropertyName?: string
 ): Readonly<ParseTreeNode>[] {
   // Try named property first
   if (propertyName != null && propertyName in node) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
     const value = (node as unknown as Record<string, unknown>)[propertyName];
     if (Array.isArray(value)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Array type validated by Array.isArray
       return value as Readonly<ParseTreeNode>[];
     }
     if (value !== undefined && value !== null) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Value validated by null check
       return [value as Readonly<ParseTreeNode>];
     }
     return [];
@@ -178,11 +190,14 @@ export function getChildren(
 
   // Try alternate property name
   if (altPropertyName != null && altPropertyName in node) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
     const value = (node as unknown as Record<string, unknown>)[altPropertyName];
     if (Array.isArray(value)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Array type validated by Array.isArray
       return value as Readonly<ParseTreeNode>[];
     }
     if (value !== undefined && value !== null) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Value validated by null check
       return [value as Readonly<ParseTreeNode>];
     }
     return [];
@@ -200,23 +215,27 @@ export function getChildren(
  * @param altPropertyName - Optional alternate property name.
  * @returns The child node, or null if not found.
  */
-export function getChild(
+function getChild(
   node: Readonly<ParseTreeNode>,
   propertyName: string,
   altPropertyName?: string
 ): Readonly<ParseTreeNode> | null {
   // First check if it's a direct property
   if (propertyName in node) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
     const value = (node as unknown as Record<string, unknown>)[propertyName];
     if (value !== undefined && value !== null && typeof value === 'object' && 'type' in value) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by property checks
       return value as ParseTreeNode;
     }
     return null;
   }
 
   if (altPropertyName != null && altPropertyName in node) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
     const value = (node as unknown as Record<string, unknown>)[altPropertyName];
     if (value !== undefined && value !== null && typeof value === 'object' && 'type' in value) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by property checks
       return value as Readonly<ParseTreeNode>;
     }
     return null;
@@ -248,13 +267,16 @@ export function getChild(
 
 /**
  * Get a property value from a parse tree node.
+ * @template T - The type of the property value.
  * @param node - The parse tree node.
  * @param names - Property names to try.
  * @returns The property value, or undefined if not found.
  */
-export function getProperty<T>(node: Readonly<ParseTreeNode>, ...names: string[]): T | undefined {
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
+function getProperty<T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]): T | undefined {
   for (const name of names) {
     if (name in node) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check, generic type T is caller's responsibility
       return (node as Record<string, unknown>)[name] as T;
     }
   }
@@ -266,7 +288,7 @@ export function getProperty<T>(node: Readonly<ParseTreeNode>, ...names: string[]
  * @param node - The parse tree node.
  * @returns The text content, or undefined if not found.
  */
-export function getText(node: Readonly<ParseTreeNode>): string | undefined {
+function getText(node: Readonly<ParseTreeNode>): string | undefined {
   return node.text ?? getProperty<string>(node, 'value', 'content');
 }
 
@@ -276,7 +298,7 @@ export function getText(node: Readonly<ParseTreeNode>): string | undefined {
  * @param includeLocation - Whether to include location information.
  * @returns The location option object if location is enabled and available, otherwise undefined.
  */
-export function getLocationOption(
+function getLocationOption(
   node: Readonly<ParseTreeNode>,
   includeLocation: boolean
 ): Readonly<NodeFactoryOptions> | undefined {
@@ -291,10 +313,7 @@ export function getLocationOption(
  * @param includeLocation - Whether to include location information.
  * @returns The translated type reference, or null if the node is not a type.
  */
-export function tryTranslateType(
-  node: Readonly<ParseTreeNode>,
-  includeLocation: boolean
-): TypeRef | null {
+function tryTranslateType(node: Readonly<ParseTreeNode>, includeLocation: boolean): TypeRef | null {
   const nodeType = node.type.toLowerCase();
 
   // Handle base_type nodes (children of type nodes)
@@ -302,7 +321,13 @@ export function tryTranslateType(
     const name = getText(node) ?? getProperty<string>(node, 'name') ?? 'Object';
     // Void type has empty components array
     if (name.toLowerCase() === 'void') {
-      return NodeFactory.createTypeRef([], 0, getLocationOption(node, includeLocation));
+      const emptyComponents: TypeRefComponent[] = [];
+      const voidArrayNesting = 0;
+      return NodeFactory.createTypeRef(
+        emptyComponents,
+        voidArrayNesting,
+        getLocationOption(node, includeLocation)
+      );
     }
     return NodeFactory.createSimpleTypeRef(name);
   }
@@ -312,29 +337,50 @@ export function tryTranslateType(
     const name = getText(node) ?? getProperty<string>(node, 'name') ?? 'Object';
     // Void type has empty components array
     if (name.toLowerCase() === 'void') {
-      return NodeFactory.createTypeRef([], 0, getLocationOption(node, includeLocation));
+      const emptyComponents: TypeRefComponent[] = [];
+      const voidArrayNesting = 0;
+      return NodeFactory.createTypeRef(
+        emptyComponents,
+        voidArrayNesting,
+        getLocationOption(node, includeLocation)
+      );
     }
     return NodeFactory.createSimpleTypeRef(name);
   }
 
   // Handle void_type nodes (synthetic nodes for constructors)
   if (nodeType === 'void_type') {
-    return NodeFactory.createTypeRef([], 0, getLocationOption(node, includeLocation));
+    const emptyComponents: TypeRefComponent[] = [];
+    const voidArrayNesting = 0;
+    return NodeFactory.createTypeRef(
+      emptyComponents,
+      voidArrayNesting,
+      getLocationOption(node, includeLocation)
+    );
   }
 
   // Handle type nodes - extract base_type or primitive_type from children
   if (nodeType === 'type') {
     // First, try to get the text directly from the type node
     const directText = getText(node);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if string has content after trimming
     if (directText != null && directText.trim().length > 0) {
       if (directText.toLowerCase() === 'void') {
-        return NodeFactory.createTypeRef([], 0, getLocationOption(node, includeLocation));
+        const emptyComponents: TypeRefComponent[] = [];
+        const voidArrayNesting = 0;
+        return NodeFactory.createTypeRef(
+          emptyComponents,
+          voidArrayNesting,
+          getLocationOption(node, includeLocation)
+        );
       }
       // Check for array dimensions
       const arrayDimensionsNode = getChild(node, 'array_dimensions');
+      const defaultArrayNesting = 0;
+      const parseIntRadix = 10;
       const arrayNesting = arrayDimensionsNode
-        ? parseInt(getText(arrayDimensionsNode) ?? '0', 10)
-        : 0;
+        ? parseInt(getText(arrayDimensionsNode) ?? String(defaultArrayNesting), parseIntRadix)
+        : defaultArrayNesting;
       return NodeFactory.createSimpleTypeRef(directText, arrayNesting);
     }
 
@@ -346,14 +392,22 @@ export function tryTranslateType(
 
       // Void type has empty components array (not a component named "void")
       if (qualifiedName.toLowerCase() === 'void') {
-        return NodeFactory.createTypeRef([], 0, getLocationOption(node, includeLocation));
+        const emptyComponents: TypeRefComponent[] = [];
+        const voidArrayNesting = 0;
+        return NodeFactory.createTypeRef(
+          emptyComponents,
+          voidArrayNesting,
+          getLocationOption(node, includeLocation)
+        );
       }
 
       // Check for array dimensions
       const arrayDimensionsNode = getChild(node, 'array_dimensions');
+      const defaultArrayNesting = 0;
+      const parseIntRadix = 10;
       const arrayNesting = arrayDimensionsNode
-        ? parseInt(getText(arrayDimensionsNode) ?? '0', 10)
-        : 0;
+        ? parseInt(getText(arrayDimensionsNode) ?? String(defaultArrayNesting), parseIntRadix)
+        : defaultArrayNesting;
 
       // Check for type arguments (generics) - they apply only to the last component
       const typeArgumentsNode = getChild(node, 'type_arguments');
@@ -366,9 +420,11 @@ export function tryTranslateType(
       }
 
       // Split qualified name (e.g. "A.B.C") into components; type args apply only to the last
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Filtering out empty strings
       const parts = qualifiedName.split('.').filter((s) => s.length > 0);
+      const lastIndexOffset = 1;
       const components = parts.map((part, i) => ({
-        args: i === parts.length - 1 ? typeArguments : [],
+        args: i === parts.length - lastIndexOffset ? typeArguments : [],
         id: NodeFactory.createIdentifier(part),
       }));
 
@@ -383,7 +439,13 @@ export function tryTranslateType(
     const name = getText(node) ?? getProperty<string>(node, 'name') ?? 'Object';
     // Void type has empty components array
     if (name === 'void') {
-      return NodeFactory.createTypeRef([], 0, getLocationOption(node, includeLocation));
+      const emptyComponents: TypeRefComponent[] = [];
+      const voidArrayNesting = 0;
+      return NodeFactory.createTypeRef(
+        emptyComponents,
+        voidArrayNesting,
+        getLocationOption(node, includeLocation)
+      );
     }
     return NodeFactory.createSimpleTypeRef(name);
   }
@@ -392,16 +454,12 @@ export function tryTranslateType(
 
 /**
  * Extract modifiers from a parse tree node.
- * @param ctx - Translation context with helper methods.
- * @param ctx.getChild
- * @param ctx.getChildren
- * @param ctx.getText
- * @param ctx.getProperty
+ * @param ctx - Translation context with helper methods (getChild, getChildren, getText, getProperty).
  * @param node - The parse tree node to extract modifiers from.
  * @returns An array of Modifier nodes found in the parse tree.
  */
-export function extractModifiers(
-  ctx: {
+function extractModifiers(
+  ctx: Readonly<{
     getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
@@ -413,8 +471,9 @@ export function extractModifiers(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
-  },
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
+    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
+  }>,
   node: Readonly<ParseTreeNode>
 ): Modifier[] {
   const modifiers: Modifier[] = [];
@@ -461,17 +520,12 @@ export function extractModifiers(
 
 /**
  * Extract type parameters from a parse tree node.
- * @param ctx - Translation context with helper methods.
- * @param ctx.getChild
- * @param ctx.getChildren
- * @param ctx.getText
- * @param ctx.getProperty
- * @param ctx.tryTranslateType
+ * @param ctx - Translation context with helper methods (getChild, getChildren, getText, getProperty, tryTranslateType).
  * @param node - The parse tree node to extract type parameters from.
  * @returns An array of TypeParameter nodes found in the parse tree.
  */
-export function extractTypeParameters(
-  ctx: {
+function extractTypeParameters(
+  ctx: Readonly<{
     getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
@@ -483,9 +537,10 @@ export function extractTypeParameters(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
+    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
     tryTranslateType: (node: Readonly<ParseTreeNode>) => TypeRef | null;
-  },
+  }>,
   node: Readonly<ParseTreeNode>
 ): TypeParameter[] {
   const typeParams: TypeParameter[] = [];
@@ -504,7 +559,7 @@ export function extractTypeParameters(
         if (name) {
           // Look for extends bound - it's the child that's not 'name'
           const allChildren = ctx.getChildren(paramNode);
-          let extendsBound: TypeRef | undefined;
+          let extendsBound: TypeRef | undefined = undefined;
           for (const child of allChildren) {
             if (child !== nameNode && (child.type === 'type' || child.type === 'primitive_type')) {
               const bound = ctx.tryTranslateType(child);
@@ -530,17 +585,12 @@ export function extractTypeParameters(
 /**
  * Build a single Annotation from an annotation parse node.
  * Used by extractAnnotations and recursively by parseElementValue for nested annotations.
- * @param ctx - Translation context with helper methods.
- * @param ctx.getChild
- * @param ctx.getChildren
- * @param ctx.getText
- * @param ctx.getProperty
- * @param ctx.parseElementValue
+ * @param ctx - Translation context with helper methods (getChild, getChildren, getText, getProperty, parseElementValue).
  * @param annotationNode - The parse tree node representing the annotation.
  * @returns The built Annotation node, or null if the annotation cannot be built.
  */
-export function buildAnnotationFromNode(
-  ctx: {
+function buildAnnotationFromNode(
+  ctx: Readonly<{
     getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
@@ -552,9 +602,10 @@ export function buildAnnotationFromNode(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: string[]) => T | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
+    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
     parseElementValue: (valueNode: Readonly<ParseTreeNode>) => ElementValue | null;
-  },
+  }>,
   annotationNode: Readonly<ParseTreeNode>
 ): Annotation | null {
   const annotationNameNode = ctx.getChild(annotationNode, 'name');
@@ -576,9 +627,10 @@ export function buildAnnotationFromNode(
       const argChildrenList = ctx.getChildren(argNode);
       const emptyArrayLengthLocal = 0;
       if (argChildrenList.length === emptyArrayLengthLocal) continue;
+      const lastIndexOffset = 1;
       const valueNode =
         argChildrenList.find((c) => c.type !== 'name') ??
-        argChildrenList[argChildrenList.length - 1];
+        argChildrenList[argChildrenList.length - lastIndexOffset];
       const elementValue = ctx.parseElementValue(valueNode);
       if (elementValue === null) continue;
       args.push({
@@ -600,18 +652,12 @@ export function buildAnnotationFromNode(
 
 /**
  * Parse an annotation argument value (annotation_expression, new_expression/array, or expression) into an ElementValue.
- * @param ctx - Translation context with helper methods.
- * @param ctx.getChild
- * @param ctx.getChildren
- * @param ctx.getLocationOption
- * @param ctx.buildAnnotationFromNode
- * @param ctx.tryTranslateExpression
- * @param ctx.parseElementValue
+ * @param ctx - Translation context with helper methods (getChild, getChildren, getLocationOption, buildAnnotationFromNode, tryTranslateExpression, parseElementValue).
  * @param valueNode - The parse tree node containing the annotation argument value to parse.
  * @returns The parsed ElementValue node, or null if the value cannot be parsed.
  */
-export function parseElementValue(
-  ctx: {
+function parseElementValue(
+  ctx: Readonly<{
     getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
@@ -626,7 +672,7 @@ export function parseElementValue(
     buildAnnotationFromNode: (annotationNode: Readonly<ParseTreeNode>) => Annotation | null;
     tryTranslateExpression: (node: Readonly<ParseTreeNode>, nodeType: string) => Expression | null;
     parseElementValue: (valueNode: Readonly<ParseTreeNode>) => ElementValue | null;
-  },
+  }>,
   valueNode: Readonly<ParseTreeNode>
 ): ElementValue | null {
   const nodeType = valueNode.type.toLowerCase();
@@ -659,15 +705,12 @@ export function parseElementValue(
 
 /**
  * Extract annotations from a parse tree node.
- * @param ctx - Translation context with helper methods.
- * @param ctx.getChild
- * @param ctx.getChildren
- * @param ctx.buildAnnotationFromNode
+ * @param ctx - Translation context with helper methods (getChild, getChildren, buildAnnotationFromNode).
  * @param node - The parse tree node to extract annotations from.
  * @returns An array of Annotation nodes found in the parse tree.
  */
-export function extractAnnotations(
-  ctx: {
+function extractAnnotations(
+  ctx: Readonly<{
     getChild: (
       node: Readonly<ParseTreeNode>,
       propertyName: string,
@@ -679,7 +722,7 @@ export function extractAnnotations(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     buildAnnotationFromNode: (annotationNode: Readonly<ParseTreeNode>) => Annotation | null;
-  },
+  }>,
   node: Readonly<ParseTreeNode>
 ): Annotation[] {
   const annotations: Annotation[] = [];
@@ -693,3 +736,18 @@ export function extractAnnotations(
   }
   return annotations;
 }
+
+export {
+  TranslationError,
+  getChildren,
+  getChild,
+  getProperty,
+  getText,
+  getLocationOption,
+  tryTranslateType,
+  extractModifiers,
+  extractTypeParameters,
+  buildAnnotationFromNode,
+  parseElementValue,
+  extractAnnotations,
+};

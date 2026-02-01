@@ -122,7 +122,8 @@ describe('JSON Serialization', () => {
       // Deserialize from JSON
       // Note: The deserializer may not support CompilationUnit directly,
       // so we deserialize the JSON structure and verify it matches
-      let testTree;
+      // Initialize with expectedTree as fallback
+      let testTree = expectedTree;
       try {
         testTree = deserializer.deserialize(testJson);
         // Original: assertNotNull(testTree)
@@ -137,7 +138,7 @@ describe('JSON Serialization', () => {
         expect(parsed['@type']).toBe('CompilationUnit');
         expect(parsed.declarations).toBeDefined();
         // For this test, we'll verify serialization works even if deserialization doesn't
-        testTree = expectedTree; // Use original tree for comparison
+        // testTree is already initialized to expectedTree above
       }
 
       // Original: val actualJson = ser.serialize(testTree)
@@ -427,7 +428,11 @@ describe('JSON Serialization', () => {
       const elseStatement = NodeFactory.createReturnStatement(
         NodeFactory.createNumberLiteral(0, '0')
       );
-      const node = NodeFactory.createIfStatement(condition, thenStatement, elseStatement);
+      const node = NodeFactory.createIfStatement({
+        condition,
+        elseStatement,
+        thenStatement,
+      });
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
@@ -464,7 +469,10 @@ describe('JSON Serialization', () => {
       const thenStatement = NodeFactory.createBlock([
         NodeFactory.createReturnStatement(NodeFactory.createStringLiteral('success', '"success"')),
       ]);
-      const ifStmt = NodeFactory.createIfStatement(condition, thenStatement);
+      const ifStmt = NodeFactory.createIfStatement({
+        condition,
+        thenStatement,
+      });
 
       // Serialize and deserialize
       const json = serializer.serialize(ifStmt);
@@ -578,10 +586,7 @@ describe('Comprehensive Serialization', () => {
     it('should serialize and deserialize VariableDeclarationStatement', () => {
       const decl = NodeFactory.createVariableDeclaration(
         'x',
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
         undefined,
         undefined
       );
@@ -633,10 +638,7 @@ describe('Comprehensive Serialization', () => {
         NodeFactory.createIntegerVal(42, '42'),
       ];
       const typeArgs = [
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('String') }]),
       ];
       const node = NodeFactory.createCallExpression('method', args, target, typeArgs);
 
@@ -656,10 +658,9 @@ describe('Comprehensive Serialization', () => {
 
   describe('All Declaration Types', () => {
     it('should serialize and deserialize VariableDeclaration with all properties', () => {
-      const type = {
-        arrayNesting: 0,
-        components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
-      };
+      const type = NodeFactory.createTypeRef([
+        { args: [], id: NodeFactory.createIdentifier('String') },
+      ]);
       const initializer = NodeFactory.createStringVal('default', '"default"');
       const node = NodeFactory.createVariableDeclaration('var', type, initializer);
 
@@ -676,25 +677,25 @@ describe('Comprehensive Serialization', () => {
 
   describe('Complex Nested Structures', () => {
     it('should serialize and deserialize deeply nested AST', () => {
-      const nested = NodeFactory.createIfStatement(
-        NodeFactory.createBinaryExpression(
+      const nested = NodeFactory.createIfStatement({
+        condition: NodeFactory.createBinaryExpression(
           '>',
           NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x')),
           NodeFactory.createIntegerVal(0, '0')
         ),
-        NodeFactory.createCompoundStatement([
-          NodeFactory.createIfStatement(
-            NodeFactory.createBinaryExpression(
+        thenStatement: NodeFactory.createCompoundStatement([
+          NodeFactory.createIfStatement({
+            condition: NodeFactory.createBinaryExpression(
               '>',
               NodeFactory.createVariableExpression(NodeFactory.createIdentifier('y')),
               NodeFactory.createIntegerVal(0, '0')
             ),
-            NodeFactory.createReturnStatement(
+            thenStatement: NodeFactory.createReturnStatement(
               NodeFactory.createStringVal('both positive', '"both positive"')
-            )
-          ),
-        ])
-      );
+            ),
+          }),
+        ]),
+      });
 
       const json = serializer.serialize(nested);
       const deserialized = deserializer.deserialize(json);
@@ -759,9 +760,8 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should throw error for missing @type or kind', () => {
-      const localDeserializer = new JsonDeserializer();
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument -- Testing invalid JSON node structure
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-type-assertion -- Testing invalid JSON node structure
         deserializer.deserializeNode({} as any);
       }).toThrow('Invalid JSON AST node: missing @type or kind property');
     });
@@ -798,7 +798,7 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should use reviver function if provided', () => {
-      const reviver = (key: string, value: unknown) => {
+      const reviver = (key: string, value: unknown): unknown => {
         if (key === 'value' && typeof value === 'string') {
           return value.toUpperCase();
         }
@@ -921,7 +921,7 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should use replacer function if provided', () => {
-      const replacer = (key: string, value: unknown) => {
+      const replacer = (key: string, value: unknown): unknown => {
         // Replacer is called on the final JSON object, not individual properties
         if (key === '' && value != null && typeof value === 'object' && '@type' in value) {
           // Can modify the entire object
@@ -969,10 +969,10 @@ describe('Comprehensive Serialization', () => {
     it('should deserialize VariableDeclarationStatement', () => {
       const localSerializer = new JsonSerializer();
       const localDeserializer = new JsonDeserializer();
-      const decl = NodeFactory.createVariableDeclaration('x', {
-        arrayNesting: 0,
-        components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-      });
+      const decl = NodeFactory.createVariableDeclaration(
+        'x',
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }])
+      );
       const node = NodeFactory.createVariableDeclarationStatement(decl);
       const json = localSerializer.serialize(node);
       const deserialized = localDeserializer.deserialize(json);
@@ -988,10 +988,7 @@ describe('Comprehensive Serialization', () => {
       };
       const decl = NodeFactory.createVariableDeclaration(
         'x',
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
         undefined,
         [modifier]
       );
@@ -1010,10 +1007,7 @@ describe('Comprehensive Serialization', () => {
 
       // ConstructorInitializer
       const ctorInit = NodeFactory.createConstructorInitializer(
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('String') }]),
         [NodeFactory.createStringVal('test', '"test"')]
       );
       const ctorExpr = NodeFactory.createNewExpression(ctorInit);
@@ -1023,10 +1017,7 @@ describe('Comprehensive Serialization', () => {
 
       // ValuesInitializer
       const valuesInit = NodeFactory.createValuesInitializer(
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
         [NodeFactory.createIntegerVal(1, '1'), NodeFactory.createIntegerVal(2, '2')]
       );
       const valuesExpr = NodeFactory.createNewExpression(valuesInit);
@@ -1036,10 +1027,7 @@ describe('Comprehensive Serialization', () => {
 
       // SizedArrayInitializer
       const sizedInit = NodeFactory.createSizedArrayInitializer(
-        {
-          arrayNesting: 1,
-          components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }], 1),
         NodeFactory.createIntegerVal(10, '10')
       );
       const sizedExpr = NodeFactory.createNewExpression(sizedInit);
@@ -1049,10 +1037,7 @@ describe('Comprehensive Serialization', () => {
 
       // MapInitializer
       const mapInit = NodeFactory.createMapInitializer(
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('String') }]),
         [
           {
             key: NodeFactory.createStringVal('a', '"a"'),
@@ -1095,10 +1080,7 @@ describe('Comprehensive Serialization', () => {
 
       // ConstructorInitializer
       const ctorInit = NodeFactory.createConstructorInitializer(
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('String') }]),
         []
       );
       const ctorExpr = NodeFactory.createNewExpression(ctorInit);
@@ -1108,10 +1090,7 @@ describe('Comprehensive Serialization', () => {
 
       // ValuesInitializer
       const valuesInit = NodeFactory.createValuesInitializer(
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
         []
       );
       const valuesExpr = NodeFactory.createNewExpression(valuesInit);
@@ -1121,10 +1100,7 @@ describe('Comprehensive Serialization', () => {
 
       // SizedArrayInitializer
       const sizedInit = NodeFactory.createSizedArrayInitializer(
-        {
-          arrayNesting: 1,
-          components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }], 1),
         NodeFactory.createIntegerVal(10, '10')
       );
       const sizedExpr = NodeFactory.createNewExpression(sizedInit);
@@ -1134,10 +1110,7 @@ describe('Comprehensive Serialization', () => {
 
       // MapInitializer
       const mapInit = NodeFactory.createMapInitializer(
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('String') }]),
         []
       );
       const mapExpr = NodeFactory.createNewExpression(mapInit);
@@ -1154,10 +1127,7 @@ describe('Comprehensive Serialization', () => {
       };
       const decl = NodeFactory.createVariableDeclaration(
         'x',
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
-        },
+        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
         undefined,
         [modifier]
       );

@@ -11,179 +11,6 @@ import type { ParserContext } from './apexParser.js';
 // Compilation Unit
 // ============================================================================
 
-/**
- * Parse compilation unit (top-level).
- * @param ctx - The parser context.
- * @returns The compilation unit parse tree node.
- * @throws {Error} If the compilation unit is malformed or unexpected tokens are encountered.
- */
-export function parseCompilationUnit(ctx: ParserContext): ParseTreeNode {
-  const declarations: ParseTreeNode[] = [];
-
-  // Skip whitespace and comments at start to find the first actual token
-  ctx.skipWhitespaceAndComments();
-
-  /**
-   * Start from first actual token, not beginning of source.
-   */
-  const start = ctx.current;
-
-  while (!ctx.isAtEnd()) {
-    const beforeDecl = ctx.current;
-    const decl = ctx.parseDeclaration();
-    if (decl != null) {
-      declarations.push(decl);
-    }
-    // Safety check: ensure we always advance
-    if (ctx.current === beforeDecl && !ctx.isAtEnd()) {
-      ctx.advance();
-    }
-    ctx.skipWhitespaceAndComments();
-  }
-
-  // For compilation unit, we want the location to span from first token to end of source
-  // including trailing newlines. Use a special end position that includes everything.
-
-  /**
-   * This will trigger EOF handling in getLocation.
-   */
-  const endPos = ctx.tokens.length;
-
-  return {
-    children: declarations,
-    location: ctx.getLocation(start, endPos),
-    type: 'compilation_unit',
-  };
-}
-
-// ============================================================================
-// Declaration Parsing
-// ============================================================================
-
-/**
- * Parse a declaration (class, interface, trigger, etc.).
- * @param ctx - The parser context.
- * @returns The declaration parse tree node, or null if not a declaration.
- * @throws {Error} If the declaration is malformed or unexpected tokens are encountered.
- */
-export function parseDeclaration(ctx: ParserContext): ParseTreeNode | null {
-  ctx.skipWhitespaceAndComments();
-
-  // Check for annotation type declaration: @interface
-  if (ctx.match(TokenType.AT)) {
-    if (ctx.check(TokenType.INTERFACE)) {
-      ctx.advance(); // Consume INTERFACE
-      return parseAnnotationDeclaration(ctx);
-    } else {
-      // Not @interface, might be an annotation on a declaration, reset
-      ctx.current--;
-    }
-  }
-
-  // Collect annotations before the declaration (for class, interface, enum, etc.)
-  const annotations: ParseTreeNode[] = [];
-  while (ctx.match(TokenType.AT)) {
-    const annotation = ctx.parseAnnotation();
-    if (annotation) {
-      annotations.push(annotation);
-    }
-    ctx.skipWhitespaceAndComments();
-  }
-
-  // Parse modifiers (public, private, etc.) that can come before class/interface/enum
-  const modifiers: ParseTreeNode[] = [];
-  const singleIndexOffset = 1;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop pattern for parsing modifiers
-  while (true) {
-    const beforeMatch = ctx.current;
-    let modifierText: string | null = null;
-    let modifierStart: number | null = null;
-
-    // Check for multi-word modifiers first: "with sharing", "without sharing", "inherited sharing"
-    if (ctx.match(TokenType.WITH)) {
-      modifierStart = ctx.current - singleIndexOffset;
-      ctx.skipWhitespaceAndComments();
-      if (ctx.match(TokenType.SHARING)) {
-        modifierText = 'with sharing';
-      } else {
-        // "with" without "sharing" is not a modifier, reset
-        ctx.current = beforeMatch;
-        break;
-      }
-    } else if (ctx.match(TokenType.WITHOUT)) {
-      modifierStart = ctx.current - singleIndexOffset;
-      ctx.skipWhitespaceAndComments();
-      if (ctx.match(TokenType.SHARING)) {
-        modifierText = 'without sharing';
-      } else {
-        // "without" without "sharing" is not a modifier, reset
-        ctx.current = beforeMatch;
-        break;
-      }
-    } else if (ctx.match(TokenType.INHERITED)) {
-      modifierStart = ctx.current - singleIndexOffset;
-      ctx.skipWhitespaceAndComments();
-      if (ctx.match(TokenType.SHARING)) {
-        modifierText = 'inherited sharing';
-      } else {
-        // "inherited" without "sharing" is not a modifier, reset
-        ctx.current = beforeMatch;
-        break;
-      }
-    } else if (
-      ctx.match(
-        TokenType.PUBLIC,
-        TokenType.PRIVATE,
-        TokenType.PROTECTED,
-        TokenType.GLOBAL,
-        TokenType.STATIC,
-        TokenType.FINAL,
-        TokenType.ABSTRACT,
-        TokenType.OVERRIDE,
-        TokenType.VIRTUAL,
-        TokenType.TESTMETHOD,
-        TokenType.WEBSERVICE,
-        TokenType.TRANSIENT
-      )
-    ) {
-      const prevToken = ctx.tokens[ctx.current - singleIndexOffset];
-      modifierText = prevToken.text;
-      modifierStart = ctx.current - singleIndexOffset;
-    } else {
-      // No more modifiers
-      break;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Both variables are set together in branches above
-    if (modifierText !== null && modifierStart !== null) {
-      modifiers.push({
-        location: ctx.getLocation(modifierStart, ctx.current),
-        text: modifierText,
-        type: 'modifier',
-      });
-      ctx.skipWhitespaceAndComments();
-    } else {
-      break;
-    }
-  }
-
-  if (ctx.match(TokenType.CLASS)) {
-    return parseClassDeclaration(ctx, annotations, modifiers);
-  }
-  if (ctx.match(TokenType.INTERFACE)) {
-    return parseInterfaceDeclaration(ctx, annotations, modifiers);
-  }
-  if (ctx.match(TokenType.TRIGGER)) {
-    return parseTriggerDeclaration(ctx);
-  }
-  if (ctx.match(TokenType.ENUM)) {
-    return parseEnumDeclaration(ctx, annotations, modifiers);
-  }
-
-  // Could be a method or field at top level (unlikely but handle it)
-  return null;
-}
-
 // ============================================================================
 // Interface, Trigger, Enum Declarations
 // ============================================================================
@@ -191,23 +18,21 @@ export function parseDeclaration(ctx: ParserContext): ParseTreeNode | null {
 /**
  * Parses an interface declaration from the token stream.
  * @param ctx - The parser context.
- * @param preAnnotations
- * @param preModifiers
+ * @param preAnnotations - Pre-parsed annotations to include in the declaration.
+ * @param preModifiers - Pre-parsed modifiers to include in the declaration.
  * @returns The interface declaration parse tree node.
  * @throws {Error} If the interface declaration is malformed or unexpected tokens are encountered.
  */
-export function parseInterfaceDeclaration(
-  ctx: ParserContext,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default empty array parameter
-  preAnnotations: readonly ParseTreeNode[] = [],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default empty array parameter
-  preModifiers: readonly ParseTreeNode[] = []
+function parseInterfaceDeclaration(
+  ctx: Readonly<ParserContext>,
+  preAnnotations: readonly Readonly<ParseTreeNode>[] = [],
+  preModifiers: readonly Readonly<ParseTreeNode>[] = []
 ): ParseTreeNode {
   // Use preAnnotations and preModifiers
   void preAnnotations;
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   const modifiers: ParseTreeNode[] = [...preModifiers];
 
   // INTERFACE keyword was already consumed by match() in parseDeclaration()
@@ -256,7 +81,7 @@ export function parseInterfaceDeclaration(
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'interface_declaration',
   };
 }
@@ -267,9 +92,9 @@ export function parseInterfaceDeclaration(
  * @returns The trigger declaration parse tree node.
  * @throws {Error} If the trigger declaration is malformed or unexpected tokens are encountered.
  */
-export function parseTriggerDeclaration(ctx: ParserContext): ParseTreeNode {
+function parseTriggerDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   // TRIGGER keyword was already consumed by match() in parseDeclaration()
   // So we don't need to consume it again
   ctx.skipWhitespaceAndComments();
@@ -333,7 +158,7 @@ export function parseTriggerDeclaration(ctx: ParserContext): ParseTreeNode {
       { children: events, type: 'events' },
       body,
     ],
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'trigger_declaration',
   };
 }
@@ -341,22 +166,20 @@ export function parseTriggerDeclaration(ctx: ParserContext): ParseTreeNode {
 /**
  * Parses an enum declaration from the token stream.
  * @param ctx - The parser context.
- * @param preAnnotations
- * @param preModifiers
+ * @param preAnnotations - Pre-parsed annotations to include in the declaration.
+ * @param preModifiers - Pre-parsed modifiers to include in the declaration.
  * @returns The enum declaration parse tree node.
  */
-export function parseEnumDeclaration(
-  ctx: ParserContext,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default empty array parameter
-  preAnnotations: readonly ParseTreeNode[] = [],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default empty array parameter
-  preModifiers: readonly ParseTreeNode[] = []
+function parseEnumDeclaration(
+  ctx: Readonly<ParserContext>,
+  preAnnotations: readonly Readonly<ParseTreeNode>[] = [],
+  preModifiers: readonly Readonly<ParseTreeNode>[] = []
 ): ParseTreeNode {
   // Use preAnnotations and preModifiers
   void preAnnotations;
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   const modifiers: ParseTreeNode[] = [...preModifiers];
 
   // ENUM keyword was already consumed by match() in parseDeclaration()
@@ -366,7 +189,7 @@ export function parseEnumDeclaration(
   const name = ctx.consume(TokenType.IDENTIFIER, 'Expected enum name');
 
   // Parse enum body with constants
-  const enumBodyStart = ctx.current;
+  const enumBodyStart = ctx.getCurrent();
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.LEFT_BRACE, 'Expected { after enum name');
 
@@ -375,7 +198,7 @@ export function parseEnumDeclaration(
 
   // Parse enum constants (can be empty)
   while (!ctx.check(TokenType.RIGHT_BRACE) && !ctx.isAtEnd()) {
-    const beforeConstant = ctx.current;
+    const beforeConstant = ctx.getCurrent();
     const constant = ctx.parseEnumConstant();
     if (constant) {
       constants.push(constant);
@@ -384,7 +207,7 @@ export function parseEnumDeclaration(
         ctx.skipWhitespaceAndComments();
       } else if (!ctx.check(TokenType.RIGHT_BRACE)) {
         // Safety check: ensure we always advance if we didn't match comma or brace
-        if (ctx.current === beforeConstant && !ctx.isAtEnd()) {
+        if (ctx.getCurrent() === beforeConstant && !ctx.isAtEnd()) {
           ctx.advance();
         } else {
           break;
@@ -393,7 +216,7 @@ export function parseEnumDeclaration(
     } else {
       // If we can't parse a constant, break
       // Safety check: ensure we always advance if we didn't parse anything
-      if (ctx.current === beforeConstant && !ctx.isAtEnd()) {
+      if (ctx.getCurrent() === beforeConstant && !ctx.isAtEnd()) {
         ctx.advance();
       } else {
         break;
@@ -407,7 +230,7 @@ export function parseEnumDeclaration(
 
   const body = {
     children: constants,
-    location: ctx.getLocation(enumBodyStart, ctx.current),
+    location: ctx.getLocation(enumBodyStart, ctx.getCurrent()),
     type: 'block',
   };
 
@@ -423,32 +246,9 @@ export function parseEnumDeclaration(
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'enum_declaration',
   };
-}
-
-/**
- * Parse type parameters: <T, U extends Bound>.
- * @param ctx - The parser context.
- * @returns Array of type parameter parse tree nodes.
- */
-export function parseTypeParameters(ctx: ParserContext): ParseTreeNode[] {
-  ctx.skipWhitespaceAndComments();
-  if (!ctx.match(TokenType.LESS_THAN)) {
-    return [];
-  }
-
-  const typeParams: ParseTreeNode[] = [];
-  do {
-    const param = parseTypeParameter(ctx);
-    if (param) {
-      typeParams.push(param);
-    }
-  } while (ctx.match(TokenType.COMMA));
-
-  ctx.consume(TokenType.GREATER_THAN, 'Expected > after type parameters');
-  return typeParams;
 }
 
 /**
@@ -456,8 +256,8 @@ export function parseTypeParameters(ctx: ParserContext): ParseTreeNode[] {
  * @param ctx - The parser context.
  * @returns The parsed type parameter parse tree node, or null if parsing fails.
  */
-export function parseTypeParameter(ctx: ParserContext): ParseTreeNode | null {
-  const start = ctx.current;
+function parseTypeParameter(ctx: Readonly<ParserContext>): ParseTreeNode | null {
+  const start = ctx.getCurrent();
   const name = ctx.consume(TokenType.IDENTIFIER, 'Expected type parameter name');
 
   let extendsBound: ParseTreeNode | undefined = undefined;
@@ -477,9 +277,56 @@ export function parseTypeParameter(ctx: ParserContext): ParseTreeNode | null {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'type_parameter',
   };
+}
+
+/**
+ * Parse type parameters: <T, U extends Bound>.
+ * @param ctx - The parser context.
+ * @returns Array of type parameter parse tree nodes.
+ */
+function parseTypeParameters(ctx: Readonly<ParserContext>): readonly ParseTreeNode[] {
+  ctx.skipWhitespaceAndComments();
+  if (!ctx.match(TokenType.LESS_THAN)) {
+    return [];
+  }
+
+  const typeParams: ParseTreeNode[] = [];
+  do {
+    const param = parseTypeParameter(ctx);
+    if (param) {
+      typeParams.push(param);
+    }
+  } while (ctx.match(TokenType.COMMA));
+
+  ctx.consume(TokenType.GREATER_THAN, 'Expected > after type parameters');
+  return typeParams;
+}
+
+/**
+ * Check if current token is a type.
+ * @param ctx - The parser context.
+ * @returns True if the current token represents a type.
+ */
+function checkType(ctx: Readonly<ParserContext>): boolean {
+  return ctx.check(
+    TokenType.INTEGER,
+    TokenType.STRING,
+    TokenType.BOOLEAN,
+    TokenType.DECIMAL,
+    TokenType.DOUBLE,
+    TokenType.LONG,
+    TokenType.DATE,
+    TokenType.DATETIME,
+    TokenType.TIME,
+    TokenType.BLOB,
+    TokenType.ID,
+    TokenType.OBJECT,
+    TokenType.VOID,
+    TokenType.IDENTIFIER
+  );
 }
 
 /**
@@ -487,14 +334,14 @@ export function parseTypeParameter(ctx: ParserContext): ParseTreeNode | null {
  * @param ctx - The parser context.
  * @returns The parsed type parse tree node, or null if parsing fails.
  */
-export function parseType(ctx: ParserContext): ParseTreeNode | null {
+function parseType(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   ctx.skipWhitespaceAndComments();
   if (!checkType(ctx)) {
     return null;
   }
 
   const zeroIndex = 0;
-  const start = ctx.current;
+  const start = ctx.getCurrent();
 
   /**
    * Consume the type token (INTEGER, STRING, IDENTIFIER, etc.).
@@ -552,7 +399,7 @@ export function parseType(ctx: ParserContext): ParseTreeNode | null {
   let arrayDimensions = initialArrayDimensions;
   while (ctx.check(TokenType.LEFT_BRACKET)) {
     // Peek ahead to see if it's empty brackets [] or [size]
-    const savedPos = ctx.current;
+    const savedPos = ctx.getCurrent();
     ctx.advance(); // Consume [
     ctx.skipWhitespaceAndComments();
     if (ctx.check(TokenType.RIGHT_BRACKET)) {
@@ -562,7 +409,7 @@ export function parseType(ctx: ParserContext): ParseTreeNode | null {
     } else {
       // Not an empty bracket, it's [size] - don't consume, let caller handle it
       // Back up to before the [
-      ctx.current = savedPos;
+      ctx.setCurrent(savedPos);
       break;
     }
   }
@@ -581,102 +428,13 @@ export function parseType(ctx: ParserContext): ParseTreeNode | null {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'type',
   };
-}
-
-/**
- * Check if current token is a type.
- * @param ctx - The parser context.
- * @returns True if the current token represents a type.
- */
-export function checkType(ctx: ParserContext): boolean {
-  return ctx.check(
-    TokenType.INTEGER,
-    TokenType.STRING,
-    TokenType.BOOLEAN,
-    TokenType.DECIMAL,
-    TokenType.DOUBLE,
-    TokenType.LONG,
-    TokenType.DATE,
-    TokenType.DATETIME,
-    TokenType.TIME,
-    TokenType.BLOB,
-    TokenType.ID,
-    TokenType.OBJECT,
-    TokenType.VOID,
-    TokenType.IDENTIFIER
-  );
 }
 // ============================================================================
 // Annotation Parsing
 // ============================================================================
-
-/**
- * Parse annotation type declaration: `@interface` Name { members }.
- * @param ctx - The parser context.
- * @returns The annotation declaration parse tree node.
- */
-export function parseAnnotationDeclaration(ctx: ParserContext): ParseTreeNode {
-  /**
-   * Start at @.
-   */
-  const annotationStartOffset = 2;
-  const zeroIndex = 0;
-  const start = ctx.current - annotationStartOffset;
-  const modifiers: ParseTreeNode[] = [];
-
-  // Parse modifiers (public, global, etc.)
-  while (ctx.match(TokenType.PUBLIC, TokenType.PRIVATE, TokenType.GLOBAL)) {
-    const prevToken = ctx.previous();
-    modifiers.push({
-      location: ctx.locationToRange(prevToken.location),
-      text: prevToken.text,
-      type: 'modifier',
-    });
-    ctx.skipWhitespaceAndComments();
-  }
-
-  // Annotation type name
-  const name = ctx.consume(TokenType.IDENTIFIER, 'Expected annotation type name');
-
-  // Annotation type body
-  ctx.consume(TokenType.LEFT_BRACE, 'Expected { after annotation type name');
-
-  const members: ParseTreeNode[] = [];
-  ctx.skipWhitespaceAndComments();
-
-  while (!ctx.check(TokenType.RIGHT_BRACE) && !ctx.isAtEnd()) {
-    const beforeMember = ctx.current;
-    const member = parseAnnotationMember(ctx);
-    if (member) {
-      members.push(member);
-    }
-    // Safety check: ensure we always advance
-    if (ctx.current === beforeMember && !ctx.isAtEnd()) {
-      ctx.advance();
-    }
-    ctx.skipWhitespaceAndComments();
-  }
-
-  ctx.consume(TokenType.RIGHT_BRACE, 'Expected } after annotation type body');
-
-  const children: ParseTreeNode[] = [];
-  if (modifiers.length > zeroIndex) {
-    children.push({ children: modifiers, type: 'modifiers' });
-  }
-  children.push({ location: ctx.locationToRange(name.location), text: name.text, type: 'name' });
-  if (members.length > zeroIndex) {
-    children.push({ children: members, type: 'members' });
-  }
-
-  return {
-    children,
-    location: ctx.getLocation(start, ctx.current),
-    type: 'annotation_declaration',
-  };
-}
 
 /**
  * Parse annotation member (method-like but simpler)
@@ -684,8 +442,8 @@ export function parseAnnotationDeclaration(ctx: ParserContext): ParseTreeNode {
  * @param ctx - The parser context.
  * @returns The parsed annotation member node, or null if parsing fails.
  */
-export function parseAnnotationMember(ctx: ParserContext): ParseTreeNode | null {
-  const start = ctx.current;
+function parseAnnotationMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
+  const start = ctx.getCurrent();
 
   // Parse return type
   const returnType = ctx.parseType();
@@ -715,7 +473,8 @@ export function parseAnnotationMember(ctx: ParserContext): ParseTreeNode | null 
       }
     } else {
       // Not 'default', reset
-      ctx.current--;
+      const singleStepBack = 1;
+      ctx.setCurrent(ctx.getCurrent() - singleStepBack);
     }
   }
 
@@ -732,20 +491,95 @@ export function parseAnnotationMember(ctx: ParserContext): ParseTreeNode | null 
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'annotation_member',
   };
 }
+
+/**
+ * Parse annotation type declaration: `@interface` Name { members }.
+ * @param ctx - The parser context.
+ * @returns The annotation declaration parse tree node.
+ */
+function parseAnnotationDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode {
+  /**
+   * Start at @.
+   */
+  const annotationStartOffset = 2;
+  const zeroIndex = 0;
+  const start = ctx.getCurrent() - annotationStartOffset;
+  const modifiers: ParseTreeNode[] = [];
+
+  // Parse modifiers (public, global, etc.)
+  while (ctx.match(TokenType.PUBLIC, TokenType.PRIVATE, TokenType.GLOBAL)) {
+    const prevToken = ctx.previous();
+    modifiers.push({
+      location: ctx.locationToRange(prevToken.location),
+      text: prevToken.text,
+      type: 'modifier',
+    });
+    ctx.skipWhitespaceAndComments();
+  }
+
+  // Annotation type name
+  const name = ctx.consume(TokenType.IDENTIFIER, 'Expected annotation type name');
+
+  // Annotation type body
+  ctx.consume(TokenType.LEFT_BRACE, 'Expected { after annotation type name');
+
+  const members: ParseTreeNode[] = [];
+  ctx.skipWhitespaceAndComments();
+
+  while (!ctx.check(TokenType.RIGHT_BRACE) && !ctx.isAtEnd()) {
+    const beforeMember = ctx.getCurrent();
+    const member = parseAnnotationMember(ctx);
+    if (member) {
+      members.push(member);
+    }
+    // Safety check: ensure we always advance
+    if (ctx.getCurrent() === beforeMember && !ctx.isAtEnd()) {
+      ctx.advance();
+    }
+    ctx.skipWhitespaceAndComments();
+  }
+
+  ctx.consume(TokenType.RIGHT_BRACE, 'Expected } after annotation type body');
+
+  const children: ParseTreeNode[] = [];
+  if (modifiers.length > zeroIndex) {
+    children.push({ children: modifiers, type: 'modifiers' });
+  }
+  children.push({ location: ctx.locationToRange(name.location), text: name.text, type: 'name' });
+  if (members.length > zeroIndex) {
+    children.push({ children: members, type: 'members' });
+  }
+
+  return {
+    children,
+    location: ctx.getLocation(start, ctx.getCurrent()),
+    type: 'annotation_declaration',
+  };
+}
+
+/**
+ * Forward declaration for parseAnnotationArgument (mutual recursion with parseAnnotation).
+ * @throws {Error} Always, if called before assignment.
+ */
+let parseAnnotationArgument: (
+  ctx: Readonly<ParserContext>
+) => ParseTreeNode | null = (): ParseTreeNode | null => {
+  throw new Error('parseAnnotationArgument not yet initialized');
+};
 
 /**
  * Parses an annotation from the token stream.
  * @param ctx - The parser context.
  * @returns The parsed annotation node, or null if parsing fails.
  */
-export function parseAnnotation(ctx: ParserContext): ParseTreeNode | null {
+function parseAnnotation(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   const name = ctx.consume(TokenType.IDENTIFIER, 'Expected annotation name');
 
   let arguments_: ParseTreeNode[] = [];
@@ -801,18 +635,13 @@ export function parseAnnotation(ctx: ParserContext): ParseTreeNode | null {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'annotation',
   };
 }
 
-/**
- * Parses an annotation argument from the token stream.
- * @param ctx - The parser context.
- * @returns The parsed annotation argument node, or null if parsing fails.
- */
-export function parseAnnotationArgument(ctx: ParserContext): ParseTreeNode | null {
-  const start = ctx.current;
+parseAnnotationArgument = (ctx: Readonly<ParserContext>): ParseTreeNode | null => {
+  const start = ctx.getCurrent();
 
   // Could be name = value or just value
   let name:
@@ -868,7 +697,7 @@ export function parseAnnotationArgument(ctx: ParserContext): ParseTreeNode | nul
     /**
      * Position before consuming {.
      */
-    const arrayStart = ctx.current;
+    const arrayStart = ctx.getCurrent();
     ctx.advance(); // Consume {
     const elements: ParseTreeNode[] = [];
     if (!ctx.check(TokenType.RIGHT_BRACE)) {
@@ -907,11 +736,11 @@ export function parseAnnotationArgument(ctx: ParserContext): ParseTreeNode | nul
       children: [
         {
           children: elements,
-          location: ctx.getLocation(arrayStart, ctx.current),
+          location: ctx.getLocation(arrayStart, ctx.getCurrent()),
           type: 'values_initializer',
         },
       ],
-      location: ctx.getLocation(arrayStart, ctx.current),
+      location: ctx.getLocation(arrayStart, ctx.getCurrent()),
       type: 'new_expression',
     };
   } else {
@@ -934,18 +763,18 @@ export function parseAnnotationArgument(ctx: ParserContext): ParseTreeNode | nul
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'annotation_argument',
   };
-}
+};
 
 /**
  * Parses an enum constant from the token stream.
  * @param ctx - The parser context.
  * @returns The parsed enum constant node, or null if parsing fails.
  */
-export function parseEnumConstant(ctx: ParserContext): ParseTreeNode | null {
-  const start = ctx.current;
+function parseEnumConstant(ctx: Readonly<ParserContext>): ParseTreeNode | null {
+  const start = ctx.getCurrent();
   // Enum constants can be IDENTIFIER or ID (keyword)
   if (!ctx.check(TokenType.IDENTIFIER) && !ctx.check(TokenType.ID)) {
     return null;
@@ -971,7 +800,7 @@ export function parseEnumConstant(ctx: ParserContext): ParseTreeNode | null {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'enum_constant',
   };
 }
@@ -990,16 +819,14 @@ export function parseEnumConstant(ctx: ParserContext): ParseTreeNode | null {
  * @returns The class declaration parse tree node.
  * @throws {Error} If the class declaration is malformed or unexpected tokens are encountered.
  */
-export function parseClassDeclaration(
-  ctx: ParserContext,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default empty array parameter
+function parseClassDeclaration(
+  ctx: Readonly<ParserContext>,
   annotations: readonly ParseTreeNode[] = [],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default empty array parameter
-  preModifiers: readonly ParseTreeNode[] = []
+  preModifiers: readonly Readonly<ParseTreeNode>[] = []
 ): ParseTreeNode {
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   const modifiers: ParseTreeNode[] = [...preModifiers];
 
   // CLASS keyword was already consumed by match() in parseDeclaration()
@@ -1021,7 +848,7 @@ export function parseClassDeclaration(
     if (extendsType) {
       extendsClause = {
         children: [extendsType],
-        location: ctx.getLocation(start, ctx.current),
+        location: ctx.getLocation(start, ctx.getCurrent()),
         type: 'extends_clause',
       };
     } else {
@@ -1071,220 +898,10 @@ export function parseClassDeclaration(
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'class_declaration',
   };
 }
-
-// ============================================================================
-// Class Member Parsing
-// ============================================================================
-
-/**
- * Parse a class member (method, field, property, initializer block).
- * @param ctx - The parser context.
- * @returns The parsed class member node, or null if parsing fails.
- */
-export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
-  ctx.skipWhitespaceAndComments();
-
-  // Collect annotations
-  const annotations: ParseTreeNode[] = [];
-  while (ctx.match(TokenType.AT)) {
-    const annotation = ctx.parseAnnotation();
-    if (annotation) {
-      annotations.push(annotation);
-    }
-    ctx.skipWhitespaceAndComments();
-  }
-
-  // Parse modifiers
-  const modifiers: ParseTreeNode[] = [];
-  const singleIndexOffset = 1;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop pattern
-  while (true) {
-    let modifierText: string | null = null;
-    let modifierStart: number | null = null;
-
-    if (
-      ctx.match(
-        TokenType.PUBLIC,
-        TokenType.PRIVATE,
-        TokenType.PROTECTED,
-        TokenType.GLOBAL,
-        TokenType.STATIC,
-        TokenType.FINAL,
-        TokenType.ABSTRACT,
-        TokenType.OVERRIDE,
-        TokenType.VIRTUAL,
-        TokenType.TESTMETHOD,
-        TokenType.WEBSERVICE,
-        TokenType.TRANSIENT
-      )
-    ) {
-      const prevToken = ctx.tokens[ctx.current - singleIndexOffset];
-      modifierText = prevToken.text;
-      modifierStart = ctx.current - singleIndexOffset;
-    } else {
-      break;
-    }
-
-    if (modifierText !== null && modifierStart !== null) {
-      modifiers.push({
-        location: ctx.getLocation(modifierStart, ctx.current),
-        text: modifierText,
-        type: 'modifier',
-      });
-      ctx.skipWhitespaceAndComments();
-    } else {
-      break;
-    }
-  }
-
-  // Check for static/instance initializer block: { ... }
-  if (ctx.check(TokenType.LEFT_BRACE)) {
-    const start = ctx.current;
-    const block = ctx.parseBlock();
-    return {
-      children: [
-        ...(modifiers.length > 0 ? [{ children: modifiers, type: 'modifiers' }] : []),
-        block,
-      ],
-      location: ctx.getLocation(start, ctx.current),
-      type: 'initializer_block',
-    };
-  }
-
-  // Check for inner class/interface/enum declarations
-  // These need to be checked before trying to parse a type
-  if (ctx.match(TokenType.CLASS)) {
-    // parseClassDeclaration expects CLASS to be consumed (which we just did with match)
-    // and accepts pre-parsed modifiers and annotations
-    return parseClassDeclaration(ctx, annotations, modifiers);
-  }
-  if (ctx.match(TokenType.INTERFACE)) {
-    // parseInterfaceDeclaration expects INTERFACE to be consumed (which we just did with match)
-    // and accepts pre-parsed modifiers and annotations
-    return parseInterfaceDeclaration(ctx, annotations, modifiers);
-  }
-  if (ctx.match(TokenType.ENUM)) {
-    // parseEnumDeclaration expects ENUM to be consumed (which we just did with match)
-    // and accepts pre-parsed modifiers and annotations
-    return parseEnumDeclaration(ctx, annotations, modifiers);
-  }
-
-  // Parse type (for methods, fields, properties)
-  // For constructors, the type name is the constructor name, so we need to save it
-  const typeStart = ctx.current;
-  let savedTypeName: string | null = null;
-  let savedTypeLocation:
-    | { start: { line: number; column: number }; end: { line: number; column: number } }
-    | undefined = undefined;
-
-  // Peek ahead to see if this might be a constructor (type followed by '(')
-  if (ctx.check(TokenType.IDENTIFIER)) {
-    const peekToken = ctx.tokens[ctx.current];
-    savedTypeName = peekToken.text;
-    savedTypeLocation = ctx.locationToRange(peekToken.location);
-  }
-
-  // Save position before parseType in case it fails but advances
-  const beforeTypeParse = ctx.current;
-  const type = ctx.parseType();
-  if (!type) {
-    // parseType() may have advanced past whitespace or partially parsed tokens
-    // Restore position to before the type parse attempt
-    ctx.current = beforeTypeParse;
-    return null;
-  }
-
-  ctx.skipWhitespaceAndComments();
-
-  // Check if it's a constructor (type followed by '(' instead of identifier)
-  if (ctx.check(TokenType.LEFT_PAREN)) {
-    // Extract the type name to check if it's qualified
-    let typeName = savedTypeName;
-    if (!typeName) {
-      // Try to get the type name from the type node
-      // Access children directly since we're in the parser, not translator
-      const children = type.children ?? [];
-      const baseTypeNode = children.find((c) => c.type === 'base_type');
-      if (baseTypeNode) {
-        typeName = baseTypeNode.text ?? (baseTypeNode as { text?: string }).text ?? null;
-      }
-      if (!typeName) {
-        const typeNameNode =
-          children.find((c) => c.type === 'name') ?? children.find((c) => c.type === 'identifier');
-        typeName = typeNameNode
-          ? (typeNameNode.text ?? (typeNameNode as { name?: string }).name ?? 'Unknown')
-          : 'Unknown';
-      }
-    }
-    // If the type is qualified (contains a dot), it's not a constructor
-    // Qualified types like "System.debug" are method calls, not constructors
-    // Also check the type node's text property directly
-    const typeText = type.text ?? (type.children?.[0] as { text?: string })?.text;
-    const isQualified = (typeName && typeName.includes('.')) || typeText?.includes('.');
-    if (isQualified) {
-      // This is not a constructor, restore position and return null
-      // so it can be parsed as a statement
-      ctx.current = beforeTypeParse;
-      return null;
-    }
-    // This is a constructor - use the saved type name
-    if (!savedTypeName || !savedTypeLocation) {
-      // Fallback: try to extract from type node
-      // Access children directly since we're in the parser, not translator
-      const children = type.children ?? [];
-      const typeNameNode =
-        children.find((c) => c.type === 'name') ?? children.find((c) => c.type === 'identifier');
-      savedTypeName = typeNameNode
-        ? (typeNameNode.text ?? (typeNameNode as { name?: string }).name ?? 'Unknown')
-        : 'Unknown';
-      savedTypeLocation = type.location;
-    }
-    // Create a token-like object for the constructor name
-    const nameToken: Token = {
-      location: savedTypeLocation
-        ? {
-            column: savedTypeLocation.start.column,
-            line: savedTypeLocation.start.line,
-          }
-        : (type.location?.start ?? { column: 1, line: 1 }),
-      text: savedTypeName ?? 'Unknown',
-      type: TokenType.IDENTIFIER,
-    };
-    // For constructors, create a void_type node instead of using the type node
-    // This allows the translator to correctly identify it as a constructor
-    const voidTypeNode: ParseTreeNode = {
-      children: [],
-      location: type.location,
-      type: 'void_type',
-    };
-    return parseMethodOrConstructor(ctx, nameToken, modifiers, annotations, voidTypeNode);
-  }
-
-  // Check if it's a property (has { after name)
-  if (ctx.check(TokenType.IDENTIFIER)) {
-    const name = ctx.consume(TokenType.IDENTIFIER, 'Expected member name');
-    ctx.skipWhitespaceAndComments();
-
-    if (ctx.check(TokenType.LEFT_BRACE)) {
-      // Property declaration
-      return parsePropertyDeclaration(ctx, name, modifiers, annotations, type);
-    } else if (ctx.check(TokenType.LEFT_PAREN)) {
-      // Method/constructor
-      return parseMethodOrConstructor(ctx, name, modifiers, annotations, type);
-    } else {
-      // Field declaration
-      return parseFieldDeclaration(ctx, name, modifiers, annotations, type, typeStart);
-    }
-  }
-
-  return null;
-}
-
-// ============================================================================
 // Member Parsing
 // ============================================================================
 
@@ -1296,21 +913,22 @@ export function parseClassMember(ctx: ParserContext): ParseTreeNode | null {
  * @param annotations - Array of annotation parse tree nodes.
  * @param returnType - The return type parse tree node.
  * @returns The method or constructor declaration parse tree node.
+ * @throws {Error} If parsing fails or returnType is null.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Method parsing requires 4 parameters
-export function parseMethodOrConstructor(
-  ctx: ParserContext,
+// eslint-disable-next-line @typescript-eslint/max-params -- Method parsing requires 5 parameters
+function parseMethodOrConstructor(
+  ctx: Readonly<ParserContext>,
   name: Readonly<Token>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
   modifiers: readonly ParseTreeNode[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
   annotations: readonly ParseTreeNode[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
-  returnType: Readonly<ParseTreeNode>
+  returnType: Readonly<ParseTreeNode> | null
 ): ParseTreeNode {
+  if (returnType == null) {
+    throw new Error('returnType is required for method/constructor');
+  }
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
 
   // Type parameters: <T, U extends Bound>
   const typeParameters = ctx.parseTypeParameters();
@@ -1388,12 +1006,12 @@ export function parseMethodOrConstructor(
       ? returnType.children[zeroIndex]
       : undefined;
   const isConstructor =
-    (firstChild != null && (firstChild as { text?: string }).text === name.text) ||
+    (firstChild != null && typeof firstChild.text === 'string' && firstChild.text === name.text) ||
     (returnType.text != null && returnType.text === name.text);
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: isConstructor ? 'constructor_declaration' : 'method_declaration',
   };
 }
@@ -1404,9 +1022,9 @@ export function parseMethodOrConstructor(
  * @returns The parsed parameter node, or null if parsing fails.
  * @throws {Error} If the parameter declaration is malformed or unexpected tokens are encountered.
  */
-export function parseParameter(ctx: ParserContext): ParseTreeNode | null {
+function parseParameter(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   const zeroIndex = 0;
-  const start = ctx.current;
+  const start = ctx.getCurrent();
   const modifiers: ParseTreeNode[] = [];
 
   // Parse parameter modifiers (final, etc.)
@@ -1437,7 +1055,7 @@ export function parseParameter(ctx: ParserContext): ParseTreeNode | null {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'parameter',
   };
 }
@@ -1450,21 +1068,22 @@ export function parseParameter(ctx: ParserContext): ParseTreeNode | null {
  * @param annotations - Array of annotation parse tree nodes.
  * @param type - The property type parse tree node.
  * @returns The property declaration parse tree node.
+ * @throws {Error} If parsing fails or type is null.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Property parsing requires 4 parameters
-export function parsePropertyDeclaration(
-  ctx: ParserContext,
+// eslint-disable-next-line @typescript-eslint/max-params -- Property parsing requires 5 parameters
+function parsePropertyDeclaration(
+  ctx: Readonly<ParserContext>,
   name: Readonly<Token>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
   modifiers: readonly ParseTreeNode[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
   annotations: readonly ParseTreeNode[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
-  type: Readonly<ParseTreeNode>
+  type: Readonly<ParseTreeNode> | null
 ): ParseTreeNode {
+  if (type == null) {
+    throw new Error('type is required for property declaration');
+  }
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.consume(TokenType.LEFT_BRACE, 'Expected { for property');
 
   const getter: ParseTreeNode[] = [];
@@ -1524,7 +1143,7 @@ export function parsePropertyDeclaration(
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'property_declaration',
   };
 }
@@ -1536,25 +1155,26 @@ export function parsePropertyDeclaration(
  * @param modifiers - Array of modifier parse tree nodes.
  * @param annotations - Array of annotation parse tree nodes.
  * @param type - The field type parse tree node.
- * @param start - Optional start position for location tracking.
+ * @param typeStart - Start position for location tracking.
  * @returns The field declaration parse tree node.
+ * @throws {Error} If the field name is missing or if unexpected tokens are encountered.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Field parsing requires 5 parameters
-export function parseFieldDeclaration(
-  ctx: ParserContext,
+// eslint-disable-next-line @typescript-eslint/max-params -- Field parsing requires 6 parameters
+function parseFieldDeclaration(
+  ctx: Readonly<ParserContext>,
   name: Readonly<Token>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
   modifiers: readonly ParseTreeNode[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
   annotations: readonly ParseTreeNode[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameters are already readonly
-  type: Readonly<ParseTreeNode>,
-  start?: number
+  type: Readonly<ParseTreeNode> | null,
+  typeStart: number
 ): ParseTreeNode {
+  if (type == null) {
+    throw new Error('type is required for field declaration');
+  }
   const singleIndexOffset = 1;
   const zeroIndex = 0;
   // Use provided start position (from before type parsing) or current position
-  const fieldStart = start ?? ctx.current - singleIndexOffset;
+  const fieldStart = typeStart;
 
   const declarations: ParseTreeNode[] = [];
 
@@ -1567,7 +1187,7 @@ export function parseFieldDeclaration(
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional infinite loop pattern
   while (true) {
     // For first declarator, use fieldStart (before type parsing); for subsequent ones, use current position
-    const declStart = declarationData.length === zeroIndex ? fieldStart : ctx.current;
+    const declStart = declarationData.length === zeroIndex ? fieldStart : ctx.getCurrent();
 
     // First declarator uses the provided name (already consumed), subsequent ones need to be consumed
     let fieldName: Token | undefined = undefined;
@@ -1597,7 +1217,8 @@ export function parseFieldDeclaration(
       declChildren.push({ children: [...modifiers], type: 'modifiers' });
     }
     declChildren.push(type);
-    if (!fieldName) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- fieldName is set on line 1665 or 1669, but TypeScript can't infer this
+    if (fieldName === undefined) {
       throw new Error('Expected field name');
     }
     declChildren.push({
@@ -1628,7 +1249,7 @@ export function parseFieldDeclaration(
   for (const data of declarationData) {
     declarations.push({
       children: data.children,
-      location: ctx.getLocation(data.start - singleIndexOffset, ctx.current),
+      location: ctx.getLocation(data.start - singleIndexOffset, ctx.getCurrent()),
       type: 'field_declaration',
     });
   }
@@ -1638,7 +1259,7 @@ export function parseFieldDeclaration(
   if (declarations.length > singleDeclarationCount) {
     return {
       children: declarations,
-      location: ctx.getLocation(fieldStart, ctx.current),
+      location: ctx.getLocation(fieldStart, ctx.getCurrent()),
       type: 'block',
     };
   }
@@ -1646,3 +1267,432 @@ export function parseFieldDeclaration(
   // Single declarator, return the field declaration directly
   return declarations[zeroIndex];
 }
+
+// ============================================================================
+// Class Member Parsing
+// ============================================================================
+
+/**
+ * Parse a class member (method, field, property, initializer block).
+ * @param ctx - The parser context.
+ * @returns The parsed class member node, or null if parsing fails.
+ */
+function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
+  ctx.skipWhitespaceAndComments();
+
+  // Collect annotations
+  const annotations: ParseTreeNode[] = [];
+  while (ctx.match(TokenType.AT)) {
+    const annotation = ctx.parseAnnotation();
+    if (annotation) {
+      annotations.push(annotation);
+    }
+    ctx.skipWhitespaceAndComments();
+  }
+
+  // Parse modifiers
+  const modifiers: ParseTreeNode[] = [];
+  const singleIndexOffset = 1;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop pattern
+  while (true) {
+    let modifierText: string | null = null;
+    let modifierStart: number | null = null;
+
+    if (
+      ctx.match(
+        TokenType.PUBLIC,
+        TokenType.PRIVATE,
+        TokenType.PROTECTED,
+        TokenType.GLOBAL,
+        TokenType.STATIC,
+        TokenType.FINAL,
+        TokenType.ABSTRACT,
+        TokenType.OVERRIDE,
+        TokenType.VIRTUAL,
+        TokenType.TESTMETHOD,
+        TokenType.WEBSERVICE,
+        TokenType.TRANSIENT
+      )
+    ) {
+      const prevToken = ctx.tokens[ctx.getCurrent() - singleIndexOffset];
+      modifierText = prevToken.text;
+      modifierStart = ctx.getCurrent() - singleIndexOffset;
+    } else {
+      break;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Both variables are set together in branches above
+    if (modifierText !== null && modifierStart !== null) {
+      modifiers.push({
+        location: ctx.getLocation(modifierStart, ctx.getCurrent()),
+        text: modifierText,
+        type: 'modifier',
+      });
+      ctx.skipWhitespaceAndComments();
+    } else {
+      break;
+    }
+  }
+
+  // Check for static/instance initializer block: { ... }
+  if (ctx.check(TokenType.LEFT_BRACE)) {
+    const start = ctx.getCurrent();
+    const block = ctx.parseBlock();
+    return {
+      children: [
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
+        ...(modifiers.length > 0 ? [{ children: modifiers, type: 'modifiers' }] : []),
+        block,
+      ],
+      location: ctx.getLocation(start, ctx.getCurrent()),
+      type: 'initializer_block',
+    };
+  }
+
+  // Check for inner class/interface/enum declarations
+  // These need to be checked before trying to parse a type
+  if (ctx.match(TokenType.CLASS)) {
+    // parseClassDeclaration expects CLASS to be consumed (which we just did with match)
+    // and accepts pre-parsed modifiers and annotations
+    return parseClassDeclaration(ctx, annotations, modifiers);
+  }
+  if (ctx.match(TokenType.INTERFACE)) {
+    // parseInterfaceDeclaration expects INTERFACE to be consumed (which we just did with match)
+    // and accepts pre-parsed modifiers and annotations
+    return parseInterfaceDeclaration(ctx, annotations, modifiers);
+  }
+  if (ctx.match(TokenType.ENUM)) {
+    // parseEnumDeclaration expects ENUM to be consumed (which we just did with match)
+    // and accepts pre-parsed modifiers and annotations
+    return parseEnumDeclaration(ctx, annotations, modifiers);
+  }
+
+  // Parse type (for methods, fields, properties)
+  // For constructors, the type name is the constructor name, so we need to save it
+  const typeStart = ctx.getCurrent();
+  let savedTypeName: string | null = null;
+  let savedTypeLocation:
+    | { start: { line: number; column: number }; end: { line: number; column: number } }
+    | undefined = undefined;
+
+  // Peek ahead to see if this might be a constructor (type followed by '(')
+  if (ctx.check(TokenType.IDENTIFIER)) {
+    const peekToken = ctx.tokens[ctx.getCurrent()];
+    savedTypeName = peekToken.text;
+    savedTypeLocation = ctx.locationToRange(peekToken.location);
+  }
+
+  // Save position before parseType in case it fails but advances
+  const beforeTypeParse = ctx.getCurrent();
+  const type = ctx.parseType();
+  if (!type) {
+    // parseType() may have advanced past whitespace or partially parsed tokens
+    // Restore position to before the type parse attempt
+    ctx.setCurrent(beforeTypeParse);
+    return null;
+  }
+
+  ctx.skipWhitespaceAndComments();
+
+  // Check if it's a constructor (type followed by '(' instead of identifier)
+  if (ctx.check(TokenType.LEFT_PAREN)) {
+    // Extract the type name to check if it's qualified
+    let typeName = savedTypeName;
+    if (typeName === null || typeName === '') {
+      // Try to get the type name from the type node
+      // Access children directly since we're in the parser, not translator
+      const children = type.children ?? [];
+      const baseTypeNode = children.find((c) => c.type === 'base_type');
+      if (baseTypeNode) {
+        typeName = baseTypeNode.text ?? null;
+      }
+      if (typeName === null || typeName === '') {
+        const typeNameNode =
+          children.find((c) => c.type === 'name') ?? children.find((c) => c.type === 'identifier');
+        if (typeNameNode) {
+          const nameFromText = typeNameNode.text;
+          const nameFromProperty =
+            // Use runtime check to safely read the dynamic 'name' property
+            typeof typeNameNode.name === 'string' ? typeNameNode.name : undefined;
+          typeName = nameFromText ?? nameFromProperty ?? 'Unknown';
+        } else {
+          typeName = 'Unknown';
+        }
+      }
+    }
+    // If the type is qualified (contains a dot), it's not a constructor
+    // Qualified types like "System.debug" are method calls, not constructors
+    // Also check the type node's text property directly
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Accessing first array element
+    const firstChild = type.children?.[0];
+    const childText =
+      firstChild && typeof firstChild.text === 'string' ? firstChild.text : undefined;
+    const typeText = type.text ?? childText;
+    const isQualified =
+      (typeof typeName === 'string' && typeName.includes('.')) ||
+      (typeof typeText === 'string' && typeText.includes('.'));
+    if (isQualified) {
+      // This is not a constructor, restore position and return null
+      // so it can be parsed as a statement
+      ctx.setCurrent(beforeTypeParse);
+      return null;
+    }
+    // This is a constructor - use the saved type name
+    if (savedTypeName === null || savedTypeName === '' || savedTypeLocation === undefined) {
+      // Fallback: try to extract from type node
+      // Access children directly since we're in the parser, not translator
+      const children = type.children ?? [];
+      const typeNameNode =
+        children.find((c) => c.type === 'name') ?? children.find((c) => c.type === 'identifier');
+      if (typeNameNode) {
+        const nameFromText = typeNameNode.text;
+        const nameFromProperty =
+          typeof typeNameNode.name === 'string' ? typeNameNode.name : undefined;
+        savedTypeName = nameFromText ?? nameFromProperty ?? 'Unknown';
+      } else {
+        savedTypeName = 'Unknown';
+      }
+      savedTypeLocation = type.location;
+    }
+    // Create a token-like object for the constructor name
+    const nameToken: Token = {
+      location: savedTypeLocation
+        ? {
+            column: savedTypeLocation.start.column,
+            line: savedTypeLocation.start.line,
+          }
+        : (type.location?.start ?? { column: 1, line: 1 }),
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- savedTypeName is set to 'Unknown' if null above
+      text: savedTypeName ?? 'Unknown',
+      type: TokenType.IDENTIFIER,
+    };
+    // For constructors, create a void_type node instead of using the type node
+    // This allows the translator to correctly identify it as a constructor
+    const voidTypeNode: ParseTreeNode = {
+      children: [],
+      location: type.location,
+      type: 'void_type',
+    };
+    return parseMethodOrConstructor(ctx, nameToken, modifiers, annotations, voidTypeNode);
+  }
+
+  // Check if it's a property (has { after name)
+  if (ctx.check(TokenType.IDENTIFIER)) {
+    const name = ctx.consume(TokenType.IDENTIFIER, 'Expected member name');
+    ctx.skipWhitespaceAndComments();
+
+    if (ctx.check(TokenType.LEFT_BRACE)) {
+      // Property declaration
+      return parsePropertyDeclaration(ctx, name, modifiers, annotations, type);
+    } else if (ctx.check(TokenType.LEFT_PAREN)) {
+      // Method/constructor
+      return parseMethodOrConstructor(ctx, name, modifiers, annotations, type);
+    } else {
+      // Field declaration
+      return parseFieldDeclaration(ctx, name, modifiers, annotations, type, typeStart);
+    }
+  }
+
+  return null;
+}
+
+// ============================================================================
+// ============================================================================
+// Declaration Parsing
+// ============================================================================
+
+/**
+ * Parse a declaration (class, interface, trigger, etc.).
+ * @param ctx - The parser context.
+ * @returns The declaration parse tree node, or null if not a declaration.
+ * @throws {Error} If the declaration is malformed or unexpected tokens are encountered.
+ */
+function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
+  ctx.skipWhitespaceAndComments();
+  const singleIndexOffset = 1;
+
+  // Check for annotation type declaration: @interface
+  if (ctx.match(TokenType.AT)) {
+    if (ctx.check(TokenType.INTERFACE)) {
+      ctx.advance(); // Consume INTERFACE
+      return parseAnnotationDeclaration(ctx);
+    } else {
+      // Not @interface, might be an annotation on a declaration, reset
+      ctx.setCurrent(ctx.getCurrent() - singleIndexOffset);
+    }
+  }
+
+  // Collect annotations before the declaration (for class, interface, enum, etc.)
+  const annotations: ParseTreeNode[] = [];
+  while (ctx.match(TokenType.AT)) {
+    const annotation = ctx.parseAnnotation();
+    if (annotation) {
+      annotations.push(annotation);
+    }
+    ctx.skipWhitespaceAndComments();
+  }
+
+  // Parse modifiers (public, private, etc.) that can come before class/interface/enum
+  const modifiers: ParseTreeNode[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop pattern for parsing modifiers
+  while (true) {
+    const beforeMatch = ctx.getCurrent();
+    let modifierText: string | null = null;
+    let modifierStart: number | null = null;
+
+    // Check for multi-word modifiers first: "with sharing", "without sharing", "inherited sharing"
+    if (ctx.match(TokenType.WITH)) {
+      modifierStart = ctx.getCurrent() - singleIndexOffset;
+      ctx.skipWhitespaceAndComments();
+      if (ctx.match(TokenType.SHARING)) {
+        modifierText = 'with sharing';
+      } else {
+        // "with" without "sharing" is not a modifier, reset
+        ctx.setCurrent(beforeMatch);
+        break;
+      }
+    } else if (ctx.match(TokenType.WITHOUT)) {
+      modifierStart = ctx.getCurrent() - singleIndexOffset;
+      ctx.skipWhitespaceAndComments();
+      if (ctx.match(TokenType.SHARING)) {
+        modifierText = 'without sharing';
+      } else {
+        // "without" without "sharing" is not a modifier, reset
+        ctx.setCurrent(beforeMatch);
+        break;
+      }
+    } else if (ctx.match(TokenType.INHERITED)) {
+      modifierStart = ctx.getCurrent() - singleIndexOffset;
+      ctx.skipWhitespaceAndComments();
+      if (ctx.match(TokenType.SHARING)) {
+        modifierText = 'inherited sharing';
+      } else {
+        // "inherited" without "sharing" is not a modifier, reset
+        ctx.setCurrent(beforeMatch);
+        break;
+      }
+    } else if (
+      ctx.match(
+        TokenType.PUBLIC,
+        TokenType.PRIVATE,
+        TokenType.PROTECTED,
+        TokenType.GLOBAL,
+        TokenType.STATIC,
+        TokenType.FINAL,
+        TokenType.ABSTRACT,
+        TokenType.OVERRIDE,
+        TokenType.VIRTUAL,
+        TokenType.TESTMETHOD,
+        TokenType.WEBSERVICE,
+        TokenType.TRANSIENT
+      )
+    ) {
+      const prevToken = ctx.tokens[ctx.getCurrent() - singleIndexOffset];
+      modifierText = prevToken.text;
+      modifierStart = ctx.getCurrent() - singleIndexOffset;
+    } else {
+      // No more modifiers
+      break;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Both variables are set together in branches above
+    if (modifierText !== null && modifierStart !== null) {
+      modifiers.push({
+        location: ctx.getLocation(modifierStart, ctx.getCurrent()),
+        text: modifierText,
+        type: 'modifier',
+      });
+      ctx.skipWhitespaceAndComments();
+    } else {
+      break;
+    }
+  }
+
+  if (ctx.match(TokenType.CLASS)) {
+    return parseClassDeclaration(ctx, annotations, modifiers);
+  }
+  if (ctx.match(TokenType.INTERFACE)) {
+    return parseInterfaceDeclaration(ctx, annotations, modifiers);
+  }
+  if (ctx.match(TokenType.TRIGGER)) {
+    return parseTriggerDeclaration(ctx);
+  }
+  if (ctx.match(TokenType.ENUM)) {
+    return parseEnumDeclaration(ctx, annotations, modifiers);
+  }
+
+  // Could be a method or field at top level (unlikely but handle it)
+  return null;
+}
+
+// ============================================================================
+// Compilation Unit
+// ============================================================================
+
+/**
+ * Parse compilation unit (top-level).
+ * @param ctx - The parser context.
+ * @returns The compilation unit parse tree node.
+ * @throws {Error} If the compilation unit is malformed or unexpected tokens are encountered.
+ */
+function parseCompilationUnit(ctx: Readonly<ParserContext>): ParseTreeNode {
+  const declarations: ParseTreeNode[] = [];
+
+  // Skip whitespace and comments at start to find the first actual token
+  ctx.skipWhitespaceAndComments();
+
+  /**
+   * Start from first actual token, not beginning of source.
+   */
+  const start = ctx.getCurrent();
+
+  while (!ctx.isAtEnd()) {
+    const beforeDecl = ctx.getCurrent();
+    const decl = ctx.parseDeclaration();
+    if (decl != null) {
+      declarations.push(decl);
+    }
+    // Safety check: ensure we always advance
+    if (ctx.getCurrent() === beforeDecl && !ctx.isAtEnd()) {
+      ctx.advance();
+    }
+    ctx.skipWhitespaceAndComments();
+  }
+
+  // For compilation unit, we want the location to span from first token to end of source
+  // including trailing newlines. Use a special end position that includes everything.
+
+  /**
+   * This will trigger EOF handling in getLocation.
+   */
+  const endPos = ctx.tokens.length;
+
+  return {
+    children: declarations,
+    location: ctx.getLocation(start, endPos),
+    type: 'compilation_unit',
+  };
+}
+
+export {
+  parseCompilationUnit,
+  parseDeclaration,
+  parseInterfaceDeclaration,
+  parseTriggerDeclaration,
+  parseEnumDeclaration,
+  parseTypeParameters,
+  parseTypeParameter,
+  parseType,
+  checkType,
+  parseAnnotationDeclaration,
+  parseAnnotationMember,
+  parseAnnotation,
+  parseAnnotationArgument,
+  parseEnumConstant,
+  parseClassDeclaration,
+  parseClassMember,
+  parseMethodOrConstructor,
+  parseParameter,
+  parsePropertyDeclaration,
+  parseFieldDeclaration,
+};

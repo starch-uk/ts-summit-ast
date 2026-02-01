@@ -48,12 +48,16 @@ import type {
 import type { AnnotationArgument } from '../ast/declaration.js';
 import type { SoqlOrSoslBinding } from '../ast/expression.js';
 
+// ============================================================================
+// Traversal Functions
+// ============================================================================
+
 /**
  * Visitor interface for AST traversal
  * Note: This is different from ASTVisitor in ast/visitor.ts
  * This one is for walkAST utility, the other is for the visitor pattern.
  */
-export interface ASTWalkVisitor {
+interface ASTWalkVisitor {
   /**
    * Called when entering a node.
    * Return false to skip visiting children of this node.
@@ -79,6 +83,7 @@ function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
       continue;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by key iteration
     const value = (node as unknown as Record<string, unknown>)[key];
     if (value === null || value === undefined) {
       continue;
@@ -86,11 +91,13 @@ function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
 
     if (typeof value === 'object' && 'kind' in value) {
       // It's an AST node
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by 'kind' property check
       children.push(value as ASTNode);
     } else if (Array.isArray(value)) {
       // It's an array - check if it contains AST nodes
       for (const item of value) {
         if (item !== null && item !== undefined && typeof item === 'object' && 'kind' in item) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by 'kind' property check
           children.push(item as ASTNode);
         }
       }
@@ -249,6 +256,7 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
       break;
     }
     case 'NewExpression': {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check in switch
       const expr = node as NewExpression;
       children.push(expr.initializer);
       break;
@@ -395,35 +403,40 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
 }
 
 /**
- * Walk the AST tree with a visitor.
- * @param ast - The AST node to walk.
+ * Forward declaration for mutual recursion with visitChildren.
+ * @param _ast - Unused; stub never called before assignment.
+ * @param _visitor - Unused; stub never called before assignment.
+ */
+let walkAST: (ast: Readonly<ASTNode>, visitor: Readonly<ASTWalkVisitor>) => void = (
+  _ast: Readonly<ASTNode>,
+  _visitor: Readonly<ASTWalkVisitor>
+): void => {
+  /* Assigned below; never called before assignment */
+};
+
+/**
+ * Visit children of a node and walk each with the visitor.
+ * @param node - The AST node whose children to visit.
  * @param visitor - The visitor to use for traversal.
  */
-function walkAST(ast: Readonly<ASTNode>, visitor: Readonly<ASTWalkVisitor>): void {
+function visitChildren(node: Readonly<ASTNode>, visitor: Readonly<ASTWalkVisitor>): void {
+  const children = getNodeChildren(node);
+  for (const child of children) {
+    walkAST(child, visitor);
+  }
+}
+
+walkAST = (ast: Readonly<ASTNode>, visitor: Readonly<ASTWalkVisitor>): void => {
   const shouldContinue = visitor.enterNode?.(ast);
   if (shouldContinue === false) {
     visitor.exitNode?.(ast);
     return;
   }
 
-  // Visit children
   visitChildren(ast, visitor);
 
   visitor.exitNode?.(ast);
-}
-
-/**
- * Visit children of a node.
- * @param node - The AST node whose children to visit.
- * @param visitor - The visitor to use for traversal.
- */
-function visitChildren(node: Readonly<ASTNode>, visitor: Readonly<ASTWalkVisitor>): void {
-  // Extract children based on node type
-  const children = getNodeChildren(node);
-  for (const child of children) {
-    walkAST(child, visitor);
-  }
-}
+};
 
 /**
  * Get parent node mapping (requires building parent map first).
@@ -446,8 +459,6 @@ function buildParentMap(root: Readonly<ASTNode>): Map<ASTNode, ASTNode | null> {
 
   return parentMap;
 }
-
-export { walkAST, getNodeChildren, buildParentMap };
 
 /**
  * Get all ancestors of a node.
@@ -517,4 +528,14 @@ function getChildNodesByType(node: Readonly<ASTNode>, nodeType: string): ASTNode
   return children.filter((child) => child.kind === nodeType);
 }
 
-export { getAncestors, findNodesByType, getParentNode, getChildNodesByType };
+export type { ASTWalkVisitor };
+export {
+  walkAST,
+  visitChildren,
+  getNodeChildren,
+  buildParentMap,
+  getAncestors,
+  findNodesByType,
+  getParentNode,
+  getChildNodesByType,
+};

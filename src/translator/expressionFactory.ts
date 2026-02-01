@@ -51,15 +51,186 @@ import type {
 import type { Annotation } from '../ast/declaration.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 
+// ============================================================================
+// SoqlOrSoslBinding Factory (used by ExpressionFactory)
+// ============================================================================
+
 /**
- * Options for creating AST nodes.
+ * Factory for creating SoqlOrSoslBinding AST nodes.
  */
+const SoqlOrSoslBindingFactory = {
+  /**
+   * Creates a SoqlOrSoslBinding AST node.
+   * @param expr - The expression to bind.
+   * @param options - Optional factory options.
+   * @returns The created SoqlOrSoslBinding node.
+   */
+  createSoqlOrSoslBinding(
+    expr: Expression,
+    options?: Readonly<NodeFactoryOptions>
+  ): SoqlOrSoslBinding {
+    return {
+      expr,
+      kind: 'SoqlOrSoslBinding',
+      // Use the expression's location if available
+      location: options?.location ?? expr.location,
+    };
+  },
+};
+
+// ============================================================================
+// Initializer Factory (defined before ExpressionFactory which uses it)
+// ============================================================================
+
+/**
+ * Factory for creating Initializer AST nodes.
+ */
+const InitializerFactory = {
+  createConstructorInitializer(
+    type: Readonly<TypeRef>,
+    args: readonly Readonly<Expression>[] = [],
+    options?: Readonly<NodeFactoryOptions>
+  ): ConstructorInitializer {
+    return {
+      args: [...args],
+      kind: 'ConstructorInitializer',
+      location: options?.location,
+      type,
+    };
+  },
+
+  createMapInitializer(
+    type: Readonly<TypeRef>,
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- pairs use Readonly<> but rule still flags
+    pairs: Readonly<readonly { key: Readonly<Expression>; value: Readonly<Expression> }[]>,
+    options?: Readonly<NodeFactoryOptions>
+  ): MapInitializer {
+    return {
+      kind: 'MapInitializer',
+      location: options?.location,
+      pairs: [...pairs],
+      type,
+    };
+  },
+
+  createSizedArrayInitializer(
+    type: Readonly<TypeRef>,
+    size: Readonly<Expression>,
+    options?: Readonly<NodeFactoryOptions>
+  ): SizedArrayInitializer {
+    return {
+      kind: 'SizedArrayInitializer',
+      location: options?.location,
+      size,
+      type,
+    };
+  },
+
+  createValuesInitializer(
+    type: Readonly<TypeRef>,
+    values: readonly Expression[] = [],
+    options?: Readonly<NodeFactoryOptions>
+  ): ValuesInitializer {
+    return {
+      kind: 'ValuesInitializer',
+      location: options?.location,
+      type,
+      values: [...values],
+    };
+  },
+};
+
+// ============================================================================
+// Expression Factory
+// ============================================================================
 
 /**
  * Factory for expression nodes.
  */
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
-export class ExpressionFactory {
+const ExpressionFactory = {
+  /**
+   * Creates an array access expression.
+   * @param array - The expression representing the array to access.
+   * @param index - The expression representing the index to access.
+   * @param options - Optional factory options.
+   * @returns The created array expression.
+   * @deprecated Use createArrayExpression instead.
+   */
+  createArrayAccessExpression(
+    array: Expression,
+    index: Expression,
+    options?: Readonly<NodeFactoryOptions>
+  ): ArrayExpression {
+    return ExpressionFactory.createArrayExpression(array, index, options);
+  },
+
+  /**
+   * Creates an array access expression.
+   * @param array - The expression representing the array to access.
+   * @param index - The expression representing the index to access.
+   * @param options - Optional factory options.
+   * @returns The created array expression.
+   */
+  createArrayExpression(
+    array: Expression,
+    index: Expression,
+    options?: Readonly<NodeFactoryOptions>
+  ): ArrayExpression {
+    return {
+      array,
+      index,
+      kind: 'ArrayExpression',
+      location: options?.location,
+    };
+  },
+
+  /**
+   * Creates an assignment expression.
+   * @param operator - The assignment operator.
+   * @param left - The left-hand side expression (target).
+   * @param right - The right-hand side expression (value).
+   * @param options - Optional factory options.
+   * @returns The created assignment expression.
+   */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Assign expression requires 4 parameters
+  createAssignExpression(
+    operator: AssignExpression['operator'],
+
+    left: Readonly<Expression>,
+    right: Expression,
+    options?: Readonly<NodeFactoryOptions>
+  ): AssignExpression {
+    return {
+      kind: 'AssignExpression',
+      left,
+      location: options?.location,
+      operator,
+      right,
+    };
+  },
+
+  /**
+   * Creates an assignment expression.
+   * @param operator - The assignment operator (e.g., '=', '+=', '-=').
+   * @param left - The left-hand side expression (target).
+   * @param right - The right-hand side expression (value).
+   * @param options - Optional factory options.
+   * @returns The created assignment expression.
+   * @deprecated Use createAssignExpression instead.
+   */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Assignment expression requires 4 parameters
+  createAssignmentExpression(
+    operator: AssignExpression['operator'],
+
+    left: Readonly<Expression>,
+
+    right: Readonly<Expression>,
+
+    options?: Readonly<NodeFactoryOptions>
+  ): AssignExpression {
+    return ExpressionFactory.createAssignExpression(operator, left, right, options);
+  },
+
   /**
    * Creates a binary expression.
    * @param operator - The binary operator to apply (e.g., '+', '-', '==', '!=').
@@ -69,7 +240,7 @@ export class ExpressionFactory {
    * @returns The created binary expression.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
-  public static createBinaryExpression(
+  createBinaryExpression(
     operator: BinaryExpression['operator'],
     left: Readonly<Expression>,
     right: Readonly<Expression>,
@@ -82,7 +253,7 @@ export class ExpressionFactory {
       operator,
       right,
     };
-  }
+  },
 
   /**
    * Creates a call expression.
@@ -94,7 +265,7 @@ export class ExpressionFactory {
    * @returns The created call expression.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
-  public static createCallExpression(
+  createCallExpression(
     methodName: string,
 
     args: readonly Readonly<Expression>[] = [],
@@ -111,24 +282,109 @@ export class ExpressionFactory {
       target,
       typeArguments: typeArguments ? [...typeArguments] : undefined,
     };
-  }
+  },
 
   /**
-   * Creates a variable expression.
-   * @param id - The identifier for the variable.
+   * Creates a cast expression.
+   * @param type - The type to cast to.
+   * @param expression - The expression to cast.
    * @param options - Optional factory options.
-   * @returns The created variable expression.
+   * @returns The created cast expression.
    */
-  public static createVariableExpression(
-    id: Identifier,
-    options?: NodeFactoryOptions
-  ): VariableExpression {
+  createCastExpression(
+    type: Readonly<TypeRef>,
+
+    expression: Readonly<Expression>,
+
+    options?: Readonly<NodeFactoryOptions>
+  ): CastExpression {
     return {
-      id,
-      kind: 'VariableExpression',
+      expression,
+      kind: 'CastExpression',
       location: options?.location,
+      type,
     };
-  }
+  },
+
+  /**
+   * Creates a field access expression.
+   * @param fieldName - The name of the field to access.
+   * @param target - The target expression to access the field on.
+   * @param options - Optional factory options.
+   * @returns The created field expression.
+   * @deprecated Use createFieldExpression instead.
+   */
+  createFieldAccessExpression(
+    fieldName: string,
+    target?: Expression,
+    options?: Readonly<NodeFactoryOptions>
+  ): FieldExpression {
+    return ExpressionFactory.createFieldExpression(fieldName, target, options);
+  },
+
+  /**
+   * Creates a field access expression.
+   * @param fieldName - The name of the field to access.
+   * @param target - The target expression to access the field on.
+   * @param options - Optional factory options.
+   * @returns The created field expression.
+   */
+  createFieldExpression(
+    fieldName: string,
+    target?: Expression,
+    options?: Readonly<NodeFactoryOptions>
+  ): FieldExpression {
+    return {
+      field: { kind: 'Identifier', location: options?.location, name: fieldName },
+      fieldName,
+      kind: 'FieldExpression',
+      location: options?.location,
+      target,
+    };
+  },
+
+  /**
+   * Creates an instanceof expression.
+   * @param expression - The expression to check.
+   * @param type - The type to check against.
+   * @param options - Optional factory options.
+   * @returns The created instanceof expression.
+   */
+  createInstanceOfExpression(
+    expression: Readonly<Expression>,
+    type: Readonly<TypeRef>,
+
+    options?: Readonly<NodeFactoryOptions>
+  ): InstanceOfExpression {
+    return {
+      expression,
+      kind: 'InstanceOfExpression',
+      location: options?.location,
+      type,
+    };
+  },
+
+  /**
+   * Creates a lambda expression.
+   * @param parameters - The list of parameters for the lambda function.
+   * @param body - The lambda body (expression or statement).
+   * @param options - Optional factory options.
+   * @returns The created lambda expression.
+   */
+  createLambdaExpression(
+    parameters: readonly LambdaParameter[],
+
+    body: Readonly<Expression | Statement>,
+
+    options?: Readonly<NodeFactoryOptions>
+  ): LambdaExpression {
+    return {
+      body,
+      kind: 'LambdaExpression',
+      location: options?.location,
+      parameters: [...parameters],
+    };
+  },
 
   /**
    * Creates a method call expression.
@@ -141,7 +397,7 @@ export class ExpressionFactory {
    * @deprecated Use createCallExpression instead.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Method call expression requires 5 parameters
-  public static createMethodCallExpression(
+  createMethodCallExpression(
     methodName: string,
 
     args: readonly Expression[] = [],
@@ -151,8 +407,218 @@ export class ExpressionFactory {
 
     options?: Readonly<NodeFactoryOptions>
   ): CallExpression {
-    return this.createCallExpression(methodName, args, target, typeArguments, options);
-  }
+    return ExpressionFactory.createCallExpression(methodName, args, target, typeArguments, options);
+  },
+
+  /**
+   * Creates a new array expression.
+   * @param type - The type of the array elements.
+   * @param size - The size expression for the array.
+   * @param options - Optional factory options.
+   * @returns The created new expression with a sized array initializer.
+   */
+  createNewArrayExpression(
+    type: Readonly<TypeRef>,
+
+    size: Readonly<Expression>,
+
+    options?: Readonly<NodeFactoryOptions>
+  ): NewExpression {
+    // Create SizedArrayInitializer and wrap in NewExpression
+    const initializer = InitializerFactory.createSizedArrayInitializer(type, size, options);
+    return ExpressionFactory.createNewExpression(initializer, options);
+  },
+
+  /**
+   * Creates a new expression (object instantiation).
+   * @param initializer - The initializer for the new object.
+   * @param options - Optional factory options.
+   * @returns The created new expression.
+   */
+  createNewExpression(
+    initializer: Readonly<Readonly<Initializer>>,
+
+    options?: Readonly<NodeFactoryOptions>
+  ): NewExpression {
+    return {
+      initializer,
+      kind: 'NewExpression',
+      location: options?.location,
+      type: initializer.type,
+    };
+  },
+
+  /**
+   * Creates a parenthesized expression.
+   * @param expression - The expression to wrap in parentheses.
+   * @param options - Optional factory options.
+   * @returns The created parenthesized expression.
+   */
+  createParenthesizedExpression(
+    expression: Readonly<Expression>,
+
+    options?: Readonly<NodeFactoryOptions>
+  ): ParenthesizedExpression {
+    return {
+      expression,
+      kind: 'ParenthesizedExpression',
+      location: options?.location,
+    };
+  },
+
+  /**
+   * Creates a SOQL expression.
+   * @param query - The SOQL query string.
+   * @param bindings - The list of bindings for the SOQL query.
+   * @param options - Optional factory options.
+   * @returns The created SOQL expression.
+   */
+  createSoqlExpression(
+    query: string,
+
+    bindings: readonly SoqlOrSoslBinding[] = [],
+
+    options?: Readonly<NodeFactoryOptions>
+  ): SoqlExpression {
+    return {
+      bindings: [...bindings],
+      kind: 'SoqlExpression',
+      location: options?.location,
+      query,
+    };
+  },
+
+  /**
+   * Creates a SOQL query expression.
+   * @param query - The SOQL query string.
+   * @param boundExpressions - The bound expressions for the query.
+   * @param options - Optional factory options.
+   * @returns The created SOQL expression.
+   * @deprecated Use createSoqlExpression instead.
+   */
+  createSoqlQueryExpression(
+    query: string,
+
+    boundExpressions?: readonly Expression[],
+
+    options?: Readonly<NodeFactoryOptions>
+  ): SoqlExpression {
+    // Convert boundExpressions to bindings for backward compatibility
+    const bindings = (boundExpressions ?? []).map((expr) =>
+      SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options)
+    );
+    return ExpressionFactory.createSoqlExpression(query, bindings, options);
+  },
+
+  /**
+   * Creates a SOSL expression.
+   * @param query - The SOSL query string.
+   * @param bindings - The list of bindings for the SOSL query.
+   * @param options - Optional factory options.
+   * @returns The created SOSL expression.
+   */
+  createSoslExpression(
+    query: string,
+
+    bindings: readonly SoqlOrSoslBinding[] = [],
+
+    options?: Readonly<NodeFactoryOptions>
+  ): SoslExpression {
+    return {
+      bindings: [...bindings],
+      kind: 'SoslExpression',
+      location: options?.location,
+      query,
+    };
+  },
+
+  /**
+   * Creates a SOSL query expression.
+   * @param query - The SOSL query string.
+   * @param boundExpressions - The bound expressions for the query.
+   * @param options - Optional factory options.
+   * @returns The created SOSL expression.
+   * @deprecated Use createSoslExpression instead.
+   */
+  createSoslQueryExpression(
+    query: string,
+
+    boundExpressions?: readonly Expression[],
+
+    options?: Readonly<NodeFactoryOptions>
+  ): SoslExpression {
+    // Convert boundExpressions to bindings for backward compatibility
+    const bindings = (boundExpressions ?? []).map((expr) =>
+      SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options)
+    );
+    return ExpressionFactory.createSoslExpression(query, bindings, options);
+  },
+
+  /**
+   * Creates a super expression.
+   * @param options - Optional factory options.
+   * @returns The created super expression.
+   */
+  createSuperExpression(options?: Readonly<NodeFactoryOptions>): SuperExpression {
+    return {
+      kind: 'SuperExpression',
+      location: options?.location,
+    };
+  },
+
+  /**
+   * Creates a ternary (conditional) expression.
+   * @param condition - The boolean expression to evaluate.
+   * @param thenExpression - The expression to evaluate if condition is true.
+   * @param elseExpression - The expression to evaluate if condition is false.
+   * @param options - Optional factory options.
+   * @returns The created ternary expression.
+   */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Ternary expression requires 4 parameters
+  createTernaryExpression(
+    condition: Readonly<Expression>,
+
+    thenExpression: Readonly<Expression>,
+    elseExpression: Expression,
+    options?: Readonly<NodeFactoryOptions>
+  ): TernaryExpression {
+    return {
+      condition,
+      elseExpression,
+      kind: 'TernaryExpression',
+      location: options?.location,
+      thenExpression,
+    };
+  },
+
+  /**
+   * Creates a this expression.
+   * @param options - Optional factory options.
+   * @returns The created this expression.
+   */
+  createThisExpression(options?: Readonly<NodeFactoryOptions>): ThisExpression {
+    return {
+      kind: 'ThisExpression',
+      location: options?.location,
+    };
+  },
+
+  /**
+   * Creates a trigger context variable expression.
+   * @param variableName - The identifier name for the trigger context variable (e.g., 'isBefore', 'isAfter').
+   * @param options - Optional factory options.
+   * @returns The created trigger context variable expression.
+   */
+  createTriggerContextVariableExpression(
+    variableName: string,
+    options?: Readonly<NodeFactoryOptions>
+  ): TriggerContextVariableExpression {
+    return {
+      kind: 'TriggerContextVariableExpression',
+      location: options?.location,
+      variableName,
+    };
+  },
 
   /**
    * Creates a unary expression.
@@ -163,7 +629,7 @@ export class ExpressionFactory {
    * @returns The created unary expression.
    */
   // eslint-disable-next-line @typescript-eslint/max-params -- Unary expression requires 4 parameters
-  public static createUnaryExpression(
+  createUnaryExpression(
     operator: UnaryExpression['operator'],
 
     operand: Readonly<Expression>,
@@ -178,424 +644,22 @@ export class ExpressionFactory {
       operator,
       prefix,
     };
-  }
+  },
 
   /**
-   * Creates an assignment expression.
-   * @param operator - The assignment operator.
-   * @param left - The left-hand side expression (target).
-   * @param right - The right-hand side expression (value).
+   * Creates a variable expression.
+   * @param id - The identifier for the variable.
    * @param options - Optional factory options.
-   * @returns The created assignment expression.
+   * @returns The created variable expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Assign expression requires 4 parameters
-  public static createAssignExpression(
-    operator: AssignExpression['operator'],
-
-    left: Readonly<Expression>,
-    right: Expression,
-    options?: NodeFactoryOptions
-  ): AssignExpression {
-    return {
-      kind: 'AssignExpression',
-      left,
-      location: options?.location,
-      operator,
-      right,
-    };
-  }
-
-  /**
-   * Creates a field access expression.
-   * @param fieldName - The name of the field to access.
-   * @param target - The target expression to access the field on.
-   * @param options - Optional factory options.
-   * @returns The created field expression.
-   */
-  public static createFieldExpression(
-    fieldName: string,
-    target?: Expression,
-    options?: NodeFactoryOptions
-  ): FieldExpression {
-    return {
-      field: { kind: 'Identifier', location: options?.location, name: fieldName },
-      fieldName,
-      kind: 'FieldExpression',
-      location: options?.location,
-      target,
-    };
-  }
-
-  /**
-   * Creates an array access expression.
-   * @param array - The expression representing the array to access.
-   * @param index - The expression representing the index to access.
-   * @param options - Optional factory options.
-   * @returns The created array expression.
-   */
-  public static createArrayExpression(
-    array: Expression,
-    index: Expression,
-    options?: NodeFactoryOptions
-  ): ArrayExpression {
-    return {
-      array,
-      index,
-      kind: 'ArrayExpression',
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Creates an assignment expression.
-   * @param operator - The assignment operator (e.g., '=', '+=', '-=').
-   * @param left - The left-hand side expression (target).
-   * @param right - The right-hand side expression (value).
-   * @param options - Optional factory options.
-   * @returns The created assignment expression.
-   * @deprecated Use createAssignExpression instead.
-   */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Assignment expression requires 4 parameters
-  public static createAssignmentExpression(
-    operator: AssignExpression['operator'],
-
-    left: Readonly<Expression>,
-
-    right: Readonly<Expression>,
-
+  createVariableExpression(
+    id: Identifier,
     options?: Readonly<NodeFactoryOptions>
-  ): AssignExpression {
-    return this.createAssignExpression(operator, left, right, options);
-  }
-
-  /**
-   * Creates a field access expression.
-   * @param fieldName - The name of the field to access.
-   * @param target - The target expression to access the field on.
-   * @param options - Optional factory options.
-   * @returns The created field expression.
-   * @deprecated Use createFieldExpression instead.
-   */
-  public static createFieldAccessExpression(
-    fieldName: string,
-    target?: Expression,
-    options?: NodeFactoryOptions
-  ): FieldExpression {
-    return this.createFieldExpression(fieldName, target, options);
-  }
-
-  /**
-   * Creates an array access expression.
-   * @param array - The expression representing the array to access.
-   * @param index - The expression representing the index to access.
-   * @param options - Optional factory options.
-   * @returns The created array expression.
-   * @deprecated Use createArrayExpression instead.
-   */
-  public static createArrayAccessExpression(
-    array: Expression,
-    index: Expression,
-    options?: NodeFactoryOptions
-  ): ArrayExpression {
-    return this.createArrayExpression(array, index, options);
-  }
-
-  /**
-   * Creates a ternary (conditional) expression.
-   * @param condition - The boolean expression to evaluate.
-   * @param thenExpression - The expression to evaluate if condition is true.
-   * @param elseExpression - The expression to evaluate if condition is false.
-   * @param options - Optional factory options.
-   * @returns The created ternary expression.
-   */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Ternary expression requires 4 parameters
-  public static createTernaryExpression(
-    condition: Readonly<Expression>,
-
-    thenExpression: Readonly<Expression>,
-    elseExpression: Expression,
-    options?: NodeFactoryOptions
-  ): TernaryExpression {
+  ): VariableExpression {
     return {
-      condition,
-      elseExpression,
-      kind: 'TernaryExpression',
+      id,
+      kind: 'VariableExpression',
       location: options?.location,
-      thenExpression,
-    };
-  }
-
-  /**
-   * Creates a cast expression.
-   * @param type - The type to cast to.
-   * @param expression - The expression to cast.
-   * @param options - Optional factory options.
-   * @returns The created cast expression.
-   */
-  public static createCastExpression(
-    type: Readonly<TypeRef>,
-
-    expression: Readonly<Expression>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): CastExpression {
-    return {
-      expression,
-      kind: 'CastExpression',
-      location: options?.location,
-      type,
-    };
-  }
-
-  /**
-   * Creates an instanceof expression.
-   * @param expression - The expression to check.
-   * @param type - The type to check against.
-   * @param options - Optional factory options.
-   * @returns The created instanceof expression.
-   */
-  public static createInstanceOfExpression(
-    expression: Readonly<Expression>,
-    type: Readonly<TypeRef>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): InstanceOfExpression {
-    return {
-      expression,
-      kind: 'InstanceOfExpression',
-      location: options?.location,
-      type,
-    };
-  }
-
-  /**
-   * Creates a new expression (object instantiation).
-   * @param initializer - The initializer for the new object.
-   * @param options - Optional factory options.
-   * @returns The created new expression.
-   */
-  public static createNewExpression(
-    initializer: Readonly<Initializer>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): NewExpression {
-    return {
-      initializer,
-      kind: 'NewExpression',
-      location: options?.location,
-      type: initializer.type,
-    };
-  }
-
-  /**
-   * Creates a new array expression.
-   * @param type - The type of the array elements.
-   * @param size - The size expression for the array.
-   * @param options - Optional factory options.
-   * @returns The created new expression with a sized array initializer.
-   */
-  public static createNewArrayExpression(
-    type: Readonly<TypeRef>,
-
-    size: Readonly<Expression>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): NewExpression {
-    // Create SizedArrayInitializer and wrap in NewExpression
-    const initializer = InitializerFactory.createSizedArrayInitializer(type, size, options);
-    return this.createNewExpression(initializer, options);
-  }
-
-  /**
-   * Creates a lambda expression.
-   * @param parameters - The list of parameters for the lambda function.
-   * @param body - The lambda body (expression or statement).
-   * @param options - Optional factory options.
-   * @returns The created lambda expression.
-   */
-  public static createLambdaExpression(
-    parameters: readonly LambdaParameter[],
-
-    body: Readonly<Expression | Statement>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): LambdaExpression {
-    return {
-      body,
-      kind: 'LambdaExpression',
-      location: options?.location,
-      parameters: [...parameters],
-    };
-  }
-
-  /**
-   * Creates a this expression.
-   * @param options - Optional factory options.
-   * @returns The created this expression.
-   */
-  public static createThisExpression(options?: NodeFactoryOptions): ThisExpression {
-    return {
-      kind: 'ThisExpression',
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Creates a super expression.
-   * @param options - Optional factory options.
-   * @returns The created super expression.
-   */
-  public static createSuperExpression(options?: NodeFactoryOptions): SuperExpression {
-    return {
-      kind: 'SuperExpression',
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Creates a parenthesized expression.
-   * @param expression - The expression to wrap in parentheses.
-   * @param options - Optional factory options.
-   * @returns The created parenthesized expression.
-   */
-  public static createParenthesizedExpression(
-    expression: Readonly<Expression>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): ParenthesizedExpression {
-    return {
-      expression,
-      kind: 'ParenthesizedExpression',
-      location: options?.location,
-    };
-  }
-
-  /**
-   * Creates a SOQL expression.
-   * @param query - The SOQL query string.
-   * @param bindings - The list of bindings for the SOQL query.
-   * @param options - Optional factory options.
-   * @returns The created SOQL expression.
-   */
-  public static createSoqlExpression(
-    query: string,
-
-    bindings: readonly SoqlOrSoslBinding[] = [],
-
-    options?: Readonly<NodeFactoryOptions>
-  ): SoqlExpression {
-    return {
-      bindings: [...bindings],
-      kind: 'SoqlExpression',
-      location: options?.location,
-      query,
-    };
-  }
-
-  /**
-   * Creates a SOSL expression.
-   * @param query - The SOSL query string.
-   * @param bindings - The list of bindings for the SOSL query.
-   * @param options - Optional factory options.
-   * @returns The created SOSL expression.
-   */
-  public static createSoslExpression(
-    query: string,
-
-    bindings: readonly SoqlOrSoslBinding[] = [],
-
-    options?: Readonly<NodeFactoryOptions>
-  ): SoslExpression {
-    return {
-      bindings: [...bindings],
-      kind: 'SoslExpression',
-      location: options?.location,
-      query,
-    };
-  }
-
-  /**
-   * Creates a SOQL query expression.
-   * @param query - The SOQL query string.
-   * @param boundExpressions - The bound expressions for the query.
-   * @param options - Optional factory options.
-   * @returns The created SOQL expression.
-   * @deprecated Use createSoqlExpression instead.
-   */
-  public static createSoqlQueryExpression(
-    query: string,
-
-    boundExpressions?: readonly Expression[],
-
-    options?: Readonly<NodeFactoryOptions>
-  ): SoqlExpression {
-    // Convert boundExpressions to bindings for backward compatibility
-    const bindings = (boundExpressions ?? []).map((expr) =>
-      SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options)
-    );
-    return this.createSoqlExpression(query, bindings, options);
-  }
-
-  /**
-   * Creates a SOSL query expression.
-   * @param query - The SOSL query string.
-   * @param boundExpressions - The bound expressions for the query.
-   * @param options - Optional factory options.
-   * @returns The created SOSL expression.
-   * @deprecated Use createSoslExpression instead.
-   */
-  public static createSoslQueryExpression(
-    query: string,
-
-    boundExpressions?: readonly Expression[],
-
-    options?: Readonly<NodeFactoryOptions>
-  ): SoslExpression {
-    // Convert boundExpressions to bindings for backward compatibility
-    const bindings = (boundExpressions ?? []).map((expr) =>
-      SoqlOrSoslBindingFactory.createSoqlOrSoslBinding(expr, options)
-    );
-    return this.createSoslExpression(query, bindings, options);
-  }
-
-  /**
-   * Creates a trigger context variable expression.
-   * @param variableName - The identifier name for the trigger context variable (e.g., 'isBefore', 'isAfter').
-   * @param options - Optional factory options.
-   * @returns The created trigger context variable expression.
-   */
-  public static createTriggerContextVariableExpression(
-    variableName: string,
-    options?: NodeFactoryOptions
-  ): TriggerContextVariableExpression {
-    return {
-      kind: 'TriggerContextVariableExpression',
-      location: options?.location,
-      variableName,
-    };
-  }
-}
-
-// ============================================================================
-// SoqlOrSoslBinding Factory
-// ============================================================================
-
-/**
- * Factory for creating SoqlOrSoslBinding AST nodes.
- */
-export const SoqlOrSoslBindingFactory = {
-  /**
-   * Creates a SoqlOrSoslBinding AST node.
-   * @param expr - The expression to bind.
-   * @param options - Optional factory options.
-   * @returns The created SoqlOrSoslBinding node.
-   */
-  createSoqlOrSoslBinding(expr: Expression, options?: NodeFactoryOptions): SoqlOrSoslBinding {
-    return {
-      expr,
-      kind: 'SoqlOrSoslBinding',
-      // Use the expression's location if available
-      location: options?.location ?? expr.location,
     };
   },
 };
@@ -607,59 +671,30 @@ export const SoqlOrSoslBindingFactory = {
 /**
  * Factory for literal nodes.
  */
-export class LiteralFactory {
-  public static createStringVal(
-    value: string,
-    raw?: string,
-    options?: NodeFactoryOptions
-  ): StringVal {
+const LiteralFactory = {
+  /**
+   * Creates a boolean literal node (deprecated).
+   * @param value - The boolean value (true or false) to store in the literal.
+   * @param options - Optional factory options for location and other metadata.
+   * @returns The created boolean literal expression.
+   * @deprecated Use createBooleanVal instead.
+   */
+  createBooleanLiteral(value: boolean, options?: Readonly<NodeFactoryOptions>): BooleanVal {
+    return LiteralFactory.createBooleanVal(value, options);
+  },
+
+  createBooleanVal(value: boolean, options?: Readonly<NodeFactoryOptions>): BooleanVal {
     return {
-      kind: 'StringVal',
+      kind: 'BooleanVal',
       location: options?.location,
-      raw: raw ?? `"${value}"`,
       value,
     };
-  }
+  },
 
-  public static createIntegerVal(
+  createDecimalVal(
     value: number,
     raw?: string,
-    options?: NodeFactoryOptions
-  ): IntegerVal {
-    return {
-      kind: 'IntegerVal',
-      location: options?.location,
-      raw: raw ?? String(value),
-      value,
-    };
-  }
-
-  public static createDoubleVal(
-    value: number,
-    raw?: string,
-    options?: NodeFactoryOptions
-  ): DoubleVal {
-    return {
-      kind: 'DoubleVal',
-      location: options?.location,
-      raw: raw ?? String(value),
-      value,
-    };
-  }
-
-  public static createLongVal(value: number, raw?: string, options?: NodeFactoryOptions): LongVal {
-    return {
-      kind: 'LongVal',
-      location: options?.location,
-      raw: raw ?? String(value),
-      value,
-    };
-  }
-
-  public static createDecimalVal(
-    value: number,
-    raw?: string,
-    options?: NodeFactoryOptions
+    options?: Readonly<NodeFactoryOptions>
   ): DecimalVal {
     return {
       kind: 'DecimalVal',
@@ -667,133 +702,96 @@ export class LiteralFactory {
       raw: raw ?? String(value),
       value,
     };
-  }
+  },
 
-  public static createBooleanVal(value: boolean, options?: NodeFactoryOptions): BooleanVal {
+  createDoubleVal(value: number, raw?: string, options?: Readonly<NodeFactoryOptions>): DoubleVal {
     return {
-      kind: 'BooleanVal',
+      kind: 'DoubleVal',
       location: options?.location,
+      raw: raw ?? String(value),
       value,
     };
-  }
+  },
 
-  public static createNullVal(options?: NodeFactoryOptions): NullVal {
+  createIntegerVal(
+    value: number,
+    raw?: string,
+    options?: Readonly<NodeFactoryOptions>
+  ): IntegerVal {
+    return {
+      kind: 'IntegerVal',
+      location: options?.location,
+      raw: raw ?? String(value),
+      value,
+    };
+  },
+
+  createLongVal(value: number, raw?: string, options?: Readonly<NodeFactoryOptions>): LongVal {
+    return {
+      kind: 'LongVal',
+      location: options?.location,
+      raw: raw ?? String(value),
+      value,
+    };
+  },
+
+  /**
+   * Creates a null literal node (deprecated).
+   * @param options - Optional factory options.
+   * @returns The created null literal expression.
+   * @deprecated Use createNullVal instead.
+   */
+
+  createNullLiteral(options?: Readonly<NodeFactoryOptions>): NullVal {
+    return LiteralFactory.createNullVal(options);
+  },
+  createNullVal(options?: Readonly<NodeFactoryOptions>): NullVal {
     return {
       kind: 'NullVal',
       location: options?.location,
     };
-  }
-
-  /**
-   * Creates a string literal node (deprecated).
-   * @param value
-   * @param raw
-   * @param options
-   * @deprecated Use createStringVal instead.
-   */
-  public static createStringLiteral(
-    value: string,
-    raw?: string,
-    options?: NodeFactoryOptions
-  ): StringVal {
-    return this.createStringVal(value, raw, options);
-  }
+  },
 
   /**
    * Creates a numeric literal node (deprecated).
-   * @param value
-   * @param raw
-   * @param options
+   * @param value - The numeric value.
+   * @param raw - The raw string representation.
+   * @param options - Optional factory options.
+   * @returns The created numeric literal expression.
    * @deprecated Use createIntegerVal, createDoubleVal, createLongVal, or createDecimalVal instead.
    */
-  public static createNumberLiteral(
+  createNumberLiteral(
     value: number,
     raw?: string,
-    options?: NodeFactoryOptions
+    options?: Readonly<NodeFactoryOptions>
   ): IntegerVal {
-    return this.createIntegerVal(value, raw, options);
-  }
+    return LiteralFactory.createIntegerVal(value, raw, options);
+  },
 
   /**
-   * Creates a boolean literal node (deprecated).
-   * @param value
-   * @param options
-   * @deprecated Use createBooleanVal instead.
+   * Creates a string literal node (deprecated).
+   * @param value - The string content to store in the literal.
+   * @param raw - The original string representation including quotes.
+   * @param options - Optional factory options for location and other metadata.
+   * @returns The created string literal expression.
+   * @deprecated Use createStringVal instead.
    */
-  public static createBooleanLiteral(value: boolean, options?: NodeFactoryOptions): BooleanVal {
-    return this.createBooleanVal(value, options);
-  }
-
-  /**
-   * Creates a null literal node (deprecated).
-   * @param options
-   * @deprecated Use createNullVal instead.
-   */
-  public static createNullLiteral(options?: NodeFactoryOptions): NullVal {
-    return this.createNullVal(options);
-  }
-}
-
-// ============================================================================
-// Initializer Factory
-// ============================================================================
-
-/**
- * Factory for creating Initializer AST nodes.
- */
-export class InitializerFactory {
-  public static createConstructorInitializer(
-    type: Readonly<TypeRef>,
-    args: readonly Readonly<Expression>[] = [],
+  createStringLiteral(
+    value: string,
+    raw?: string,
     options?: Readonly<NodeFactoryOptions>
-  ): ConstructorInitializer {
+  ): StringVal {
+    return LiteralFactory.createStringVal(value, raw, options);
+  },
+  createStringVal(value: string, raw?: string, options?: Readonly<NodeFactoryOptions>): StringVal {
     return {
-      args: [...args],
-      kind: 'ConstructorInitializer',
+      kind: 'StringVal',
       location: options?.location,
-      type,
+      raw: raw ?? `"${value}"`,
+      value,
     };
-  }
-
-  public static createValuesInitializer(
-    type: Readonly<TypeRef>,
-    values: readonly Expression[] = [],
-    options?: Readonly<NodeFactoryOptions>
-  ): ValuesInitializer {
-    return {
-      kind: 'ValuesInitializer',
-      location: options?.location,
-      type,
-      values: [...values],
-    };
-  }
-
-  public static createSizedArrayInitializer(
-    type: Readonly<TypeRef>,
-    size: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
-  ): SizedArrayInitializer {
-    return {
-      kind: 'SizedArrayInitializer',
-      location: options?.location,
-      size,
-      type,
-    };
-  }
-
-  public static createMapInitializer(
-    type: Readonly<TypeRef>,
-    pairs: readonly { key: Expression; value: Expression }[],
-    options?: Readonly<NodeFactoryOptions>
-  ): MapInitializer {
-    return {
-      kind: 'MapInitializer',
-      location: options?.location,
-      pairs: [...pairs],
-      type,
-    };
-  }
-}
+  },
+};
 
 // ============================================================================
 // ElementValue Factory
@@ -802,19 +800,8 @@ export class InitializerFactory {
 /**
  * Factory for creating ElementValue AST nodes.
  */
-export class ElementValueFactory {
-  public static createExpressionElementValue(
-    value: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
-  ): ExpressionElementValue {
-    return {
-      kind: 'ExpressionElementValue',
-      location: options?.location,
-      value,
-    };
-  }
-
-  public static createAnnotationElementValue(
+const ElementValueFactory = {
+  createAnnotationElementValue(
     value: Readonly<Annotation>,
     options?: Readonly<NodeFactoryOptions>
   ): AnnotationElementValue {
@@ -823,9 +810,9 @@ export class ElementValueFactory {
       location: options?.location,
       value,
     };
-  }
+  },
 
-  public static createArrayElementValue(
+  createArrayElementValue(
     values: readonly ElementValue[],
     options?: Readonly<NodeFactoryOptions>
   ): ArrayElementValue {
@@ -834,5 +821,24 @@ export class ElementValueFactory {
       location: options?.location,
       values: [...values],
     };
-  }
-}
+  },
+
+  createExpressionElementValue(
+    value: Readonly<Expression>,
+    options?: Readonly<NodeFactoryOptions>
+  ): ExpressionElementValue {
+    return {
+      kind: 'ExpressionElementValue',
+      location: options?.location,
+      value,
+    };
+  },
+};
+
+export {
+  ExpressionFactory,
+  SoqlOrSoslBindingFactory,
+  LiteralFactory,
+  InitializerFactory,
+  ElementValueFactory,
+};

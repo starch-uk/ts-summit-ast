@@ -441,7 +441,7 @@ export function findRuleMatches(
   ast: ASTNode,
   xpathExpression: string,
   options: FindRuleMatchesOptions = {}
-): RuleMatch[] {
+): readonly RuleMatch[] {
   const { maxResults, includeNested = true, includeContext = false } = options;
   const matches: RuleMatch[] = [];
 

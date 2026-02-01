@@ -6,24 +6,46 @@
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type {
   Expression,
+  FieldExpression,
   LambdaParameter,
   BinaryExpression,
   UnaryExpression,
   AssignExpression,
-  FieldExpression,
   NewExpression,
+  VariableExpression,
 } from '../ast/expression.js';
 import type { TypeRef } from '../ast/baseNode.js';
+import type { Initializer } from '../ast/initializer.js';
 import type { TranslateContext } from './translateUtil.js';
 import { TranslationError } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
 
 /**
- * @param ctx
- * @param node
+ * Type guard for FieldExpression.
+ * @param e - Expression to check.
+ * @returns True if e is a FieldExpression.
  */
-export function translateStringVal(
-  ctx: TranslateContext,
+function isFieldExpression(e: Expression): e is FieldExpression {
+  return e.kind === 'FieldExpression';
+}
+
+/**
+ * Type guard for VariableExpression.
+ * @param e - Expression to check.
+ * @returns True if e is a VariableExpression.
+ */
+function isVariableExpression(e: Expression): e is VariableExpression {
+  return e.kind === 'VariableExpression';
+}
+
+/**
+ * Translate a string value literal from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated string value expression.
+ */
+function translateStringVal(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const text = ctx.getText(node) ?? '';
@@ -33,11 +55,13 @@ export function translateStringVal(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate an integer or double value literal from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated integer or double value expression.
  */
-export function translateIntegerVal(
-  ctx: TranslateContext,
+function translateIntegerVal(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const text = ctx.getText(node) ?? '0';
@@ -61,11 +85,13 @@ export function translateIntegerVal(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a boolean value literal from parse tree to AST.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated boolean value expression.
  */
-export function translateBooleanVal(
-  ctx: TranslateContext,
+function translateBooleanVal(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const text = ctx.getText(node)?.toLowerCase() ?? 'false';
@@ -74,11 +100,14 @@ export function translateBooleanVal(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a method call expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated method call expression.
+ * @throws {TranslationError} If the method call is missing a method name.
  */
-export function translateMethodCall(
-  ctx: TranslateContext,
+function translateMethodCall(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Parser creates method_call_expression with children: [expr, { type: 'arguments', children: args }]
@@ -99,6 +128,7 @@ export function translateMethodCall(
 
   const methodNameFromProp = ctx.getProperty<string>(node, 'methodName', 'name');
 
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if string has length
   if (typeof methodNameFromProp === 'string' && methodNameFromProp.length > 0) {
     methodName = methodNameFromProp;
   }
@@ -145,30 +175,37 @@ export function translateMethodCall(
       firstChild.type === 'field_access'
     ) {
       // Has target, first child is field access expression
-      const fieldAccess = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
-      if (fieldAccess?.kind === 'FieldExpression') {
-        const fieldExpr = fieldAccess as FieldExpression;
-
-        ({ target, fieldName: methodName, isSafe: isSafeFromTarget } = fieldExpr);
+      const fieldAccessResult: Expression | null = ctx.tryTranslateExpression(
+        firstChild,
+        firstChild.type.toLowerCase()
+      );
+      const fieldAsField = fieldAccessResult != null && isFieldExpression(fieldAccessResult);
+      if (fieldAsField) {
+        const f = fieldAccessResult;
+        const { target: t, fieldName: fn, isSafe: is } = f;
+        target = t;
+        methodName = fn;
+        isSafeFromTarget = is;
       }
     } else {
       // Try to translate as expression - might be a complex target
-      const firstExpr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
-      if (firstExpr?.kind === 'FieldExpression') {
-        const fieldExpr = firstExpr as FieldExpression;
-
-        ({ target, fieldName: methodName, isSafe: isSafeFromTarget } = fieldExpr);
-      } else if (
-        firstExpr &&
-        'name' in firstExpr &&
-        typeof (firstExpr as { name?: unknown }).name === 'string'
-      ) {
-        // Could be an Identifier node (not an expression)
-        methodName = (firstExpr as { name: string }).name;
-      } else if (firstChild.type === 'super_expression' || firstChild.type === 'this_expression') {
-        // Fallback: extract from text
-        methodName =
-          ctx.getText(firstChild) ?? (firstChild.type === 'super_expression' ? 'super' : 'this');
+      const firstExprResult: Expression | null = ctx.tryTranslateExpression(
+        firstChild,
+        firstChild.type.toLowerCase()
+      );
+      const exprAsField = firstExprResult != null && isFieldExpression(firstExprResult);
+      const exprAsVar = firstExprResult != null && isVariableExpression(firstExprResult);
+      if (exprAsField) {
+        const f = firstExprResult;
+        const { target: t, fieldName: fn, isSafe: is } = f;
+        target = t;
+        methodName = fn;
+        isSafeFromTarget = is;
+      } else if (exprAsVar) {
+        methodName = firstExprResult.id.name;
+      } else {
+        // Fallback: extract from text (firstChild is not super/this/field here)
+        methodName = ctx.getText(firstChild) ?? 'this';
       }
     }
   }
@@ -204,11 +241,14 @@ export function translateMethodCall(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a binary expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated binary expression.
+ * @throws {TranslationError} If the binary expression is missing left or right operands.
  */
-export function translateBinaryExpression(
-  ctx: TranslateContext,
+function translateBinaryExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '==';
@@ -258,8 +298,10 @@ export function translateBinaryExpression(
           '||',
           'instanceof',
         ];
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by includes check
         const validOperator = validOperators.includes(operator as BinaryExpression['operator'])
-          ? (operator as BinaryExpression['operator'])
+          ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by includes check
+            (operator as BinaryExpression['operator'])
           : '==';
         return NodeFactory.createBinaryExpression(
           validOperator,
@@ -273,6 +315,7 @@ export function translateBinaryExpression(
   }
 
   return NodeFactory.createBinaryExpression(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
     operator as BinaryExpression['operator'],
     left,
     right,
@@ -281,11 +324,14 @@ export function translateBinaryExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a unary expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated unary expression.
+ * @throws {TranslationError} If the unary expression is missing an operand.
  */
-export function translateUnaryExpression(
-  ctx: TranslateContext,
+function translateUnaryExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '!';
@@ -301,6 +347,7 @@ export function translateUnaryExpression(
       const expr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
       if (expr) {
         return NodeFactory.createUnaryExpression(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
           operator as UnaryExpression['operator'],
           expr,
           prefix,
@@ -312,6 +359,7 @@ export function translateUnaryExpression(
   }
 
   return NodeFactory.createUnaryExpression(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
     operator as UnaryExpression['operator'],
     operand,
     prefix,
@@ -320,11 +368,14 @@ export function translateUnaryExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate an assignment expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated assignment expression.
+ * @throws {TranslationError} If the assignment expression is missing left or right operands.
  */
-export function translateAssignExpression(
-  ctx: TranslateContext,
+function translateAssignExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '=';
@@ -336,6 +387,7 @@ export function translateAssignExpression(
   }
 
   return NodeFactory.createAssignExpression(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
     operator as AssignExpression['operator'],
     left,
     right,
@@ -344,11 +396,14 @@ export function translateAssignExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a field access expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated field access expression.
+ * @throws {TranslationError} If the field access is missing a field name.
  */
-export function translateFieldAccess(
-  ctx: TranslateContext,
+function translateFieldAccess(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Parser creates field_access_expression with children: [target, { type: 'field', text: fieldName }]
@@ -410,11 +465,14 @@ export function translateFieldAccess(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate an array access expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated array access expression.
+ * @throws {TranslationError} If the array access is missing array, index, or both.
  */
-export function translateArrayAccess(
-  ctx: TranslateContext,
+function translateArrayAccess(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get array and index as optional first (to allow fallback)
@@ -456,11 +514,14 @@ export function translateArrayAccess(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a ternary expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated ternary expression.
+ * @throws {TranslationError} If the ternary expression is missing required operands.
  */
-export function translateTernaryExpression(
-  ctx: TranslateContext,
+function translateTernaryExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get condition, then, and else as optional first (to allow fallback)
@@ -501,11 +562,14 @@ export function translateTernaryExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a cast expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated cast expression.
+ * @throws {TranslationError} If the cast expression is missing a type or expression.
  */
-export function translateCastExpression(
-  ctx: TranslateContext,
+function translateCastExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Parser creates cast_expression with children: [type, expression]
@@ -540,11 +604,14 @@ export function translateCastExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate an instanceof expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated instanceof expression.
+ * @throws {TranslationError} If the instanceof expression is missing expression or type.
  */
-export function translateInstanceOfExpression(
-  ctx: TranslateContext,
+function translateInstanceOfExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get expression as optional first (to allow fallback)
@@ -574,11 +641,14 @@ export function translateInstanceOfExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a new expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated new expression.
+ * @throws {TranslationError} If the new expression is missing a type.
  */
-export function translateNewExpression(
-  ctx: TranslateContext,
+function translateNewExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Parser creates new_expression with children: [type, arguments?, arrayInitializer?]
@@ -631,6 +701,7 @@ export function translateNewExpression(
       // The actual map entry structure would need a special node type
       if (initChild.type === 'map_entry' || initChild.type.toLowerCase() === 'map_entry') {
         const mapEntryChildren = ctx.getChildren(initChild);
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 2 children (key and value)
         if (mapEntryChildren.length >= 2) {
           const [firstChild, secondChild] = mapEntryChildren;
           const keyExpr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
@@ -652,22 +723,29 @@ export function translateNewExpression(
   }
 
   // Create the appropriate Initializer based on what's present
-  let initializer;
   const locationOption = ctx.getLocationOption(node);
+  // Default to ConstructorInitializer with no args (will be overridden if needed)
+  let initializer: Initializer = NodeFactory.createConstructorInitializer(type, [], locationOption);
 
   if (arrayInitNode !== null) {
     // Check if this is a map (has map_entry children) or a list/set/array
+    const pairModulo = 2;
+    const nextIndexOffset = 1;
+    const evenModuloResult = 0;
     const hasMapEntries = arrayInit.some(
-      (_item: Expression, i: number) => i % 2 === 0 && i + 1 < arrayInit.length
+      (_item: Expression, i: number) =>
+        i % pairModulo === evenModuloResult && i + nextIndexOffset < arrayInit.length
     );
     // For now, we'll check if we have pairs (even number of expressions that look like key-value)
     // A better approach would be to check the parse tree structure
-    if (hasMapEntries && arrayInit.length % 2 === 0) {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if length is even (pairs)
+    if (hasMapEntries && arrayInit.length % pairModulo === 0) {
       // Create MapInitializer with pairs
       const pairs: { key: Expression; value: Expression }[] = [];
-      for (let i = 0; i < arrayInit.length; i += 2) {
-        if (i + 1 < arrayInit.length) {
-          pairs.push({ key: arrayInit[i], value: arrayInit[i + 1] });
+      for (let i = 0; i < arrayInit.length; i += pairModulo) {
+        const nextIndex = i + nextIndexOffset;
+        if (nextIndex < arrayInit.length) {
+          pairs.push({ key: arrayInit[i], value: arrayInit[nextIndex] });
         }
       }
       initializer = NodeFactory.createMapInitializer(type, pairs, locationOption);
@@ -675,12 +753,10 @@ export function translateNewExpression(
       // Create ValuesInitializer for lists/sets/arrays
       initializer = NodeFactory.createValuesInitializer(type, arrayInit, locationOption);
     }
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
   } else if (args.length > 0) {
     // Create ConstructorInitializer
     initializer = NodeFactory.createConstructorInitializer(type, args, locationOption);
-  } else {
-    // Default to ConstructorInitializer with no args
-    initializer = NodeFactory.createConstructorInitializer(type, [], locationOption);
   }
 
   const newExpr = NodeFactory.createNewExpression(initializer, locationOption);
@@ -689,8 +765,8 @@ export function translateNewExpression(
   // These properties provide direct access to initializer data
   const exprWithProps = newExpr as NewExpression & {
     type?: TypeRef;
-    arguments?: Expression[];
-    arrayInitializer?: Expression[];
+    arguments?: readonly Expression[];
+    arrayInitializer?: readonly Expression[];
   };
   exprWithProps.type = type; // Type is always available from the initializer
 
@@ -699,18 +775,19 @@ export function translateNewExpression(
   }
 
   // Set arrayInitializer for all initializer types that use it
+  const initForArray = initializer;
   if (arrayInitNode !== null) {
     // For ValuesInitializer, MapInitializer - use the parsed arrayInit
     exprWithProps.arrayInitializer = arrayInit;
-  } else if (initializer.kind === 'ValuesInitializer' || initializer.kind === 'MapInitializer') {
+  } else if (initForArray.kind === 'ValuesInitializer' || initForArray.kind === 'MapInitializer') {
     // If we created a ValuesInitializer or MapInitializer but arrayInitNode was null,
     // use the values from the initializer
-    if (initializer.kind === 'ValuesInitializer') {
-      exprWithProps.arrayInitializer = initializer.values;
+    if (initForArray.kind === 'ValuesInitializer') {
+      exprWithProps.arrayInitializer = initForArray.values;
     } else {
       // MapInitializer: flatten pairs into array
       const flattened: Expression[] = [];
-      for (const pair of initializer.pairs) {
+      for (const pair of initForArray.pairs) {
         flattened.push(pair.key, pair.value);
       }
       exprWithProps.arrayInitializer = flattened;
@@ -724,16 +801,20 @@ export function translateNewExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a new array expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated new array expression.
+ * @throws {TranslationError} If the new array expression is missing a type or has invalid dimensions.
  */
-export function translateNewArrayExpression(
-  ctx: TranslateContext,
+function translateNewArrayExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Parser creates new_array_expression with children: [type, size]
   const children = ctx.getChildren(node);
   let typeNode = ctx.getChild(node, 'type');
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
   if (!typeNode && children.length > 0) {
     // First child is the type
     [typeNode] = children;
@@ -748,6 +829,7 @@ export function translateNewArrayExpression(
   // Try named property first
   size = ctx.getChildExpression(node, 'size', true);
   // If not found, try positional children
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 2 children (type and size)
   if (!size && children.length >= 2) {
     // Try to translate the second child as an expression
     const [, sizeChild] = children;
@@ -764,7 +846,7 @@ export function translateNewArrayExpression(
     // Provide more helpful error message
     const childTypes = children.map((c) => c.type).join(', ');
     throw new TranslationError(
-      `New array expression requires a size. Found ${children.length} children with types: ${childTypes}`,
+      `New array expression requires a size. Found ${String(children.length)} children with types: ${childTypes}`,
       node
     );
   }
@@ -777,11 +859,14 @@ export function translateNewArrayExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a lambda expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated lambda expression.
+ * @throws {TranslationError} If the lambda expression is missing a body or has invalid parameters.
  */
-export function translateLambdaExpression(
-  ctx: TranslateContext,
+function translateLambdaExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const paramsNode = ctx.getChild(node, 'parameters', 'params');
@@ -821,11 +906,14 @@ export function translateLambdaExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a parenthesized expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated parenthesized expression.
+ * @throws {TranslationError} If the parenthesized expression is missing an expression.
  */
-export function translateParenthesizedExpression(
-  ctx: TranslateContext,
+function translateParenthesizedExpression(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get expression as optional first (to allow fallback)
@@ -833,6 +921,7 @@ export function translateParenthesizedExpression(
   if (!expression) {
     // Try first child
     const children = ctx.getChildren(node);
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
     if (children.length > 0) {
       const [firstChild] = children;
       const expr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
@@ -847,11 +936,13 @@ export function translateParenthesizedExpression(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a SOQL query expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated SOQL query expression.
  */
-export function translateSoqlQuery(
-  ctx: TranslateContext,
+function translateSoqlQuery(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const query = ctx.getText(node) ?? ctx.getProperty<string>(node, 'query') ?? '';
@@ -875,11 +966,13 @@ export function translateSoqlQuery(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a SOSL query expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated SOSL query expression.
  */
-export function translateSoslQuery(
-  ctx: TranslateContext,
+function translateSoslQuery(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   const query = ctx.getText(node) ?? ctx.getProperty<string>(node, 'query') ?? '';
@@ -903,11 +996,13 @@ export function translateSoslQuery(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a trigger context variable expression.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated trigger context variable expression.
  */
-export function translateTriggerContextVariable(
-  ctx: TranslateContext,
+function translateTriggerContextVariable(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Extract variable name from text like "Trigger.new" -> "new"
@@ -918,3 +1013,25 @@ export function translateTriggerContextVariable(
     ctx.getLocationOption(node)
   );
 }
+
+export {
+  translateStringVal,
+  translateIntegerVal,
+  translateBooleanVal,
+  translateMethodCall,
+  translateBinaryExpression,
+  translateUnaryExpression,
+  translateAssignExpression,
+  translateFieldAccess,
+  translateArrayAccess,
+  translateTernaryExpression,
+  translateCastExpression,
+  translateInstanceOfExpression,
+  translateNewExpression,
+  translateNewArrayExpression,
+  translateLambdaExpression,
+  translateParenthesizedExpression,
+  translateSoqlQuery,
+  translateSoslQuery,
+  translateTriggerContextVariable,
+};

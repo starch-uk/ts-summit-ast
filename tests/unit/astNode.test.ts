@@ -93,7 +93,11 @@ describe('AST Node Creation', () => {
         NodeFactory.createNumberLiteral(0, '0')
       );
 
-      const node = NodeFactory.createIfStatement(condition, thenStatement, elseStatement);
+      const node = NodeFactory.createIfStatement({
+        condition,
+        elseStatement,
+        thenStatement,
+      });
 
       expect(isIfStatement(node)).toBe(true);
       expect(node.condition).toBe(condition);
@@ -105,7 +109,10 @@ describe('AST Node Creation', () => {
       const condition = NodeFactory.createBooleanLiteral(true);
       const thenStatement = NodeFactory.createReturnStatement();
 
-      const node = NodeFactory.createIfStatement(condition, thenStatement);
+      const node = NodeFactory.createIfStatement({
+        condition,
+        thenStatement,
+      });
 
       expect(isIfStatement(node)).toBe(true);
       expect(node.elseStatement).toBeUndefined();
@@ -420,12 +427,12 @@ describe('Source Location Utilities', () => {
       // Original: val withLinesOnly = SourceLocation(1, null, 3, null)
       // In TypeScript, SourceLocation requires column, but spanOf handles undefined columns
       // We use a type assertion to test the behavior with missing column information
-      const withLinesOnly = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing undefined columns which spanOf handles at runtime
+      const withLinesOnly: SourceRange = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion -- Testing undefined columns which spanOf handles at runtime
         end: { column: undefined as any, line: 3 },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing undefined columns which spanOf handles at runtime
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion -- Testing undefined columns which spanOf handles at runtime
         start: { column: undefined as any, line: 1 },
-      } as SourceRange;
+      };
       // Original: val withLinesAndColumns = SourceLocation(withLinesOnly.startLine, 10, withLinesOnly.endLine, 10)
       // Same start/end lines as withLinesOnly, but with columns
       const withLinesAndColumns: SourceRange = {

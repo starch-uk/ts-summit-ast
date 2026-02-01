@@ -49,120 +49,170 @@ import type { VariableDeclaration, AnnotationArgument, Modifier } from '../ast/d
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonSerializer } from './jsonSerializer.js';
 
+/** Readonly view of JSON AST node for serializer function parameters (satisfies prefer-readonly-parameter-types). */
+interface ReadonlyJsonASTNodeParam {
+  readonly '@type': string;
+  // eslint-disable-next-line @typescript-eslint/member-ordering -- Index signature must be last
+  readonly [key: string]: unknown;
+}
+
+/** Readonly view of serializer for function parameters (satisfies prefer-readonly-parameter-types). */
+interface ReadonlyJsonSerializerLike {
+  readonly serializeNode: (node: Readonly<ASTNode>) => JsonASTNode;
+}
+
+/**
+ * Cast readonly json to mutable for population (serializer mutates the object).
+ * @param json - Read-only JSON AST node to cast to mutable.
+ * @returns Mutable JSON AST node for population.
+ */
+function asMutableJson(json: Readonly<JsonASTNode>): JsonASTNode {
+  return json as JsonASTNode;
+}
+
+/**
+ * Type guard for ASTNode when serializing unknown node properties.
+ * @param x - Value to check.
+ * @returns True if x is an ASTNode.
+ */
+function isASTNodeForSerialize(x: unknown): x is ASTNode {
+  return x !== null && typeof x === 'object' && 'kind' in x;
+}
+
+/**
+ * Type guard for TypeRef when serializing unknown node properties.
+ * @param x - Value to check.
+ * @returns True if x is a TypeRef.
+ */
+function isTypeRefForSerialize(x: unknown): x is TypeRef {
+  return x !== null && typeof x === 'object' && 'components' in x && 'arrayNesting' in x;
+}
+
 // ============================================================================
 // Statement Serialization
 // ============================================================================
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize an if statement node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeIfStatement(
+function serializeIfStatement(
   node: Readonly<IfStatement>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.condition = serializer.serializeNode(node.condition);
-  json.thenStatement = serializer.serializeNode(node.thenStatement);
+  const out = asMutableJson(json);
+  out.condition = serializer.serializeNode(node.condition);
+  out.thenStatement = serializer.serializeNode(node.thenStatement);
   if (node.elseStatement) {
-    json.elseStatement = serializer.serializeNode(node.elseStatement);
+    out.elseStatement = serializer.serializeNode(node.elseStatement);
   }
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a for loop statement node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeForLoopStatement(
+function serializeForLoopStatement(
   node: Readonly<ForLoopStatement>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
+  const out = asMutableJson(json);
   if (node.init) {
-    json.init = serializer.serializeNode(node.init);
+    out.init = serializer.serializeNode(node.init);
   }
   if (node.condition) {
-    json.condition = serializer.serializeNode(node.condition);
+    out.condition = serializer.serializeNode(node.condition);
   }
   if (node.update) {
-    json.update = serializer.serializeNode(node.update);
+    out.update = serializer.serializeNode(node.update);
   }
-  json.body = serializer.serializeNode(node.body);
+  out.body = serializer.serializeNode(node.body);
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a while loop statement node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeWhileLoopStatement(
+function serializeWhileLoopStatement(
   node: Readonly<WhileLoopStatement>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.condition = serializer.serializeNode(node.condition);
-  json.body = serializer.serializeNode(node.body);
+  const out = asMutableJson(json);
+  out.condition = serializer.serializeNode(node.condition);
+  out.body = serializer.serializeNode(node.body);
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a return statement node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeReturnStatement(
+function serializeReturnStatement(
   node: Readonly<ReturnStatement>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
+  const out = asMutableJson(json);
   if (node.expression) {
-    json.expression = serializer.serializeNode(node.expression);
+    out.expression = serializer.serializeNode(node.expression);
   }
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a compound statement (block) node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeCompoundStatement(
+function serializeCompoundStatement(
   node: Readonly<CompoundStatement>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.statements = node.statements.map((stmt: Readonly<Statement>) =>
+  const out = asMutableJson(json);
+  out.statements = node.statements.map((stmt: Readonly<Statement>) =>
     serializer.serializeNode(stmt)
   );
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize an expression statement node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeExpressionStatement(
+function serializeExpressionStatement(
   node: Readonly<ExpressionStatement>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.expression = serializer.serializeNode(node.expression);
+  const out = asMutableJson(json);
+  out.expression = serializer.serializeNode(node.expression);
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a variable declaration statement node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeVariableDeclarationStatement(
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+function serializeVariableDeclarationStatement(
   node: Readonly<VariableDeclarationStatement>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.declaration = serializer.serializeNode(node.declaration);
+  const out = asMutableJson(json);
+  out.declaration = serializer.serializeNode(node.declaration);
 }
 
 // ============================================================================
@@ -170,111 +220,20 @@ export function serializeVariableDeclarationStatement(
 // ============================================================================
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a binary expression node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeBinaryExpression(
+function serializeBinaryExpression(
   node: Readonly<BinaryExpression>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.operator = node.operator;
-  json.left = serializer.serializeNode(node.left);
-  json.right = serializer.serializeNode(node.right);
-}
-
-/**
- * @param node
- * @param json
- * @param serializer
- */
-export function serializeCallExpression(
-  node: Readonly<CallExpression>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
-): void {
-  json.methodName = node.methodName;
-  if (node.target) {
-    json.target = serializer.serializeNode(node.target);
-  }
-  json.arguments = node.arguments.map((arg: Readonly<Expression>) => serializer.serializeNode(arg));
-  if (node.typeArguments) {
-    json.typeArguments = node.typeArguments.map((type: Readonly<TypeRef>) =>
-      serializeTypeRef(type, serializer)
-    );
-  }
-}
-
-/**
- * @param node
- * @param json
- * @param serializer
- */
-export function serializeFieldExpression(
-  node: Readonly<FieldExpression>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
-): void {
-  json.fieldName = node.fieldName;
-  if (node.target) {
-    json.target = serializer.serializeNode(node.target);
-  }
-}
-
-/**
- * @param node
- * @param json
- * @param serializer
- */
-export function serializeArrayExpression(
-  node: Readonly<ArrayExpression>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
-): void {
-  json.array = serializer.serializeNode(node.array);
-  json.index = serializer.serializeNode(node.index);
-}
-
-/**
- * @param node
- * @param json
- * @param serializer
- */
-export function serializeAssignExpression(
-  node: Readonly<AssignExpression>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
-): void {
-  json.operator = node.operator;
-  json.left = serializer.serializeNode(node.left);
-  json.right = serializer.serializeNode(node.right);
-}
-
-/**
- * @param node
- * @param json
- * @param serializer
- */
-export function serializeNewExpression(
-  node: Readonly<NewExpression>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
-): void {
-  json.initializer = serializer.serializeNode(node.initializer);
-}
-
-/**
- * @param node
- * @param json
- * @param serializer
- */
-export function serializeVariableExpression(
-  node: Readonly<VariableExpression>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
-): void {
-  json.id = serializer.serializeNode(node.id);
+  const out = asMutableJson(json);
+  out.operator = node.operator;
+  out.left = serializer.serializeNode(node.left);
+  out.right = serializer.serializeNode(node.right);
 }
 
 /**
@@ -283,26 +242,136 @@ export function serializeVariableExpression(
  * @param serializer - The serializer instance.
  * @returns The serialized TypeRef JSON representation.
  */
-export function serializeTypeRef(typeRef: Readonly<TypeRef>, serializer: JsonSerializer): unknown {
+function serializeTypeRef(
+  typeRef: Readonly<TypeRef>,
+  serializer: ReadonlyJsonSerializerLike
+): unknown {
   // TypeRef is an AST node, so serialize it as a node
   return serializer.serializeNode(typeRef);
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a type reference node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeTypeRefNode(
+function serializeTypeRefNode(
   node: Readonly<TypeRef>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: ReadonlyJsonSerializerLike
 ): void {
-  json.components = node.components.map((comp: Readonly<TypeRefComponent>) => ({
+  const out = asMutableJson(json);
+  out.components = node.components.map((comp: Readonly<TypeRefComponent>) => ({
     args: comp.args.map((arg: Readonly<TypeRef>) => serializeTypeRef(arg, serializer)),
     id: serializer.serializeNode(comp.id),
   }));
-  json.arrayNesting = node.arrayNesting;
+  out.arrayNesting = node.arrayNesting;
+}
+
+/**
+ * Serialize a call expression node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeCallExpression(
+  node: Readonly<CallExpression>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  const out = asMutableJson(json);
+  out.methodName = node.methodName;
+  if (node.target) {
+    out.target = serializer.serializeNode(node.target);
+  }
+  out.arguments = node.arguments.map((arg: Readonly<Expression>) => serializer.serializeNode(arg));
+  if (node.typeArguments) {
+    out.typeArguments = node.typeArguments.map((type: Readonly<TypeRef>) =>
+      serializeTypeRef(type, serializer)
+    );
+  }
+}
+
+/**
+ * Serialize a field expression node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeFieldExpression(
+  node: Readonly<FieldExpression>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  const out = asMutableJson(json);
+  out.fieldName = node.fieldName;
+  if (node.target) {
+    out.target = serializer.serializeNode(node.target);
+  }
+}
+
+/**
+ * Serialize an array expression node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeArrayExpression(
+  node: Readonly<ArrayExpression>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  const out = asMutableJson(json);
+  out.array = serializer.serializeNode(node.array);
+  out.index = serializer.serializeNode(node.index);
+}
+
+/**
+ * Serialize an assignment expression node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeAssignExpression(
+  node: Readonly<AssignExpression>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  const out = asMutableJson(json);
+  out.operator = node.operator;
+  out.left = serializer.serializeNode(node.left);
+  out.right = serializer.serializeNode(node.right);
+}
+
+/**
+ * Serialize a new expression node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeNewExpression(
+  node: Readonly<Readonly<NewExpression>>,
+  json: ReadonlyJsonASTNodeParam,
+  serializer: ReadonlyJsonSerializerLike
+): void {
+  const out = asMutableJson(json as Readonly<JsonASTNode>);
+  out.initializer = serializer.serializeNode(node.initializer);
+}
+
+/**
+ * Serialize a variable expression node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeVariableExpression(
+  node: Readonly<VariableExpression>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  const out = asMutableJson(json);
+  out.id = serializer.serializeNode(node.id);
 }
 
 // ============================================================================
@@ -310,37 +379,38 @@ export function serializeTypeRefNode(
 // ============================================================================
 
 /**
- * @param node
- * @param json
+ * Serialize a string value literal node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
  */
-export function serializeStringVal(node: Readonly<StringVal>, json: JsonASTNode): void {
-  json.value = node.value;
-  json.raw = node.raw;
+function serializeStringVal(node: Readonly<StringVal>, json: Readonly<JsonASTNode>): void {
+  const out = asMutableJson(json);
+  out.value = node.value;
+  out.raw = node.raw;
 }
 
 /**
- * @param node
- * @param json
+ * Serialize a numeric literal node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
  */
-export function serializeNumericLiteral(
+function serializeNumericLiteral(
   node: Readonly<DecimalVal | DoubleVal | IntegerVal | LongVal>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode
+  json: Readonly<JsonASTNode>
 ): void {
-  json.value = node.value;
-  json.raw = node.raw;
+  const out = asMutableJson(json);
+  out.value = node.value;
+  out.raw = node.raw;
 }
 
 /**
- * @param node
- * @param json
+ * Serialize a boolean value literal node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
  */
-export function serializeBooleanVal(
-  node: Readonly<BooleanVal>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode
-): void {
-  json.value = node.value;
+function serializeBooleanVal(node: Readonly<BooleanVal>, json: Readonly<JsonASTNode>): void {
+  const out = asMutableJson(json);
+  out.value = node.value;
 }
 
 // ============================================================================
@@ -348,65 +418,72 @@ export function serializeBooleanVal(
 // ============================================================================
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a constructor initializer node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeConstructorInitializer(
+function serializeConstructorInitializer(
   node: Readonly<ConstructorInitializer>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.type = serializeTypeRef(node.type, serializer);
-
-  json.args = node.args.map((arg: Readonly<Expression>) => serializer.serializeNode(arg));
+  const out = asMutableJson(json);
+  out.type = serializeTypeRef(node.type, serializer);
+  out.args = node.args.map((arg: Readonly<Expression>) => serializer.serializeNode(arg));
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a values initializer node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeValuesInitializer(
+function serializeValuesInitializer(
   node: Readonly<ValuesInitializer>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.type = serializeTypeRef(node.type, serializer);
-  json.values = node.values.map((val) => serializer.serializeNode(val));
+  const out = asMutableJson(json);
+  out.type = serializeTypeRef(node.type, serializer);
+  out.values = node.values.map((val) => serializer.serializeNode(val));
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a sized array initializer node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeSizedArrayInitializer(
+function serializeSizedArrayInitializer(
   node: Readonly<SizedArrayInitializer>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.type = serializeTypeRef(node.type, serializer);
-  json.size = serializer.serializeNode(node.size);
+  const out = asMutableJson(json);
+  out.type = serializeTypeRef(node.type, serializer);
+  out.size = serializer.serializeNode(node.size);
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a map initializer node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeMapInitializer(
-  node: Readonly<MapInitializer>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+function serializeMapInitializer(
+  node: Readonly<Readonly<MapInitializer>>,
+  json: ReadonlyJsonASTNodeParam,
+  serializer: ReadonlyJsonSerializerLike
 ): void {
-  json.type = serializeTypeRef(node.type, serializer);
-  json.pairs = node.pairs.map((pair: Readonly<{ key: Expression; value: Expression }>) => ({
-    key: serializer.serializeNode(pair.key),
-    value: serializer.serializeNode(pair.value),
-  }));
+  const out = asMutableJson(json as Readonly<JsonASTNode>);
+  out.type = serializeTypeRef(node.type, serializer);
+  out.pairs = node.pairs.map(
+    (pair: Readonly<{ key: Readonly<Expression>; value: Readonly<Expression> }>) => ({
+      key: serializer.serializeNode(pair.key),
+      value: serializer.serializeNode(pair.value),
+    })
+  );
 }
 
 // ============================================================================
@@ -414,45 +491,48 @@ export function serializeMapInitializer(
 // ============================================================================
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize an expression element value node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeExpressionElementValue(
+function serializeExpressionElementValue(
   node: Readonly<ExpressionElementValue>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.value = serializer.serializeNode(node.value);
+  const out = asMutableJson(json);
+  out.value = serializer.serializeNode(node.value);
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize an annotation element value node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeAnnotationElementValue(
+function serializeAnnotationElementValue(
   node: Readonly<AnnotationElementValue>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.value = serializer.serializeNode(node.value);
+  const out = asMutableJson(json);
+  out.value = serializer.serializeNode(node.value);
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize an array element value node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeArrayElementValue(
+function serializeArrayElementValue(
   node: Readonly<ArrayElementValue>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
-  json.values = node.values.map((val: Readonly<ElementValue>) => serializer.serializeNode(val));
+  const out = asMutableJson(json);
+  out.values = node.values.map((val: Readonly<ElementValue>) => serializer.serializeNode(val));
 }
 
 // ============================================================================
@@ -460,61 +540,59 @@ export function serializeArrayElementValue(
 // ============================================================================
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize an annotation argument node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeAnnotationArgument(
+function serializeAnnotationArgument(
   node: Readonly<AnnotationArgument>,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for non-empty string
-  if (node.name !== null && node.name !== undefined && node.name !== '') {
-    json.name = node.name;
+  const out = asMutableJson(json);
+  if (typeof node.name === 'string' && node.name !== '') {
+    out.name = node.name;
   }
-  json.value = serializer.serializeNode(node.value);
+  out.value = serializer.serializeNode(node.value);
   if (node.isNameImplicit !== undefined) {
-    json.isNameImplicit = node.isNameImplicit;
+    out.isNameImplicit = node.isNameImplicit;
   }
 }
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize a variable declaration node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeVariableDeclaration(
+function serializeVariableDeclaration(
   node: Readonly<VariableDeclaration>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode,
-  serializer: JsonSerializer
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
-  json.name = node.name;
-  json.type = serializeTypeRef(node.type, serializer);
+  const out = asMutableJson(json);
+  out.name = node.name;
+  out.type = serializeTypeRef(node.type, serializer);
   if (node.initializer) {
-    json.initializer = serializer.serializeNode(node.initializer);
+    out.initializer = serializer.serializeNode(node.initializer);
   }
-
   const emptyArrayLength = 0;
-
   if (node.modifiers && node.modifiers.length > emptyArrayLength) {
-    json.modifiers = node.modifiers.map((mod: Readonly<Modifier>) => serializer.serializeNode(mod));
+    out.modifiers = node.modifiers.map((mod: Readonly<Modifier>) => serializer.serializeNode(mod));
   }
 }
 
 // Modifier serialization
 
 /**
- * @param node
- * @param json
+ * Serialize a modifier node to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
  */
-export function serializeModifier(
-  node: Readonly<Modifier>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- json parameter needs to be mutable
-  json: JsonASTNode
-): void {
-  json.keyword = node.keyword;
+function serializeModifier(node: Readonly<Modifier>, json: Readonly<JsonASTNode>): void {
+  const out = asMutableJson(json);
+  out.keyword = node.keyword;
 }
 
 // ============================================================================
@@ -522,21 +600,81 @@ export function serializeModifier(
 // ============================================================================
 
 /**
- * Serialize node-specific properties based on kind.
- * @param node - The AST node whose properties are to be serialized.
- * @param json - The JSON object to populate with serialized properties.
- * @param serializer - The serializer instance to use for recursive serialization.
+ * Serialize an unknown AST node to JSON (fallback for node types without dedicated serializers).
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
+function serializeUnknownNode(
+  node: Readonly<ASTNode>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  const out = asMutableJson(json);
+  // Try to serialize all enumerable properties
+  for (const key in node) {
+    if (key !== 'kind' && key !== 'location' && Object.prototype.hasOwnProperty.call(node, key)) {
+      const desc = Object.getOwnPropertyDescriptor(node, key);
+      const value: unknown = desc && 'value' in desc ? desc.value : undefined;
+
+      if (isASTNodeForSerialize(value)) {
+        out[key] = serializer.serializeNode(value);
+      } else if (Array.isArray(value)) {
+        const emptyArrayLength = 0;
+        const zeroIndex = 0;
+        if (value.length > emptyArrayLength) {
+          // Non-empty array: check if it contains AST nodes or TypeRefs
+          const first: unknown = value[zeroIndex];
+          const isNodeOrRef =
+            first !== null &&
+            first !== undefined &&
+            typeof first === 'object' &&
+            ('kind' in first || ('components' in first && 'arrayNesting' in first));
+          if (isNodeOrRef) {
+            out[key] = (value as unknown[]).map((item: unknown) => {
+              if (isASTNodeForSerialize(item)) {
+                return serializer.serializeNode(item);
+              }
+              if (isTypeRefForSerialize(item)) {
+                return serializeTypeRef(item, serializer);
+              }
+              return item;
+            });
+          }
+        } else {
+          // Empty array: serialize as empty array
+          out[key] = [];
+        }
+      } else if (
+        value !== null &&
+        value !== undefined &&
+        typeof value === 'object' &&
+        'components' in value &&
+        'arrayNesting' in value
+      ) {
+        if (isTypeRefForSerialize(value)) {
+          out[key] = serializeTypeRef(value, serializer);
+        } else {
+          out[key] = value;
+        }
+      } else {
+        // Primitive value
+        out[key] = value;
+      }
+    }
+  }
+}
 
 /**
- * @param node
- * @param json
- * @param serializer
+ * Serialize node-specific properties to JSON.
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
  */
-export function serializeNodeProperties(
-  node: ASTNode,
-  json: JsonASTNode,
-  serializer: JsonSerializer
+function serializeNodeProperties(
+  node: Readonly<ASTNode>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
 ): void {
   switch (node.kind) {
     // Statement nodes
@@ -689,69 +827,35 @@ export function serializeNodeProperties(
   }
 }
 
-// Fallback for unknown node types
-
-/**
- * @param node
- * @param json
- * @param serializer
- */
-function serializeUnknownNode(node: ASTNode, json: JsonASTNode, serializer: JsonSerializer): void {
-  // Try to serialize all enumerable properties
-  for (const key in node) {
-    if (key !== 'kind' && key !== 'location' && Object.prototype.hasOwnProperty.call(node, key)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access for unknown nodes
-      const value = (node as unknown as Record<string, unknown>)[key];
-
-      if (value !== null && value !== undefined && typeof value === 'object' && 'kind' in value) {
-        // It's an AST node
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from unknown to ASTNode
-        json[key] = serializer.serializeNode(value as ASTNode);
-      } else if (Array.isArray(value)) {
-        const emptyArrayLength = 0;
-        const zeroIndex = 0;
-        if (value.length > emptyArrayLength) {
-          // Non-empty array: check if it contains AST nodes or TypeRefs
-
-          if (
-            value[zeroIndex] !== null &&
-            value[zeroIndex] !== undefined &&
-            typeof value[zeroIndex] === 'object' &&
-            ('kind' in value[zeroIndex] ||
-              ('components' in value[zeroIndex] && 'arrayNesting' in value[zeroIndex]))
-          ) {
-            // It's an array of AST nodes or TypeRefs
-
-            json[key] = value.map((item) => {
-              if ('kind' in item) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Dynamic serialization for unknown node types
-                return serializer.serializeNode(item);
-              } else if ('components' in item && 'arrayNesting' in item) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic serialization for unknown node types
-                return serializeTypeRef(item as TypeRef, serializer);
-              }
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Dynamic serialization for unknown node types
-              return item;
-            });
-          }
-        } else {
-          // Empty array: serialize as empty array
-          json[key] = [];
-        }
-      } else if (
-        value !== null &&
-        value !== undefined &&
-        typeof value === 'object' &&
-        'components' in value &&
-        'arrayNesting' in value
-      ) {
-        // It's a TypeRef
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing to TypeRef
-        json[key] = serializeTypeRef(value as TypeRef, serializer);
-      } else {
-        // Primitive value
-        json[key] = value;
-      }
-    }
-  }
-}
+export {
+  serializeIfStatement,
+  serializeForLoopStatement,
+  serializeWhileLoopStatement,
+  serializeReturnStatement,
+  serializeCompoundStatement,
+  serializeExpressionStatement,
+  serializeVariableDeclarationStatement,
+  serializeBinaryExpression,
+  serializeCallExpression,
+  serializeFieldExpression,
+  serializeArrayExpression,
+  serializeAssignExpression,
+  serializeNewExpression,
+  serializeVariableExpression,
+  serializeTypeRef,
+  serializeTypeRefNode,
+  serializeStringVal,
+  serializeNumericLiteral,
+  serializeBooleanVal,
+  serializeConstructorInitializer,
+  serializeValuesInitializer,
+  serializeSizedArrayInitializer,
+  serializeMapInitializer,
+  serializeExpressionElementValue,
+  serializeAnnotationElementValue,
+  serializeArrayElementValue,
+  serializeAnnotationArgument,
+  serializeVariableDeclaration,
+  serializeModifier,
+  serializeNodeProperties,
+};

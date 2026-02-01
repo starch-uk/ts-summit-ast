@@ -86,7 +86,7 @@ describe('AST Validation', () => {
       const thenStatement = NodeFactory.createReturnStatement(
         NodeFactory.createNumberLiteral(42, '42')
       );
-      const ifStmt = NodeFactory.createIfStatement(condition, thenStatement);
+      const ifStmt = NodeFactory.createIfStatement({ condition, thenStatement });
       const result = validateAST(ifStmt);
 
       expect(result.valid).toBe(true);
@@ -109,7 +109,10 @@ describe('AST Validation', () => {
         start: { column: 10, line: 1 },
       };
       const condition = NodeFactory.createBooleanLiteral(true, { location: invalidLocation });
-      const ifStmt = NodeFactory.createIfStatement(condition, NodeFactory.createReturnStatement());
+      const ifStmt = NodeFactory.createIfStatement({
+        condition,
+        thenStatement: NodeFactory.createReturnStatement(),
+      });
       const result = validateAST(ifStmt);
 
       expect(result.valid).toBe(false);
@@ -182,7 +185,7 @@ describe('AST Validation', () => {
       const thenStatement = NodeFactory.createReturnStatement(
         NodeFactory.createStringVal('result', '"result"')
       );
-      const ifStmt = NodeFactory.createIfStatement(condition, thenStatement);
+      const ifStmt = NodeFactory.createIfStatement({ condition, thenStatement });
       const stats = getASTStatistics(ifStmt);
 
       expect(stats.totalNodes).toBeGreaterThan(1);

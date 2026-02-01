@@ -26,7 +26,6 @@ interface ApexDocComment extends ASTNode {
  * Block tag types (appear on their own line after the main description).
  */
 /* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
-/* eslint-disable @typescript-eslint/no-deprecated -- ApexDocDeprecated is intentionally deprecated for backward compatibility */
 type ApexDocBlockTag =
   | ApexDocAuthor
   | ApexDocDeprecated
@@ -39,7 +38,6 @@ type ApexDocBlockTag =
   | ApexDocThrows
   | ApexDocVersion;
 /* eslint-enable @typescript-eslint/no-type-alias */
-/* eslint-enable @typescript-eslint/no-deprecated */
 
 /**
  * Block tag kind discriminator.
@@ -263,7 +261,6 @@ export type {
   ApexDocParam,
   ApexDocReturn,
   ApexDocAuthor,
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- ApexDocDeprecated is intentionally deprecated for backward compatibility
   ApexDocDeprecated,
   ApexDocExample,
   ApexDocGroup,

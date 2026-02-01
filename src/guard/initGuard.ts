@@ -24,7 +24,7 @@ import type { SoqlOrSoslBinding } from '../ast/expression.js';
  * @param node - The AST node to check.
  * @returns True if the node is an Initializer.
  */
-export function isInitializer(node: ASTNode): node is Initializer {
+function isInitializer(node: ASTNode): node is Initializer {
   return (
     'kind' in node &&
     (node.kind === 'ConstructorInitializer' ||
@@ -39,7 +39,7 @@ export function isInitializer(node: ASTNode): node is Initializer {
  * @param node - The AST node to check.
  * @returns True if the node is a ConstructorInitializer.
  */
-export function isConstructorInitializer(node: ASTNode): node is ConstructorInitializer {
+function isConstructorInitializer(node: ASTNode): node is ConstructorInitializer {
   return 'kind' in node && node.kind === 'ConstructorInitializer';
 }
 
@@ -48,7 +48,7 @@ export function isConstructorInitializer(node: ASTNode): node is ConstructorInit
  * @param node - The AST node to check.
  * @returns True if the node is a ValuesInitializer.
  */
-export function isValuesInitializer(node: ASTNode): node is ValuesInitializer {
+function isValuesInitializer(node: ASTNode): node is ValuesInitializer {
   return 'kind' in node && node.kind === 'ValuesInitializer';
 }
 
@@ -57,7 +57,7 @@ export function isValuesInitializer(node: ASTNode): node is ValuesInitializer {
  * @param node - The AST node to check.
  * @returns True if the node is a SizedArrayInitializer.
  */
-export function isSizedArrayInitializer(node: ASTNode): node is SizedArrayInitializer {
+function isSizedArrayInitializer(node: ASTNode): node is SizedArrayInitializer {
   return 'kind' in node && node.kind === 'SizedArrayInitializer';
 }
 
@@ -66,7 +66,7 @@ export function isSizedArrayInitializer(node: ASTNode): node is SizedArrayInitia
  * @param node - The AST node to check.
  * @returns True if the node is a MapInitializer.
  */
-export function isMapInitializer(node: ASTNode): node is MapInitializer {
+function isMapInitializer(node: ASTNode): node is MapInitializer {
   return 'kind' in node && node.kind === 'MapInitializer';
 }
 
@@ -75,7 +75,7 @@ export function isMapInitializer(node: ASTNode): node is MapInitializer {
  * @param node - The AST node to check.
  * @returns True if the node is an ElementValue.
  */
-export function isElementValue(node: ASTNode): node is ElementValue {
+function isElementValue(node: ASTNode): node is ElementValue {
   return (
     'kind' in node &&
     (node.kind === 'ExpressionElementValue' ||
@@ -89,7 +89,7 @@ export function isElementValue(node: ASTNode): node is ElementValue {
  * @param node - The AST node to check.
  * @returns True if the node is an ExpressionElementValue.
  */
-export function isExpressionElementValue(node: ASTNode): node is ExpressionElementValue {
+function isExpressionElementValue(node: ASTNode): node is ExpressionElementValue {
   return 'kind' in node && node.kind === 'ExpressionElementValue';
 }
 
@@ -98,7 +98,7 @@ export function isExpressionElementValue(node: ASTNode): node is ExpressionEleme
  * @param node - The AST node to check.
  * @returns True if the node is an AnnotationElementValue.
  */
-export function isAnnotationElementValue(node: ASTNode): node is AnnotationElementValue {
+function isAnnotationElementValue(node: ASTNode): node is AnnotationElementValue {
   return 'kind' in node && node.kind === 'AnnotationElementValue';
 }
 
@@ -107,7 +107,7 @@ export function isAnnotationElementValue(node: ASTNode): node is AnnotationEleme
  * @param node - The AST node to check.
  * @returns True if the node is an ArrayElementValue.
  */
-export function isArrayElementValue(node: ASTNode): node is ArrayElementValue {
+function isArrayElementValue(node: ASTNode): node is ArrayElementValue {
   return 'kind' in node && node.kind === 'ArrayElementValue';
 }
 
@@ -116,6 +116,19 @@ export function isArrayElementValue(node: ASTNode): node is ArrayElementValue {
  * @param node - The AST node to check.
  * @returns True if the node is a SoqlOrSoslBinding.
  */
-export function isSoqlOrSoslBinding(node: ASTNode): node is SoqlOrSoslBinding {
+function isSoqlOrSoslBinding(node: ASTNode): node is SoqlOrSoslBinding {
   return 'kind' in node && node.kind === 'SoqlOrSoslBinding';
 }
+
+export {
+  isInitializer,
+  isConstructorInitializer,
+  isValuesInitializer,
+  isSizedArrayInitializer,
+  isMapInitializer,
+  isElementValue,
+  isExpressionElementValue,
+  isAnnotationElementValue,
+  isArrayElementValue,
+  isSoqlOrSoslBinding,
+};

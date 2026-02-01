@@ -229,7 +229,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
 
   // Extract comments if requested
 
-  let comments: ExtractedComment[] | undefined;
+  let comments: ExtractedComment[] | undefined = undefined;
   if (includeComments && translationResult.ast !== undefined) {
     comments = extractComments(translationResult.ast, source, {
       associateNodes: true,
@@ -317,10 +317,24 @@ export function parseMultipleFiles(
  * });
  * ```
  */
+const EMPTY_EXTRACT_COMMENTS_OPTIONS: Readonly<ExtractCommentsOptions> = {};
+
+/**
+ * Extract comments from multiple ASTs efficiently.
+ *
+ * This function extracts comments from multiple ASTs in sequence.
+ * Each AST must have a corresponding source string in the sources array.
+ * @param asts - Array of AST nodes to extract comments from.
+ * @param sources - Array of source code strings corresponding to each AST.
+ * @param options - Extraction options (applied to all ASTs).
+ * @returns Array of extracted comment arrays, one per AST.
+ * @throws {Error} If the lengths of asts and sources arrays do not match.
+ */
 export function extractCommentsBatch(
-  asts: readonly ASTNode[],
+  asts: readonly Readonly<ASTNode>[],
   sources: readonly string[],
-  options: Readonly<ExtractCommentsOptions> = {}
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- options use Readonly<> and const default but rule still flags
+  options: Readonly<ExtractCommentsOptions> = EMPTY_EXTRACT_COMMENTS_OPTIONS
 ): ExtractedComment[][] {
   if (asts.length !== sources.length) {
     throw new Error(

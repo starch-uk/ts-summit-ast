@@ -125,12 +125,12 @@ interface CallExpression extends Expression {
    */
   readonly target?: Expression;
   readonly methodName: string;
-  readonly arguments: Expression[];
+  readonly arguments: readonly Expression[];
 
   /**
    * Generic type arguments.
    */
-  readonly typeArguments?: TypeRef[];
+  readonly typeArguments?: readonly TypeRef[];
 
   /**
    * Whether this is a safe navigation call (x?.method()).
@@ -185,12 +185,12 @@ interface NewExpression extends Expression {
   /**
    * For ConstructorInitializer.
    */
-  readonly arguments?: Expression[];
+  readonly arguments?: readonly Expression[];
 
   /**
    * For ValuesInitializer, MapInitializer.
    */
-  readonly arrayInitializer?: Expression[];
+  readonly arrayInitializer?: readonly Expression[];
 }
 
 /**
@@ -226,7 +226,7 @@ interface TernaryExpression extends Expression {
  */
 interface LambdaExpression extends Expression {
   readonly kind: 'LambdaExpression';
-  readonly parameters: LambdaParameter[];
+  readonly parameters: readonly LambdaParameter[];
   readonly body: Expression | Statement;
 }
 
@@ -284,7 +284,7 @@ interface SoqlExpression extends Expression {
    * Bound expressions like :variableName.
    * In summit-ast, these are SoqlOrSoslBinding nodes.
    */
-  readonly bindings: SoqlOrSoslBinding[];
+  readonly bindings: readonly SoqlOrSoslBinding[];
 }
 
 /**
@@ -302,7 +302,7 @@ interface SoslExpression extends Expression {
    * Bound expressions like :variableName.
    * In summit-ast, these are SoqlOrSoslBinding nodes.
    */
-  readonly bindings: SoqlOrSoslBinding[];
+  readonly bindings: readonly SoqlOrSoslBinding[];
 }
 
 /**

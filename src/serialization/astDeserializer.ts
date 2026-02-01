@@ -4,6 +4,7 @@
  */
 
 import type { ASTNode, SourceRange } from '../ast/baseNode.js';
+import type { VariableDeclaration } from '../ast/declaration.js';
 import type {
   IfStatement,
   ForLoopStatement,
@@ -15,7 +16,6 @@ import type {
   Statement,
 } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
-import type { VariableDeclaration } from '../ast/declaration.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
 import { isExpression, isStatement, isIdentifier } from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
@@ -59,7 +59,7 @@ import {
  * @param value - The value to check.
  * @returns True if the value is a JsonASTNode.
  */
-export function isJsonASTNode(value: unknown): value is JsonASTNode {
+function isJsonASTNode(value: unknown): value is JsonASTNode {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -73,7 +73,7 @@ export function isJsonASTNode(value: unknown): value is JsonASTNode {
  * @param value - The value to check.
  * @returns True if the value is an array of JsonASTNodes.
  */
-export function isJsonASTNodeArray(value: unknown): value is JsonASTNode[] {
+function isJsonASTNodeArray(value: unknown): value is JsonASTNode[] {
   return Array.isArray(value) && value.every((item) => isJsonASTNode(item));
 }
 
@@ -84,7 +84,7 @@ export function isJsonASTNodeArray(value: unknown): value is JsonASTNode[] {
  * @returns The property value as JsonASTNode, or throws if invalid.
  * @throws {Error} If the property is not a valid JsonASTNode.
  */
-export function getJsonASTNodeProperty(json: Readonly<JsonASTNode>, property: string): JsonASTNode {
+function getJsonASTNodeProperty(json: Readonly<JsonASTNode>, property: string): JsonASTNode {
   const value = json[property];
   if (!isJsonASTNode(value)) {
     throw new Error(`Invalid JSON AST node: property ${property} is not a valid JsonASTNode`);
@@ -98,7 +98,7 @@ export function getJsonASTNodeProperty(json: Readonly<JsonASTNode>, property: st
  * @param property - The property name.
  * @returns The property value as JsonASTNode, or undefined if not present/invalid.
  */
-export function getOptionalJsonASTNodeProperty(
+function getOptionalJsonASTNodeProperty(
   json: Readonly<JsonASTNode>,
   property: string
 ): JsonASTNode | undefined {
@@ -119,10 +119,7 @@ export function getOptionalJsonASTNodeProperty(
  * @returns The property value as JsonASTNode[], or throws if invalid.
  * @throws {Error} If the property is not a valid JsonASTNode array.
  */
-export function getJsonASTNodeArrayProperty(
-  json: Readonly<JsonASTNode>,
-  property: string
-): JsonASTNode[] {
+function getJsonASTNodeArrayProperty(json: Readonly<JsonASTNode>, property: string): JsonASTNode[] {
   const value = json[property];
   if (!isJsonASTNodeArray(value)) {
     throw new Error(`Invalid JSON AST node: property ${property} is not a valid JsonASTNode array`);
@@ -137,7 +134,7 @@ export function getJsonASTNodeArrayProperty(
  * @returns The property value as string, or throws if invalid.
  * @throws {Error} If the property is not a valid string.
  */
-export function getStringProperty(json: Readonly<JsonASTNode>, property: string): string {
+function getStringProperty(json: Readonly<JsonASTNode>, property: string): string {
   const value = json[property];
   if (typeof value !== 'string') {
     throw new Error(`Invalid JSON AST node: property ${property} is not a string`);
@@ -152,7 +149,7 @@ export function getStringProperty(json: Readonly<JsonASTNode>, property: string)
  * @returns The property value as number, or throws if invalid.
  * @throws {Error} If the property is not a valid number.
  */
-export function getNumberProperty(json: Readonly<JsonASTNode>, property: string): number {
+function getNumberProperty(json: Readonly<JsonASTNode>, property: string): number {
   const value = json[property];
   if (typeof value !== 'number') {
     throw new Error(`Invalid JSON AST node: property ${property} is not a number`);
@@ -170,11 +167,12 @@ export function getNumberProperty(json: Readonly<JsonASTNode>, property: string)
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized IfStatement node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeIfStatement(
+function deserializeIfStatement(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): IfStatement {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -210,12 +208,12 @@ export function deserializeIfStatement(
         })()
       : undefined;
 
-  return NodeFactory.createIfStatement(
-    conditionDeserialized,
-    thenStatementDeserialized,
+  return NodeFactory.createIfStatement({
+    condition: conditionDeserialized,
     elseStatement,
-    locationOption
-  );
+    options: locationOption,
+    thenStatement: thenStatementDeserialized,
+  });
 }
 
 /**
@@ -224,11 +222,12 @@ export function deserializeIfStatement(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ForLoopStatement node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeForLoopStatement(
+function deserializeForLoopStatement(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ForLoopStatement {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -237,12 +236,14 @@ export function deserializeForLoopStatement(
   let init: ExpressionStatement | VariableDeclarationStatement | undefined = undefined;
   if (initNode !== undefined) {
     const initDeserialized = deserializer.deserializeNode(initNode);
-    if (
-      isStatement(initDeserialized) &&
-      (initDeserialized.kind === 'ExpressionStatement' ||
-        initDeserialized.kind === 'VariableDeclarationStatement')
-    ) {
-      init = initDeserialized as ExpressionStatement | VariableDeclarationStatement;
+    if (isStatement(initDeserialized)) {
+      if (initDeserialized.kind === 'ExpressionStatement') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- kind checked above
+        init = initDeserialized as ExpressionStatement;
+      } else if (initDeserialized.kind === 'VariableDeclarationStatement') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- kind checked above
+        init = initDeserialized as VariableDeclarationStatement;
+      }
     }
   }
 
@@ -295,11 +296,12 @@ export function deserializeForLoopStatement(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized WhileLoopStatement node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeWhileLoopStatement(
+function deserializeWhileLoopStatement(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): WhileLoopStatement {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -329,11 +331,12 @@ export function deserializeWhileLoopStatement(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ReturnStatement node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeReturnStatement(
+function deserializeReturnStatement(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ReturnStatement {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -357,11 +360,12 @@ export function deserializeReturnStatement(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized CompoundStatement node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeCompoundStatement(
+function deserializeCompoundStatement(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): CompoundStatement {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -386,11 +390,12 @@ export function deserializeCompoundStatement(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ExpressionStatement node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeExpressionStatement(
+function deserializeExpressionStatement(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ExpressionStatement {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -417,11 +422,12 @@ export function deserializeExpressionStatement(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized VariableDeclarationStatement node.
+ * @throws {Error} If the deserializer instance is not provided.
  */
-export function deserializeVariableDeclarationStatement(
+function deserializeVariableDeclarationStatement(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): VariableDeclarationStatement {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -433,9 +439,11 @@ export function deserializeVariableDeclarationStatement(
       'Invalid VariableDeclarationStatement: declaration is not a VariableDeclaration node'
     );
   }
-  const declaration = deserialized as VariableDeclaration;
-
-  return NodeFactory.createVariableDeclarationStatement(declaration, locationOption);
+  return NodeFactory.createVariableDeclarationStatement(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- kind checked above
+    deserialized as VariableDeclaration,
+    locationOption
+  );
 }
 
 // ============================================================================
@@ -451,11 +459,12 @@ export function deserializeVariableDeclarationStatement(
  * @returns The deserialized AST node.
  * @throws {Error} If the node type is unknown or not yet implemented.
  */
-export function deserializeNodeByKind(
+// eslint-disable-next-line @typescript-eslint/max-params -- Deserialization requires 4 parameters
+function deserializeNodeByKind(
   json: Readonly<JsonASTNode>,
   nodeType: string,
   location: SourceRange | undefined,
-  deserializer: JsonDeserializer
+  deserializer: Readonly<JsonDeserializer>
 ): ASTNode {
   const locationOption = location ? { location } : undefined;
 
@@ -576,3 +585,21 @@ export function deserializeNodeByKind(
       throw new Error(`Unknown node type: ${nodeType}`);
   }
 }
+
+export {
+  isJsonASTNode,
+  isJsonASTNodeArray,
+  getJsonASTNodeProperty,
+  getOptionalJsonASTNodeProperty,
+  getJsonASTNodeArrayProperty,
+  getStringProperty,
+  getNumberProperty,
+  deserializeIfStatement,
+  deserializeForLoopStatement,
+  deserializeWhileLoopStatement,
+  deserializeReturnStatement,
+  deserializeCompoundStatement,
+  deserializeExpressionStatement,
+  deserializeVariableDeclarationStatement,
+  deserializeNodeByKind,
+};

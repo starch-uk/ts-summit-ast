@@ -17,6 +17,7 @@ import type { ElementValue } from './initializer.js';
 /**
  * Modifier keywords.
  */
+/* eslint-disable @typescript-eslint/no-type-alias -- Union type alias needed for type safety and clarity */
 type ModifierKeyword =
   | 'abstract'
   | 'deprecated'
@@ -39,6 +40,7 @@ type ModifierKeyword =
   | 'webservice'
   | 'with sharing'
   | 'without sharing';
+/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Modifier node.
@@ -67,8 +69,8 @@ interface Declaration extends ASTNode {
 interface ClassDeclaration extends Declaration {
   readonly kind: 'ClassDeclaration';
   readonly name: string;
-  readonly modifiers: Modifier[];
-  readonly typeParameters?: TypeParameter[];
+  readonly modifiers: readonly Modifier[];
+  readonly typeParameters?: readonly TypeParameter[];
 
   /**
    * Superclass.
@@ -78,8 +80,8 @@ interface ClassDeclaration extends Declaration {
   /**
    * Interfaces.
    */
-  readonly implementsClause?: TypeRef[];
-  readonly members: (
+  readonly implementsClause?: readonly TypeRef[];
+  readonly members: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
@@ -87,7 +89,7 @@ interface ClassDeclaration extends Declaration {
     | PropertyDeclaration
     | VariableDeclaration
   )[];
-  readonly annotations?: Annotation[];
+  readonly annotations?: readonly Annotation[];
 }
 
 /**
@@ -96,14 +98,14 @@ interface ClassDeclaration extends Declaration {
 interface InterfaceDeclaration extends Declaration {
   readonly kind: 'InterfaceDeclaration';
   readonly name: string;
-  readonly modifiers: Modifier[];
-  readonly typeParameters?: TypeParameter[];
+  readonly modifiers: readonly Modifier[];
+  readonly typeParameters?: readonly TypeParameter[];
 
   /**
    * Extended interfaces.
    */
-  readonly extendsClause?: TypeRef[];
-  readonly members: (
+  readonly extendsClause?: readonly TypeRef[];
+  readonly members: readonly (
     | ClassDeclaration
     | InterfaceDeclaration
     | MethodDeclaration
@@ -117,16 +119,16 @@ interface InterfaceDeclaration extends Declaration {
 interface MethodDeclaration extends Declaration {
   readonly kind: 'MethodDeclaration';
   readonly name: string;
-  readonly modifiers: Modifier[];
+  readonly modifiers: readonly Modifier[];
   readonly returnType: TypeRef;
-  readonly typeParameters?: TypeParameter[];
-  readonly parameters: Parameter[];
+  readonly typeParameters?: readonly TypeParameter[];
+  readonly parameters: readonly Parameter[];
 
   /**
    * Undefined for abstract/interface methods.
    */
   readonly body?: CompoundStatement;
-  readonly annotations?: Annotation[];
+  readonly annotations?: readonly Annotation[];
 
   /**
    * True if this is a constructor (summit-ast compatibility).
@@ -141,8 +143,8 @@ interface MethodDeclaration extends Declaration {
  */
 interface ConstructorDeclaration {
   readonly kind: 'ConstructorDeclaration';
-  readonly modifiers: Modifier[];
-  readonly parameters: Parameter[];
+  readonly modifiers: readonly Modifier[];
+  readonly parameters: readonly Parameter[];
   readonly body: CompoundStatement;
   readonly annotations?: Annotation[];
   readonly location?: SourceRange;
@@ -155,9 +157,9 @@ interface VariableDeclaration extends Declaration {
   readonly kind: 'VariableDeclaration';
   readonly name: string;
   readonly type: TypeRef;
-  readonly modifiers?: Modifier[];
+  readonly modifiers?: readonly Modifier[];
   readonly initializer?: Expression;
-  readonly annotations?: Annotation[];
+  readonly annotations?: readonly Annotation[];
 }
 
 /**
@@ -167,7 +169,7 @@ interface PropertyDeclaration extends Declaration {
   readonly kind: 'PropertyDeclaration';
   readonly name: string;
   readonly type: TypeRef;
-  readonly modifiers: Modifier[];
+  readonly modifiers: readonly Modifier[];
   readonly getter?: CompoundStatement;
   readonly setter?: CompoundStatement;
   readonly annotations?: Annotation[];
@@ -179,13 +181,13 @@ interface PropertyDeclaration extends Declaration {
 interface EnumDeclaration extends Declaration {
   readonly kind: 'EnumDeclaration';
   readonly name: string;
-  readonly modifiers: Modifier[];
-  readonly values: EnumValue[];
+  readonly modifiers: readonly Modifier[];
+  readonly values: readonly EnumValue[];
 
   /**
    * Enum body members.
    */
-  readonly members?: (
+  readonly members?: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
@@ -221,9 +223,9 @@ interface Parameter extends ASTNode {
   readonly kind: 'Parameter';
   readonly name: string;
   readonly type: TypeRef;
-  readonly modifiers?: Modifier[];
+  readonly modifiers?: readonly Modifier[];
   readonly defaultValue?: Expression;
-  readonly annotations?: Annotation[];
+  readonly annotations?: readonly Annotation[];
 }
 
 /**
@@ -232,7 +234,7 @@ interface Parameter extends ASTNode {
 interface Annotation extends ASTNode {
   readonly kind: 'Annotation';
   readonly name: string;
-  readonly arguments?: AnnotationArgument[];
+  readonly arguments?: readonly AnnotationArgument[];
 }
 
 /**

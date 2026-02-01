@@ -25,10 +25,10 @@ describe('NodeFactory', () => {
   describe('Statement Creation', () => {
     it('should create all statement types correctly', () => {
       // IfStatement
-      const ifStmt = NodeFactory.createIfStatement(
-        NodeFactory.createBooleanLiteral(true),
-        NodeFactory.createReturnStatement()
-      );
+      const ifStmt = NodeFactory.createIfStatement({
+        condition: NodeFactory.createBooleanLiteral(true),
+        thenStatement: NodeFactory.createReturnStatement(),
+      });
       expect(isIfStatement(ifStmt)).toBe(true);
 
       // ForLoopStatement
@@ -283,7 +283,7 @@ describe('NodeFactory', () => {
       const body = NodeFactory.createIntegerVal(42, '42');
       const node = NodeFactory.createLambdaExpression(parameters, body);
       expect(node.kind).toBe('LambdaExpression');
-      expect(node.parameters).toBe(parameters);
+      expect(node.parameters).toStrictEqual(parameters);
       expect(node.body).toBe(body);
     });
 

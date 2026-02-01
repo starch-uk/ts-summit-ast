@@ -41,16 +41,18 @@ function typeRefToCodeString(typeRef: TypeRef): string {
   if (typeRef.components == null || typeRef.components.length === 0) {
     return 'void';
   }
-  const typeString = typeRef.components
+  const typeString: string = typeRef.components
     .map((comp) => {
-      let result = comp.id.name;
+      let result: string = comp.id.name;
       if (comp.args != null && comp.args.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- typeRefToCodeString returns string, map result is string[]
         result += `<${comp.args.map(typeRefToCodeString).join(', ')}>`;
       }
       return result;
     })
     .join('.');
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by arrayNesting property
   return typeString + '[]'.repeat((typeRef.arrayNesting ?? 0) as number);
 }
 
@@ -59,6 +61,7 @@ function typeRefToCodeString(typeRef: TypeRef): string {
  * @param typeRef - The type reference to check.
  * @returns True if the type reference represents void.
  */
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- TypeRef may be unresolved in test context
 function isVoidType(typeRef: TypeRef | undefined): boolean {
   if (typeRef == null) return false;
   return typeRef.components == null || typeRef.components.length === 0;
@@ -74,8 +77,10 @@ function isVoidType(typeRef: TypeRef | undefined): boolean {
  */
 function getQualifiedName(decl: ClassMember, enclosingClassName?: string): string {
   if (enclosingClassName != null && enclosingClassName !== '') {
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- ClassMember.name is string, type may be unresolved in test context
     return `${enclosingClassName}.${decl.name}`;
   }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- ClassMember type may be unresolved in test context
   return decl.name;
 }
 
@@ -85,7 +90,7 @@ function getQualifiedName(decl: ClassMember, enclosingClassName?: string): strin
  * @param method - The method declaration to check.
  * @returns True if the method is an anonymous initialization block.
  */
-function isAnonymousInitializationCode(method: MethodDeclaration): boolean {
+function isAnonymousInitializationCode(method: Readonly<MethodDeclaration>): boolean {
   return method.name === '_init' && method.parameters.length === 0 && isVoidType(method.returnType);
 }
 
@@ -95,7 +100,7 @@ function isAnonymousInitializationCode(method: MethodDeclaration): boolean {
  * @param keyword - The keyword to check for (e.g., 'public', 'static').
  * @returns True if any modifier matches the keyword.
  */
-function hasKeyword(modifiers: Modifier[], keyword: string): boolean {
+function hasKeyword(modifiers: readonly Readonly<Modifier>[], keyword: string): boolean {
   return modifiers.some((m) => m.keyword === keyword);
 }
 
@@ -171,7 +176,9 @@ describe('Class Declaration Translation', () => {
     if (enclosingClassDecl) {
       // Filter inner types from members
       const innerTypes = enclosingClassDecl.members.filter(
-        (m) => isClassDeclaration(m) || isInterfaceDeclaration(m) || isEnumDeclaration(m)
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
+          isClassDeclaration(m) || isInterfaceDeclaration(m) || isEnumDeclaration(m)
       );
       // Original: innerTypeDeclarations hasSize 3
       expect(innerTypes.length).toBe(3);
@@ -186,8 +193,11 @@ describe('Class Declaration Translation', () => {
       expect(enclosingClassDecl.name).toBe('EnclosingClass');
 
       // Find inner class
+      /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isClassDeclaration guard */
       const innerClassDecl = innerTypes.find(
-        (m) => isClassDeclaration(m) && m.name === 'InnerClass'
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
+          isClassDeclaration(m) && m.name === 'InnerClass'
       ) as ClassDeclaration | undefined;
       expect(innerClassDecl).toBeDefined();
       if (innerClassDecl) {
@@ -201,8 +211,11 @@ describe('Class Declaration Translation', () => {
       }
 
       // Find inner interface
+      /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isInterfaceDeclaration guard */
       const innerInterfaceDecl = innerTypes.find(
-        (m) => isInterfaceDeclaration(m) && m.name === 'InnerInterface'
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
+          isInterfaceDeclaration(m) && m.name === 'InnerInterface'
       ) as InterfaceDeclaration | undefined;
       expect(innerInterfaceDecl).toBeDefined();
       if (innerInterfaceDecl) {
@@ -215,8 +228,12 @@ describe('Class Declaration Translation', () => {
       }
 
       // Find inner enum
+      /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isEnumDeclaration guard */
       const innerEnumDecl = innerTypes.find(
-        (m) => isEnumDeclaration(m) && m.name === 'InnerEnum'
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
+          isEnumDeclaration(m) && m.name === 'InnerEnum'
+        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- EnumDeclaration may be unresolved in test context
       ) as EnumDeclaration | undefined;
       expect(innerEnumDecl).toBeDefined();
       if (innerEnumDecl != null) {
@@ -374,14 +391,14 @@ describe('Class Declaration Translation', () => {
 
     // Original: val group1 = classDecl.fieldDeclarations.first()
     //           assertThat(group1.declarations).hasSize(2)
-    const group1 = groups[0];
+    const [group1] = groups;
     expect(group1).toHaveLength(2);
     expect(group1.find((f) => f.name === 'field1')).toBeDefined();
     expect(group1.find((f) => f.name === 'field2')).toBeDefined();
 
     // Original: val group2 = classDecl.fieldDeclarations.last()
     //           assertThat(group2.declarations).hasSize(1)
-    const group2 = groups[1];
+    const [, group2] = groups;
     expect(group2).toHaveLength(1);
     expect(group2.find((f) => f.name === 'field3')).toBeDefined();
   });
@@ -482,11 +499,16 @@ describe('Class Declaration Translation', () => {
       // Find property declarations
       // Original: propertyDeclarations.singleOrNull() is not null
       const propDecls = classDecl.members.filter(
-        (m): m is PropertyDeclaration => m.kind === 'PropertyDeclaration'
+        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>): m is PropertyDeclaration =>
+          m.kind === 'PropertyDeclaration'
       );
       // Properties may not be fully implemented yet, so we check if they exist
       if (propDecls.length > 0) {
-        const propDecl = propDecls.find((p) => p.name === 'property');
+        const propDecl = propDecls.find(
+          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+          (p: Readonly<Readonly<PropertyDeclaration>>) => p.name === 'property'
+        );
         expect(propDecl).toBeDefined();
         if (propDecl) {
           // Original: id.asCodeString() == "property"
@@ -540,6 +562,7 @@ describe('Class Declaration Translation', () => {
 
     if (propDecl) {
       // Original: "Read-only property should have a null setter" - setter is null
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by propDecl check
       expect((propDecl as PropertyDeclaration).setter).toBeUndefined();
     } else {
       // If properties aren't implemented yet, at least verify the class parses
@@ -635,7 +658,7 @@ describe('Class Declaration Translation', () => {
         // Original: parameterDeclarations hasSize 1
         if (setterMethodDecl.parameters != null && setterMethodDecl.parameters.length > 0) {
           expect(setterMethodDecl.parameters.length).toBe(1);
-          const paramDecl = setterMethodDecl.parameters[0];
+          const [paramDecl] = setterMethodDecl.parameters;
 
           // Original: paramDecl.type.asCodeString() == "String"
           const paramTypeString = typeRefToCodeString(paramDecl.type);
@@ -940,7 +963,7 @@ describe('Method Declaration Translation', () => {
     // Original: val param = methodDecl.parameterDeclarations.first()
     // Original: assertWithMessage("Parameter should be named 'input'")
     //           .that(param.id.asCodeString()).isEqualTo("input")
-    const param = methodDecl.parameters[0];
+    const [param] = methodDecl.parameters;
     expect(param.name).toBe('input');
     // Original: assertWithMessage("Parameter should be a String array type")
     //           .that(param.type.asCodeString()).isEqualTo("String[]")
@@ -979,7 +1002,7 @@ describe('Method Declaration Translation', () => {
 
     // Original: val parameterDecl = methodDecl.parameterDeclarations.first()
     // Original: assertWithMessage("Parameter should have 1 modifier").that(parameterDecl.modifiers).hasSize(1)
-    const parameterDecl = methodDecl.parameters[0];
+    const [parameterDecl] = methodDecl.parameters;
     expect(parameterDecl.modifiers).toHaveLength(1);
     // Original: assertWithMessage("Parameter should have 'final' modifier")
     //           .that(parameterDecl.hasKeyword(KeywordModifier.Keyword.FINAL)).isTrue()
@@ -1004,12 +1027,12 @@ describe('Method Declaration Translation', () => {
 
     // Original: val methodDecl = classDecl.methodDeclarations.first()
     // Original: assertThat(methodDecl.isConstructor).isFalse()
-    const methodDecl = methodDecls[0];
+    const [methodDecl] = methodDecls;
     expect(methodDecl.isConstructor).toBe(false);
 
     // Original: val constructorDecl = classDecl.methodDeclarations.last()
     // Original: assertThat(constructorDecl.isConstructor).isTrue()
-    const constructorDecl = methodDecls[1];
+    const [, constructorDecl] = methodDecls;
     expect(constructorDecl.isConstructor).toBe(true);
   });
 
@@ -1256,12 +1279,12 @@ describe('Modifier Translation', () => {
     expect(methodDecls).toHaveLength(2);
 
     // Original: val normalInitializer = classDecl.methodDeclarations.first()
-    const normalInitializer = methodDecls[0];
+    const [normalInitializer] = methodDecls;
     // Original: assertThat(normalInitializer.modifiers).isEmpty()
     expect(normalInitializer.modifiers).toHaveLength(0);
 
     // Original: val staticInitializer = classDecl.methodDeclarations.last()
-    const staticInitializer = methodDecls[1];
+    const [, staticInitializer] = methodDecls;
     // Original: assertThat(staticInitializer.modifiers).hasSize(1)
     expect(staticInitializer.modifiers).toHaveLength(1);
     // Original: assertThat(staticInitializer.hasKeyword(KeywordModifier.Keyword.STATIC)).isTrue()

@@ -20,11 +20,14 @@ import { TranslationError } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
 
 /**
- * @param ctx
- * @param node
+ * Translates a parse tree if statement node into an AST if statement.
+ * @param ctx - The translation context providing parser utilities.
+ * @param node - The parse tree node representing the if statement.
+ * @returns The translated if statement AST node.
+ * @throws {TranslationError} If the if statement is missing condition or then body.
  */
-export function translateIfStatement(
-  ctx: TranslateContext,
+function translateIfStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Try to get named properties first (for integration tests)
@@ -69,20 +72,23 @@ export function translateIfStatement(
     }
   }
 
-  return NodeFactory.createIfStatement(
+  return NodeFactory.createIfStatement({
     condition,
-    thenStatement,
     elseStatement,
-    ctx.getLocationOption(node)
-  );
+    options: ctx.getLocationOption(node),
+    thenStatement,
+  });
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a while loop statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated while loop statement.
+ * @throws {TranslationError} If the while statement is missing condition or body.
  */
-export function translateWhileLoopStatement(
-  ctx: TranslateContext,
+function translateWhileLoopStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // While statement has children: [condition, body]
@@ -106,11 +112,13 @@ export function translateWhileLoopStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a return statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated return statement.
  */
-export function translateReturnStatement(
-  ctx: TranslateContext,
+function translateReturnStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Return statement has children: [expression?]
@@ -120,7 +128,7 @@ export function translateReturnStatement(
   const zeroIndex = 0;
   const expression =
     children.length > emptyArrayLength
-      ? (() => {
+      ? ((): Expression | undefined => {
           const returnChild = children[zeroIndex];
           return (
             ctx.tryTranslateExpression(returnChild, returnChild.type.toLowerCase()) ?? undefined
@@ -132,16 +140,18 @@ export function translateReturnStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a compound statement (block).
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated compound statement.
  */
-export function translateCompoundStatement(
-  ctx: TranslateContext,
+function translateCompoundStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   const statements = ctx
     .getChildren(node)
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
     .filter((child: Readonly<ParseTreeNode>) => {
       // Filter out type-related structural nodes that shouldn't be translated as statements
       const childType = child.type.toLowerCase();
@@ -152,7 +162,7 @@ export function translateCompoundStatement(
         childType !== 'type_parameters'
       );
     })
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
     .map((child: Readonly<ParseTreeNode>) => {
       try {
         const translated = ctx.translateNode(child);
@@ -173,6 +183,7 @@ export function translateCompoundStatement(
           translated.kind === 'VariableDeclarationStatement' ||
           translated.kind === 'DmlStatement'
         ) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
           return translated as Statement;
         }
         return null;
@@ -195,11 +206,14 @@ export function translateCompoundStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translates a parse tree expression statement node into an AST expression statement.
+ * @param ctx - The translation context providing parser utilities.
+ * @param node - The parse tree node representing the expression statement.
+ * @returns The translated expression statement AST node.
+ * @throws {TranslationError} If the expression statement is missing an expression.
  */
-export function translateExpressionStatement(
-  ctx: TranslateContext,
+function translateExpressionStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Expression statement has children: [expression]
@@ -224,11 +238,14 @@ export function translateExpressionStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a for loop statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated for loop statement.
+ * @throws {TranslationError} If the for statement is missing a body.
  */
-export function translateForLoopStatement(
-  ctx: TranslateContext,
+function translateForLoopStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Try positional children first (parser output structure: [init?, condition?, update?, body])
@@ -342,18 +359,24 @@ export function translateForLoopStatement(
   let initStatement: ExpressionStatement | VariableDeclarationStatement | undefined = undefined;
   if (init) {
     if (init.kind === 'ExpressionStatement') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
       initStatement = init as ExpressionStatement;
     } else if (init.kind === 'VariableDeclarationStatement') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
       initStatement = init as VariableDeclarationStatement;
     } else if (init.kind === 'CompoundStatement') {
       // If init is a CompoundStatement, try to extract the first ExpressionStatement or VariableDeclarationStatement from it
       // This handles cases where the parser wraps comma-separated expressions or declarations in a block
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
       const compoundInit = init as CompoundStatement;
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
       if (compoundInit.statements.length > 0) {
         const [firstStmt] = compoundInit.statements;
         if (firstStmt.kind === 'ExpressionStatement') {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
           initStatement = firstStmt as ExpressionStatement;
         } else if (firstStmt.kind === 'VariableDeclarationStatement') {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
           initStatement = firstStmt as VariableDeclarationStatement;
         }
       }
@@ -369,11 +392,14 @@ export function translateForLoopStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translates a parse tree enhanced for loop (for-each) node into an AST enhanced for loop statement.
+ * @param ctx - The translation context providing parser utilities.
+ * @param node - The parse tree node representing the enhanced for loop statement.
+ * @returns The translated enhanced for loop statement AST node.
+ * @throws {TranslationError} If the for-each statement is missing type, variable name, iterable, or body.
  */
-export function translateEnhancedForLoopStatement(
-  ctx: TranslateContext,
+function translateEnhancedForLoopStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Try to get named properties first (for integration tests)
@@ -440,6 +466,7 @@ export function translateEnhancedForLoopStatement(
   const variableReadonly = variable;
   const decl = ctx.tryTranslateDeclaration(variableReadonly, variableReadonly.type.toLowerCase());
   if (decl?.kind === 'VariableDeclaration') {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
     varDecl = decl as VariableDeclaration;
   } else {
     // If translation failed, try to construct from children
@@ -467,20 +494,23 @@ export function translateEnhancedForLoopStatement(
     throw new TranslationError('For-each statement requires a variable', node);
   }
 
-  return NodeFactory.createEnhancedForLoopStatement(
-    varDecl,
-    iterable,
+  return NodeFactory.createEnhancedForLoopStatement({
     body,
-    ctx.getLocationOption(node)
-  );
+    iterable,
+    options: ctx.getLocationOption(node),
+    variable: varDecl,
+  });
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a do-while loop statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated do-while loop statement.
+ * @throws {TranslationError} If the do-while statement is missing body or condition.
  */
-export function translateDoWhileLoopStatement(
-  ctx: TranslateContext,
+function translateDoWhileLoopStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Do-while statement has children: [body, condition]
@@ -508,11 +538,14 @@ export function translateDoWhileLoopStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a switch statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated switch statement.
+ * @throws {TranslationError} If the switch statement is missing an expression.
  */
-export function translateSwitchStatement(
-  ctx: TranslateContext,
+function translateSwitchStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   let expression = ctx.getChildExpression(node, 'expression', true);
@@ -521,7 +554,7 @@ export function translateSwitchStatement(
     const children = ctx.getChildren(node);
     const emptyArrayLength = 0;
     if (children.length > emptyArrayLength) {
-      const firstChild = children[0];
+      const [firstChild] = children;
       expression =
         ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase()) ?? undefined;
     }
@@ -540,12 +573,10 @@ export function translateSwitchStatement(
       let matchType: TypeRef | undefined = undefined;
       let downcastDeclarations: VariableDeclaration[] | undefined = undefined;
 
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
       const typeMatchNode = ctx.getChildren(caseNodeReadonly).find((c) => c.type === 'type_match');
       if (typeMatchNode) {
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
         const typeNode = ctx.getChildren(typeMatchNode).find((c) => c.type === 'type') ?? null;
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
         const nameNode = ctx.getChildren(typeMatchNode).find((c) => c.type === 'name') ?? null;
 
         if (typeNode) {
@@ -553,6 +584,7 @@ export function translateSwitchStatement(
         }
 
         const varName = nameNode ? (ctx.getText(nameNode) ?? undefined) : undefined;
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if string has length
         if (matchType && typeof varName === 'string' && varName.length > 0) {
           downcastDeclarations = [
             NodeFactory.createVariableDeclaration(
@@ -575,9 +607,10 @@ export function translateSwitchStatement(
         const valueNodes = ch.filter(
           (c: Readonly<ParseTreeNode>) => (c as { type?: string }).type !== 'statements'
         );
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
         if (valueNodes.length > 0) {
           const translatedValues = valueNodes
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
             .map((vn) => {
               const valueTypeProperty = (vn as { type?: string }).type;
               const valueType =
@@ -586,7 +619,9 @@ export function translateSwitchStatement(
             })
             .filter((v): v is Expression => v !== null);
 
+          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
           if (translatedValues.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for single element
             if (translatedValues.length === 1) {
               [value] = translatedValues;
             } else {
@@ -608,7 +643,7 @@ export function translateSwitchStatement(
       const statements = statementsNode
         ? ctx
             .getChildren(statementsNode)
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
             .map((child: Readonly<ParseTreeNode>) => {
               const translated = ctx.translateNode(child);
               if (
@@ -627,6 +662,7 @@ export function translateSwitchStatement(
                 translated.kind === 'VariableDeclarationStatement' ||
                 translated.kind === 'DmlStatement'
               ) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
                 return translated as Statement;
               }
               return null;
@@ -650,8 +686,10 @@ export function translateSwitchStatement(
     // Try positional children: switch statement has [expression, cases?, defaultCase?]
     const children = ctx.getChildren(node);
     // Default case is the last child if it's a switch_case node
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
     if (children.length > 0) {
-      const lastChild = children[children.length - 1];
+      const lastIndexOffset = 1;
+      const lastChild = children[children.length - lastIndexOffset];
       if (lastChild.type === 'switch_case') {
         // Check if it's a default case (no value expressions, just statements)
         const caseChildren = ctx.getChildren(lastChild);
@@ -677,7 +715,7 @@ export function translateSwitchStatement(
     const statements = statementsNode
       ? ctx
           .getChildren(statementsNode)
-          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Callback parameter is effectively readonly
+
           .map((child: Readonly<ParseTreeNode>) => {
             const translated = ctx.translateNode(child);
             if (
@@ -696,6 +734,7 @@ export function translateSwitchStatement(
               translated.kind === 'VariableDeclarationStatement' ||
               translated.kind === 'DmlStatement'
             ) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
               return translated as Statement;
             }
             return null;
@@ -719,11 +758,14 @@ export function translateSwitchStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a try statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated try statement.
+ * @throws {TranslationError} If the try statement is missing a try block, or if catch/finally blocks are invalid.
  */
-export function translateTryStatement(
-  ctx: TranslateContext,
+function translateTryStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Try to get named properties first (for integration tests)
@@ -766,6 +808,7 @@ export function translateTryStatement(
   if (tryBlockStmtResult.kind !== 'CompoundStatement') {
     throw new TranslationError('Try statement requires a CompoundStatement for try block', node);
   }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
   const tryBlockStmt = tryBlockStmtResult as CompoundStatement;
 
   const catchClauses: CatchClause[] = [];
@@ -808,6 +851,7 @@ export function translateTryStatement(
           variableReadonly.type.toLowerCase()
         );
         if (decl?.kind === 'VariableDeclaration') {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
           varDecl = decl as VariableDeclaration;
         }
       }
@@ -874,6 +918,7 @@ export function translateTryStatement(
         );
       }
       catchClauses.push({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
         block: blockStmt as CompoundStatement,
         exceptionType: exceptionTypeExpr,
         kind: 'CatchClause',
@@ -889,6 +934,7 @@ export function translateTryStatement(
     if (finallyBlockResult.kind !== 'CompoundStatement') {
       throw new TranslationError('Finally block must be a CompoundStatement', node);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
     finallyBlockStmt = finallyBlockResult as CompoundStatement;
   }
 
@@ -901,11 +947,13 @@ export function translateTryStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a break statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated break statement.
  */
-export function translateBreakStatement(
-  ctx: TranslateContext,
+function translateBreakStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   const label = ctx.getProperty<string>(node, 'label');
@@ -913,11 +961,13 @@ export function translateBreakStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a continue statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated continue statement.
  */
-export function translateContinueStatement(
-  ctx: TranslateContext,
+function translateContinueStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   const label = ctx.getProperty<string>(node, 'label');
@@ -925,11 +975,14 @@ export function translateContinueStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a throw statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated throw statement.
+ * @throws {TranslationError} If the throw statement is missing an expression.
  */
-export function translateThrowStatement(
-  ctx: TranslateContext,
+function translateThrowStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Try to get named property first (for integration tests)
@@ -961,11 +1014,14 @@ export function translateThrowStatement(
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a variable declaration statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated variable declaration statement.
+ * @throws {TranslationError} If the variable declaration statement is missing a declaration or if it's invalid.
  */
-export function translateVariableDeclarationStatement(
-  ctx: TranslateContext,
+function translateVariableDeclarationStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // Try to get declaration child (wrapper) or variable_declaration directly
@@ -997,26 +1053,32 @@ export function translateVariableDeclarationStatement(
     );
   }
   return NodeFactory.createVariableDeclarationStatement(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated above
     varDecl as VariableDeclaration,
     ctx.getLocationOption(node)
   );
 }
 
 /**
- * @param ctx
- * @param node
+ * Translate a DML statement.
+ * @param ctx - The translation context.
+ * @param node - The parse tree node to translate.
+ * @returns The translated DML statement.
+ * @throws {TranslationError} If the DML statement is missing a target expression.
  */
-export function translateDmlStatement(
-  ctx: TranslateContext,
+function translateDmlStatement(
+  ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
   // DML statement has: text = operation, children = [target]
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- DML operation type validated by parser
   const operation = (
     ctx.getText(node) ??
     ctx.getProperty<string>(node, 'text') ??
     'insert'
   ).toLowerCase() as 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert';
   const children = ctx.getChildren(node);
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array is empty
   if (children.length === 0) {
     throw new TranslationError('DML statement requires a target expression', node);
   }
@@ -1029,3 +1091,21 @@ export function translateDmlStatement(
 
   return NodeFactory.createDmlStatement(operation, target, ctx.getLocationOption(node));
 }
+
+export {
+  translateIfStatement,
+  translateWhileLoopStatement,
+  translateReturnStatement,
+  translateCompoundStatement,
+  translateExpressionStatement,
+  translateForLoopStatement,
+  translateEnhancedForLoopStatement,
+  translateDoWhileLoopStatement,
+  translateSwitchStatement,
+  translateTryStatement,
+  translateBreakStatement,
+  translateContinueStatement,
+  translateThrowStatement,
+  translateVariableDeclarationStatement,
+  translateDmlStatement,
+};

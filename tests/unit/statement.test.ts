@@ -36,7 +36,7 @@ import {
 import { getNodeChildren } from '../../src/utils/traversal.js';
 import type { ASTNode } from '../../src/ast/baseNode.js';
 import type { TypeRef } from '../../src/ast/baseNode.js';
-import type { VariableExpression } from '../../src/ast/expression.js';
+import type { ClassDeclaration } from '../../src/ast/declaration.js';
 
 describe('Statement Translation', () => {
   /**
@@ -79,8 +79,11 @@ describe('Statement Translation', () => {
     const classDecl = findFirstNodeOfType(compilationUnit, isClassDeclaration);
     expect(classDecl).not.toBeNull();
     // Original: val methodDecl = classDecl.methodDeclarations.first()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked that classDecl is not null
-    const methodDecl = classDecl!.members.find((m) => isMethodDeclaration(m));
+    if (!classDecl) throw new Error('Expected classDecl to be defined');
+    const methodDecl = classDecl.members.find(
+      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+      (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) => isMethodDeclaration(m)
+    );
     // Original: assertNotNull(methodDecl.body)
     expect(methodDecl.body).toBeDefined();
     // Original: assertThat(methodDecl.body?.statements).hasSize(2)
@@ -95,13 +98,15 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertThat(node.condition).isInstanceOf(VariableExpression::class.java)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    expect(isVariableExpression(node!.condition)).toBe(true);
+    expect(isVariableExpression(node.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.condition as VariableExpression;
-    expect(conditionVariable.id.name).toBe('x');
+    if (isVariableExpression(node.condition)) {
+      const conditionVariable = node.condition;
+      expect(conditionVariable.id.name).toBe('x');
+    }
     // Original: assertWithMessage("Without `else`, the statement should be null")
     //           .that(node.elseStatement).isNull()
     expect(node.elseStatement).toBeUndefined();
@@ -128,8 +133,10 @@ describe('Statement Translation', () => {
     expect(isVariableExpression(node.expression)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.expression as VariableExpression;
-    expect(conditionVariable.id.name).toBe('x');
+    if (isVariableExpression(node.expression)) {
+      const conditionVariable = node.expression;
+      expect(conditionVariable.id.name).toBe('x');
+    }
     // Original: val whenClause = node.whenClauses.first()
     // Original: assertThat(whenClause).isInstanceOf(SwitchStatement.WhenElse::class.java)
     // Note: TypeScript uses defaultCase instead of WhenElse
@@ -147,12 +154,12 @@ describe('Statement Translation', () => {
     expect(node.cases).toHaveLength(1);
     const [whenValueCase] = node.cases;
     expect(whenValueCase.values).toBeDefined();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- values is asserted above
-    expect(whenValueCase.values!).toHaveLength(2);
+    if (whenValueCase.values) {
+      expect(whenValueCase.values).toHaveLength(2);
 
-    // Identifiers in `when` clauses are enum values, which should be a VariableExpression.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- values is asserted above
-    expect(isVariableExpression(whenValueCase.values![0])).toBe(true);
+      // Identifiers in `when` clauses are enum values, which should be a VariableExpression.
+      expect(isVariableExpression(whenValueCase.values[0])).toBe(true);
+    }
   });
 
   it('switch statement when clause has literal values', () => {
@@ -196,17 +203,18 @@ describe('Statement Translation', () => {
 
     const [whenTypeCase] = node.cases;
     expect(whenTypeCase.matchType).toBeDefined();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- matchType is asserted above
-    expect(typeRefToCodeString(whenTypeCase.matchType!)).toBe('Type');
+    if (whenTypeCase.matchType) {
+      expect(typeRefToCodeString(whenTypeCase.matchType)).toBe('Type');
+    }
 
     expect(whenTypeCase.downcastDeclarations).toBeDefined();
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- downcastDeclarations is asserted above
-    expect(whenTypeCase.downcastDeclarations!).toHaveLength(1);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- downcastDeclarations is asserted above
-    const [varDecl] = whenTypeCase.downcastDeclarations!;
-    expect(typeRefToCodeString(varDecl.type)).toBe('Type');
-    expect(varDecl.name).toBe('variable');
-    expect(varDecl.initializer).toBeUndefined();
+    if (whenTypeCase.downcastDeclarations) {
+      expect(whenTypeCase.downcastDeclarations).toHaveLength(1);
+      const [varDecl] = whenTypeCase.downcastDeclarations;
+      expect(typeRefToCodeString(varDecl.type)).toBe('Type');
+      expect(varDecl.name).toBe('variable');
+      expect(varDecl.initializer).toBeUndefined();
+    }
   });
 
   it('traditional for statement declares two variables', () => {
@@ -270,13 +278,15 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertThat(node.condition).isInstanceOf(VariableExpression::class.java)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    expect(isVariableExpression(node!.condition)).toBe(true);
+    expect(isVariableExpression(node.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.condition as VariableExpression;
-    expect(conditionVariable.id.name).toBe('x');
+    if (isVariableExpression(node.condition)) {
+      const conditionVariable = node.condition;
+      expect(conditionVariable.id.name).toBe('x');
+    }
   });
 
   it('do while statement condition is variable expression', () => {
@@ -285,13 +295,15 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertThat(node.condition).isInstanceOf(VariableExpression::class.java)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    expect(isVariableExpression(node!.condition)).toBe(true);
+    expect(isVariableExpression(node.condition)).toBe(true);
     // Original: val conditionVariable = node.condition as VariableExpression
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
-    const conditionVariable = node.condition as VariableExpression;
-    expect(conditionVariable.id.name).toBe('x');
+    if (isVariableExpression(node.condition)) {
+      const conditionVariable = node.condition;
+      expect(conditionVariable.id.name).toBe('x');
+    }
   });
 
   it('try statement has finally block', () => {
@@ -345,9 +357,9 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(1);
   });
 
@@ -357,9 +369,9 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(1);
   });
 
@@ -391,9 +403,9 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(1);
     // Original: assertWithMessage("Node should have default/unspecified access")
     //           .that(node.access).isNull()
@@ -407,9 +419,9 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(1);
   });
 
@@ -419,9 +431,9 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(1);
   });
 
@@ -431,9 +443,9 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(1);
   });
 
@@ -497,9 +509,9 @@ describe('Statement Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have one child").that(node.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(1);
   });
 

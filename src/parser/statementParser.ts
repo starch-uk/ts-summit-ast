@@ -7,6 +7,38 @@ import type { ParseTreeNode } from './parseTree.js';
 import { TokenType } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
 
+/**
+ * Stub used before real parser is assigned (mutually recursive).
+ * @throws {Error} Always, if called before assignment.
+ */
+const statementParserStub = (): ParseTreeNode | null => {
+  throw new Error('statement parser used before assignment');
+};
+
+/**
+ * Stub used before real parser is assigned (returns node).
+ * @throws {Error} Always, if called before assignment.
+ */
+const statementParserStubNode = (): ParseTreeNode => {
+  throw new Error('statement parser used before assignment');
+};
+
+/** Forward declarations for statement parsers used in parseStatement. */
+let parseIfStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseForStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseWhileStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseDoWhileStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode =
+  statementParserStubNode;
+let parseSwitchStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseTryStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseReturnStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseBreakStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseContinueStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode =
+  statementParserStubNode;
+let parseThrowStatement: (ctx: Readonly<ParserContext>) => ParseTreeNode = statementParserStubNode;
+let parseVariableDeclaration: (ctx: Readonly<ParserContext>) => ParseTreeNode | null =
+  statementParserStub;
+
 // ============================================================================
 // Block Parsing
 // ============================================================================
@@ -19,15 +51,15 @@ import type { ParserContext } from './apexParser.js';
  * @returns The block parse tree node.
  * @throws {Error} If the block is malformed or unexpected tokens are encountered.
  */
-export function parseBlock(ctx: ParserContext, isClassBody = false): ParseTreeNode {
-  const start = ctx.current;
+function parseBlock(ctx: Readonly<ParserContext>, isClassBody = false): ParseTreeNode {
+  const start = ctx.getCurrent();
   ctx.consume(TokenType.LEFT_BRACE, 'Expected {');
 
   const statements: ParseTreeNode[] = [];
   ctx.skipWhitespaceAndComments();
 
   while (!ctx.check(TokenType.RIGHT_BRACE) && !ctx.isAtEnd()) {
-    const beforeParse = ctx.current;
+    const beforeParse = ctx.getCurrent();
     if (isClassBody) {
       const member = ctx.parseClassMember();
       if (member) {
@@ -36,7 +68,7 @@ export function parseBlock(ctx: ParserContext, isClassBody = false): ParseTreeNo
         // If parsing as class member failed, restore position and try parsing as statement
         // This handles triggers with statements like System.debug('')
         // parseClassMember() may have advanced past whitespace, so we restore the position
-        ctx.current = beforeParse;
+        ctx.setCurrent(beforeParse);
         ctx.skipWhitespaceAndComments();
         const stmt = ctx.parseStatement();
         if (stmt) {
@@ -50,7 +82,7 @@ export function parseBlock(ctx: ParserContext, isClassBody = false): ParseTreeNo
       }
     }
     // Safety check: ensure we always advance, even if parsing failed
-    if (ctx.current === beforeParse && !ctx.isAtEnd()) {
+    if (ctx.getCurrent() === beforeParse && !ctx.isAtEnd()) {
       ctx.advance();
     }
     ctx.skipWhitespaceAndComments();
@@ -60,7 +92,7 @@ export function parseBlock(ctx: ParserContext, isClassBody = false): ParseTreeNo
 
   return {
     children: statements,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'block',
   };
 }
@@ -75,7 +107,7 @@ export function parseBlock(ctx: ParserContext, isClassBody = false): ParseTreeNo
  * @returns The parsed statement node, or null if parsing fails.
  * @throws {Error} If the statement is malformed or unexpected tokens are encountered.
  */
-export function parseStatement(ctx: ParserContext): ParseTreeNode | null {
+function parseStatement(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   ctx.skipWhitespaceAndComments();
 
   if (ctx.match(TokenType.IF)) {
@@ -114,7 +146,7 @@ export function parseStatement(ctx: ParserContext): ParseTreeNode | null {
 
   // Check for DML statements: insert, update, delete, upsert, merge, undelete
   const singleIndexOffset = 1;
-  const savedPos = ctx.current;
+  const savedPos = ctx.getCurrent();
   if (ctx.check(TokenType.IDENTIFIER)) {
     const token = ctx.peek();
     const dmlKeyword = token.text.toLowerCase();
@@ -158,7 +190,7 @@ export function parseStatement(ctx: ParserContext): ParseTreeNode | null {
         ctx.consume(TokenType.SEMICOLON, `Expected ; after ${dmlKeyword} statement`);
         const node: ParseTreeNode = {
           children,
-          location: ctx.getLocation(savedPos, ctx.current),
+          location: ctx.getLocation(savedPos, ctx.getCurrent()),
           text: dmlKeyword,
           type: 'dml_statement',
         };
@@ -170,12 +202,12 @@ export function parseStatement(ctx: ParserContext): ParseTreeNode | null {
       }
     }
   }
-  ctx.current = savedPos; // Reset if not a DML statement
+  ctx.setCurrent(savedPos); // Reset if not a DML statement
 
   // Variable declaration (check before expression statement since types can be identifiers)
   // Peek ahead to see if it's likely a variable declaration: type followed by identifier
   if (ctx.checkType()) {
-    const savedPosForVar = ctx.current;
+    const savedPosForVar = ctx.getCurrent();
     // Try to parse type without consuming if it fails
     const type = ctx.parseType();
     if (type) {
@@ -183,14 +215,14 @@ export function parseStatement(ctx: ParserContext): ParseTreeNode | null {
       // Check if next token is an identifier (variable name) - if so, it's likely a variable declaration
       if (ctx.check(TokenType.IDENTIFIER)) {
         // Reset and parse as variable declaration
-        ctx.current = savedPosForVar;
+        ctx.setCurrent(savedPosForVar);
         const varDecl = parseVariableDeclaration(ctx);
         if (varDecl) {
           return varDecl;
         }
       }
       // Not a variable declaration, reset to before type parsing
-      ctx.current = savedPosForVar;
+      ctx.setCurrent(savedPosForVar);
     }
   }
 
@@ -200,7 +232,8 @@ export function parseStatement(ctx: ParserContext): ParseTreeNode | null {
     if (ctx.match(TokenType.SEMICOLON)) {
       return {
         children: [expr],
-        location: expr.location ?? ctx.getLocation(ctx.current - singleIndexOffset, ctx.current),
+        location:
+          expr.location ?? ctx.getLocation(ctx.getCurrent() - singleIndexOffset, ctx.getCurrent()),
         type: 'expression_statement',
       };
     }
@@ -220,9 +253,9 @@ export function parseStatement(ctx: ParserContext): ParseTreeNode | null {
  * @returns The parsed if statement parse tree node.
  * @throws {Error} If the if statement is malformed or unexpected tokens are encountered.
  */
-export function parseIfStatement(ctx: ParserContext): ParseTreeNode {
+parseIfStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.LEFT_PAREN, 'Expected ( after if');
   ctx.skipWhitespaceAndComments();
@@ -249,10 +282,10 @@ export function parseIfStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'if_statement',
   };
-}
+};
 
 /**
  * Parses a switch statement from the token stream.
@@ -260,10 +293,10 @@ export function parseIfStatement(ctx: ParserContext): ParseTreeNode {
  * @returns The parsed switch statement parse tree node.
  * @throws {Error} If the switch statement is malformed or unexpected tokens are encountered.
  */
-export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
+parseSwitchStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
 
   // Apex uses "switch on expression" syntax, not "switch (expression)"
@@ -316,12 +349,12 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
           if (ctx.check(TokenType.RIGHT_BRACE)) {
             break;
           }
-          const beforeStmt = ctx.current;
+          const beforeStmt = ctx.getCurrent();
           const stmt = parseStatement(ctx);
           if (stmt) {
             statements.push(stmt);
           }
-          if (ctx.current === beforeStmt && !ctx.isAtEnd()) {
+          if (ctx.getCurrent() === beforeStmt && !ctx.isAtEnd()) {
             void ctx.advance();
           }
         }
@@ -330,7 +363,7 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
 
         defaultCase = {
           children: [{ children: statements, type: 'statements' }],
-          location: ctx.getLocation(start, ctx.current),
+          location: ctx.getLocation(start, ctx.getCurrent()),
           type: 'switch_case',
         };
       } else {
@@ -341,14 +374,14 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
 
         // Check if it's a type declaration: "when Type variable"
         // Pattern: Type (identifier) followed by identifier (variable name)
-        const savedPos = ctx.current;
+        const savedPos = ctx.getCurrent();
 
         // Check if we have two consecutive identifiers (type name, then variable name)
         // This is a heuristic: if we see IDENTIFIER + whitespace + IDENTIFIER, it might be "Type variable"
         if (ctx.checkType()) {
           // Try to parse as type first
           const potentialType = ctx.parseType();
-          if (potentialType !== null && potentialType !== undefined) {
+          if (potentialType !== null) {
             ctx.skipWhitespaceAndComments();
             // Check if next token is an identifier (variable name)
             // Also check that it's not a keyword or operator that would indicate it's an expression
@@ -361,9 +394,9 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
               if (!isKeyword) {
                 // It's a type declaration: "when Type variable"
                 whenType = potentialType;
-                const varNameStart = ctx.current;
+                const varNameStart = ctx.getCurrent();
                 const varName = ctx.consume(TokenType.IDENTIFIER, 'Expected variable name');
-                const varNameEnd = ctx.current;
+                const varNameEnd = ctx.getCurrent();
                 whenVariable = {
                   location: ctx.getLocation(varNameStart, varNameEnd),
                   text: varName.text,
@@ -371,7 +404,7 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
                 };
               } else {
                 // Next token is a keyword, so this is not a type declaration
-                ctx.current = savedPos;
+                ctx.setCurrent(savedPos);
                 const expr = ctx.parseExpression();
                 if (expr) {
                   whenValues.push(expr);
@@ -379,7 +412,7 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
               }
             } else {
               // Not a type declaration (no variable name after type), reset and parse as expression
-              ctx.current = savedPos;
+              ctx.setCurrent(savedPos);
               const expr = ctx.parseExpression();
               if (expr) {
                 whenValues.push(expr);
@@ -387,7 +420,7 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
             }
           } else {
             // Failed to parse type, reset and parse as expression
-            ctx.current = savedPos;
+            ctx.setCurrent(savedPos);
             const expr = ctx.parseExpression();
             if (expr) {
               whenValues.push(expr);
@@ -422,12 +455,12 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
           if (ctx.check(TokenType.RIGHT_BRACE)) {
             break;
           }
-          const beforeStmt = ctx.current;
+          const beforeStmt = ctx.getCurrent();
           const stmt = parseStatement(ctx);
           if (stmt) {
             statements.push(stmt);
           }
-          if (ctx.current === beforeStmt && !ctx.isAtEnd()) {
+          if (ctx.getCurrent() === beforeStmt && !ctx.isAtEnd()) {
             void ctx.advance();
           }
         }
@@ -441,7 +474,7 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
           // Create a type_match node with type and name children
           const typeMatchNode: ParseTreeNode = {
             children: [whenType, whenVariable],
-            location: ctx.getLocation(start, ctx.current),
+            location: ctx.getLocation(start, ctx.getCurrent()),
             type: 'type_match',
           };
           caseChildren.push(typeMatchNode);
@@ -455,7 +488,7 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
 
         cases.push({
           children: caseChildren,
-          location: ctx.getLocation(start, ctx.current),
+          location: ctx.getLocation(start, ctx.getCurrent()),
           type: 'switch_case',
         });
       }
@@ -474,20 +507,20 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
         !ctx.check(TokenType.RIGHT_BRACE) &&
         !ctx.isAtEnd()
       ) {
-        const beforeStmt = ctx.current;
+        const beforeStmt = ctx.getCurrent();
         const stmt = parseStatement(ctx);
         if (stmt) {
           statements.push(stmt);
         }
 
-        if (ctx.current === beforeStmt && !ctx.isAtEnd()) {
+        if (ctx.getCurrent() === beforeStmt && !ctx.isAtEnd()) {
           ctx.advance();
         }
       }
 
       cases.push({
         children: [caseValue, { children: statements, type: 'statements' }],
-        location: ctx.getLocation(start, ctx.current),
+        location: ctx.getLocation(start, ctx.getCurrent()),
         type: 'switch_case',
       });
     } else if (ctx.match(TokenType.DEFAULT)) {
@@ -501,20 +534,20 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
         !ctx.check(TokenType.RIGHT_BRACE) &&
         !ctx.isAtEnd()
       ) {
-        const beforeStmt = ctx.current;
+        const beforeStmt = ctx.getCurrent();
         const stmt = parseStatement(ctx);
         if (stmt) {
           statements.push(stmt);
         }
 
-        if (ctx.current === beforeStmt && !ctx.isAtEnd()) {
+        if (ctx.getCurrent() === beforeStmt && !ctx.isAtEnd()) {
           ctx.advance();
         }
       }
 
       defaultCase = {
         children: [{ children: statements, type: 'statements' }],
-        location: ctx.getLocation(start, ctx.current),
+        location: ctx.getLocation(start, ctx.getCurrent()),
         type: 'switch_case',
       };
     } else {
@@ -548,10 +581,10 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children: switchChildren,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'switch_statement',
   };
-}
+};
 
 /**
  * Parses a try-catch-finally statement block from the source code.
@@ -559,10 +592,10 @@ export function parseSwitchStatement(ctx: ParserContext): ParseTreeNode {
  * @returns The parsed try statement parse tree node.
  * @throws {Error} If the try statement is malformed or unexpected tokens are encountered.
  */
-export function parseTryStatement(ctx: ParserContext): ParseTreeNode {
+parseTryStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   const tryBlock = ctx.parseBlock();
 
@@ -594,7 +627,7 @@ export function parseTryStatement(ctx: ParserContext): ParseTreeNode {
         },
         catchBlock,
       ],
-      location: ctx.getLocation(start, ctx.current),
+      location: ctx.getLocation(start, ctx.getCurrent()),
       type: 'catch_clause',
     });
   }
@@ -616,55 +649,55 @@ export function parseTryStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'try_statement',
   };
-}
+};
 
 /**
  * Parses a break statement from the source code.
  * @param ctx - The parser context.
  * @returns The parsed break statement parse tree node.
  */
-export function parseBreakStatement(ctx: ParserContext): ParseTreeNode {
+parseBreakStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.SEMICOLON, 'Expected ; after break');
 
   return {
     children: [],
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'break_statement',
   };
-}
+};
 
 /**
  * Parses a continue statement from the source code.
  * @param ctx - The parser context.
  * @returns The parsed continue statement parse tree node.
  */
-export function parseContinueStatement(ctx: ParserContext): ParseTreeNode {
+parseContinueStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.SEMICOLON, 'Expected ; after continue');
 
   return {
     children: [],
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'continue_statement',
   };
-}
+};
 
 /**
  * Parses a throw statement from the source code.
  * @param ctx - The parser context.
  * @returns The parsed throw statement parse tree node.
  */
-export function parseThrowStatement(ctx: ParserContext): ParseTreeNode {
+parseThrowStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   const expression = ctx.parseExpression();
   ctx.skipWhitespaceAndComments();
@@ -678,19 +711,19 @@ export function parseThrowStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'throw_statement',
   };
-}
+};
 
 /**
  * Parses a return statement from the source code.
  * @param ctx - The parser context.
  * @returns The parsed return statement parse tree node.
  */
-export function parseReturnStatement(ctx: ParserContext): ParseTreeNode {
+parseReturnStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   let expression: ParseTreeNode | undefined = undefined;
 
   ctx.skipWhitespaceAndComments();
@@ -710,10 +743,10 @@ export function parseReturnStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'return_statement',
   };
-}
+};
 
 /**
  * Parse variable declaration.
@@ -721,8 +754,8 @@ export function parseReturnStatement(ctx: ParserContext): ParseTreeNode {
  * @param ctx - The parser context.
  * @returns The parsed variable declaration parse tree node, or null if parsing fails.
  */
-export function parseVariableDeclaration(ctx: ParserContext): ParseTreeNode | null {
-  const start = ctx.current;
+parseVariableDeclaration = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
+  const start = ctx.getCurrent();
   const type = ctx.parseType();
   if (!type) {
     return null;
@@ -733,7 +766,7 @@ export function parseVariableDeclaration(ctx: ParserContext): ParseTreeNode | nu
   // Parse declarators (can be multiple, separated by commas)
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Loop condition is intentional
   while (true) {
-    const declStart = ctx.current;
+    const declStart = ctx.getCurrent();
     ctx.skipWhitespaceAndComments();
     const name = ctx.consume(TokenType.IDENTIFIER, 'Expected variable name');
     let initializer: ParseTreeNode | undefined = undefined;
@@ -754,7 +787,7 @@ export function parseVariableDeclaration(ctx: ParserContext): ParseTreeNode | nu
 
     declarations.push({
       children: declChildren,
-      location: ctx.getLocation(declStart, ctx.current),
+      location: ctx.getLocation(declStart, ctx.getCurrent()),
       type: 'variable_declaration',
     });
 
@@ -774,18 +807,15 @@ export function parseVariableDeclaration(ctx: ParserContext): ParseTreeNode | nu
   const singleDeclarationCount = 1;
   const firstDeclarationIndex = 0;
   if (declarations.length > singleDeclarationCount) {
-    const statementNodes: ParseTreeNode[] = declarations.map(
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-      (decl: Readonly<ParseTreeNode>) => ({
-        children: [decl], // Put the variable_declaration directly as child
-        location: decl.location,
-        type: 'variable_declaration_statement',
-      })
-    );
+    const statementNodes: ParseTreeNode[] = declarations.map((decl: Readonly<ParseTreeNode>) => ({
+      children: [decl], // Put the variable_declaration directly as child
+      location: decl.location,
+      type: 'variable_declaration_statement',
+    }));
 
     return {
       children: statementNodes,
-      location: ctx.getLocation(start, ctx.current),
+      location: ctx.getLocation(start, ctx.getCurrent()),
       type: 'block',
     };
   }
@@ -793,10 +823,10 @@ export function parseVariableDeclaration(ctx: ParserContext): ParseTreeNode | nu
   // Single declaration - return as variable_declaration_statement
   return {
     children: [declarations[firstDeclarationIndex]],
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'variable_declaration_statement',
   };
-}
+};
 
 // Import loop parsing functions to avoid circular dependency
 // Loop functions defined below
@@ -811,17 +841,17 @@ export function parseVariableDeclaration(ctx: ParserContext): ParseTreeNode | nu
  * @returns The parsed for statement parse tree node.
  * @throws {Error} If the for statement is malformed or unexpected tokens are encountered.
  */
-export function parseForStatement(ctx: ParserContext): ParseTreeNode {
+parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
   const zeroIndex = 0;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.LEFT_PAREN, 'Expected ( after for');
 
   // Check if it's a for-each loop (Type variable : iterable)
   // We need to check this before traditional for loop parsing
   ctx.skipWhitespaceAndComments();
-  const savedPosForEach = ctx.current;
+  const savedPosForEach = ctx.getCurrent();
   if (ctx.checkType()) {
     const type = ctx.parseType();
     if (type) {
@@ -853,20 +883,20 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
 
           return {
             children,
-            location: ctx.getLocation(start, ctx.current),
+            location: ctx.getLocation(start, ctx.getCurrent()),
             type: 'for_each_statement',
           };
         } else {
           // Not a for-each, reset and parse as traditional for
-          ctx.current = savedPosForEach;
+          ctx.setCurrent(savedPosForEach);
         }
       } else {
         // Not a for-each, reset
-        ctx.current = savedPosForEach;
+        ctx.setCurrent(savedPosForEach);
       }
     } else {
       // Failed to parse type, reset
-      ctx.current = savedPosForEach;
+      ctx.setCurrent(savedPosForEach);
     }
   }
 
@@ -877,10 +907,10 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
    * Can be multiple expressions separated by commas: i=0, j=0.
    */
   let init: ParseTreeNode | null = null;
-  const initStart = ctx.current;
+  const initStart = ctx.getCurrent();
 
   // Try to parse as variable declaration first (without consuming semicolon)
-  const savedPosForInit = ctx.current;
+  const savedPosForInit = ctx.getCurrent();
   if (ctx.checkType()) {
     const type = ctx.parseType();
     if (type !== null) {
@@ -892,7 +922,7 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
         // Parse declarators (can be multiple, separated by commas)
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional infinite loop pattern
         while (true) {
-          const declStart = ctx.current;
+          const declStart = ctx.getCurrent();
           ctx.skipWhitespaceAndComments();
           const name = ctx.consume(TokenType.IDENTIFIER, 'Expected variable name');
           let initializer: ParseTreeNode | undefined = undefined;
@@ -912,7 +942,7 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
 
           declarations.push({
             children: declChildren,
-            location: ctx.getLocation(declStart, ctx.current),
+            location: ctx.getLocation(declStart, ctx.getCurrent()),
             type: 'variable_declaration',
           });
 
@@ -929,7 +959,6 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
         const singleDeclarationCount = 1;
         if (declarations.length > singleDeclarationCount) {
           const statementNodes: ParseTreeNode[] = declarations.map(
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
             (decl: Readonly<ParseTreeNode>) => ({
               children: [decl],
               location: decl.location,
@@ -938,19 +967,19 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
           );
           init = {
             children: statementNodes,
-            location: ctx.getLocation(initStart, ctx.current),
+            location: ctx.getLocation(initStart, ctx.getCurrent()),
             type: 'block',
           };
         } else {
           init = {
             children: [declarations[zeroIndex]],
-            location: ctx.getLocation(initStart, ctx.current),
+            location: ctx.getLocation(initStart, ctx.getCurrent()),
             type: 'variable_declaration_statement',
           };
         }
       } else {
         // Not a variable declaration, reset
-        ctx.current = savedPosForInit;
+        ctx.setCurrent(savedPosForInit);
       }
     }
   }
@@ -985,15 +1014,12 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
         const singleExpressionCount = 1;
         if (expressions.length > singleExpressionCount) {
           init = {
-            children: expressions.map(
-              // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-              (expr: Readonly<ParseTreeNode>) => ({
-                children: [expr],
-                location: expr.location,
-                type: 'expression_statement',
-              })
-            ),
-            location: ctx.getLocation(initStart, ctx.current),
+            children: expressions.map((expr: Readonly<ParseTreeNode>) => ({
+              children: [expr],
+              location: expr.location,
+              type: 'expression_statement',
+            })),
+            location: ctx.getLocation(initStart, ctx.getCurrent()),
             type: 'block',
           };
         } else {
@@ -1025,7 +1051,7 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
   let update: ParseTreeNode | null = null;
   if (!ctx.check(TokenType.RIGHT_PAREN)) {
     const updateExpressions: ParseTreeNode[] = [];
-    const updateStart = ctx.current;
+    const updateStart = ctx.getCurrent();
 
     const firstUpdate = ctx.parseExpression();
     if (firstUpdate) {
@@ -1047,15 +1073,12 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
       const singleExpressionCount = 1;
       if (updateExpressions.length > singleExpressionCount) {
         update = {
-          children: updateExpressions.map(
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-            (expr: Readonly<ParseTreeNode>) => ({
-              children: [expr],
-              location: expr.location,
-              type: 'expression_statement',
-            })
-          ),
-          location: ctx.getLocation(updateStart, ctx.current),
+          children: updateExpressions.map((expr: Readonly<ParseTreeNode>) => ({
+            children: [expr],
+            location: expr.location,
+            type: 'expression_statement',
+          })),
+          location: ctx.getLocation(updateStart, ctx.getCurrent()),
           type: 'block',
         };
       } else {
@@ -1077,10 +1100,10 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'for_statement',
   };
-}
+};
 
 /**
  * Parses a while loop statement from the source code.
@@ -1088,9 +1111,9 @@ export function parseForStatement(ctx: ParserContext): ParseTreeNode {
  * @returns The parsed while statement parse tree node.
  * @throws {Error} If the while statement is malformed or unexpected tokens are encountered.
  */
-export function parseWhileStatement(ctx: ParserContext): ParseTreeNode {
+parseWhileStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.LEFT_PAREN, 'Expected ( after while');
   ctx.skipWhitespaceAndComments();
@@ -1106,10 +1129,10 @@ export function parseWhileStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'while_statement',
   };
-}
+};
 
 /**
  * Parses a do-while loop statement from the source code.
@@ -1117,9 +1140,9 @@ export function parseWhileStatement(ctx: ParserContext): ParseTreeNode {
  * @returns The parsed do-while statement parse tree node.
  * @throws {Error} If the do-while statement is malformed or unexpected tokens are encountered.
  */
-export function parseDoWhileStatement(ctx: ParserContext): ParseTreeNode {
+parseDoWhileStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   const singleIndexOffset = 1;
-  const start = ctx.current - singleIndexOffset;
+  const start = ctx.getCurrent() - singleIndexOffset;
   ctx.skipWhitespaceAndComments();
   const body = parseStatement(ctx);
   ctx.skipWhitespaceAndComments();
@@ -1141,7 +1164,23 @@ export function parseDoWhileStatement(ctx: ParserContext): ParseTreeNode {
 
   return {
     children,
-    location: ctx.getLocation(start, ctx.current),
+    location: ctx.getLocation(start, ctx.getCurrent()),
     type: 'do_while_statement',
   };
-}
+};
+
+export {
+  parseBlock,
+  parseStatement,
+  parseIfStatement,
+  parseSwitchStatement,
+  parseTryStatement,
+  parseBreakStatement,
+  parseContinueStatement,
+  parseThrowStatement,
+  parseReturnStatement,
+  parseVariableDeclaration,
+  parseForStatement,
+  parseWhileStatement,
+  parseDoWhileStatement,
+};

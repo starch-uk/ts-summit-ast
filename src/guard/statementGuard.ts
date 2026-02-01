@@ -28,7 +28,7 @@ import type {
  * @param node - The AST node to check.
  * @returns True if the node is a Statement.
  */
-export function isStatement(node: ASTNode): node is Statement {
+function isStatement(node: ASTNode): node is Statement {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -57,7 +57,7 @@ export function isStatement(node: ASTNode): node is Statement {
  * @param node - The AST node to check.
  * @returns True if the node is an IfStatement.
  */
-export function isIfStatement(node: ASTNode): node is IfStatement {
+function isIfStatement(node: ASTNode): node is IfStatement {
   return 'kind' in node && node.kind === 'IfStatement';
 }
 
@@ -66,7 +66,7 @@ export function isIfStatement(node: ASTNode): node is IfStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ForLoopStatement.
  */
-export function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
+function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
   return 'kind' in node && node.kind === 'ForLoopStatement';
 }
 
@@ -75,7 +75,7 @@ export function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a WhileLoopStatement.
  */
-export function isWhileLoopStatement(node: ASTNode): node is WhileLoopStatement {
+function isWhileLoopStatement(node: ASTNode): node is WhileLoopStatement {
   return 'kind' in node && node.kind === 'WhileLoopStatement';
 }
 
@@ -85,7 +85,7 @@ export function isWhileLoopStatement(node: ASTNode): node is WhileLoopStatement 
  * @returns True if the node is a ForLoopStatement.
  * @deprecated Use isForLoopStatement instead.
  */
-export function isForStatement(node: ASTNode): node is ForLoopStatement {
+function isForStatement(node: ASTNode): node is ForLoopStatement {
   return isForLoopStatement(node);
 }
 
@@ -95,7 +95,7 @@ export function isForStatement(node: ASTNode): node is ForLoopStatement {
  * @returns True if the node is a WhileLoopStatement.
  * @deprecated Use isWhileLoopStatement instead.
  */
-export function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
+function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
   return isWhileLoopStatement(node);
 }
 
@@ -104,7 +104,7 @@ export function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a SwitchStatement.
  */
-export function isSwitchStatement(node: ASTNode): node is SwitchStatement {
+function isSwitchStatement(node: ASTNode): node is SwitchStatement {
   return 'kind' in node && node.kind === 'SwitchStatement';
 }
 
@@ -113,7 +113,7 @@ export function isSwitchStatement(node: ASTNode): node is SwitchStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ReturnStatement.
  */
-export function isReturnStatement(node: ASTNode): node is ReturnStatement {
+function isReturnStatement(node: ASTNode): node is ReturnStatement {
   return 'kind' in node && node.kind === 'ReturnStatement';
 }
 
@@ -122,7 +122,7 @@ export function isReturnStatement(node: ASTNode): node is ReturnStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a CompoundStatement.
  */
-export function isCompoundStatement(node: ASTNode): node is CompoundStatement {
+function isCompoundStatement(node: ASTNode): node is CompoundStatement {
   return 'kind' in node && node.kind === 'CompoundStatement';
 }
 
@@ -132,7 +132,7 @@ export function isCompoundStatement(node: ASTNode): node is CompoundStatement {
  * @returns True if the node is a CompoundStatement.
  * @deprecated Use isCompoundStatement instead.
  */
-export function isBlock(node: ASTNode): node is CompoundStatement {
+function isBlock(node: ASTNode): node is CompoundStatement {
   return isCompoundStatement(node);
 }
 
@@ -141,7 +141,7 @@ export function isBlock(node: ASTNode): node is CompoundStatement {
  * @param node - The AST node to check.
  * @returns True if the node is an ExpressionStatement.
  */
-export function isExpressionStatement(node: ASTNode): node is ExpressionStatement {
+function isExpressionStatement(node: ASTNode): node is ExpressionStatement {
   return 'kind' in node && node.kind === 'ExpressionStatement';
 }
 
@@ -150,9 +150,7 @@ export function isExpressionStatement(node: ASTNode): node is ExpressionStatemen
  * @param node - The AST node to check.
  * @returns True if the node is a VariableDeclarationStatement.
  */
-export function isVariableDeclarationStatement(
-  node: ASTNode
-): node is VariableDeclarationStatement {
+function isVariableDeclarationStatement(node: ASTNode): node is VariableDeclarationStatement {
   return 'kind' in node && node.kind === 'VariableDeclarationStatement';
 }
 
@@ -161,7 +159,7 @@ export function isVariableDeclarationStatement(
  * @param node - The AST node to check.
  * @returns True if the node is a DmlStatement.
  */
-export function isDmlStatement(node: ASTNode): node is DmlStatement {
+function isDmlStatement(node: ASTNode): node is DmlStatement {
   return 'kind' in node && node.kind === 'DmlStatement';
 }
 
@@ -170,7 +168,7 @@ export function isDmlStatement(node: ASTNode): node is DmlStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a BreakStatement.
  */
-export function isBreakStatement(node: ASTNode): node is BreakStatement {
+function isBreakStatement(node: ASTNode): node is BreakStatement {
   return 'kind' in node && node.kind === 'BreakStatement';
 }
 
@@ -179,7 +177,7 @@ export function isBreakStatement(node: ASTNode): node is BreakStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ContinueStatement.
  */
-export function isContinueStatement(node: ASTNode): node is ContinueStatement {
+function isContinueStatement(node: ASTNode): node is ContinueStatement {
   return 'kind' in node && node.kind === 'ContinueStatement';
 }
 
@@ -188,7 +186,7 @@ export function isContinueStatement(node: ASTNode): node is ContinueStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a ThrowStatement.
  */
-export function isThrowStatement(node: ASTNode): node is ThrowStatement {
+function isThrowStatement(node: ASTNode): node is ThrowStatement {
   return 'kind' in node && node.kind === 'ThrowStatement';
 }
 
@@ -197,7 +195,7 @@ export function isThrowStatement(node: ASTNode): node is ThrowStatement {
  * @param node - The AST node to check.
  * @returns True if the node is a TryStatement.
  */
-export function isTryStatement(node: ASTNode): node is TryStatement {
+function isTryStatement(node: ASTNode): node is TryStatement {
   return 'kind' in node && node.kind === 'TryStatement';
 }
 
@@ -206,7 +204,7 @@ export function isTryStatement(node: ASTNode): node is TryStatement {
  * @param node - The AST node to check.
  * @returns True if the node is an EnhancedForLoopStatement.
  */
-export function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLoopStatement {
+function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLoopStatement {
   return 'kind' in node && node.kind === 'EnhancedForLoopStatement';
 }
 
@@ -216,7 +214,7 @@ export function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLo
  * @returns True if the node is an EnhancedForLoopStatement.
  * @deprecated Use isEnhancedForLoopStatement instead.
  */
-export function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatement {
+function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatement {
   return isEnhancedForLoopStatement(node);
 }
 
@@ -225,7 +223,7 @@ export function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatem
  * @param node - The AST node to check.
  * @returns True if the node is a DoWhileLoopStatement.
  */
-export function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatement {
+function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatement {
   return 'kind' in node && node.kind === 'DoWhileLoopStatement';
 }
 
@@ -235,6 +233,30 @@ export function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatem
  * @returns True if the node is a DoWhileLoopStatement.
  * @deprecated Use isDoWhileLoopStatement instead.
  */
-export function isDoWhileStatement(node: ASTNode): node is DoWhileLoopStatement {
+function isDoWhileStatement(node: ASTNode): node is DoWhileLoopStatement {
   return isDoWhileLoopStatement(node);
 }
+
+export {
+  isStatement,
+  isIfStatement,
+  isForLoopStatement,
+  isWhileLoopStatement,
+  isForStatement,
+  isWhileStatement,
+  isSwitchStatement,
+  isReturnStatement,
+  isCompoundStatement,
+  isBlock,
+  isExpressionStatement,
+  isVariableDeclarationStatement,
+  isDmlStatement,
+  isBreakStatement,
+  isContinueStatement,
+  isThrowStatement,
+  isTryStatement,
+  isEnhancedForLoopStatement,
+  isForEachStatement,
+  isDoWhileLoopStatement,
+  isDoWhileStatement,
+};

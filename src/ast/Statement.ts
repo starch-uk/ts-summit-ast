@@ -12,6 +12,7 @@ import type { TypeRef } from './baseNode.js';
  * Alias for backward compatibility during migration.
  * @deprecated Use CompoundStatement instead.
  */
+// eslint-disable-next-line @typescript-eslint/no-type-alias -- Deprecated type alias for backward compatibility
 type Block = CompoundStatement;
 
 /**
@@ -91,7 +92,7 @@ interface DoWhileLoopStatement extends Statement {
 interface SwitchStatement extends Statement {
   readonly kind: 'SwitchStatement';
   readonly expression: Expression;
-  readonly cases: SwitchCase[];
+  readonly cases: readonly SwitchCase[];
   readonly defaultCase?: SwitchCase;
 }
 
@@ -127,7 +128,7 @@ interface SwitchCase extends ASTNode {
    * This corresponds to summit-ast's WhenType `downcast.declarations`.
    */
   readonly downcastDeclarations?: readonly VariableDeclaration[];
-  readonly statements: Statement[];
+  readonly statements: readonly Statement[];
 }
 
 /**
@@ -136,7 +137,7 @@ interface SwitchCase extends ASTNode {
 interface TryStatement extends Statement {
   readonly kind: 'TryStatement';
   readonly tryBlock: CompoundStatement;
-  readonly catchClauses: CatchClause[];
+  readonly catchClauses: readonly CatchClause[];
   readonly finallyBlock?: CompoundStatement;
 }
 
@@ -191,7 +192,7 @@ interface ThrowStatement extends Statement {
  */
 interface CompoundStatement extends Statement {
   readonly kind: 'CompoundStatement';
-  readonly statements: Statement[];
+  readonly statements: readonly Statement[];
 }
 
 /**

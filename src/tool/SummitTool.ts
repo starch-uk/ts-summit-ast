@@ -79,6 +79,16 @@ export class SummitTool {
   }
 
   /**
+   * Check if file is an Apex file.
+   * @param filePath - The file path to check.
+   * @returns True if the file has .cls or .trigger extension.
+   */
+  private static isApexFile(filePath: string): boolean {
+    const ext = extname(filePath).toLowerCase();
+    return ext === '.cls' || ext === '.trigger';
+  }
+
+  /**
    * Process a single file or directory.
    * @param input - The file or directory path to process.
    * @returns Array of processing results.
@@ -155,7 +165,7 @@ export class SummitTool {
         results.push(...this.processDirectory(fullPath));
       } else if (entry.isFile()) {
         // Process files with .cls or .trigger extensions
-        if (this.isApexFile(fullPath)) {
+        if (SummitTool.isApexFile(fullPath)) {
           const result = this.processFile(fullPath);
           if (result) {
             results.push(result);
@@ -232,16 +242,6 @@ export class SummitTool {
         success: false,
       };
     }
-  }
-
-  /**
-   * Check if file is an Apex file.
-   * @param filePath - The file path to check.
-   * @returns True if the file has .cls or .trigger extension.
-   */
-  private isApexFile(filePath: string): boolean {
-    const ext = extname(filePath).toLowerCase();
-    return ext === '.cls' || ext === '.trigger';
   }
 
   /**

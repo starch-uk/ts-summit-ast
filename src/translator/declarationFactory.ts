@@ -23,52 +23,32 @@ import type { NodeFactoryOptions } from './nodeFactory.js';
 import { NodeFactory } from './nodeFactory.js';
 
 /**
- * Options for creating AST nodes.
- */
-
-/**
  * Factory for declaration nodes.
  */
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Factory pattern requires class
-export class DeclarationFactory {
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
-  public static createVariableDeclaration(
+const DeclarationFactory = {
+  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags multiple params */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Class declaration requires 8 params
+  createClassDeclaration(
     name: string,
-    type: Readonly<TypeRef>,
-    initializer?: Readonly<Expression>,
+    members: Readonly<
+      readonly (
+        | Readonly<ClassDeclaration>
+        | Readonly<EnumDeclaration>
+        | Readonly<InterfaceDeclaration>
+        | Readonly<MethodDeclaration>
+        | Readonly<PropertyDeclaration>
+        | Readonly<VariableDeclaration>
+      )[]
+    >,
 
-    modifiers?: readonly Readonly<Modifier>[],
-    options?: Readonly<NodeFactoryOptions>
-  ): VariableDeclaration {
-    return {
-      initializer,
-      kind: 'VariableDeclaration',
-      location: options?.location,
-      modifiers: modifiers ? [...modifiers] : undefined,
-      name,
-      type,
-    };
-  }
-
-  // eslint-disable-next-line @typescript-eslint/max-params -- Class declaration requires 8 parameters
-  public static createClassDeclaration(
-    name: string,
-    members: readonly (
-      | ClassDeclaration
-      | EnumDeclaration
-      | InterfaceDeclaration
-      | MethodDeclaration
-      | PropertyDeclaration
-      | VariableDeclaration
-    )[],
-
-    modifiers: readonly Modifier[] = [],
+    modifiers: readonly Readonly<Modifier>[] = [],
     extendsClause?: Readonly<TypeRef>,
-    implementsClause?: readonly TypeRef[],
-    typeParameters?: readonly TypeParameter[],
+    implementsClause?: readonly Readonly<TypeRef>[],
+    typeParameters?: readonly Readonly<TypeParameter>[],
     options?: Readonly<NodeFactoryOptions>,
-    annotations?: readonly Annotation[]
+    annotations?: readonly Readonly<Annotation>[]
   ): ClassDeclaration {
+    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     const emptyArrayLength = 0;
     return {
       annotations:
@@ -82,23 +62,66 @@ export class DeclarationFactory {
       name,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
     };
-  }
+  },
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Interface declaration requires 6 parameters
-  public static createInterfaceDeclaration(
+  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Enum declaration requires 5 params
+  createEnumDeclaration(
     name: string,
-    members: readonly (
-      | ClassDeclaration
-      | InterfaceDeclaration
-      | MethodDeclaration
-      | PropertyDeclaration
-    )[],
+    values: Readonly<readonly Readonly<EnumValue>[]>,
 
-    modifiers: readonly Modifier[] = [],
-    extendsClause?: readonly TypeRef[],
-    typeParameters?: readonly TypeParameter[],
+    modifiers: readonly Readonly<Modifier>[] = [],
+
+    members?: Readonly<
+      readonly (
+        | Readonly<ClassDeclaration>
+        | Readonly<EnumDeclaration>
+        | Readonly<InterfaceDeclaration>
+        | Readonly<MethodDeclaration>
+        | Readonly<PropertyDeclaration>
+        | Readonly<VariableDeclaration>
+      )[]
+    >,
+    options?: Readonly<NodeFactoryOptions>
+  ): EnumDeclaration {
+    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
+    const emptyArrayLength = 0;
+    return {
+      kind: 'EnumDeclaration',
+      location: options?.location,
+      members: members ? [...members] : undefined,
+      modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
+      name,
+      values: [...values],
+    };
+  },
+  createEnumValue(id: Readonly<Identifier>, options?: Readonly<NodeFactoryOptions>): EnumValue {
+    return {
+      id,
+      kind: 'EnumValue',
+      location: options?.location,
+    };
+  },
+
+  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags */
+  // eslint-disable-next-line @typescript-eslint/max-params -- Interface declaration requires 6 params
+  createInterfaceDeclaration(
+    name: string,
+    members: Readonly<
+      readonly (
+        | Readonly<ClassDeclaration>
+        | Readonly<InterfaceDeclaration>
+        | Readonly<MethodDeclaration>
+        | Readonly<PropertyDeclaration>
+      )[]
+    >,
+
+    modifiers: readonly Readonly<Modifier>[] = [],
+    extendsClause?: readonly Readonly<TypeRef>[],
+    typeParameters?: readonly Readonly<TypeParameter>[],
     options?: Readonly<NodeFactoryOptions>
   ): InterfaceDeclaration {
+    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     const emptyArrayLength = 0;
     return {
       extendsClause: extendsClause ? [...extendsClause] : undefined,
@@ -109,18 +132,18 @@ export class DeclarationFactory {
       name,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
     };
-  }
+  },
 
   // eslint-disable-next-line @typescript-eslint/max-params -- Method declaration requires 9 parameters
-  public static createMethodDeclaration(
+  createMethodDeclaration(
     name: string,
     returnType: Readonly<TypeRef>,
-    parameters: readonly Parameter[] = [],
+    parameters: readonly Readonly<Parameter>[] = [],
     body?: Readonly<CompoundStatement>,
 
-    modifiers: readonly Modifier[] = [],
-    typeParameters?: readonly TypeParameter[],
-    annotations?: readonly Annotation[],
+    modifiers: readonly Readonly<Modifier>[] = [],
+    typeParameters?: readonly Readonly<TypeParameter>[],
+    annotations?: readonly Readonly<Annotation>[],
     isConstructor = false,
     options?: Readonly<NodeFactoryOptions>
   ): MethodDeclaration {
@@ -137,17 +160,17 @@ export class DeclarationFactory {
       returnType,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
     };
-  }
+  },
 
   // eslint-disable-next-line @typescript-eslint/max-params -- Property declaration requires 7 parameters
-  public static createPropertyDeclaration(
+  createPropertyDeclaration(
     name: string,
     type: Readonly<TypeRef>,
 
-    modifiers: readonly Modifier[] = [],
+    modifiers: readonly Readonly<Modifier>[] = [],
     getter?: Readonly<CompoundStatement>,
     setter?: Readonly<CompoundStatement>,
-    annotations?: readonly Annotation[],
+    annotations?: readonly Readonly<Annotation>[],
     options?: Readonly<NodeFactoryOptions>
   ): PropertyDeclaration {
     const emptyArrayLength = 0;
@@ -161,46 +184,9 @@ export class DeclarationFactory {
       setter,
       type,
     };
-  }
+  },
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Enum declaration requires 5 parameters
-  public static createEnumDeclaration(
-    name: string,
-
-    values: readonly EnumValue[],
-
-    modifiers: readonly Modifier[] = [],
-
-    members?: readonly (
-      | ClassDeclaration
-      | EnumDeclaration
-      | InterfaceDeclaration
-      | MethodDeclaration
-      | PropertyDeclaration
-      | VariableDeclaration
-    )[],
-    options?: NodeFactoryOptions
-  ): EnumDeclaration {
-    const emptyArrayLength = 0;
-    return {
-      kind: 'EnumDeclaration',
-      location: options?.location,
-      members: members ? [...members] : undefined,
-      modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
-      name,
-      values: [...values],
-    };
-  }
-
-  public static createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
-    return {
-      id,
-      kind: 'EnumValue',
-      location: options?.location,
-    };
-  }
-
-  public static createTypeParameter(
+  createTypeParameter(
     name: string,
     extendsBound?: Readonly<TypeRef>,
 
@@ -212,8 +198,29 @@ export class DeclarationFactory {
       location: options?.location,
       name,
     };
-  }
-}
+  },
+
+  createVariableDeclaration(
+    options: Readonly<
+      NodeFactoryOptions & {
+        initializer?: Readonly<Expression>;
+        modifiers?: readonly Readonly<Modifier>[];
+        name: string;
+        type: Readonly<TypeRef>;
+      }
+    >
+  ): VariableDeclaration {
+    const { name, type, initializer, modifiers } = options;
+    return {
+      initializer,
+      kind: 'VariableDeclaration',
+      location: options.location,
+      modifiers: modifiers ? [...modifiers] : undefined,
+      name,
+      type,
+    };
+  },
+};
 
 // ============================================================================
 // Type Factory
@@ -222,22 +229,22 @@ export class DeclarationFactory {
 /**
  * Factory for type nodes.
  */
-export class TypeFactory {
-  static createPrimitiveType(name: string, options?: NodeFactoryOptions): TypeRef {
+const TypeFactory = {
+  createArrayType(
+    elementType: Readonly<TypeRef>,
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default array dimension
+    dimensions = 1,
+    options?: Readonly<NodeFactoryOptions>
+  ): TypeRef {
     return {
-      arrayNesting: 0,
-      components: [
-        {
-          args: [],
-          id: NodeFactory.createIdentifier(name, options),
-        },
-      ],
+      arrayNesting: elementType.arrayNesting + dimensions,
+      components: elementType.components,
       kind: 'TypeRef',
-      location: options?.location,
+      location: options?.location ?? elementType.location,
     };
-  }
+  },
 
-  static createClassType(
+  createClassType(
     name: string,
     packageName?: string,
     options?: Readonly<NodeFactoryOptions>
@@ -254,26 +261,14 @@ export class TypeFactory {
       kind: 'TypeRef',
       location: options?.location,
     };
-  }
+  },
 
-  static createArrayType(
-    elementType: Readonly<TypeRef>,
-    dimensions = 1,
-    options?: Readonly<NodeFactoryOptions>
-  ): TypeRef {
-    return {
-      arrayNesting: elementType.arrayNesting + dimensions,
-      components: elementType.components,
-      kind: 'TypeRef',
-      location: options?.location ?? elementType.location,
-    };
-  }
-
-  static createGenericType(
+  createGenericType(
     baseType: Readonly<TypeRef>,
     typeArguments: readonly TypeRef[],
     options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Getting last array index
     const lastComponentIndex = baseType.components.length - 1;
     const lastComponent: TypeRefComponent = {
       ...baseType.components[lastComponentIndex],
@@ -281,9 +276,26 @@ export class TypeFactory {
     };
     return {
       arrayNesting: baseType.arrayNesting,
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Slice from start index
       components: [...baseType.components.slice(0, lastComponentIndex), lastComponent],
       kind: 'TypeRef',
       location: options?.location ?? baseType.location,
     };
-  }
-}
+  },
+
+  createPrimitiveType(name: string, options?: Readonly<NodeFactoryOptions>): TypeRef {
+    return {
+      arrayNesting: 0,
+      components: [
+        {
+          args: [],
+          id: NodeFactory.createIdentifier(name, options),
+        },
+      ],
+      kind: 'TypeRef',
+      location: options?.location,
+    };
+  },
+};
+
+export { DeclarationFactory, TypeFactory };

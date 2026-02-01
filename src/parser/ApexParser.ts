@@ -36,42 +36,45 @@ import { parseStatement, parseVariableDeclaration } from './statementParser.js';
 
 /**
  * Parser context interface that provides parsing methods and token utilities.
+ * Mutable state is accessed via getters/setters so the type is readonly for callers.
  */
-export interface ParserContext {
-  readonly tokens: Token[];
+interface ParserContext {
+  readonly tokens: readonly Token[];
   readonly source: string;
-  current: number;
-  pendingGreaterThan: number;
+  readonly getCurrent: () => number;
+  readonly setCurrent: (index: number) => void;
+  readonly getPendingGreaterThan: () => number;
+  readonly setPendingGreaterThan: (value: number) => void;
 
-  parseDeclaration: () => ParseTreeNode | null;
-  parseClassMember: () => ParseTreeNode | null;
-  parseParameter: () => ParseTreeNode | null;
-  parseAnnotation: () => ParseTreeNode | null;
-  parseAnnotationArgument: () => ParseTreeNode | null;
-  parseEnumConstant: () => ParseTreeNode | null;
-  parseTypeParameters: () => ParseTreeNode[];
-  parseTypeParameter: () => ParseTreeNode | null;
-  parseType: () => ParseTreeNode | null;
-  checkType: () => boolean;
-  parseBlock: (isClassBody?: boolean) => ParseTreeNode;
-  parseStatement: () => ParseTreeNode | null;
-  parseExpression: () => ParseTreeNode | null;
-  parseVariableDeclaration: () => ParseTreeNode | null;
-  parseSoqlSoslQuery: () => ParseTreeNode;
-  parseNewExpression: () => ParseTreeNode;
-  parseLambdaParameter: () => ParseTreeNode | null;
-  parsePrimary: () => ParseTreeNode | null;
-  match: (...types: TokenType[]) => boolean;
-  check: (type: TokenType, ...types: TokenType[]) => boolean;
-  advance: () => Token;
-  isAtEnd: () => boolean;
-  peek: (offset?: number) => Token;
-  previous: () => Token;
-  consume: (type: TokenType, message: string) => Token;
-  skipWhitespaceAndComments: () => void;
-  getLocation: (start: number, end: number) => SourceRange;
-  locationToRange: (location: SourceLocation) => SourceRange;
-  combineLocations: (loc1: SourceRange, loc2: SourceRange) => SourceRange;
+  readonly parseDeclaration: () => ParseTreeNode | null;
+  readonly parseClassMember: () => ParseTreeNode | null;
+  readonly parseParameter: () => ParseTreeNode | null;
+  readonly parseAnnotation: () => ParseTreeNode | null;
+  readonly parseAnnotationArgument: () => ParseTreeNode | null;
+  readonly parseEnumConstant: () => ParseTreeNode | null;
+  readonly parseTypeParameters: () => readonly ParseTreeNode[];
+  readonly parseTypeParameter: () => ParseTreeNode | null;
+  readonly parseType: () => ParseTreeNode | null;
+  readonly checkType: () => boolean;
+  readonly parseBlock: (isClassBody?: boolean) => ParseTreeNode;
+  readonly parseStatement: () => ParseTreeNode | null;
+  readonly parseExpression: () => ParseTreeNode | null;
+  readonly parseVariableDeclaration: () => ParseTreeNode | null;
+  readonly parseSoqlSoslQuery: () => ParseTreeNode;
+  readonly parseNewExpression: () => ParseTreeNode;
+  readonly parseLambdaParameter: () => ParseTreeNode | null;
+  readonly parsePrimary: () => ParseTreeNode | null;
+  readonly match: (...types: readonly TokenType[]) => boolean;
+  readonly check: (type: TokenType, ...types: readonly TokenType[]) => boolean;
+  readonly advance: () => Token;
+  readonly isAtEnd: () => boolean;
+  readonly peek: (offset?: number) => Token;
+  readonly previous: () => Token;
+  readonly consume: (type: TokenType, message: string) => Token;
+  readonly skipWhitespaceAndComments: () => void;
+  readonly getLocation: (start: number, end: number) => SourceRange;
+  readonly locationToRange: (location: SourceLocation) => SourceRange;
+  readonly combineLocations: (loc1: SourceRange, loc2: SourceRange) => SourceRange;
 }
 
 /**
@@ -79,11 +82,13 @@ export interface ParserContext {
  * Implements ParserContext and delegates parsing to helper modules.
  * @throws {Error} If parsing fails due to malformed input or unexpected tokens.
  */
-export class ApexParser implements ParserContext {
+class ApexParser implements ParserContext {
   public readonly tokens: Token[] = [];
   public readonly source: string = '';
-  public current = 0;
-  public pendingGreaterThan = 0;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial index value
+  private currentIndex = 0;
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial counter value
+  private pendingGreaterThanValue = 0;
 
   // Constants for array indices and offsets
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index constant
@@ -102,6 +107,22 @@ export class ApexParser implements ParserContext {
     this.tokens = lexer.tokenize();
   }
 
+  public getCurrent(): number {
+    return this.currentIndex;
+  }
+
+  public setCurrent(index: number): void {
+    this.currentIndex = index;
+  }
+
+  public getPendingGreaterThan(): number {
+    return this.pendingGreaterThanValue;
+  }
+
+  public setPendingGreaterThan(value: number): void {
+    this.pendingGreaterThanValue = value;
+  }
+
   /**
    * Parse the source code into a parse tree.
    * @returns The parse tree, or null if parsing fails.
@@ -109,7 +130,7 @@ export class ApexParser implements ParserContext {
   public parse(): ParseTreeNode | null {
     try {
       // Reset pendingGreaterThan at the start of parsing
-      this.pendingGreaterThan = 0;
+      this.setPendingGreaterThan(this.zeroIndex);
       return parseCompilationUnit(this);
     } catch {
       // Silently return null on parse errors
@@ -146,7 +167,7 @@ export class ApexParser implements ParserContext {
     return parseEnumConstant(this);
   }
 
-  public parseTypeParameters(): ParseTreeNode[] {
+  public parseTypeParameters(): readonly ParseTreeNode[] {
     return parseTypeParameters(this);
   }
 
@@ -214,7 +235,7 @@ export class ApexParser implements ParserContext {
   public check(type: TokenType, ...types: TokenType[]): boolean {
     // If we have pending > tokens from RIGHT_SHIFT, and we're checking for GREATER_THAN, return true
     const zeroPending = 0;
-    if (type === TokenType.GREATER_THAN && this.pendingGreaterThan > zeroPending) {
+    if (type === TokenType.GREATER_THAN && this.getPendingGreaterThan() > zeroPending) {
       return true;
     }
     if (this.isAtEnd()) {
@@ -241,7 +262,7 @@ export class ApexParser implements ParserContext {
 
   public advance(): Token {
     if (!this.isAtEnd()) {
-      this.current++;
+      this.setCurrent(this.getCurrent() + this.singleIndexOffset);
     }
     return this.previous();
   }
@@ -252,20 +273,20 @@ export class ApexParser implements ParserContext {
 
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default offset
   public peek(offset = 0): Token {
-    const pos = this.current + offset;
+    const pos = this.getCurrent() + offset;
     const lastElementOffset = 1;
     return this.tokens[pos] ?? this.tokens[this.tokens.length - lastElementOffset];
   }
 
   public previous(): Token {
-    return this.tokens[this.current - this.singleIndexOffset] ?? this.tokens[this.zeroIndex];
+    return this.tokens[this.getCurrent() - this.singleIndexOffset] ?? this.tokens[this.zeroIndex];
   }
 
   public consume(type: TokenType, message: string): Token {
     // If we have pending > tokens from RIGHT_SHIFT, use one of them
     const zeroPending = 0;
-    if (type === TokenType.GREATER_THAN && this.pendingGreaterThan > zeroPending) {
-      this.pendingGreaterThan--;
+    if (type === TokenType.GREATER_THAN && this.getPendingGreaterThan() > zeroPending) {
+      this.setPendingGreaterThan(this.getPendingGreaterThan() - this.singleIndexOffset);
       // Return a synthetic GREATER_THAN token
       const currentToken = this.peek();
       return {
@@ -282,7 +303,7 @@ export class ApexParser implements ParserContext {
       this.peek().type === TokenType.RIGHT_SHIFT
     ) {
       this.advance(); // Consume the RIGHT_SHIFT
-      this.pendingGreaterThan++; // Mark that we have one more > available
+      this.setPendingGreaterThan(this.getPendingGreaterThan() + this.singleIndexOffset); // Mark that we have one more > available
       // Return a synthetic GREATER_THAN token
       const consumedToken = this.previous();
       return {
@@ -391,7 +412,10 @@ export class ApexParser implements ParserContext {
  * @param source - The Apex source code to parse.
  * @returns The parse tree node, or null if parsing fails.
  */
-export function parseApex(source: string): ParseTreeNode | null {
+function parseApex(source: string): ParseTreeNode | null {
   const parser = new ApexParser(source);
   return parser.parse();
 }
+
+export type { ParserContext };
+export { ApexParser, parseApex };

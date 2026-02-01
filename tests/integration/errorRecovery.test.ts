@@ -6,6 +6,7 @@
 import { parseApexCode } from '../../src/utils/apexParser.js';
 import { validateAST } from '../../src/utils/astValidation.js';
 import { findFirstNodeOfType } from '../translateHelpers.js';
+import type { ClassDeclaration } from '../../src/ast/declaration.js';
 import { isClassDeclaration, isMethodDeclaration } from '../../src/guard/index.js';
 
 describe('Error Recovery and Partial Parsing', () => {
@@ -83,7 +84,9 @@ describe('Error Recovery and Partial Parsing', () => {
         // Should have at least the valid method
         if (classDecl) {
           const validMethod = classDecl.members.find(
-            (m) => isMethodDeclaration(m) && m.name === 'validMethod'
+            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
+            (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
+              isMethodDeclaration(m) && m.name === 'validMethod'
           );
           expect(validMethod).toBeDefined();
         }
@@ -314,7 +317,7 @@ describe('Error Recovery and Partial Parsing', () => {
       // Create deeply nested if statements
       let apexCode = 'public class Test { public void method() {\n';
       for (let i = 0; i < 50; i++) {
-        apexCode += '  '.repeat(i + 1) + `if (x > ${i}) {\n`;
+        apexCode += '  '.repeat(i + 1) + `if (x > ${String(i)}) {\n`;
       }
       for (let i = 50; i > 0; i--) {
         apexCode += '  '.repeat(i) + '}\n';

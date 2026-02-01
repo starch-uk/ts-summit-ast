@@ -227,9 +227,9 @@ describe('Expression Translation', () => {
 
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have no children").that(node?.getChildren()).isEmpty()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(0);
   });
 
@@ -239,9 +239,9 @@ describe('Expression Translation', () => {
 
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have no children").that(node?.getChildren()).isEmpty()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(0);
   });
 
@@ -260,9 +260,9 @@ describe('Expression Translation', () => {
 
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertThat(node?.id?.asCodeString()).isEqualTo("id")
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    expect(node!.name).toBe('id');
+    expect(node.name).toBe('id');
   });
 
   it('soql primary translation has bound expressions', () => {
@@ -325,13 +325,12 @@ describe('Expression Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have two children").that(node.getChildren()).hasSize(2)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(2);
     // Original: assertThat(node.isSafe).isFalse()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    expect(node!.isSafe).toBe(false);
+    expect(node.isSafe).toBe(false);
     // Original: assertThat(node.field.asCodeString()).isEqualTo("y")
     expect(node.fieldName).toBe('y');
   });
@@ -352,9 +351,9 @@ describe('Expression Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have two children").that(node.getChildren()).hasSize(2)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(2);
   });
 
@@ -532,9 +531,9 @@ describe('Expression Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertWithMessage("Node should have two children").that(node.getChildren()).hasSize(2)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+    const children = getNodeChildren(node);
     expect(children.length).toBe(2);
     // Original: assertThat(node.type.asCodeString()).isEqualTo("String")
     // Note: Type may be accessed via node.type (TypeRef)
@@ -624,6 +623,7 @@ describe('SOQL and SOSL Translation', () => {
     const node = findFirstNodeOfType(root, isSoqlQueryExpression);
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: assertThat(node!!.query).isEqualTo(query)
     expect(node.query).toBe(query);
     // Original: assertThat(node.bindings).isEmpty()
@@ -906,9 +906,11 @@ describe('Literal Expression Translation', () => {
       expect(node.arguments).toHaveLength(1);
       expect(node.target).not.toBeUndefined();
       expect(node.target).not.toBeNull();
-      expect(isStringLiteral(node.target!)).toBe(true);
-      if (isStringLiteral(node.target!)) {
-        expect(node.target.value).toBe('test');
+      if (node.target) {
+        expect(isStringLiteral(node.target)).toBe(true);
+        if (isStringLiteral(node.target)) {
+          expect(node.target.value).toBe('test');
+        }
       }
     }
   });
@@ -923,8 +925,8 @@ describe('Literal Expression Translation', () => {
       expect(node.arguments).toHaveLength(1);
       expect(node.target).not.toBeUndefined();
       expect(node.target).not.toBeNull();
-      expect(isStringLiteral(node.target!)).toBe(true);
-      if (isStringLiteral(node.target!)) {
+      if (node.target && isStringLiteral(node.target)) {
+        expect(isStringLiteral(node.target)).toBe(true);
         expect(node.target.value).toBe('a,b,c');
       }
     }
@@ -940,8 +942,8 @@ describe('Literal Expression Translation', () => {
       expect(node.arguments).toHaveLength(2);
       expect(node.target).not.toBeUndefined();
       expect(node.target).not.toBeNull();
-      expect(isStringLiteral(node.target!)).toBe(true);
-      if (isStringLiteral(node.target!)) {
+      if (node.target && isStringLiteral(node.target)) {
+        expect(isStringLiteral(node.target)).toBe(true);
         expect(node.target.value).toBe('abc123');
       }
     }
@@ -957,8 +959,8 @@ describe('Literal Expression Translation', () => {
       expect(node.arguments).toHaveLength(2);
       expect(node.target).not.toBeUndefined();
       expect(node.target).not.toBeNull();
-      expect(isStringLiteral(node.target!)).toBe(true);
-      if (isStringLiteral(node.target!)) {
+      if (node.target && isStringLiteral(node.target)) {
+        expect(isStringLiteral(node.target)).toBe(true);
         expect(node.target.value).toBe('abc123');
       }
     }
@@ -996,10 +998,10 @@ describe('Initializer Translation', () => {
 
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
+    if (!node) throw new Error('Expected node to be defined');
     // Original: val ctorInitializer = node.initializer as? ConstructorInitializer
     // Original: assertNotNull(ctorInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+    const { initializer } = node;
 
     expect(isConstructorInitializer(initializer)).toBe(true);
     // Original: assertThat(ctorInitializer.type.asCodeString()).isEqualTo("String")

@@ -28,7 +28,10 @@ const condition = NodeFactory.createBooleanLiteral(true);
 const thenBody = NodeFactory.createReturnStatement(
   NodeFactory.createStringLiteral('success', '"success"')
 );
-const ifStmt = NodeFactory.createIfStatement(condition, thenBody);
+const ifStmt = NodeFactory.createIfStatement({
+  condition,
+  thenStatement: thenBody,
+});
 console.log('If statement:', ifStmt);
 
 // Example 3: Translating from parse tree

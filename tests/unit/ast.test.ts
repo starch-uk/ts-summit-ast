@@ -49,17 +49,17 @@ describe('Visitor Pattern', () => {
       const visitedKinds: string[] = [];
 
       class CustomVisitor extends DefaultVisitor {
-        override visit(node: ASTNode): void {
+        public override visit(node: ASTNode): void {
           visitedKinds.push(node.kind);
           super.visit(node);
         }
       }
 
       const visitor = new CustomVisitor();
-      const ifStmt = NodeFactory.createIfStatement(
-        NodeFactory.createBooleanLiteral(true),
-        NodeFactory.createReturnStatement()
-      );
+      const ifStmt = NodeFactory.createIfStatement({
+        condition: NodeFactory.createBooleanLiteral(true),
+        thenStatement: NodeFactory.createReturnStatement(),
+      });
 
       visitor.visit(ifStmt);
       expect(visitedKinds).toContain('IfStatement');
@@ -69,34 +69,36 @@ describe('Visitor Pattern', () => {
       const visitedKinds: string[] = [];
 
       class CountingVisitor extends DefaultVisitor {
-        override visit(node: ASTNode): void {
+        public override visit(node: ASTNode): void {
           visitedKinds.push(node.kind);
           // Visit children after recording this node
           this.visitChildren(node);
         }
 
-        override visitChildren(node: ASTNode): void[] {
+        public override visitChildren(node: ASTNode): never[] {
           if ('condition' in node && node.condition != null) {
-            this.visit(node.condition as ASTNode);
+            this.visit(node.condition);
           }
           if ('thenStatement' in node && node.thenStatement != null) {
-            this.visit(node.thenStatement as ASTNode);
+            this.visit(node.thenStatement);
           }
           if ('elseStatement' in node && node.elseStatement != null) {
-            this.visit(node.elseStatement as ASTNode);
+            this.visit(node.elseStatement);
           }
           if ('expression' in node && node.expression != null) {
-            this.visit(node.expression as ASTNode);
+            this.visit(node.expression);
           }
           return [];
         }
       }
 
       const visitor = new CountingVisitor();
-      const ifStmt = NodeFactory.createIfStatement(
-        NodeFactory.createBooleanLiteral(true),
-        NodeFactory.createReturnStatement(NodeFactory.createStringLiteral('result', '"result"'))
-      );
+      const ifStmt = NodeFactory.createIfStatement({
+        condition: NodeFactory.createBooleanLiteral(true),
+        thenStatement: NodeFactory.createReturnStatement(
+          NodeFactory.createStringLiteral('result', '"result"')
+        ),
+      });
 
       visitor.visit(ifStmt);
       expect(visitedKinds.length).toBeGreaterThan(1);
@@ -688,7 +690,7 @@ describe('AST Validation', () => {
       const thenStatement = NodeFactory.createReturnStatement(
         NodeFactory.createNumberLiteral(42, '42')
       );
-      const ifStmt = NodeFactory.createIfStatement(condition, thenStatement);
+      const ifStmt = NodeFactory.createIfStatement({ condition, thenStatement });
       const result = validateAST(ifStmt);
 
       expect(result.valid).toBe(true);
@@ -711,7 +713,10 @@ describe('AST Validation', () => {
         start: { column: 10, line: 1 },
       };
       const condition = NodeFactory.createBooleanLiteral(true, { location: invalidLocation });
-      const ifStmt = NodeFactory.createIfStatement(condition, NodeFactory.createReturnStatement());
+      const ifStmt = NodeFactory.createIfStatement({
+        condition,
+        thenStatement: NodeFactory.createReturnStatement(),
+      });
       const result = validateAST(ifStmt);
 
       expect(result.valid).toBe(false);
@@ -784,7 +789,7 @@ describe('AST Validation', () => {
       const thenStatement = NodeFactory.createReturnStatement(
         NodeFactory.createStringVal('result', '"result"')
       );
-      const ifStmt = NodeFactory.createIfStatement(condition, thenStatement);
+      const ifStmt = NodeFactory.createIfStatement({ condition, thenStatement });
       const stats = getASTStatistics(ifStmt);
 
       expect(stats.totalNodes).toBeGreaterThan(1);

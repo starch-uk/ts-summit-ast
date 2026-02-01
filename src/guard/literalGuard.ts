@@ -20,7 +20,7 @@ import type {
  * @param node - The AST node to check.
  * @returns True if the node is a Literal.
  */
-export function isLiteral(node: ASTNode): node is Literal {
+function isLiteral(node: ASTNode): node is Literal {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -42,7 +42,7 @@ export function isLiteral(node: ASTNode): node is Literal {
  * @param node - The AST node to check.
  * @returns True if the node is a StringVal.
  */
-export function isStringVal(node: ASTNode): node is StringVal {
+function isStringVal(node: ASTNode): node is StringVal {
   return 'kind' in node && node.kind === 'StringVal';
 }
 
@@ -52,7 +52,7 @@ export function isStringVal(node: ASTNode): node is StringVal {
  * @returns True if the node is a StringVal.
  * @deprecated Use isStringVal instead.
  */
-export function isStringLiteral(node: ASTNode): node is StringVal {
+function isStringLiteral(node: ASTNode): node is StringVal {
   return isStringVal(node);
 }
 
@@ -61,7 +61,7 @@ export function isStringLiteral(node: ASTNode): node is StringVal {
  * @param node - The AST node to check.
  * @returns True if the node is an IntegerVal.
  */
-export function isIntegerVal(node: ASTNode): node is IntegerVal {
+function isIntegerVal(node: ASTNode): node is IntegerVal {
   return 'kind' in node && node.kind === 'IntegerVal';
 }
 
@@ -71,7 +71,7 @@ export function isIntegerVal(node: ASTNode): node is IntegerVal {
  * @returns True if the node is an IntegerVal.
  * @deprecated Use isIntegerVal instead.
  */
-export function isIntegerLiteral(node: ASTNode): node is IntegerVal {
+function isIntegerLiteral(node: ASTNode): node is IntegerVal {
   return isIntegerVal(node);
 }
 
@@ -80,7 +80,7 @@ export function isIntegerLiteral(node: ASTNode): node is IntegerVal {
  * @param node - The AST node to check.
  * @returns True if the node is a DoubleVal.
  */
-export function isDoubleVal(node: ASTNode): node is DoubleVal {
+function isDoubleVal(node: ASTNode): node is DoubleVal {
   return 'kind' in node && node.kind === 'DoubleVal';
 }
 
@@ -89,7 +89,7 @@ export function isDoubleVal(node: ASTNode): node is DoubleVal {
  * @param node - The AST node to check.
  * @returns True if the node is a LongVal.
  */
-export function isLongVal(node: ASTNode): node is LongVal {
+function isLongVal(node: ASTNode): node is LongVal {
   return 'kind' in node && node.kind === 'LongVal';
 }
 
@@ -99,7 +99,7 @@ export function isLongVal(node: ASTNode): node is LongVal {
  * @returns True if the node is a LongVal.
  * @deprecated Use isLongVal instead.
  */
-export function isLongLiteral(node: ASTNode): node is LongVal {
+function isLongLiteral(node: ASTNode): node is LongVal {
   return isLongVal(node);
 }
 
@@ -108,7 +108,7 @@ export function isLongLiteral(node: ASTNode): node is LongVal {
  * @param node - The AST node to check.
  * @returns True if the node is a DecimalVal.
  */
-export function isDecimalVal(node: ASTNode): node is DecimalVal {
+function isDecimalVal(node: ASTNode): node is DecimalVal {
   return 'kind' in node && node.kind === 'DecimalVal';
 }
 
@@ -118,9 +118,7 @@ export function isDecimalVal(node: ASTNode): node is DecimalVal {
  * @returns True if the node is a numeric literal.
  * @deprecated Use specific type guards (isIntegerVal, isDoubleVal, etc.) instead.
  */
-export function isNumberLiteral(
-  node: ASTNode
-): node is DecimalVal | DoubleVal | IntegerVal | LongVal {
+function isNumberLiteral(node: ASTNode): node is DecimalVal | DoubleVal | IntegerVal | LongVal {
   return (
     'kind' in node &&
     (node.kind === 'IntegerVal' ||
@@ -135,7 +133,7 @@ export function isNumberLiteral(
  * @param node - The AST node to check.
  * @returns True if the node is a BooleanVal.
  */
-export function isBooleanVal(node: ASTNode): node is BooleanVal {
+function isBooleanVal(node: ASTNode): node is BooleanVal {
   return 'kind' in node && node.kind === 'BooleanVal';
 }
 
@@ -145,7 +143,7 @@ export function isBooleanVal(node: ASTNode): node is BooleanVal {
  * @returns True if the node is a BooleanVal.
  * @deprecated Use isBooleanVal instead.
  */
-export function isBooleanLiteral(node: ASTNode): node is BooleanVal {
+function isBooleanLiteral(node: ASTNode): node is BooleanVal {
   return isBooleanVal(node);
 }
 
@@ -154,7 +152,7 @@ export function isBooleanLiteral(node: ASTNode): node is BooleanVal {
  * @param node - The AST node to check.
  * @returns True if the node is a NullVal.
  */
-export function isNullVal(node: ASTNode): node is NullVal {
+function isNullVal(node: ASTNode): node is NullVal {
   return 'kind' in node && node.kind === 'NullVal';
 }
 
@@ -164,6 +162,23 @@ export function isNullVal(node: ASTNode): node is NullVal {
  * @returns True if the node is a NullVal.
  * @deprecated Use isNullVal instead.
  */
-export function isNullLiteral(node: ASTNode): node is NullVal {
+function isNullLiteral(node: ASTNode): node is NullVal {
   return isNullVal(node);
 }
+
+export {
+  isLiteral,
+  isStringVal,
+  isStringLiteral,
+  isIntegerVal,
+  isIntegerLiteral,
+  isDoubleVal,
+  isLongVal,
+  isLongLiteral,
+  isDecimalVal,
+  isNumberLiteral,
+  isBooleanVal,
+  isBooleanLiteral,
+  isNullVal,
+  isNullLiteral,
+};

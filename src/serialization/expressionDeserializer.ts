@@ -15,6 +15,7 @@ import type {
   Expression,
 } from '../ast/expression.js';
 import type { TypeRef, Identifier } from '../ast/baseNode.js';
+import type { Initializer } from '../ast/initializer.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
 import { isExpression, isIdentifier } from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
@@ -26,49 +27,146 @@ import {
   getStringProperty,
 } from './astDeserializer.js';
 
+// ============================================================================
+// Helper: operator validation (used before main deserializers)
+// ============================================================================
+
+/**
+ * Validate and narrow a binary operator string to BinaryExpression['operator'].
+ * @param operator - The operator string to convert.
+ * @returns The validated binary operator.
+ * @throws {Error} If the operator is invalid.
+ */
+function toBinaryOperator(operator: string): BinaryExpression['operator'] {
+  switch (operator) {
+    case '-':
+    case '!=':
+    case '!==':
+    case '*':
+    case '/':
+    case '&':
+    case '&&':
+    case '%':
+    case '^':
+    case '+':
+    case '<':
+    case '<<':
+    case '<=':
+    case '==':
+    case '===':
+    case '>':
+    case '>=':
+    case '>>':
+    case '>>>':
+    case '|':
+    case '||':
+    case 'instanceof':
+      return operator;
+    default:
+      throw new Error(`Invalid binary operator: ${operator}`);
+  }
+}
+
+/**
+ * Validate and narrow an assign operator string to AssignExpression['operator'].
+ * @param operator - The operator string to convert.
+ * @returns The validated assign operator.
+ * @throws {Error} If the operator is invalid.
+ */
+function toAssignOperator(operator: string): AssignExpression['operator'] {
+  switch (operator) {
+    case '-=':
+    case '*=':
+    case '/=':
+    case '&=':
+    case '%=':
+    case '^=':
+    case '+=':
+    case '<<=':
+    case '=':
+    case '>>=':
+    case '>>>=':
+    case '|=':
+      return operator;
+    default:
+      throw new Error(`Invalid assign operator: ${operator}`);
+  }
+}
+
+/**
+ * Forward declaration for mutual recursion with deserializeTypeRefNode.
+ * @throws {Error} If called before assignment (stub implementation).
+ */
+let deserializeTypeRef: (
+  typeRefJson: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+) => TypeRef = (): TypeRef => {
+  throw new Error('deserializeTypeRef not yet initialized');
+};
+
+/**
+ * Deserializes a TypeRef node from JSON.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized TypeRef node.
+ * @throws {Error} If the deserializer instance is not provided.
+ */
+function deserializeTypeRefNode(
+  json: Readonly<JsonASTNode>,
+  locationOption?: Readonly<{ location: SourceRange }>,
+  deserializer?: Readonly<JsonDeserializer>
+): TypeRef {
+  if (!deserializer) {
+    throw new Error('Deserializer instance required');
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+  const componentsArray = json.components as JsonASTNode[] | undefined;
+  const components = (componentsArray ?? []).map((comp: Readonly<JsonASTNode>) => ({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+    args: ((comp as { args?: JsonASTNode[] }).args ?? []).map((arg: Readonly<JsonASTNode>) =>
+      deserializeTypeRef(arg, deserializer)
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
+    id: deserializer.deserializeNode(comp.id as JsonASTNode) as Identifier,
+  }));
+
+  const defaultArrayNesting = 0;
+
+  const arrayNestingValue = json.arrayNesting;
+  const arrayNesting =
+    typeof arrayNestingValue === 'number' ? arrayNestingValue : defaultArrayNesting;
+
+  return NodeFactory.createTypeRef(components, arrayNesting, locationOption);
+}
+
+deserializeTypeRef = (
+  typeRefJson: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+): TypeRef => deserializeTypeRefNode(typeRefJson, undefined, deserializer);
+
+// ============================================================================
+// Deserialization Functions
+// ============================================================================
+
 /**
  * Deserializes a BinaryExpression.
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized BinaryExpression node.
+ * @throws {Error} If the deserializer instance is not provided or if left/right operands are invalid.
  */
-export function deserializeBinaryExpression(
+function deserializeBinaryExpression(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): BinaryExpression {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const operator = getStringProperty(json, 'operator');
-  const validOperators: BinaryExpression['operator'][] = [
-    '-',
-    '!=',
-    '!==',
-    '*',
-    '/',
-    '&',
-    '&&',
-    '%',
-    '^',
-    '+',
-    '<',
-    '<<',
-    '<=',
-    '==',
-    '===',
-    '>',
-    '>=',
-    '>>',
-    '>>>',
-    '|',
-    '||',
-    'instanceof',
-  ];
-  if (!validOperators.includes(operator as BinaryExpression['operator'])) {
-    throw new Error(`Invalid binary operator: ${operator}`);
-  }
+  const operatorRaw = getStringProperty(json, 'operator');
+  const operator = toBinaryOperator(operatorRaw);
 
   const leftNode = getJsonASTNodeProperty(json, 'left');
   const leftDeserialized = deserializer.deserializeNode(leftNode);
@@ -83,7 +181,7 @@ export function deserializeBinaryExpression(
   }
 
   return NodeFactory.createBinaryExpression(
-    operator as BinaryExpression['operator'],
+    operator,
     leftDeserialized,
     rightDeserialized,
     locationOption
@@ -96,11 +194,12 @@ export function deserializeBinaryExpression(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized CallExpression node.
+ * @throws {Error} If the deserializer instance is not provided or if target/arguments are invalid.
  */
-export function deserializeCallExpression(
+function deserializeCallExpression(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): CallExpression {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -144,11 +243,12 @@ export function deserializeCallExpression(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized FieldExpression node.
+ * @throws {Error} If the deserializer instance is not provided or if target is invalid.
  */
-export function deserializeFieldExpression(
+function deserializeFieldExpression(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): FieldExpression {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -174,11 +274,12 @@ export function deserializeFieldExpression(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized ArrayExpression node.
+ * @throws {Error} If the deserializer instance is not provided or if array/index are invalid.
  */
-export function deserializeArrayExpression(
+function deserializeArrayExpression(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): ArrayExpression {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -204,33 +305,18 @@ export function deserializeArrayExpression(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized AssignExpression node.
+ * @throws {Error} If the deserializer instance is not provided or if left/right operands are invalid.
  */
-export function deserializeAssignExpression(
+function deserializeAssignExpression(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): AssignExpression {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const operator = getStringProperty(json, 'operator');
-  const validOperators: AssignExpression['operator'][] = [
-    '-=',
-    '*=',
-    '/=',
-    '&=',
-    '%=',
-    '^=',
-    '+=',
-    '<<=',
-    '=',
-    '>>=',
-    '>>>=',
-    '|=',
-  ];
-  if (!validOperators.includes(operator as AssignExpression['operator'])) {
-    throw new Error(`Invalid assign operator: ${operator}`);
-  }
+  const operatorRaw = getStringProperty(json, 'operator');
+  const operator = toAssignOperator(operatorRaw);
 
   const leftNode = getJsonASTNodeProperty(json, 'left');
   const leftDeserialized = deserializer.deserializeNode(leftNode);
@@ -245,7 +331,7 @@ export function deserializeAssignExpression(
   }
 
   return NodeFactory.createAssignExpression(
-    operator as AssignExpression['operator'],
+    operator,
     leftDeserialized,
     rightDeserialized,
     locationOption
@@ -258,11 +344,12 @@ export function deserializeAssignExpression(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized VariableExpression node.
+ * @throws {Error} If the deserializer instance is not provided or if id is not an Identifier node.
  */
-export function deserializeVariableExpression(
+function deserializeVariableExpression(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): VariableExpression {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -282,11 +369,12 @@ export function deserializeVariableExpression(
  * @param locationOption - Optional source location data for the deserialized node.
  * @param deserializer - The deserializer instance.
  * @returns The deserialized NewExpression node.
+ * @throws {Error} If the deserializer instance is not provided or if initializer is required but missing.
  */
-export function deserializeNewExpression(
+function deserializeNewExpression(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
+  deserializer?: Readonly<JsonDeserializer>
 ): NewExpression {
   if (!deserializer) {
     throw new Error('Deserializer instance required');
@@ -294,9 +382,7 @@ export function deserializeNewExpression(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
   const initializerNode = json.initializer as JsonASTNode;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing
-  const initializer = deserializer.deserializeNode(initializerNode) as
-    | import('../ast/initializer.js').Initializer
-    | undefined;
+  const initializer = deserializer.deserializeNode(initializerNode) as Initializer | undefined;
   if (!initializer) {
     throw new Error('Invalid NewExpression: initializer is required');
   }
@@ -304,52 +390,13 @@ export function deserializeNewExpression(
   return NodeFactory.createNewExpression(initializer, locationOption);
 }
 
-/**
- * Deserialize a type reference from JSON.
- * @param typeRefJson - The JSON object representing the type reference.
- * @param deserializer - The deserializer instance.
- * @returns The deserialized type reference.
- */
-function deserializeTypeRef(
-  typeRefJson: Readonly<JsonASTNode>,
-  deserializer: JsonDeserializer
-): TypeRef {
-  return deserializeTypeRefNode(typeRefJson, undefined, deserializer);
-}
-
-/**
- * Deserializes a TypeRef node.
- * @param json - The JSON object to deserialize.
- * @param locationOption - Optional source location data for the deserialized node.
- * @param deserializer - The deserializer instance.
- * @returns The deserialized TypeRef node.
- */
-export function deserializeTypeRefNode(
-  json: Readonly<JsonASTNode>,
-  locationOption?: Readonly<{ location: SourceRange }>,
-  deserializer?: JsonDeserializer
-): TypeRef {
-  if (!deserializer) {
-    throw new Error('Deserializer instance required');
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-  const componentsArray = json.components as JsonASTNode[] | undefined;
-  const components = (componentsArray ?? []).map((comp: Readonly<JsonASTNode>) => ({
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-    args: ((comp as { args?: JsonASTNode[] }).args ?? []).map((arg: Readonly<JsonASTNode>) =>
-      deserializeTypeRef(arg, deserializer)
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-    id: deserializer.deserializeNode(comp.id as JsonASTNode) as Identifier,
-  }));
-
-  const defaultArrayNesting = 0;
-
-  const arrayNestingValue = json.arrayNesting;
-  const arrayNesting =
-    arrayNestingValue !== null && arrayNestingValue !== undefined
-      ? (arrayNestingValue as number)
-      : defaultArrayNesting;
-
-  return NodeFactory.createTypeRef(components, arrayNesting, locationOption);
-}
+export {
+  deserializeBinaryExpression,
+  deserializeCallExpression,
+  deserializeFieldExpression,
+  deserializeArrayExpression,
+  deserializeAssignExpression,
+  deserializeVariableExpression,
+  deserializeNewExpression,
+  deserializeTypeRefNode,
+};
