@@ -13,12 +13,14 @@ import type { Declaration, Annotation, TypeParameter } from '../ast/declaration.
 import type { Modifier } from '../ast/declaration.js';
 import type { TypeRef } from '../ast/baseNode.js';
 import type { ElementValue } from '../ast/initializer.js';
+import { isDeclaration } from '../guard/declarationGuard.js';
 import { NodeFactory } from './nodeFactory.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 import type { TranslateContext } from './translateUtil.js';
 import {
   getChildren,
   getChild,
+  getParent,
   getProperty,
   getText,
   getLocationOption as getLocationOptionUtil,
@@ -173,18 +175,8 @@ class ASTTranslator implements TranslateContext {
           childType === 'annotationtype'
         ) {
           const translatedNode = this.translateNode(child);
-          if (
-            translatedNode.kind === 'ClassDeclaration' ||
-            translatedNode.kind === 'InterfaceDeclaration' ||
-            translatedNode.kind === 'EnumDeclaration' ||
-            translatedNode.kind === 'MethodDeclaration' ||
-            translatedNode.kind === 'PropertyDeclaration' ||
-            translatedNode.kind === 'VariableDeclaration' ||
-            translatedNode.kind === 'AnnotationDeclaration'
-          ) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check above
-            const decl = translatedNode as Declaration;
-            declarations.push(decl);
+          if (isDeclaration(translatedNode)) {
+            declarations.push(translatedNode);
           }
         }
       }
@@ -483,20 +475,13 @@ class ASTTranslator implements TranslateContext {
     return getChild(node, propertyName, altPropertyName);
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
   public getChildExpression(
     node: Readonly<ParseTreeNode>,
     propertyName: string,
-    optionalOrAlt: boolean | string = false,
-    altPropertyName?: string
+    options?: Readonly<{ optional?: boolean; altPropertyName?: string }>
   ): Expression | undefined {
-    // Handle case where optionalOrAlt is actually altPropertyName
-    let optional = false;
-    if (typeof optionalOrAlt === 'string') {
-      altPropertyName = optionalOrAlt;
-    } else {
-      optional = optionalOrAlt;
-    }
+    const optional = options?.optional ?? false;
+    const altPropertyName = options?.altPropertyName;
     const child = this.getChild(node, propertyName, altPropertyName);
     if (!child) {
       if (optional) {
@@ -516,13 +501,13 @@ class ASTTranslator implements TranslateContext {
     return expression;
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
   public getChildStatement(
     node: Readonly<ParseTreeNode>,
     propertyName: string,
-    altPropertyName?: string,
-    optional = false
+    options?: Readonly<{ altPropertyName?: string; optional?: boolean }>
   ): Statement | undefined {
+    const altPropertyName = options?.altPropertyName;
+    const optional = options?.optional ?? false;
     const child = this.getChild(node, propertyName, altPropertyName);
     if (!child) {
       if (optional) {
@@ -557,8 +542,7 @@ class ASTTranslator implements TranslateContext {
           ? (this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name'))
           : undefined;
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by ParseTreeNode structure
-      current = (current as { parent?: ParseTreeNode }).parent;
+      current = getParent(current);
     }
     return undefined;
   }
@@ -567,7 +551,6 @@ class ASTTranslator implements TranslateContext {
     return tryTranslateTypeUtil(node, this.options.includeLocation);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
   public getProperty<T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]): T | undefined {
     void this;
     return getProperty<T>(node, ...names);

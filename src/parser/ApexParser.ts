@@ -4,6 +4,14 @@
  */
 
 import type { SourceRange, SourceLocation } from '../ast/baseNode.js';
+import {
+  DOUBLE_CHAR_OFFSET,
+  INITIAL_COUNTER,
+  INITIAL_INDEX,
+  LAST_ELEMENT_OFFSET,
+  PREVIOUS_POSITION_OFFSET,
+  SINGLE_CHAR_OFFSET,
+} from '../constants.js';
 import { ApexLexer } from './apexLexer.js';
 import { TokenType, type Token } from './tokenType.js';
 import type { ParseTreeNode } from './parseTree.js';
@@ -85,16 +93,10 @@ interface ParserContext {
 class ApexParser implements ParserContext {
   public readonly tokens: Token[] = [];
   public readonly source: string = '';
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial index value
-  private currentIndex = 0;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial counter value
-  private pendingGreaterThanValue = 0;
-
-  // Constants for array indices and offsets
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index constant
-  private readonly singleIndexOffset = 1;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Array index constant
-  private readonly zeroIndex = 0;
+  private currentIndex = INITIAL_INDEX;
+  private pendingGreaterThanValue = INITIAL_COUNTER;
+  private readonly singleIndexOffset = SINGLE_CHAR_OFFSET;
+  private readonly zeroIndex = INITIAL_INDEX;
 
   /**
    * Creates a new apexParser instance.
@@ -219,8 +221,7 @@ class ApexParser implements ParserContext {
   // ParserContext implementation - primitive token helpers
   // ============================================================================
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Rest parameter array
-  public match(...types: TokenType[]): boolean {
+  public match(...types: readonly TokenType[]): boolean {
     this.skipWhitespaceAndComments();
     for (const type of types) {
       if (this.check(type)) {
@@ -231,8 +232,7 @@ class ApexParser implements ParserContext {
     return false;
   }
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Rest parameter array
-  public check(type: TokenType, ...types: TokenType[]): boolean {
+  public check(type: TokenType, ...types: readonly TokenType[]): boolean {
     // If we have pending > tokens from RIGHT_SHIFT, and we're checking for GREATER_THAN, return true
     const zeroPending = 0;
     if (type === TokenType.GREATER_THAN && this.getPendingGreaterThan() > zeroPending) {
@@ -271,11 +271,9 @@ class ApexParser implements ParserContext {
     return this.peek().type === TokenType.EOF;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default offset
-  public peek(offset = 0): Token {
+  public peek(offset = INITIAL_INDEX): Token {
     const pos = this.getCurrent() + offset;
-    const lastElementOffset = 1;
-    return this.tokens[pos] ?? this.tokens[this.tokens.length - lastElementOffset];
+    return this.tokens[pos] ?? this.tokens[this.tokens.length - LAST_ELEMENT_OFFSET];
   }
 
   public previous(): Token {
@@ -332,19 +330,17 @@ class ApexParser implements ParserContext {
   }
 
   public getLocation(start: number, end: number): SourceRange {
-    const lastElementOffset = 1;
-    const startToken = this.tokens[Math.min(start, this.tokens.length - lastElementOffset)];
-
-    const previousPositionOffset = 1;
+    const startToken = this.tokens[Math.min(start, this.tokens.length - LAST_ELEMENT_OFFSET)];
     let endToken =
-      this.tokens[Math.min(end - previousPositionOffset, this.tokens.length - lastElementOffset)];
+      this.tokens[
+        Math.min(end - PREVIOUS_POSITION_OFFSET, this.tokens.length - LAST_ELEMENT_OFFSET)
+      ];
 
     // endToken is always defined because we use Math.min to ensure valid array access
     let endLocation = endToken.location;
 
     // If we're at EOF, check if source has trailing newline/whitespace
-    const lastTokenIndex = 1;
-    if (end >= this.tokens.length - lastTokenIndex && endToken.type === TokenType.EOF) {
+    if (end >= this.tokens.length - LAST_ELEMENT_OFFSET && endToken.type === TokenType.EOF) {
       // Count lines in source
       const lines = this.source.split(/\r?\n/);
       const lastLineNum = lines.length;
@@ -360,20 +356,16 @@ class ApexParser implements ParserContext {
         };
       } else if (this.source.endsWith(' ') || this.source.endsWith('\t')) {
         // Source ends with whitespace (but not newline)
-        const lastLineIndex = 1;
-        const lastLine = lines[lastLineNum - lastLineIndex] || '';
+        const lastLine = lines[lastLineNum - LAST_ELEMENT_OFFSET] || '';
 
-        const columnOffset = 1;
         endLocation = {
-          column: lastLine.length + columnOffset,
+          column: lastLine.length + SINGLE_CHAR_OFFSET,
           line: lastLineNum,
         };
       } else {
         // Use the last non-EOF token's location and extend to end of that token
-        const secondToLastTokenIndex = 2;
-        const lastNonEofToken = this.tokens[this.tokens.length - secondToLastTokenIndex];
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- lastNonEofToken can be undefined
-        if (lastNonEofToken !== null && lastNonEofToken !== undefined) {
+        const lastNonEofToken = this.tokens[this.tokens.length - DOUBLE_CHAR_OFFSET];
+        if (lastNonEofToken != null) {
           endLocation = {
             column: lastNonEofToken.location.column + lastNonEofToken.text.length,
             line: lastNonEofToken.location.line,
@@ -389,16 +381,16 @@ class ApexParser implements ParserContext {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   public locationToRange(location: SourceLocation): SourceRange {
+    void this;
     return {
       end: location,
       start: location,
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method that may be used as instance method
   public combineLocations(loc1: SourceRange, loc2: SourceRange): SourceRange {
+    void this;
     return {
       end: loc2.end,
       start: loc1.start,

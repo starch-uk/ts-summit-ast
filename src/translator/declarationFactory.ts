@@ -19,6 +19,11 @@ import type {
 import type { Expression } from '../ast/expression.js';
 import type { TypeRef, Identifier, TypeRefComponent } from '../ast/baseNode.js';
 import type { CompoundStatement } from '../ast/statement.js';
+import {
+  DEFAULT_ARRAY_DIMENSIONS_TO_ADD,
+  LAST_ELEMENT_OFFSET,
+  SLICE_START_INDEX,
+} from '../constants.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 import { NodeFactory } from './nodeFactory.js';
 
@@ -26,8 +31,6 @@ import { NodeFactory } from './nodeFactory.js';
  * Factory for declaration nodes.
  */
 const DeclarationFactory = {
-  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags multiple params */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Class declaration requires 8 params
   createClassDeclaration(
     name: string,
     members: Readonly<
@@ -48,7 +51,6 @@ const DeclarationFactory = {
     options?: Readonly<NodeFactoryOptions>,
     annotations?: readonly Readonly<Annotation>[]
   ): ClassDeclaration {
-    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     const emptyArrayLength = 0;
     return {
       annotations:
@@ -64,8 +66,6 @@ const DeclarationFactory = {
     };
   },
 
-  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Enum declaration requires 5 params
   createEnumDeclaration(
     name: string,
     values: Readonly<readonly Readonly<EnumValue>[]>,
@@ -84,7 +84,6 @@ const DeclarationFactory = {
     >,
     options?: Readonly<NodeFactoryOptions>
   ): EnumDeclaration {
-    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     const emptyArrayLength = 0;
     return {
       kind: 'EnumDeclaration',
@@ -103,8 +102,6 @@ const DeclarationFactory = {
     };
   },
 
-  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Interface declaration requires 6 params
   createInterfaceDeclaration(
     name: string,
     members: Readonly<
@@ -121,7 +118,6 @@ const DeclarationFactory = {
     typeParameters?: readonly Readonly<TypeParameter>[],
     options?: Readonly<NodeFactoryOptions>
   ): InterfaceDeclaration {
-    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     const emptyArrayLength = 0;
     return {
       extendsClause: extendsClause ? [...extendsClause] : undefined,
@@ -134,7 +130,6 @@ const DeclarationFactory = {
     };
   },
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Method declaration requires 9 parameters
   createMethodDeclaration(
     name: string,
     returnType: Readonly<TypeRef>,
@@ -162,7 +157,6 @@ const DeclarationFactory = {
     };
   },
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Property declaration requires 7 parameters
   createPropertyDeclaration(
     name: string,
     type: Readonly<TypeRef>,
@@ -232,8 +226,7 @@ const DeclarationFactory = {
 const TypeFactory = {
   createArrayType(
     elementType: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default array dimension
-    dimensions = 1,
+    dimensions = DEFAULT_ARRAY_DIMENSIONS_TO_ADD,
     options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
     return {
@@ -268,16 +261,17 @@ const TypeFactory = {
     typeArguments: readonly TypeRef[],
     options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Getting last array index
-    const lastComponentIndex = baseType.components.length - 1;
+    const lastComponentIndex = baseType.components.length - LAST_ELEMENT_OFFSET;
     const lastComponent: TypeRefComponent = {
       ...baseType.components[lastComponentIndex],
       args: typeArguments,
     };
     return {
       arrayNesting: baseType.arrayNesting,
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Slice from start index
-      components: [...baseType.components.slice(0, lastComponentIndex), lastComponent],
+      components: [
+        ...baseType.components.slice(SLICE_START_INDEX, lastComponentIndex),
+        lastComponent,
+      ],
       kind: 'TypeRef',
       location: options?.location ?? baseType.location,
     };

@@ -5,6 +5,7 @@
  * Command-line interface for the SummitTool.
  */
 
+import { CLI_ARGS_START_INDEX } from '../constants.js';
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import { SummitTool } from './summitTool.js';
 
@@ -80,8 +81,7 @@ Note:
  * Main CLI function.
  */
 function main(): void {
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- process.argv.slice(2) is standard for CLI args
-  const args = process.argv.slice(2);
+  const args = process.argv.slice(CLI_ARGS_START_INDEX);
 
   const emptyArrayLength = 0;
   if (args.length === emptyArrayLength) {
@@ -136,8 +136,13 @@ function main(): void {
   tool.printResults(allResults);
 
   // Exit with error code if any failures
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
-  const hasErrors = allResults.some((r) => !r.success);
+  let hasErrors = false;
+  for (const r of allResults) {
+    if (!r.success) {
+      hasErrors = true;
+      break;
+    }
+  }
 
   const exitCodeError = 1;
   const exitCodeSuccess = 0;

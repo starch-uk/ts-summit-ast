@@ -16,9 +16,95 @@ import type {
 } from '../ast/expression.js';
 import type { TypeRef } from '../ast/baseNode.js';
 import type { Initializer } from '../ast/initializer.js';
+import {
+  EVEN_MODULO_REMAINDER,
+  LENGTH_EVEN_DIVISOR,
+  MIN_CHILDREN_FOR_KEY_AND_VALUE,
+  MIN_CHILDREN_FOR_TYPE_AND_SIZE,
+  MIN_NON_EMPTY_ARRAY_LENGTH,
+} from '../constants.js';
 import type { TranslateContext } from './translateUtil.js';
 import { TranslationError } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
+
+/**
+ * Parse binary operator string to validated type.
+ * @param raw - Raw operator string.
+ * @returns Validated binary operator.
+ */
+function parseBinaryOperator(raw: string): BinaryExpression['operator'] {
+  switch (raw) {
+    case '-':
+    case '!=':
+    case '!==':
+    case '*':
+    case '/':
+    case '&':
+    case '&&':
+    case '%':
+    case '^':
+    case '+':
+    case '<':
+    case '<<':
+    case '<=':
+    case '==':
+    case '===':
+    case '>':
+    case '>=':
+    case '>>':
+    case '>>>':
+    case '|':
+    case '||':
+    case 'instanceof':
+      return raw;
+    default:
+      return '==';
+  }
+}
+
+/**
+ * Parse unary operator string to validated type.
+ * @param raw - Raw operator string.
+ * @returns Validated unary operator.
+ */
+function parseUnaryOperator(raw: string): UnaryExpression['operator'] {
+  switch (raw) {
+    case '--':
+    case '-':
+    case '!':
+    case '+':
+    case '++':
+    case '~':
+      return raw;
+    default:
+      return '!';
+  }
+}
+
+/**
+ * Parse assignment operator string to validated type.
+ * @param raw - Raw operator string.
+ * @returns Validated assignment operator.
+ */
+function parseAssignOperator(raw: string): AssignExpression['operator'] {
+  switch (raw) {
+    case '-=':
+    case '*=':
+    case '/=':
+    case '&=':
+    case '%=':
+    case '^=':
+    case '+=':
+    case '<<=':
+    case '=':
+    case '>>=':
+    case '>>>=':
+    case '|=':
+      return raw;
+    default:
+      return '=';
+  }
+}
 
 /**
  * Type guard for FieldExpression.
@@ -121,15 +207,17 @@ function translateMethodCall(
   let isSafeFromTarget: boolean | undefined = undefined;
 
   // Try to get from named properties first (for integration tests)
-  const targetFromProp = ctx.getChildExpression(node, 'target', true);
+  const targetFromProp = ctx.getChildExpression(node, 'target', { optional: true });
   if (targetFromProp) {
     target = targetFromProp;
   }
 
   const methodNameFromProp = ctx.getProperty<string>(node, 'methodName', 'name');
 
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if string has length
-  if (typeof methodNameFromProp === 'string' && methodNameFromProp.length > 0) {
+  if (
+    typeof methodNameFromProp === 'string' &&
+    methodNameFromProp.length > MIN_NON_EMPTY_ARRAY_LENGTH
+  ) {
     methodName = methodNameFromProp;
   }
 
@@ -253,8 +341,8 @@ function translateBinaryExpression(
 ): Expression {
   const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '==';
   // Try to get left and right as optional first (to allow fallback)
-  let left = ctx.getChildExpression(node, 'left', true);
-  let right = ctx.getChildExpression(node, 'right', true);
+  let left = ctx.getChildExpression(node, 'left', { optional: true });
+  let right = ctx.getChildExpression(node, 'right', { optional: true });
 
   if (!left || !right) {
     // Try children array (parser uses positional children: [left, right])
@@ -274,35 +362,7 @@ function translateBinaryExpression(
         children[secondChildIndex].type.toLowerCase()
       );
       if (leftExpr && rightExpr) {
-        const validOperators: BinaryExpression['operator'][] = [
-          '-',
-          '!=',
-          '!==',
-          '*',
-          '/',
-          '&',
-          '&&',
-          '%',
-          '^',
-          '+',
-          '<',
-          '<<',
-          '<=',
-          '==',
-          '===',
-          '>',
-          '>=',
-          '>>',
-          '>>>',
-          '|',
-          '||',
-          'instanceof',
-        ];
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by includes check
-        const validOperator = validOperators.includes(operator as BinaryExpression['operator'])
-          ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by includes check
-            (operator as BinaryExpression['operator'])
-          : '==';
+        const validOperator = parseBinaryOperator(operator);
         return NodeFactory.createBinaryExpression(
           validOperator,
           leftExpr,
@@ -315,8 +375,7 @@ function translateBinaryExpression(
   }
 
   return NodeFactory.createBinaryExpression(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
-    operator as BinaryExpression['operator'],
+    parseBinaryOperator(operator),
     left,
     right,
     ctx.getLocationOption(node)
@@ -336,7 +395,7 @@ function translateUnaryExpression(
 ): Expression {
   const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '!';
   const prefix = ctx.getProperty<boolean>(node, 'prefix') ?? true;
-  const operand = ctx.getChildExpression(node, 'operand', true);
+  const operand = ctx.getChildExpression(node, 'operand', { optional: true });
   if (!operand) {
     // Try to get from children array
     const children = ctx.getChildren(node);
@@ -347,8 +406,7 @@ function translateUnaryExpression(
       const expr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
       if (expr) {
         return NodeFactory.createUnaryExpression(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
-          operator as UnaryExpression['operator'],
+          parseUnaryOperator(operator),
           expr,
           prefix,
           ctx.getLocationOption(node)
@@ -359,8 +417,7 @@ function translateUnaryExpression(
   }
 
   return NodeFactory.createUnaryExpression(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
-    operator as UnaryExpression['operator'],
+    parseUnaryOperator(operator),
     operand,
     prefix,
     ctx.getLocationOption(node)
@@ -387,8 +444,7 @@ function translateAssignExpression(
   }
 
   return NodeFactory.createAssignExpression(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Operator validated by parser
-    operator as AssignExpression['operator'],
+    parseAssignOperator(operator),
     left,
     right,
     ctx.getLocationOption(node)
@@ -412,7 +468,7 @@ function translateFieldAccess(
   let fieldName = '';
 
   // Try to get target from named property first
-  const targetFromProp = ctx.getChildExpression(node, 'target', true);
+  const targetFromProp = ctx.getChildExpression(node, 'target', { optional: true });
   if (targetFromProp) {
     target = targetFromProp;
   } else {
@@ -476,7 +532,7 @@ function translateArrayAccess(
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get array and index as optional first (to allow fallback)
-  const array = ctx.getChildExpression(node, 'array', true);
+  const array = ctx.getChildExpression(node, 'array', { optional: true });
   if (!array) {
     // Try first child
     const children = ctx.getChildren(node);
@@ -494,7 +550,7 @@ function translateArrayAccess(
     }
     throw new TranslationError('Array access requires array and index', node);
   }
-  const index = ctx.getChildExpression(node, 'index', true);
+  const index = ctx.getChildExpression(node, 'index', { optional: true });
   if (!index) {
     // Try second child if index not found
     const children = ctx.getChildren(node);
@@ -525,9 +581,15 @@ function translateTernaryExpression(
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get condition, then, and else as optional first (to allow fallback)
-  const condition = ctx.getChildExpression(node, 'condition', true);
-  const thenExpr = ctx.getChildExpression(node, 'thenExpression', true, 'then');
-  const elseExpr = ctx.getChildExpression(node, 'elseExpression', true, 'else');
+  const condition = ctx.getChildExpression(node, 'condition', { optional: true });
+  const thenExpr = ctx.getChildExpression(node, 'thenExpression', {
+    altPropertyName: 'then',
+    optional: true,
+  });
+  const elseExpr = ctx.getChildExpression(node, 'elseExpression', {
+    altPropertyName: 'else',
+    optional: true,
+  });
 
   if (!condition || !thenExpr || !elseExpr) {
     // Try children array
@@ -587,7 +649,7 @@ function translateCastExpression(
   }
 
   // Try to get expression
-  let expression = ctx.getChildExpression(node, 'expression', true);
+  let expression = ctx.getChildExpression(node, 'expression', { optional: true });
   const minimumChildrenForExpression = 2;
   if (!expression && children.length >= minimumChildrenForExpression) {
     // Second child is the expression
@@ -615,7 +677,7 @@ function translateInstanceOfExpression(
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get expression as optional first (to allow fallback)
-  const expression = ctx.getChildExpression(node, 'expression', true);
+  const expression = ctx.getChildExpression(node, 'expression', { optional: true });
   const typeNode = ctx.getChild(node, 'type');
   const type = typeNode ? ctx.tryTranslateType(typeNode) : null;
 
@@ -701,8 +763,7 @@ function translateNewExpression(
       // The actual map entry structure would need a special node type
       if (initChild.type === 'map_entry' || initChild.type.toLowerCase() === 'map_entry') {
         const mapEntryChildren = ctx.getChildren(initChild);
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 2 children (key and value)
-        if (mapEntryChildren.length >= 2) {
+        if (mapEntryChildren.length >= MIN_CHILDREN_FOR_KEY_AND_VALUE) {
           const [firstChild, secondChild] = mapEntryChildren;
           const keyExpr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
           const valueExpr = ctx.tryTranslateExpression(secondChild, secondChild.type.toLowerCase());
@@ -738,8 +799,7 @@ function translateNewExpression(
     );
     // For now, we'll check if we have pairs (even number of expressions that look like key-value)
     // A better approach would be to check the parse tree structure
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if length is even (pairs)
-    if (hasMapEntries && arrayInit.length % pairModulo === 0) {
+    if (hasMapEntries && arrayInit.length % LENGTH_EVEN_DIVISOR === EVEN_MODULO_REMAINDER) {
       // Create MapInitializer with pairs
       const pairs: { key: Expression; value: Expression }[] = [];
       for (let i = 0; i < arrayInit.length; i += pairModulo) {
@@ -753,8 +813,7 @@ function translateNewExpression(
       // Create ValuesInitializer for lists/sets/arrays
       initializer = NodeFactory.createValuesInitializer(type, arrayInit, locationOption);
     }
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-  } else if (args.length > 0) {
+  } else if (args.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
     // Create ConstructorInitializer
     initializer = NodeFactory.createConstructorInitializer(type, args, locationOption);
   }
@@ -814,8 +873,7 @@ function translateNewArrayExpression(
   // Parser creates new_array_expression with children: [type, size]
   const children = ctx.getChildren(node);
   let typeNode = ctx.getChild(node, 'type');
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-  if (!typeNode && children.length > 0) {
+  if (!typeNode && children.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
     // First child is the type
     [typeNode] = children;
   }
@@ -827,10 +885,9 @@ function translateNewArrayExpression(
   // Second child is the size expression
   let size: Expression | undefined = undefined;
   // Try named property first
-  size = ctx.getChildExpression(node, 'size', true);
+  size = ctx.getChildExpression(node, 'size', { optional: true });
   // If not found, try positional children
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 2 children (type and size)
-  if (!size && children.length >= 2) {
+  if (!size && children.length >= MIN_CHILDREN_FOR_TYPE_AND_SIZE) {
     // Try to translate the second child as an expression
     const [, sizeChild] = children;
     // Try translating as expression first
@@ -917,12 +974,11 @@ function translateParenthesizedExpression(
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Try to get expression as optional first (to allow fallback)
-  const expression = ctx.getChildExpression(node, 'expression', true);
+  const expression = ctx.getChildExpression(node, 'expression', { optional: true });
   if (!expression) {
     // Try first child
     const children = ctx.getChildren(node);
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    if (children.length > 0) {
+    if (children.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
       const [firstChild] = children;
       const expr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
       if (expr) {

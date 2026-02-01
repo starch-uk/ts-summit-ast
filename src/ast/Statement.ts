@@ -12,7 +12,6 @@ import type { TypeRef } from './baseNode.js';
  * Alias for backward compatibility during migration.
  * @deprecated Use CompoundStatement instead.
  */
-// eslint-disable-next-line @typescript-eslint/no-type-alias -- Deprecated type alias for backward compatibility
 type Block = CompoundStatement;
 
 /**

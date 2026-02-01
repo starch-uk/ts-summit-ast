@@ -157,7 +157,6 @@ export const StatementFactory = {
    * @param options - Optional factory options.
    * @returns The created enhanced for loop statement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   createEnhancedForLoopStatement(
     variable: Readonly<VariableDeclaration>,
     iterable: Readonly<Expression>,
@@ -199,7 +198,6 @@ export const StatementFactory = {
    * @returns The created enhanced for loop statement.
    * @deprecated Use createEnhancedForLoopStatement instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   createForEachStatement(
     variable: Readonly<VariableDeclaration>,
     iterable: Readonly<Expression>,
@@ -218,7 +216,6 @@ export const StatementFactory = {
    * @param options - Optional factory options.
    * @returns The created for loop statement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   createForLoopStatement(
     body: Readonly<Statement>,
     init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
@@ -246,7 +243,6 @@ export const StatementFactory = {
    * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   createForStatement(
     body: Readonly<Statement>,
     init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
@@ -265,7 +261,6 @@ export const StatementFactory = {
    * @param options - Optional factory options.
    * @returns The created if statement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   createIfStatement(
     condition: Expression,
     thenStatement: Statement,
@@ -306,7 +301,6 @@ export const StatementFactory = {
    * @param options - Optional factory options.
    * @returns The created switch statement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   createSwitchStatement(
     expression: Readonly<Expression>,
     cases: readonly SwitchCase[],
@@ -348,7 +342,6 @@ export const StatementFactory = {
    * @param options - Optional factory options.
    * @returns The created try statement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   createTryStatement(
     tryBlock: Readonly<CompoundStatement>,
     catchClauses: readonly CatchClause[],

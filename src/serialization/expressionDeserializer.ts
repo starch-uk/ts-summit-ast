@@ -14,13 +14,14 @@ import type {
   FieldExpression,
   Expression,
 } from '../ast/expression.js';
-import type { TypeRef, Identifier } from '../ast/baseNode.js';
-import type { Initializer } from '../ast/initializer.js';
+import type { TypeRef } from '../ast/baseNode.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
-import { isExpression, isIdentifier } from '../guard/index.js';
+import { isExpression, isIdentifier, isInitializer } from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
 import {
+  getJsonASTNodeArrayFromRecord,
+  getJsonASTNodeFromRecord,
   getJsonASTNodeProperty,
   getOptionalJsonASTNodeProperty,
   getJsonASTNodeArrayProperty,
@@ -120,16 +121,20 @@ function deserializeTypeRefNode(
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-  const componentsArray = json.components as JsonASTNode[] | undefined;
-  const components = (componentsArray ?? []).map((comp: Readonly<JsonASTNode>) => ({
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-    args: ((comp as { args?: JsonASTNode[] }).args ?? []).map((arg: Readonly<JsonASTNode>) =>
-      deserializeTypeRef(arg, deserializer)
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-    id: deserializer.deserializeNode(comp.id as JsonASTNode) as Identifier,
-  }));
+  const rawComponents = json.components;
+  const componentsArray = Array.isArray(rawComponents) ? rawComponents : [];
+  const components = componentsArray.map((comp: unknown) => {
+    const record: Record<string, unknown> =
+      comp !== null && typeof comp === 'object' ? { ...comp } : {};
+    const idNode = getJsonASTNodeFromRecord(record, 'id');
+    const argsRaw = getJsonASTNodeArrayFromRecord(record, 'args');
+    const idDeserialized = deserializer.deserializeNode(idNode);
+    if (!isIdentifier(idDeserialized)) {
+      throw new Error('Invalid TypeRef component: id is not an Identifier');
+    }
+    const args = argsRaw.map((arg: Readonly<JsonASTNode>) => deserializeTypeRef(arg, deserializer));
+    return { args, id: idDeserialized };
+  });
 
   const defaultArrayNesting = 0;
 
@@ -379,15 +384,13 @@ function deserializeNewExpression(
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-  const initializerNode = json.initializer as JsonASTNode;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing
-  const initializer = deserializer.deserializeNode(initializerNode) as Initializer | undefined;
-  if (!initializer) {
-    throw new Error('Invalid NewExpression: initializer is required');
+  const initializerNode = getJsonASTNodeProperty(json, 'initializer');
+  const deserialized = deserializer.deserializeNode(initializerNode);
+  if (!isInitializer(deserialized)) {
+    throw new Error('Invalid NewExpression: initializer is not an Initializer node');
   }
 
-  return NodeFactory.createNewExpression(initializer, locationOption);
+  return NodeFactory.createNewExpression(deserialized, locationOption);
 }
 
 export {

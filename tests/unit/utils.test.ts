@@ -1548,7 +1548,8 @@ describe('Node Finder Utilities', () => {
       const metadata = getNodeMetadata(node);
 
       expect(metadata.nodeType).toBe('VariableExpression');
-      expect(metadata.isLeaf).toBe(true);
+      // VariableExpression has an id child (Identifier), so it is not a leaf
+      expect(metadata.isLeaf).toBe(false);
     });
 
     it('should include source text when provided', () => {

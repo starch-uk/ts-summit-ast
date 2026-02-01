@@ -78,7 +78,6 @@ interface FindAssociatedNodeOptions {
  * @param maxDistance - Maximum character distance to search.
  * @returns The preceding node result, or null if not found.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
 function findPrecedingNode(
   ast: ASTNode,
   position: Position,
@@ -122,7 +121,6 @@ function findPrecedingNode(
  * @param maxDistance - Maximum character distance to search.
  * @returns The following node result, or null if not found.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
 function findFollowingNode(
   ast: ASTNode,
   position: Position,
@@ -187,7 +185,6 @@ function findFollowingNode(
  * @param options - Options for finding the associated node.
  * @returns The associated node result, or null if not found.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
 function findAssociatedNode(
   ast: ASTNode,
   comment: CommentInfo,
@@ -370,7 +367,6 @@ const EMPTY_EXTRACT_OPTIONS: Readonly<ExtractCommentsOptions> = {};
  */
 function matchCommentPattern(
   commentText: string,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- patterns use Readonly<> but rule still flags
   patterns?: Readonly<readonly Readonly<CommentPattern>[]>
 ): { type: string; matches: RegExpMatchArray } | null {
   const emptyArrayLength = 0;
@@ -389,6 +385,38 @@ function matchCommentPattern(
   }
 
   return null;
+}
+
+/**
+ * Calculate the source range for a comment block.
+ * @param _source - The source code string (unused).
+ * @param startLine - The starting line number.
+ * @param startColumn - The starting column number.
+ * @param commentText - The full comment text (may span multiple lines).
+ * @returns The source range for the comment.
+ */
+function calculateCommentLocation(
+  _source: string,
+  startLine: number,
+  startColumn: number,
+  commentText: string
+): SourceRange {
+  const commentLines = commentText.split(/\r?\n/);
+  const lastIndexOffset = 1;
+  const endLine = startLine + commentLines.length - lastIndexOffset;
+  const endLineText = commentLines[commentLines.length - lastIndexOffset] ?? '';
+  const endColumn = startColumn + endLineText.length;
+
+  return {
+    end: {
+      column: endColumn,
+      line: endLine,
+    },
+    start: {
+      column: startColumn,
+      line: startLine,
+    },
+  };
 }
 
 /**
@@ -421,7 +449,6 @@ function matchCommentPattern(
 function extractComments(
   ast: Readonly<ASTNode>,
   source: string,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- options use Readonly<> and const default but rule still flags
   options: Readonly<Readonly<ExtractCommentsOptions>> = EMPTY_EXTRACT_OPTIONS
 ): ExtractedComment[] {
   const {
@@ -473,7 +500,10 @@ function extractComments(
         // Match comment against patterns
         const patternMatch = matchCommentPattern(commentText, commentPatterns);
 
-        const comment: ExtractedComment = {
+        const baseComment: Omit<
+          ExtractedComment,
+          'associatedNode' | 'associationConfidence' | 'nodeRelationship'
+        > = {
           column,
           description,
           fullText: fullCommentText,
@@ -492,30 +522,25 @@ function extractComments(
             : {}),
         };
 
-        if (associateNodes) {
-          const associated = findAssociatedNode(ast, comment, source);
-          if (associated) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for dynamic property assignment
-            const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
-
-            (commentWithAssociation as Record<string, unknown>).associatedNode = associated.node;
-
-            (commentWithAssociation as Record<string, unknown>).nodeRelationship =
-              associated.relationship;
-            // Calculate confidence based on distance (closer = more confident)
-
-            const distanceThreshold = 10;
-            const maxConfidence = 1.0;
-            const minConfidence = 0.1;
-            const confidenceDivisor = 100;
-            const confidence =
-              associated.distance <= distanceThreshold
-                ? maxConfidence
-                : Math.max(minConfidence, maxConfidence - associated.distance / confidenceDivisor);
-
-            (commentWithAssociation as Record<string, unknown>).associationConfidence = confidence;
-          }
-        }
+        const comment: ExtractedComment = ((): ExtractedComment => {
+          if (!associateNodes) return baseComment;
+          const associated = findAssociatedNode(ast, baseComment, source);
+          if (!associated) return baseComment;
+          const distanceThreshold = 10;
+          const maxConfidence = 1.0;
+          const minConfidence = 0.1;
+          const confidenceDivisor = 100;
+          const confidence =
+            associated.distance <= distanceThreshold
+              ? maxConfidence
+              : Math.max(minConfidence, maxConfidence - associated.distance / confidenceDivisor);
+          return {
+            ...baseComment,
+            associatedNode: associated.node,
+            associationConfidence: confidence,
+            nodeRelationship: associated.relationship,
+          };
+        })();
 
         comments.push(comment);
       }
@@ -565,7 +590,6 @@ function extractComments(
 
           let apexDocComment: ApexDocComment | undefined = undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
-            // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
             const location = calculateCommentLocation(
               source,
               blockCommentStartLine,
@@ -576,7 +600,10 @@ function extractComments(
               parseApexDocComment(fullCommentText, location, apexDocParseOptions) ?? undefined;
           }
 
-          const comment: ExtractedComment = {
+          const baseComment: Omit<
+            ExtractedComment,
+            'associatedNode' | 'associationConfidence' | 'nodeRelationship'
+          > = {
             column: blockCommentStartColumn,
             description,
             fullText: fullCommentText,
@@ -596,33 +623,25 @@ function extractComments(
               : {}),
           };
 
-          if (associateNodes) {
-            const associated = findAssociatedNode(ast, comment, source);
-            if (associated) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for dynamic property assignment
-              const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
-
-              (commentWithAssociation as Record<string, unknown>).associatedNode = associated.node;
-
-              (commentWithAssociation as Record<string, unknown>).nodeRelationship =
-                associated.relationship;
-
-              const maxDistanceForFullConfidence = 10;
-              const fullConfidence = 1.0;
-              const minConfidence = 0.1;
-              const confidenceDivisor = 100;
-              const confidence =
-                associated.distance <= maxDistanceForFullConfidence
-                  ? fullConfidence
-                  : Math.max(
-                      minConfidence,
-                      fullConfidence - associated.distance / confidenceDivisor
-                    );
-
-              (commentWithAssociation as Record<string, unknown>).associationConfidence =
-                confidence;
-            }
-          }
+          const comment: ExtractedComment = ((): ExtractedComment => {
+            if (!associateNodes) return baseComment;
+            const associated = findAssociatedNode(ast, baseComment, source);
+            if (!associated) return baseComment;
+            const maxDistanceForFullConfidence = 10;
+            const fullConfidence = 1.0;
+            const minConfidence = 0.1;
+            const confidenceDivisor = 100;
+            const confidence =
+              associated.distance <= maxDistanceForFullConfidence
+                ? fullConfidence
+                : Math.max(minConfidence, fullConfidence - associated.distance / confidenceDivisor);
+            return {
+              ...baseComment,
+              associatedNode: associated.node,
+              associationConfidence: confidence,
+              nodeRelationship: associated.relationship,
+            };
+          })();
 
           comments.push(comment);
           blockCommentLines = [];
@@ -653,7 +672,6 @@ function extractComments(
 
           let apexDocComment: ApexDocComment | undefined = undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
-            // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
             const location = calculateCommentLocation(
               source,
               blockCommentStartLine,
@@ -664,7 +682,10 @@ function extractComments(
               parseApexDocComment(fullCommentText, location, apexDocParseOptions) ?? undefined;
           }
 
-          const comment: ExtractedComment = {
+          const baseComment: Omit<
+            ExtractedComment,
+            'associatedNode' | 'associationConfidence' | 'nodeRelationship'
+          > = {
             column: blockCommentStartColumn,
             description,
             fullText: fullCommentText,
@@ -684,33 +705,25 @@ function extractComments(
               : {}),
           };
 
-          if (associateNodes) {
-            const associated = findAssociatedNode(ast, comment, source);
-            if (associated) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for dynamic property assignment
-              const commentWithAssociation = comment as ExtractedComment & Record<string, unknown>;
-
-              (commentWithAssociation as Record<string, unknown>).associatedNode = associated.node;
-
-              (commentWithAssociation as Record<string, unknown>).nodeRelationship =
-                associated.relationship;
-
-              const maxDistanceForFullConfidence = 10;
-              const fullConfidence = 1.0;
-              const minConfidence = 0.1;
-              const confidenceDivisor = 100;
-              const confidence =
-                associated.distance <= maxDistanceForFullConfidence
-                  ? fullConfidence
-                  : Math.max(
-                      minConfidence,
-                      fullConfidence - associated.distance / confidenceDivisor
-                    );
-
-              (commentWithAssociation as Record<string, unknown>).associationConfidence =
-                confidence;
-            }
-          }
+          const comment: ExtractedComment = ((): ExtractedComment => {
+            if (!associateNodes) return baseComment;
+            const associated = findAssociatedNode(ast, baseComment, source);
+            if (!associated) return baseComment;
+            const maxDistanceForFullConfidence = 10;
+            const fullConfidence = 1.0;
+            const minConfidence = 0.1;
+            const confidenceDivisor = 100;
+            const confidence =
+              associated.distance <= maxDistanceForFullConfidence
+                ? fullConfidence
+                : Math.max(minConfidence, fullConfidence - associated.distance / confidenceDivisor);
+            return {
+              ...baseComment,
+              associatedNode: associated.node,
+              associationConfidence: confidence,
+              nodeRelationship: associated.relationship,
+            };
+          })();
 
           comments.push(comment);
           blockCommentLines = [];
@@ -721,39 +734,6 @@ function extractComments(
   }
 
   return comments;
-}
-
-/**
- * Calculate location for a comment block.
- * @param _source - The source code string (unused).
- * @param startLine - The starting line number.
- * @param startColumn - The starting column number.
- * @param commentText - The full comment text (may span multiple lines).
- * @returns The source range for the comment.
- */
-// eslint-disable-next-line @typescript-eslint/max-params -- Function requires 4 parameters for clarity
-function calculateCommentLocation(
-  _source: string,
-  startLine: number,
-  startColumn: number,
-  commentText: string
-): SourceRange {
-  const commentLines = commentText.split(/\r?\n/);
-  const lastIndexOffset = 1;
-  const endLine = startLine + commentLines.length - lastIndexOffset;
-  const endLineText = commentLines[commentLines.length - lastIndexOffset] ?? '';
-  const endColumn = startColumn + endLineText.length;
-
-  return {
-    end: {
-      column: endColumn,
-      line: endLine,
-    },
-    start: {
-      column: startColumn,
-      line: startLine,
-    },
-  };
 }
 
 export type {

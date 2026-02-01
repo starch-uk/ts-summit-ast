@@ -44,9 +44,7 @@ interface ParseTreeNode {
 /**
  * Parse tree with named children (for parsers that use property-based children).
  */
-/* eslint-disable @typescript-eslint/no-type-alias -- Intersection type alias needed for type safety */
 type NamedChildrenParseTree = ParseTreeNode & Record<string, ParseTreeNode | ParseTreeNode[]>;
-/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Parse tree with positional children.

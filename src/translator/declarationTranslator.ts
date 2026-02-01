@@ -16,8 +16,26 @@ import type {
   Parameter,
 } from '../ast/declaration.js';
 import type { TypeRef, TypeRefComponent } from '../ast/baseNode.js';
-import type { CompoundStatement } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
+import {
+  INITIAL_STATEMENT_COUNTER,
+  MEMBER_CATEGORY_FIELDS,
+  MEMBER_CATEGORY_INNER_TYPES,
+  MEMBER_CATEGORY_METHODS,
+  MEMBER_CATEGORY_PROPERTIES,
+  MIN_CHILDREN_FOR_TYPE_AND_NAME,
+  MIN_CHILDREN_FOR_TYPE_NAME_INIT,
+  MIN_NON_EMPTY_ARRAY_LENGTH,
+} from '../constants.js';
+import {
+  isClassDeclaration,
+  isEnumDeclaration,
+  isInterfaceDeclaration,
+  isMethodDeclaration,
+  isPropertyDeclaration,
+  isVariableDeclaration,
+} from '../guard/declarationGuard.js';
+import { isCompoundStatement } from '../guard/statementGuard.js';
 import type { TranslateContext } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
 
@@ -114,8 +132,7 @@ function translateClassDeclaration(
           // If same line, keep the same statementId (fields from same statement)
         } else {
           // First field_declaration
-          // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial statement counter
-          statementCounter = 1;
+          statementCounter = INITIAL_STATEMENT_COUNTER;
         }
         lastFieldDeclarationNode = memberNode;
       }
@@ -128,26 +145,15 @@ function translateClassDeclaration(
         // Fields from the same statement come from the same parse tree node (same parent).
         const parseNode = memberNode;
 
-        switch (decl.kind) {
-          case 'ClassDeclaration':
-          case 'EnumDeclaration':
-          case 'InterfaceDeclaration':
-          case 'MethodDeclaration':
-          case 'PropertyDeclaration':
-          case 'VariableDeclaration': {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check in switch
-            const declTyped = decl as
-              | ClassDeclaration
-              | EnumDeclaration
-              | InterfaceDeclaration
-              | MethodDeclaration
-              | PropertyDeclaration
-              | VariableDeclaration;
-            membersWithIndex.push({ decl: declTyped, parseNode, sourceIndex: i, statementId });
-            break;
-          }
-          default:
-            break;
+        if (
+          isClassDeclaration(decl) ||
+          isEnumDeclaration(decl) ||
+          isInterfaceDeclaration(decl) ||
+          isMethodDeclaration(decl) ||
+          isPropertyDeclaration(decl) ||
+          isVariableDeclaration(decl)
+        ) {
+          membersWithIndex.push({ decl, parseNode, sourceIndex: i, statementId });
         }
       }
     }
@@ -165,19 +171,15 @@ function translateClassDeclaration(
         decl.kind === 'InterfaceDeclaration' ||
         decl.kind === 'EnumDeclaration'
       ) {
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: inner types
-        return 0; // Inner types
+        return MEMBER_CATEGORY_INNER_TYPES;
       }
       if (decl.kind === 'VariableDeclaration') {
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: fields
-        return 1; // Fields
+        return MEMBER_CATEGORY_FIELDS;
       }
       if (decl.kind === 'PropertyDeclaration') {
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: properties
-        return 2; // Properties
+        return MEMBER_CATEGORY_PROPERTIES;
       }
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Category order: methods
-      return 3; // Methods
+      return MEMBER_CATEGORY_METHODS;
     };
     // CRITICAL: The original Kotlin implementation preserves source order for members
     // within each category. The test's grouping logic relies on this ordering.
@@ -595,19 +597,48 @@ function translateClassDeclaration(
     //
     // Let me try a different approach: Use location information to ensure fields
     // from different statements are separated in the final order.
-    // Extract sorted declarations and filter to valid ClassMembers
-    // Sorted decls are class body members; type assertion narrows Declaration to class member union
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- class body members are valid ClassDeclaration members
-    const sortedDecls = membersWithIndex.map(
-      (m: Readonly<{ decl: Declaration; sourceIndex: number; statementId?: number }>) => m.decl
-    ) as (
+
+    /**
+     * Type guard for class body member declarations.
+     * @param d - Declaration to check.
+     * @returns True if d is a valid class member type.
+     */
+    const classMemberDecl = (
+      d: Readonly<Declaration>
+    ): d is
       | ClassDeclaration
       | EnumDeclaration
       | InterfaceDeclaration
       | MethodDeclaration
       | PropertyDeclaration
-      | VariableDeclaration
-    )[];
+      | VariableDeclaration =>
+      isClassDeclaration(d) ||
+      isEnumDeclaration(d) ||
+      isInterfaceDeclaration(d) ||
+      isMethodDeclaration(d) ||
+      isPropertyDeclaration(d) ||
+      isVariableDeclaration(d);
+    const sortedDecls = membersWithIndex
+      .filter(
+        (
+          m: Readonly<{
+            decl: Declaration;
+            sourceIndex: number;
+            statementId?: number;
+          }>
+        ): m is Readonly<{
+          decl:
+            | ClassDeclaration
+            | EnumDeclaration
+            | InterfaceDeclaration
+            | MethodDeclaration
+            | PropertyDeclaration
+            | VariableDeclaration;
+          sourceIndex: number;
+          statementId?: number;
+        }> => classMemberDecl(m.decl)
+      )
+      .map((m) => m.decl);
     members.push(...sortedDecls);
   }
 
@@ -628,8 +659,7 @@ function translateClassDeclaration(
     const typeChildren = ctx
       .getChildren(implementsClause)
       .filter((c: Readonly<ParseTreeNode>) => c.type === 'type');
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    if (typeChildren.length > 0) {
+    if (typeChildren.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
       implementsTypes = typeChildren
         .map((c) => ctx.tryTranslateType(c))
         .filter((type): type is TypeRef => type !== null);
@@ -643,11 +673,9 @@ function translateClassDeclaration(
     modifiers,
     extendsType,
     implementsTypes,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    typeParameters.length > 0 ? typeParameters : undefined,
+    typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
     ctx.getLocationOption(node),
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    annotations.length > 0 ? annotations : undefined
+    annotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? annotations : undefined
   );
 }
 
@@ -696,25 +724,23 @@ function translateEnumDeclaration(
       } else {
         // Other enum members (methods, inner classes, etc.)
         const decl = ctx.tryTranslateDeclaration(childNode, childNode.type.toLowerCase());
-        if (decl) {
-          members.push(
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
-            decl as
-              | ClassDeclaration
-              | EnumDeclaration
-              | InterfaceDeclaration
-              | MethodDeclaration
-              | PropertyDeclaration
-              | VariableDeclaration
-          );
+        if (
+          decl &&
+          (isClassDeclaration(decl) ||
+            isEnumDeclaration(decl) ||
+            isInterfaceDeclaration(decl) ||
+            isMethodDeclaration(decl) ||
+            isPropertyDeclaration(decl) ||
+            isVariableDeclaration(decl))
+        ) {
+          members.push(decl);
         }
       }
     }
   }
 
   return NodeFactory.createEnumDeclaration({
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    members: members.length > 0 ? members : undefined,
+    members: members.length > MIN_NON_EMPTY_ARRAY_LENGTH ? members : undefined,
     modifiers,
     name,
     options: ctx.getLocationOption(node),
@@ -754,15 +780,12 @@ function translateInterfaceDeclaration(
       const decl = ctx.tryTranslateDeclaration(memberNode, memberNode.type.toLowerCase());
       if (
         decl &&
-        (decl.kind === 'InterfaceDeclaration' ||
-          decl.kind === 'MethodDeclaration' ||
-          decl.kind === 'PropertyDeclaration' ||
-          decl.kind === 'VariableDeclaration')
+        (isClassDeclaration(decl) ||
+          isInterfaceDeclaration(decl) ||
+          isMethodDeclaration(decl) ||
+          isPropertyDeclaration(decl))
       ) {
-        members.push(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check
-          decl as ClassDeclaration | InterfaceDeclaration | MethodDeclaration | PropertyDeclaration
-        );
+        members.push(decl);
       }
     }
   }
@@ -777,8 +800,7 @@ function translateInterfaceDeclaration(
           .map((c) => ctx.tryTranslateType(c))
           .filter((type): type is TypeRef => type !== null)
       : undefined,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    typeParameters.length > 0 ? typeParameters : undefined,
+    typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
     ctx.getLocationOption(node)
   );
 }
@@ -847,12 +869,11 @@ function translateMethodDeclaration(
       const paramModifiers = ctx.extractModifiers(paramNode);
       const paramAnnotations = ctx.extractAnnotations(paramNode);
       parameters.push({
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-        annotations: paramAnnotations.length > 0 ? paramAnnotations : undefined,
+        annotations:
+          paramAnnotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? paramAnnotations : undefined,
         kind: 'Parameter',
         location: paramNode.location,
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-        modifiers: paramModifiers.length > 0 ? paramModifiers : undefined,
+        modifiers: paramModifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? paramModifiers : undefined,
         name: paramName,
         type: paramType,
       });
@@ -860,7 +881,8 @@ function translateMethodDeclaration(
   }
   // Method body can be 'body' or 'block' node
   const bodyNode = ctx.getChild(node, 'body') ?? ctx.getChild(node, 'block');
-  const body = bodyNode ? ctx.translateCompoundStatement(bodyNode) : undefined;
+  const bodyResult = bodyNode ? ctx.translateCompoundStatement(bodyNode) : undefined;
+  const body = bodyResult && isCompoundStatement(bodyResult) ? bodyResult : undefined;
 
   // Constructor: name matches class AND no explicit return type (synthetic void_type or none).
   // "void Test()" is a method (explicit void); "Test()" is a constructor (no return type / void_type).
@@ -871,18 +893,15 @@ function translateMethodDeclaration(
   const isConstructor = hasClassName && name === className && !hasExplicitReturnType;
 
   return NodeFactory.createMethodDeclaration({
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    annotations: annotations.length > 0 ? annotations : undefined,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
-    body: body as CompoundStatement | undefined,
+    annotations: annotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? annotations : undefined,
+    body: body,
     isConstructor,
     modifiers,
     name,
     options: ctx.getLocationOption(node),
     parameters,
     returnType,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    typeParameters: typeParameters.length > 0 ? typeParameters : undefined,
+    typeParameters: typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
   });
 }
 
@@ -898,10 +917,8 @@ function translateInitializerBlock(
   node: Readonly<ParseTreeNode>
 ): Declaration {
   const blockNode = ctx.getChild(node, 'block');
-  const body = blockNode
-    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
-      (ctx.translateCompoundStatement(blockNode) as CompoundStatement)
-    : undefined;
+  const bodyResult = blockNode ? ctx.translateCompoundStatement(blockNode) : undefined;
+  const body = bodyResult && isCompoundStatement(bodyResult) ? bodyResult : undefined;
   const modifiers = ctx.extractModifiers(node);
   return NodeFactory.createMethodDeclaration({
     body,
@@ -1102,8 +1119,7 @@ function translateFieldDeclaration(
     name,
     type,
     initializer,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    modifiers.length > 0 ? modifiers : undefined,
+    modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : undefined,
     ctx.getLocationOption(node)
   );
 }
@@ -1129,19 +1145,14 @@ function translatePropertyDeclaration(
     ? (ctx.tryTranslateType(typeNode) ?? NodeFactory.createSimpleTypeRef('Object'))
     : NodeFactory.createSimpleTypeRef('Object');
   const getterNode = ctx.getChild(node, 'getter');
-  const getter = getterNode
-    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
-      (ctx.translateCompoundStatement(getterNode) as CompoundStatement)
-    : undefined;
+  const getterResult = getterNode ? ctx.translateCompoundStatement(getterNode) : undefined;
+  const getter = getterResult && isCompoundStatement(getterResult) ? getterResult : undefined;
   const setterNode = ctx.getChild(node, 'setter');
-  const setter = setterNode
-    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by translateCompoundStatement
-      (ctx.translateCompoundStatement(setterNode) as CompoundStatement)
-    : undefined;
+  const setterResult = setterNode ? ctx.translateCompoundStatement(setterNode) : undefined;
+  const setter = setterResult && isCompoundStatement(setterResult) ? setterResult : undefined;
 
   return NodeFactory.createPropertyDeclaration({
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-    annotations: annotations.length > 0 ? annotations : undefined,
+    annotations: annotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? annotations : undefined,
     getter,
     modifiers,
     name,
@@ -1167,8 +1178,7 @@ function translateVariableDeclaration(
   if (name == null || name === '') {
     // Try to get name from second child (nameNode) if available
     const children = ctx.getChildren(node);
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 2 children (type and name)
-    if (children.length >= 2) {
+    if (children.length >= MIN_CHILDREN_FOR_TYPE_AND_NAME) {
       const [, nameNode] = children;
       const nameFromChild = ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name');
       name = nameFromChild ?? 'unknown';
@@ -1182,12 +1192,11 @@ function translateVariableDeclaration(
     : NodeFactory.createSimpleTypeRef('Object');
   // Parser stores initializer as third child [type, name, initializerExpression]
   // where initializerExpression can be any expression (ternary, new, etc.)
-  let initializer = ctx.getChildExpression(node, 'initializer', true);
+  let initializer = ctx.getChildExpression(node, 'initializer', { optional: true });
   if (!initializer) {
     // Try positional: third child after type and name
     const children = ctx.getChildren(node);
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking for at least 3 children (type, name, initializer)
-    if (children.length >= 3) {
+    if (children.length >= MIN_CHILDREN_FOR_TYPE_NAME_INIT) {
       // Skip type (child[0]) and name (child[1]), third child is initializer
       const [, , initializerNode] = children;
       initializer =

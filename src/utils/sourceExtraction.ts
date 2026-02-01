@@ -14,6 +14,15 @@ const OFFSET_FOR_NEWLINE = 1;
 const LINES_PER_COLUMN_MULTIPLIER = 100;
 
 /**
+ * Get the source range for an AST node.
+ * @param node - The AST node to get the range for.
+ * @returns The source range, or null if not available.
+ */
+function getSourceRange(node: ASTNode): SourceRange | null {
+  return node.location ?? null;
+}
+
+/**
  * Options for source text extraction.
  */
 interface SourceTextOptions {
@@ -49,7 +58,6 @@ interface SourceTextOptions {
  * @returns The source text for the node.
  */
 function getSourceText(node: ASTNode, source: string, options: SourceTextOptions = {}): string {
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Function is defined later in file
   const range = getSourceRange(node);
   if (!range) {
     return '';
@@ -171,15 +179,6 @@ function getSourceTextForRange(source: string, range: SourceRange): string {
   resultLines.push(lastLine.substring(ZERO_INDEX, endCol));
 
   return resultLines.join('\n');
-}
-
-/**
- * Get the source range for an AST node.
- * @param node - The AST node to get the range for.
- * @returns The source range, or null if not available.
- */
-function getSourceRange(node: ASTNode): SourceRange | null {
-  return node.location ?? null;
 }
 
 /**

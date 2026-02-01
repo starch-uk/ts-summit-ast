@@ -3,6 +3,7 @@
  * Provides a unified interface delegating to specialized factory classes.
  */
 
+import { DEFAULT_ARRAY_NESTING } from '../constants.js';
 import type {
   IfStatement,
   ForLoopStatement,
@@ -217,7 +218,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created assignment expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Assign expression requires 4 parameters
   createAssignExpression(
     operator: AssignExpression['operator'],
     left: Readonly<Expression>,
@@ -236,7 +236,6 @@ const NodeFactory = {
    * @returns The created assignment expression.
    * @deprecated Use createAssignExpression instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Assignment expression requires 4 parameters
   createAssignmentExpression(
     operator: AssignExpression['operator'],
     left: Readonly<Expression>,
@@ -254,7 +253,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created binary expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Binary expression requires 4 parameters
   createBinaryExpression(
     operator: BinaryExpression['operator'],
     left: Readonly<Expression>,
@@ -318,7 +316,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created call expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Call expression requires 5 parameters
   createCallExpression(
     methodName: string,
 
@@ -338,8 +335,6 @@ const NodeFactory = {
     return ExpressionFactory.createCastExpression(type, expression, options);
   },
 
-  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Class declaration requires 8 params
   createClassDeclaration(
     name: string,
 
@@ -362,7 +357,6 @@ const NodeFactory = {
     options?: Readonly<NodeFactoryOptions>,
     annotations?: readonly Readonly<Annotation>[]
   ): ClassDeclaration {
-    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     return DeclarationFactory.createClassDeclaration(
       name,
       members,
@@ -511,9 +505,7 @@ const NodeFactory = {
    * @param opts - Options (name, values, modifiers, members, options).
    * @returns The created enum declaration.
    */
-  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- opts use Readonly<> but rule still flags */
   createEnumDeclaration(opts: Readonly<CreateEnumDeclarationOptions>): EnumDeclaration {
-    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     return DeclarationFactory.createEnumDeclaration(
       opts.name,
       opts.values,
@@ -599,7 +591,6 @@ const NodeFactory = {
     return NodeFactory.createEnhancedForLoopStatement(opts);
   },
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- For loop statement requires 5 parameters
   createForLoopStatement(
     body: Readonly<Statement>,
 
@@ -621,7 +612,6 @@ const NodeFactory = {
    * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- For statement requires 5 parameters
   createForStatement(
     body: Readonly<Statement>,
 
@@ -679,8 +669,6 @@ const NodeFactory = {
     return LiteralFactory.createIntegerVal(value, raw, options);
   },
 
-  /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types -- params use Readonly<> but rule still flags */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Interface declaration requires 6 params
   createInterfaceDeclaration(
     name: string,
     members: Readonly<
@@ -698,7 +686,6 @@ const NodeFactory = {
 
     options?: Readonly<NodeFactoryOptions>
   ): InterfaceDeclaration {
-    /* eslint-enable @typescript-eslint/prefer-readonly-parameter-types */
     return DeclarationFactory.createInterfaceDeclaration(
       name,
       members,
@@ -749,7 +736,6 @@ const NodeFactory = {
    * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Method call expression requires 5 parameters
   createMethodCallExpression(
     methodName: string,
 
@@ -878,8 +864,7 @@ const NodeFactory = {
 
   createSimpleTypeRef(
     name: string,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default array nesting
-    arrayNesting = 0,
+    arrayNesting = DEFAULT_ARRAY_NESTING,
 
     options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
@@ -1009,7 +994,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created switch statement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Switch statement requires 4 parameters
   createSwitchStatement(
     expression: Readonly<Expression>,
     cases: readonly SwitchCase[],
@@ -1020,7 +1004,6 @@ const NodeFactory = {
     return StatementFactory.createSwitchStatement(expression, [...cases], defaultCase, options);
   },
 
-  // eslint-disable-next-line @typescript-eslint/max-params -- Ternary expression requires 4 parameters
   createTernaryExpression(
     condition: Readonly<Expression>,
     thenExpression: Readonly<Expression>,
@@ -1065,7 +1048,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created try statement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Try statement requires 4 parameters
   createTryStatement(
     tryBlock: Readonly<CompoundStatement>,
     catchClauses: readonly CatchClause[],
@@ -1094,18 +1076,15 @@ const NodeFactory = {
    * @returns The created type reference.
    */
   createTypeRef(
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- components use Readonly<> but rule still flags
     components: Readonly<
       readonly { id: Readonly<Identifier>; args?: readonly Readonly<TypeRef>[] }[]
     >,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Default array nesting
-    arrayNesting = 0,
+    arrayNesting = DEFAULT_ARRAY_NESTING,
 
     options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
     return {
       arrayNesting,
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Array method callback parameter
       components: components.map((c) => ({
         args: c.args ?? [],
         id: c.id,
@@ -1123,7 +1102,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created unary expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Unary expression requires 4 parameters
   createUnaryExpression(
     operator: UnaryExpression['operator'],
     operand: Readonly<Expression>,
@@ -1151,7 +1129,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created variable declaration.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Variable declaration requires 5 parameters
   createVariableDeclaration(
     name: string,
     type: Readonly<TypeRef>,

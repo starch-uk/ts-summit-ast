@@ -3,6 +3,15 @@
  * Handles basic Apex syntax without external dependencies.
  */
 
+import {
+  DOUBLE_CHAR_OFFSET,
+  INITIAL_LINE,
+  INITIAL_POSITION,
+  LEXER_INITIAL_COLUMN,
+  QUADRUPLE_CHAR_OFFSET,
+  SINGLE_CHAR_OFFSET,
+  TRIPLE_CHAR_OFFSET,
+} from '../constants.js';
 import { TokenType, type Token } from './tokenType.js';
 
 /**
@@ -10,21 +19,13 @@ import { TokenType, type Token } from './tokenType.js';
  */
 export class ApexLexer {
   private readonly source: string;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial position constant
-  private readonly initialPosition = 0;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial line constant
-  private readonly initialLine = 1;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Initial column constant
-  private readonly initialColumn = 1;
-  // Character offset constants for lookahead
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
-  private readonly singleCharOffset = 1;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
-  private readonly doubleCharOffset = 2;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
-  private readonly tripleCharOffset = 3;
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Constant definition
-  private readonly quadrupleCharOffset = 4;
+  private readonly initialPosition = INITIAL_POSITION;
+  private readonly initialLine = INITIAL_LINE;
+  private readonly initialColumn = LEXER_INITIAL_COLUMN;
+  private readonly singleCharOffset = SINGLE_CHAR_OFFSET;
+  private readonly doubleCharOffset = DOUBLE_CHAR_OFFSET;
+  private readonly tripleCharOffset = TRIPLE_CHAR_OFFSET;
+  private readonly quadrupleCharOffset = QUADRUPLE_CHAR_OFFSET;
   private position = this.initialPosition;
   private line = this.initialLine;
   private column = this.initialColumn;
@@ -536,8 +537,8 @@ export class ApexLexer {
     return this.createToken(tokenType, text, startLine, startCol);
   }
 
-  // eslint-disable-next-line @typescript-eslint/max-params, @typescript-eslint/class-methods-use-this -- Token creation requires 4 parameters, factory method doesn't need instance state
   private createToken(type: TokenType, text: string, line: number, column: number): Token {
+    void this;
     return {
       location: { column, line },
       text,
@@ -545,18 +546,18 @@ export class ApexLexer {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method, may be used statically
   private isWhitespace(char: string): boolean {
+    void this;
     return char === ' ' || char === '\t' || char === '\n' || char === '\r';
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method, may be used statically
   private isDigit(char: string): boolean {
+    void this;
     return char >= '0' && char <= '9';
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Utility method, may be used statically
   private isIdentifierStart(char: string): boolean {
+    void this;
     return (
       (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_' || char === '$'
     );

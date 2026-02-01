@@ -704,7 +704,6 @@ parseThrowStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   ctx.consume(TokenType.SEMICOLON, 'Expected ; after throw');
 
   const children: ParseTreeNode[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- expression can be null
   if (expression !== null && expression !== undefined) {
     children.push(expression);
   }
@@ -736,7 +735,6 @@ parseReturnStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   ctx.consume(TokenType.SEMICOLON, 'Expected ; after return');
 
   const children: ParseTreeNode[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- expression can be null
   if (expression !== null && expression !== undefined) {
     children.push(expression);
   }
@@ -764,7 +762,6 @@ parseVariableDeclaration = function (ctx: Readonly<ParserContext>): ParseTreeNod
   const declarations: ParseTreeNode[] = [];
 
   // Parse declarators (can be multiple, separated by commas)
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Loop condition is intentional
   while (true) {
     const declStart = ctx.getCurrent();
     ctx.skipWhitespaceAndComments();
@@ -780,7 +777,6 @@ parseVariableDeclaration = function (ctx: Readonly<ParserContext>): ParseTreeNod
       type,
       { location: ctx.locationToRange(name.location), text: name.text, type: 'name' },
     ];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- initializer can be undefined
     if (initializer !== null && initializer !== undefined) {
       declChildren.push(initializer);
     }
@@ -920,7 +916,6 @@ parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
         const declarations: ParseTreeNode[] = [];
 
         // Parse declarators (can be multiple, separated by commas)
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional infinite loop pattern
         while (true) {
           const declStart = ctx.getCurrent();
           ctx.skipWhitespaceAndComments();
@@ -1003,7 +998,6 @@ parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
         while (ctx.match(TokenType.COMMA)) {
           ctx.skipWhitespaceAndComments();
           const expr = ctx.parseExpression();
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- expr can be null
           if (expr !== null && expr !== undefined) {
             expressions.push(expr);
           }
@@ -1062,7 +1056,6 @@ parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
       while (ctx.match(TokenType.COMMA)) {
         ctx.skipWhitespaceAndComments();
         const expr = ctx.parseExpression();
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- expr can be null
         if (expr !== null && expr !== undefined) {
           updateExpressions.push(expr);
         }

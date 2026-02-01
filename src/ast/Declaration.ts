@@ -17,7 +17,6 @@ import type { ElementValue } from './initializer.js';
 /**
  * Modifier keywords.
  */
-/* eslint-disable @typescript-eslint/no-type-alias -- Union type alias needed for type safety and clarity */
 type ModifierKeyword =
   | 'abstract'
   | 'deprecated'
@@ -40,7 +39,6 @@ type ModifierKeyword =
   | 'webservice'
   | 'with sharing'
   | 'without sharing';
-/* eslint-enable @typescript-eslint/no-type-alias */
 
 /**
  * Modifier node.

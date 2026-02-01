@@ -3,6 +3,7 @@
  * Parses declarations: classes, interfaces, triggers, enums, annotations, members, types.
  */
 
+import { FIRST_INDEX, MIN_NON_EMPTY_ARRAY_LENGTH } from '../constants.js';
 import type { ParseTreeNode } from './parseTree.js';
 import { TokenType, type Token } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
@@ -135,7 +136,7 @@ function parseTriggerDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode {
     } else {
       break;
     }
-  } while (true); // eslint-disable-line @typescript-eslint/no-unnecessary-condition -- Intentional infinite loop pattern
+  } while (true);
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.RIGHT_PAREN, 'Expected )');
 
@@ -915,7 +916,6 @@ function parseClassDeclaration(
  * @returns The method or constructor declaration parse tree node.
  * @throws {Error} If parsing fails or returnType is null.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Method parsing requires 5 parameters
 function parseMethodOrConstructor(
   ctx: Readonly<ParserContext>,
   name: Readonly<Token>,
@@ -1070,7 +1070,6 @@ function parseParameter(ctx: Readonly<ParserContext>): ParseTreeNode | null {
  * @returns The property declaration parse tree node.
  * @throws {Error} If parsing fails or type is null.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Property parsing requires 5 parameters
 function parsePropertyDeclaration(
   ctx: Readonly<ParserContext>,
   name: Readonly<Token>,
@@ -1159,7 +1158,6 @@ function parsePropertyDeclaration(
  * @returns The field declaration parse tree node.
  * @throws {Error} If the field name is missing or if unexpected tokens are encountered.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Field parsing requires 6 parameters
 function parseFieldDeclaration(
   ctx: Readonly<ParserContext>,
   name: Readonly<Token>,
@@ -1184,7 +1182,6 @@ function parseFieldDeclaration(
   const declarationData: { start: number; children: ParseTreeNode[] }[] = [];
 
   // Parse declarators (can be multiple, separated by commas)
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional infinite loop pattern
   while (true) {
     // For first declarator, use fieldStart (before type parsing); for subsequent ones, use current position
     const declStart = declarationData.length === zeroIndex ? fieldStart : ctx.getCurrent();
@@ -1217,7 +1214,6 @@ function parseFieldDeclaration(
       declChildren.push({ children: [...modifiers], type: 'modifiers' });
     }
     declChildren.push(type);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- fieldName is set on line 1665 or 1669, but TypeScript can't infer this
     if (fieldName === undefined) {
       throw new Error('Expected field name');
     }
@@ -1226,7 +1222,6 @@ function parseFieldDeclaration(
       text: fieldName.text,
       type: 'name',
     });
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- initializer can be undefined
     if (initializer !== null && initializer !== undefined) {
       declChildren.push(initializer);
     }
@@ -1293,7 +1288,6 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   // Parse modifiers
   const modifiers: ParseTreeNode[] = [];
   const singleIndexOffset = 1;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop pattern
   while (true) {
     let modifierText: string | null = null;
     let modifierStart: number | null = null;
@@ -1321,7 +1315,6 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       break;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Both variables are set together in branches above
     if (modifierText !== null && modifierStart !== null) {
       modifiers.push({
         location: ctx.getLocation(modifierStart, ctx.getCurrent()),
@@ -1340,8 +1333,9 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
     const block = ctx.parseBlock();
     return {
       children: [
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if array has elements
-        ...(modifiers.length > 0 ? [{ children: modifiers, type: 'modifiers' }] : []),
+        ...(modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH
+          ? [{ children: modifiers, type: 'modifiers' }]
+          : []),
         block,
       ],
       location: ctx.getLocation(start, ctx.getCurrent()),
@@ -1423,8 +1417,7 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
     // If the type is qualified (contains a dot), it's not a constructor
     // Qualified types like "System.debug" are method calls, not constructors
     // Also check the type node's text property directly
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Accessing first array element
-    const firstChild = type.children?.[0];
+    const firstChild = type.children?.[FIRST_INDEX];
     const childText =
       firstChild && typeof firstChild.text === 'string' ? firstChild.text : undefined;
     const typeText = type.text ?? childText;
@@ -1462,7 +1455,6 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
             line: savedTypeLocation.start.line,
           }
         : (type.location?.start ?? { column: 1, line: 1 }),
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- savedTypeName is set to 'Unknown' if null above
       text: savedTypeName ?? 'Unknown',
       type: TokenType.IDENTIFIER,
     };
@@ -1534,7 +1526,6 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
 
   // Parse modifiers (public, private, etc.) that can come before class/interface/enum
   const modifiers: ParseTreeNode[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop pattern for parsing modifiers
   while (true) {
     const beforeMatch = ctx.getCurrent();
     let modifierText: string | null = null;
@@ -1595,7 +1586,6 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       break;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Both variables are set together in branches above
     if (modifierText !== null && modifierStart !== null) {
       modifiers.push({
         location: ctx.getLocation(modifierStart, ctx.getCurrent()),

@@ -4,24 +4,21 @@
  * Converts AST nodes to JSON format for storage, transmission, or debugging.
  */
 
-/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
-
 import type { ASTNode } from '../ast/baseNode.js';
 import { serializeNodeProperties } from './astSerializer.js';
 
 /**
  * JSON representation of an AST node.
  */
-export interface JsonASTNode {
-  '@type': string;
-  // eslint-disable-next-line @typescript-eslint/member-ordering -- Index signature must be last
+interface JsonASTNode {
   [key: string]: unknown;
+  '@type': string;
 }
 
 /**
  * Options for JSON serialization.
  */
-export interface SerializationOptions {
+interface SerializationOptions {
   /**
    * Whether to include source location information.
    */
@@ -41,7 +38,7 @@ export interface SerializationOptions {
 /**
  * JSON Serializer for AST nodes.
  */
-export class JsonSerializer {
+class JsonSerializer {
   private readonly options: Required<SerializationOptions>;
 
   public constructor(options: Readonly<SerializationOptions> = {}) {
@@ -85,3 +82,6 @@ export class JsonSerializer {
     return json;
   }
 }
+
+export type { JsonASTNode, SerializationOptions };
+export { JsonSerializer };

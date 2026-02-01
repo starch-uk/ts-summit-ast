@@ -5,16 +5,14 @@
  * would require a more sophisticated parser and matcher.
  */
 
-/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
-
 import type { ASTNode, SourceRange } from '../ast/baseNode.js';
 import { getSourceRange } from './sourceExtraction.js';
-import { walkAST, buildParentMap } from './traversal.js';
+import { walkAST, buildParentMap, getNodeChildren } from './traversal.js';
 
 /**
  * XPath feature support information.
  */
-export interface XPathFeatureSupport {
+interface XPathFeatureSupport {
   /**
    * Whether XPath 3.1 features are supported.
    */
@@ -39,7 +37,7 @@ export interface XPathFeatureSupport {
 /**
  * Contains the result of validating an XPath expression, including whether it's valid and any errors found.
  */
-export interface XPathValidationResult {
+interface XPathValidationResult {
   /**
    * Whether the XPath expression is valid.
    */
@@ -76,7 +74,7 @@ export interface XPathValidationResult {
  * }
  * ```
  */
-export function validateXPath(xpath: string): XPathValidationResult {
+function validateXPath(xpath: string): XPathValidationResult {
   const normalizedXPath = xpath.trim();
   const emptyArrayLength = 0;
 
@@ -168,8 +166,8 @@ export function validateXPath(xpath: string): XPathValidationResult {
               : 'Invalid XPath syntax',
         }),
     supportedFeatures: supportedFeatures.length > emptyArrayLength ? supportedFeatures : undefined,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
-    unsupportedFeatures: unsupportedFeatures.length > 0 ? unsupportedFeatures : undefined,
+    unsupportedFeatures:
+      unsupportedFeatures.length > emptyArrayLength ? unsupportedFeatures : undefined,
   };
 }
 
@@ -186,7 +184,7 @@ export function validateXPath(xpath: string): XPathValidationResult {
  * console.log('Unsupported features:', support.unsupportedFeatures);
  * ```
  */
-export function getXPathFeatureSupport(): XPathFeatureSupport {
+function getXPathFeatureSupport(): XPathFeatureSupport {
   // This implementation supports a simplified subset of XPath
   const supportedAxes: string[] = [
     'descendant-or-self', // //
@@ -223,7 +221,7 @@ export function getXPathFeatureSupport(): XPathFeatureSupport {
 /**
  * Result of rule matching.
  */
-export interface RuleMatchResult {
+interface RuleMatchResult {
   readonly matches: boolean;
   readonly matchedNode?: ASTNode;
   readonly matchDetails?: {
@@ -241,7 +239,7 @@ export interface RuleMatchResult {
 /**
  * Options for rule matching.
  */
-export interface WouldTriggerRuleOptions {
+interface WouldTriggerRuleOptions {
   /**
    * Require exact match.
    */
@@ -263,7 +261,7 @@ export interface WouldTriggerRuleOptions {
  * @param options - Options for matching.
  * @returns Rule match result indicating if the node matches.
  */
-export function wouldTriggerRule(
+function wouldTriggerRule(
   node: ASTNode,
   xpathExpression: string,
   options: WouldTriggerRuleOptions = {}
@@ -290,8 +288,8 @@ export function wouldTriggerRule(
       const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
       if (attributeMatch) {
         const [, attrName, attrValue] = attributeMatch;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- Dynamic property access
-        const nodeValue = (node as unknown as Record<string, unknown>)[attrName ?? ''];
+        const record: Record<string, unknown> = { ...node };
+        const nodeValue = record[attrName];
 
         if (nodeValue === attrValue) {
           return {
@@ -338,7 +336,6 @@ export function wouldTriggerRule(
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Type narrowing check
     if (foundMatch !== undefined) {
       const matchNode: ASTNode = foundMatch;
       return {
@@ -362,7 +359,7 @@ export function wouldTriggerRule(
 /**
  * Rule match information.
  */
-export interface RuleMatch {
+interface RuleMatch {
   readonly node: ASTNode;
   readonly xpathExpression: string;
   readonly matchDetails: {
@@ -396,7 +393,7 @@ export interface RuleMatch {
 /**
  * Options for finding rule matches.
  */
-export interface FindRuleMatchesOptions {
+interface FindRuleMatchesOptions {
   readonly maxResults?: number;
 
   /**
@@ -437,7 +434,7 @@ export interface FindRuleMatchesOptions {
  * }
  * ```
  */
-export function findRuleMatches(
+function findRuleMatches(
   ast: ASTNode,
   xpathExpression: string,
   options: FindRuleMatchesOptions = {}
@@ -484,17 +481,11 @@ export function findRuleMatches(
           | Record<string, unknown>
           | undefined => {
           const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for attribute match
-          if (attributeMatch !== null && matchedNode !== undefined) {
-            const [, attrName] = attributeMatch;
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for attrName
-            if (attrName !== undefined) {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access
-              const attrValue = (matchedNode as unknown as Record<string, unknown>)[attrName];
-              return attrValue !== undefined ? { [attrName]: attrValue } : undefined;
-            }
-          }
-          return undefined;
+          if (attributeMatch === null) return undefined;
+          const [, attrName] = attributeMatch;
+          const record: Record<string, unknown> = { ...matchedNode };
+          const attrValue = record[attrName];
+          return attrValue !== undefined ? { [attrName]: attrValue } : undefined;
         })();
 
         // Get parent and siblings if context is requested
@@ -504,31 +495,7 @@ export function findRuleMatches(
         // Build sibling nodes (children of parent, excluding self)
         const siblingNodes: ASTNode[] | undefined =
           includeContext && parentNode !== undefined
-            ? ((): ASTNode[] => {
-                const parentChildren = Object.values(parentNode)
-                  .filter((v): v is ASTNode => v !== null && typeof v === 'object' && 'kind' in v)
-                  .filter((n) => n !== matchedNode);
-                // Also check common child properties
-                const commonChildren: ASTNode[] = [];
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access
-                const parentRecord = parentNode as unknown as Record<string, unknown>;
-                if (Array.isArray(parentRecord.statements)) {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
-                  commonChildren.push(...(parentRecord.statements as ASTNode[]));
-                }
-                if (Array.isArray(parentRecord.members)) {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
-                  commonChildren.push(...(parentRecord.members as ASTNode[]));
-                }
-                if (Array.isArray(parentRecord.arguments)) {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type assertion for array
-                  commonChildren.push(...(parentRecord.arguments as ASTNode[]));
-                }
-                return [...new Set([...parentChildren, ...commonChildren])].filter(
-                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Check for location
-                  (n) => n !== matchedNode && n.location !== null && n.location !== undefined
-                );
-              })()
+            ? getNodeChildren(parentNode).filter((n) => n !== matchedNode && n.location != null)
             : undefined;
 
         matches.push({
@@ -557,3 +524,13 @@ export function findRuleMatches(
 
   return matches;
 }
+
+export type {
+  FindRuleMatchesOptions,
+  RuleMatch,
+  RuleMatchResult,
+  WouldTriggerRuleOptions,
+  XPathFeatureSupport,
+  XPathValidationResult,
+};
+export { findRuleMatches, getXPathFeatureSupport, validateXPath, wouldTriggerRule };

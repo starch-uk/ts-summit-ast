@@ -5,15 +5,17 @@
 
 import type { ASTNode, TypeRef, Identifier } from '../ast/baseNode.js';
 import type {
-  Declaration,
+  Annotation,
+  AnnotationArgument,
   ClassDeclaration,
-  MethodDeclaration,
-  VariableDeclaration,
-  PropertyDeclaration,
+  Declaration,
   EnumDeclaration,
-  InterfaceDeclaration,
   EnumValue,
+  InterfaceDeclaration,
+  MethodDeclaration,
   Modifier,
+  PropertyDeclaration,
+  VariableDeclaration,
 } from '../ast/declaration.js';
 
 /**
@@ -27,11 +29,11 @@ function isDeclaration(node: ASTNode): node is Declaration {
     typeof node.kind === 'string' &&
     [
       'ClassDeclaration',
+      'EnumDeclaration',
       'InterfaceDeclaration',
       'MethodDeclaration',
-      'VariableDeclaration',
       'PropertyDeclaration',
-      'EnumDeclaration',
+      'VariableDeclaration',
     ].includes(node.kind)
   );
 }
@@ -136,7 +138,26 @@ function isEnumValue(node: ASTNode): node is EnumValue {
   return 'kind' in node && node.kind === 'EnumValue';
 }
 
+/**
+ * Type guard for Annotation nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is an Annotation.
+ */
+function isAnnotation(node: ASTNode): node is Annotation {
+  return 'kind' in node && node.kind === 'Annotation';
+}
+
+/**
+ * Type guard for AnnotationArgument nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is an AnnotationArgument.
+ */
+function isAnnotationArgument(node: ASTNode): node is AnnotationArgument {
+  return 'kind' in node && node.kind === 'AnnotationArgument';
+}
+
 export {
+  isAnnotation,
   isDeclaration,
   isModifier,
   isIdentifier,
@@ -149,4 +170,5 @@ export {
   isInterfaceDeclaration,
   isPropertyDeclaration,
   isEnumValue,
+  isAnnotationArgument,
 };

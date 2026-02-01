@@ -101,7 +101,6 @@ const InitializerFactory = {
 
   createMapInitializer(
     type: Readonly<TypeRef>,
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- pairs use Readonly<> but rule still flags
     pairs: Readonly<readonly { key: Readonly<Expression>; value: Readonly<Expression> }[]>,
     options?: Readonly<NodeFactoryOptions>
   ): MapInitializer {
@@ -192,7 +191,6 @@ const ExpressionFactory = {
    * @param options - Optional factory options.
    * @returns The created assignment expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Assign expression requires 4 parameters
   createAssignExpression(
     operator: AssignExpression['operator'],
 
@@ -218,7 +216,6 @@ const ExpressionFactory = {
    * @returns The created assignment expression.
    * @deprecated Use createAssignExpression instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Assignment expression requires 4 parameters
   createAssignmentExpression(
     operator: AssignExpression['operator'],
 
@@ -239,7 +236,6 @@ const ExpressionFactory = {
    * @param options - Optional factory options.
    * @returns The created binary expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 4 parameters
   createBinaryExpression(
     operator: BinaryExpression['operator'],
     left: Readonly<Expression>,
@@ -264,7 +260,6 @@ const ExpressionFactory = {
    * @param options - Optional factory options.
    * @returns The created call expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Factory method requires 5 parameters
   createCallExpression(
     methodName: string,
 
@@ -396,7 +391,6 @@ const ExpressionFactory = {
    * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Method call expression requires 5 parameters
   createMethodCallExpression(
     methodName: string,
 
@@ -574,7 +568,6 @@ const ExpressionFactory = {
    * @param options - Optional factory options.
    * @returns The created ternary expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Ternary expression requires 4 parameters
   createTernaryExpression(
     condition: Readonly<Expression>,
 
@@ -628,7 +621,6 @@ const ExpressionFactory = {
    * @param options - Optional factory options.
    * @returns The created unary expression.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Unary expression requires 4 parameters
   createUnaryExpression(
     operator: UnaryExpression['operator'],
 

@@ -6,9 +6,8 @@
  * and this module provides a convenient interface.
  */
 
-/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
-
 import type { ASTNode } from '../ast/baseNode.js';
+import { MIN_NON_EMPTY_ARRAY_LENGTH } from '../constants.js';
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import { ASTTranslator } from '../translator/astTranslator.js';
 import { parseApexSource } from '../parser/index.js';
@@ -20,7 +19,7 @@ import { extractComments } from './commentUtils.js';
  * Note: This is different from ParseError in parser/parseTree.ts
  * This one is for Apex parsing results, the other is for parse tree errors.
  */
-export interface ApexParseError {
+interface ApexParseError {
   readonly message: string;
   readonly location?: {
     readonly start: { readonly line: number; readonly column: number };
@@ -52,7 +51,7 @@ export interface ApexParseError {
 /**
  * Options for parsing Apex code.
  */
-export interface ApexParseOptions {
+interface ApexParseOptions {
   readonly includeComments?: boolean;
   readonly includeLocation?: boolean;
 
@@ -87,7 +86,7 @@ export interface ApexParseOptions {
  * Note: This is different from ParseResult in parser/parseTree.ts
  * This one is for Apex parsing results, the other is for parse tree results.
  */
-export interface ApexParseResult {
+interface ApexParseResult {
   readonly ast?: ASTNode;
   readonly source?: string;
   readonly errors: ApexParseError[];
@@ -128,8 +127,7 @@ export interface ApexParseResult {
  * }
  * ```
  */
-export function isUsableParseResult(
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Parameter is already readonly
+function isUsableParseResult(
   result: Readonly<ApexParseResult>
 ): result is ApexParseResult & { ast: NonNullable<ASTNode>; isUsable: true } {
   return result.isUsable === true && result.ast !== undefined;
@@ -158,7 +156,7 @@ export function isUsableParseResult(
  * }
  * ```
  */
-export function parseApexCode(source: string, options: ApexParseOptions = {}): ApexParseResult {
+function parseApexCode(source: string, options: ApexParseOptions = {}): ApexParseResult {
   const {
     includeComments = false,
     includeLocation = true,
@@ -200,8 +198,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
       isUsable: false,
       partialSuccess: false,
       source: includeSource ? source : undefined,
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
-      warnings: warnings.length > 0 ? warnings : undefined,
+      warnings: warnings.length > MIN_NON_EMPTY_ARRAY_LENGTH ? warnings : undefined,
     };
   }
 
@@ -256,8 +253,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
     isUsable,
     partialSuccess,
     source: includeSource ? source : undefined,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Check for non-empty array
-    warnings: warnings.length > 0 ? warnings : undefined,
+    warnings: warnings.length > MIN_NON_EMPTY_ARRAY_LENGTH ? warnings : undefined,
   };
 }
 
@@ -288,7 +284,7 @@ export function parseApexCode(source: string, options: ApexParseOptions = {}): A
  * }
  * ```
  */
-export function parseMultipleFiles(
+function parseMultipleFiles(
   sources: readonly string[],
   options: Readonly<ApexParseOptions> = {}
 ): ApexParseResult[] {
@@ -330,10 +326,9 @@ const EMPTY_EXTRACT_COMMENTS_OPTIONS: Readonly<ExtractCommentsOptions> = {};
  * @returns Array of extracted comment arrays, one per AST.
  * @throws {Error} If the lengths of asts and sources arrays do not match.
  */
-export function extractCommentsBatch(
+function extractCommentsBatch(
   asts: readonly Readonly<ASTNode>[],
   sources: readonly string[],
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- options use Readonly<> and const default but rule still flags
   options: Readonly<ExtractCommentsOptions> = EMPTY_EXTRACT_COMMENTS_OPTIONS
 ): ExtractedComment[][] {
   if (asts.length !== sources.length) {
@@ -344,3 +339,6 @@ export function extractCommentsBatch(
 
   return asts.map((ast, index) => extractComments(ast, sources[index], options));
 }
+
+export type { ApexParseError, ApexParseOptions, ApexParseResult };
+export { extractCommentsBatch, isUsableParseResult, parseApexCode, parseMultipleFiles };

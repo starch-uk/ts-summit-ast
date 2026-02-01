@@ -4,6 +4,7 @@
  */
 
 import type { SourceRange } from '../ast/baseNode.js';
+import { CAPTURE_GROUP_FIRST, PREVIOUS_POSITION_OFFSET } from '../constants.js';
 import type { ParseTreeNode } from './parseTree.js';
 import { TokenType, type Token } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
@@ -394,13 +395,11 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   }
 
   // Handle postfix operations (method calls, field access, array access) for super/this expressions
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- expr can be null
   if (expr !== null && (expr.type === 'super_expression' || expr.type === 'this_expression')) {
     // Get the token that created this expression (super or this)
     const previousTokenIndex = 1;
     const token = ctx.tokens[ctx.getCurrent() - previousTokenIndex];
     // Parse postfix operations (method calls, field access, array access)
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Loop condition is intentional
     while (true) {
       // Check for safe navigation operator ?. or ?(
       const peekOffset = 1;
@@ -431,12 +430,9 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
         }
         ctx.consume(TokenType.RIGHT_PAREN, 'Expected ) after arguments');
 
-        if (!expr) {
-          break;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
-        const methodCallNode: any = {
+        const methodCallNode: ParseTreeNode = {
           children: [expr, { children: args, type: 'arguments' }],
+          ...(isSafe ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ((): SourceRange => {
@@ -446,44 +442,28 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
           ),
           type: 'method_call_expression',
         };
-        if (isSafe) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
-          methodCallNode.isSafe = true;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
         expr = methodCallNode;
       } else if (ctx.match(TokenType.DOT)) {
         // Field access
-        if (!expr) {
-          break;
-        }
         // Special case: .class is a class literal (e.g., Object.class)
         const field = ctx.check(TokenType.CLASS)
           ? ctx.advance()
           : ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
-        const fieldAccessNode: any = {
+        const fieldAccessNode: ParseTreeNode = {
           children: [
             expr,
             { location: ctx.locationToRange(field.location), text: field.text, type: 'field' },
           ],
+          ...(isSafe ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ctx.locationToRange(field.location)
           ),
           type: 'field_access_expression',
         };
-        if (isSafe) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
-          fieldAccessNode.isSafe = true;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
         expr = fieldAccessNode;
       } else if (ctx.match(TokenType.LEFT_BRACKET)) {
         // Array access
-        if (!expr) {
-          break;
-        }
         const index = parseExpression(ctx);
         if (!index) {
           break;
@@ -537,9 +517,9 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
       }
       ctx.consume(TokenType.RIGHT_PAREN, 'Expected ) after arguments');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
-      const methodCallNode: any = {
+      const methodCallNode: ParseTreeNode = {
         children: [expr, { children: args, type: 'arguments' }],
+        ...(isSafe ? { isSafe: true } : {}),
         location:
           expr.location ??
           ((): SourceRange => {
@@ -548,11 +528,6 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
           })(),
         type: 'method_call_expression',
       };
-      if (isSafe) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
-        methodCallNode.isSafe = true;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
       expr = methodCallNode;
     } else if (ctx.match(TokenType.DOT)) {
       // Field access
@@ -560,23 +535,18 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
         ? ctx.advance()
         : ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
-      const fieldAccessNode: any = {
+      const fieldAccessNode: ParseTreeNode = {
         children: [
           expr,
           { location: ctx.locationToRange(field.location), text: field.text, type: 'field' },
         ],
+        ...(isSafe ? { isSafe: true } : {}),
         location: ctx.combineLocations(
           expr.location ?? ctx.locationToRange(field.location),
           ctx.locationToRange(field.location)
         ),
         type: 'field_access_expression',
       };
-      if (isSafe) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
-        fieldAccessNode.isSafe = true;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
       expr = fieldAccessNode;
     } else if (ctx.match(TokenType.LEFT_BRACKET)) {
       // Array access
@@ -749,8 +719,7 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
 
       return {
         children: [{ children: lambdaParams, type: 'parameters' }, body],
-        // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous position offset
-        location: ctx.getLocation(savedPos - 1, ctx.getCurrent()),
+        location: ctx.getLocation(savedPos - PREVIOUS_POSITION_OFFSET, ctx.getCurrent()),
         type: 'lambda_expression',
       };
     }
@@ -873,7 +842,6 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
     }
 
     // Parse postfix operations (method calls, field access, array access)
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Infinite loop with break
     while (true) {
       // Check for safe navigation operator ?. or ?(
       const singleCharOffset = 1;
@@ -904,20 +872,15 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
         }
         ctx.consume(TokenType.RIGHT_PAREN, 'Expected ) after arguments');
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
-        const methodCallNode: any = {
+        const methodCallNode: ParseTreeNode = {
           children: [expr, { children: args, type: 'arguments' }],
+          ...(isSafe ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ctx.getLocation(ctx.getCurrent() - singleIndexOffset, ctx.getCurrent())
           ),
           type: 'method_call_expression',
         };
-        if (isSafe) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
-          methodCallNode.isSafe = true;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
         expr = methodCallNode;
       } else if (ctx.match(TokenType.DOT)) {
         // Field access
@@ -925,23 +888,18 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
         const field = ctx.check(TokenType.CLASS)
           ? ctx.advance()
           : ctx.consume(TokenType.IDENTIFIER, 'Expected field name');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic property assignment for isSafe
-        const fieldAccessNode: any = {
+        const fieldAccessNode: ParseTreeNode = {
           children: [
             expr,
             { location: ctx.locationToRange(field.location), text: field.text, type: 'field' },
           ],
+          ...(isSafe ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ctx.locationToRange(field.location)
           ),
           type: 'field_access_expression',
         };
-        if (isSafe) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Dynamic property assignment for isSafe
-          fieldAccessNode.isSafe = true;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Dynamic property assignment for optional chaining
         expr = fieldAccessNode;
       } else if (ctx.match(TokenType.LEFT_BRACKET)) {
         // Array access
@@ -1088,8 +1046,7 @@ parseSoqlSoslQuery = function (ctx: Readonly<ParserContext>): ParseTreeNode {
         queryStart + match.index + singleIndexOffset,
         queryStart + match.index + singleIndexOffset + match[singleIndexOffset].length
       ),
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- First capture group index
-      text: match[1],
+      text: match[CAPTURE_GROUP_FIRST],
       type: 'identifier',
     });
   }
@@ -1157,8 +1114,8 @@ parseNewExpression = function (ctx: Readonly<ParserContext>): ParseTreeNode {
               children: [firstExpr, secondExpr],
               location: ctx.combineLocations(
                 firstExpr.location ?? ctx.getLocation(savedPos, ctx.getCurrent()),
-                // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Previous position offset
-                secondExpr.location ?? ctx.getLocation(ctx.getCurrent() - 1, ctx.getCurrent())
+                secondExpr.location ??
+                  ctx.getLocation(ctx.getCurrent() - PREVIOUS_POSITION_OFFSET, ctx.getCurrent())
               ),
               type: 'map_entry',
             });

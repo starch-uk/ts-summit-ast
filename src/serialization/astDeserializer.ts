@@ -4,7 +4,6 @@
  */
 
 import type { ASTNode, SourceRange } from '../ast/baseNode.js';
-import type { VariableDeclaration } from '../ast/declaration.js';
 import type {
   IfStatement,
   ForLoopStatement,
@@ -17,7 +16,14 @@ import type {
 } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
-import { isExpression, isStatement, isIdentifier } from '../guard/index.js';
+import {
+  isExpression,
+  isExpressionStatement,
+  isIdentifier,
+  isStatement,
+  isVariableDeclaration,
+  isVariableDeclarationStatement,
+} from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
 import {
@@ -125,6 +131,41 @@ function getJsonASTNodeArrayProperty(json: Readonly<JsonASTNode>, property: stri
     throw new Error(`Invalid JSON AST node: property ${property} is not a valid JsonASTNode array`);
   }
   return value;
+}
+
+/**
+ * Gets a JsonASTNode from a record (e.g. TypeRef component object) by key.
+ * @param record - Record with JSON structure.
+ * @param key - Property name.
+ * @returns The JsonASTNode value.
+ * @throws {Error} If the property is not a valid JsonASTNode.
+ */
+function getJsonASTNodeFromRecord(
+  record: Readonly<Record<string, unknown>>,
+  key: string
+): JsonASTNode {
+  const value = record[key];
+  if (!isJsonASTNode(value)) {
+    throw new Error(`Invalid JSON: property ${key} is not a valid JsonASTNode`);
+  }
+  return value;
+}
+
+/**
+ * Gets a JsonASTNode array from a record by key.
+ * @param record - Record with JSON structure.
+ * @param key - Property name.
+ * @returns The JsonASTNode array, or empty array if missing/invalid.
+ */
+function getJsonASTNodeArrayFromRecord(
+  record: Readonly<Record<string, unknown>>,
+  key: string
+): JsonASTNode[] {
+  const value = record[key];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is JsonASTNode => isJsonASTNode(item));
 }
 
 /**
@@ -236,14 +277,10 @@ function deserializeForLoopStatement(
   let init: ExpressionStatement | VariableDeclarationStatement | undefined = undefined;
   if (initNode !== undefined) {
     const initDeserialized = deserializer.deserializeNode(initNode);
-    if (isStatement(initDeserialized)) {
-      if (initDeserialized.kind === 'ExpressionStatement') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- kind checked above
-        init = initDeserialized as ExpressionStatement;
-      } else if (initDeserialized.kind === 'VariableDeclarationStatement') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- kind checked above
-        init = initDeserialized as VariableDeclarationStatement;
-      }
+    if (isExpressionStatement(initDeserialized)) {
+      init = initDeserialized;
+    } else if (isVariableDeclarationStatement(initDeserialized)) {
+      init = initDeserialized;
     }
   }
 
@@ -434,16 +471,12 @@ function deserializeVariableDeclarationStatement(
   }
   const declarationNode = getJsonASTNodeProperty(json, 'declaration');
   const deserialized = deserializer.deserializeNode(declarationNode);
-  if (deserialized.kind !== 'VariableDeclaration') {
+  if (!isVariableDeclaration(deserialized)) {
     throw new Error(
       'Invalid VariableDeclarationStatement: declaration is not a VariableDeclaration node'
     );
   }
-  return NodeFactory.createVariableDeclarationStatement(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- kind checked above
-    deserialized as VariableDeclaration,
-    locationOption
-  );
+  return NodeFactory.createVariableDeclarationStatement(deserialized, locationOption);
 }
 
 // ============================================================================
@@ -459,7 +492,6 @@ function deserializeVariableDeclarationStatement(
  * @returns The deserialized AST node.
  * @throws {Error} If the node type is unknown or not yet implemented.
  */
-// eslint-disable-next-line @typescript-eslint/max-params -- Deserialization requires 4 parameters
 function deserializeNodeByKind(
   json: Readonly<JsonASTNode>,
   nodeType: string,
@@ -587,13 +619,15 @@ function deserializeNodeByKind(
 }
 
 export {
+  getJsonASTNodeArrayFromRecord,
+  getJsonASTNodeArrayProperty,
+  getJsonASTNodeFromRecord,
+  getJsonASTNodeProperty,
+  getNumberProperty,
+  getOptionalJsonASTNodeProperty,
+  getStringProperty,
   isJsonASTNode,
   isJsonASTNodeArray,
-  getJsonASTNodeProperty,
-  getOptionalJsonASTNodeProperty,
-  getJsonASTNodeArrayProperty,
-  getStringProperty,
-  getNumberProperty,
   deserializeIfStatement,
   deserializeForLoopStatement,
   deserializeWhileLoopStatement,

@@ -6,8 +6,6 @@
  * a parser runtime dependency.
  */
 
-/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
-
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { join, extname } from 'path';
 import { ASTTranslator } from '../translator/astTranslator.js';
@@ -17,7 +15,7 @@ import type { ParseTreeNode } from '../parser/parseTree.js';
 /**
  * Options for SummitTool.
  */
-export interface SummitToolOptions {
+interface SummitToolOptions {
   /**
    * Whether to output JSON.
    */
@@ -43,7 +41,7 @@ export interface SummitToolOptions {
 /**
  * Result of processing a file.
  */
-export interface ProcessResult {
+interface ProcessResult {
   readonly file: string;
   readonly success: boolean;
   readonly error?: string;
@@ -53,7 +51,7 @@ export interface ProcessResult {
 /**
  * SummitTool class for processing Apex files.
  */
-export class SummitTool {
+class SummitTool {
   private readonly options: Required<Omit<SummitToolOptions, 'parseTreeAdapter'>> & {
     parseTreeAdapter?: SummitToolOptions['parseTreeAdapter'];
   };
@@ -258,10 +256,13 @@ export class SummitTool {
     // Simple text representation
 
     if (ast !== null && ast !== undefined && typeof ast === 'object' && 'kind' in ast) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- AST kind is always a string
-      return `AST Node: ${(ast as { kind: string }).kind}`;
+      const { kind } = ast as Record<string, unknown>;
+      return typeof kind === 'string' ? `AST Node: ${kind}` : JSON.stringify(ast);
     }
 
     return String(ast);
   }
 }
+
+export type { ProcessResult, SummitToolOptions };
+export { SummitTool };

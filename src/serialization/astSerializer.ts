@@ -46,14 +46,47 @@ import type {
   ElementValue,
 } from '../ast/initializer.js';
 import type { VariableDeclaration, AnnotationArgument, Modifier } from '../ast/declaration.js';
-import type { JsonASTNode } from './jsonSerializer.js';
+import {
+  isIfStatement,
+  isForLoopStatement,
+  isWhileLoopStatement,
+  isReturnStatement,
+  isCompoundStatement,
+  isExpressionStatement,
+  isVariableDeclarationStatement,
+} from '../guard/statementGuard.js';
+import {
+  isBinaryExpression,
+  isCallExpression,
+  isFieldExpression,
+  isArrayExpression,
+  isNewExpression,
+  isVariableExpression,
+  isAssignExpression,
+} from '../guard/expressionGuard.js';
+import { isStringVal, isNumberLiteral, isBooleanVal } from '../guard/literalGuard.js';
+import {
+  isVariableDeclaration,
+  isModifier,
+  isTypeRef,
+  isAnnotationArgument,
+} from '../guard/declarationGuard.js';
+import {
+  isConstructorInitializer,
+  isValuesInitializer,
+  isSizedArrayInitializer,
+  isMapInitializer,
+  isExpressionElementValue,
+  isAnnotationElementValue,
+  isArrayElementValue,
+} from '../guard/initGuard.js';
 import type { JsonSerializer } from './jsonSerializer.js';
+import type { JsonASTNode } from './jsonSerializer.js';
 
 /** Readonly view of JSON AST node for serializer function parameters (satisfies prefer-readonly-parameter-types). */
 interface ReadonlyJsonASTNodeParam {
-  readonly '@type': string;
-  // eslint-disable-next-line @typescript-eslint/member-ordering -- Index signature must be last
   readonly [key: string]: unknown;
+  readonly '@type': string;
 }
 
 /** Readonly view of serializer for function parameters (satisfies prefer-readonly-parameter-types). */
@@ -676,154 +709,64 @@ function serializeNodeProperties(
   json: Readonly<JsonASTNode>,
   serializer: Readonly<JsonSerializer>
 ): void {
-  switch (node.kind) {
-    // Statement nodes
-    case 'IfStatement':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific statement type
-      serializeIfStatement(node as IfStatement, json, serializer);
-      break;
-    case 'ForLoopStatement':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific statement type
-      serializeForLoopStatement(node as ForLoopStatement, json, serializer);
-      break;
-    case 'WhileLoopStatement':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific statement type
-      serializeWhileLoopStatement(node as WhileLoopStatement, json, serializer);
-      break;
-    case 'ReturnStatement':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific statement type
-      serializeReturnStatement(node as ReturnStatement, json, serializer);
-      break;
-    case 'CompoundStatement':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific statement type
-      serializeCompoundStatement(node as CompoundStatement, json, serializer);
-      break;
-    case 'ExpressionStatement':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific statement type
-      serializeExpressionStatement(node as ExpressionStatement, json, serializer);
-      break;
-    case 'VariableDeclarationStatement':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific statement type
-      serializeVariableDeclarationStatement(node as VariableDeclarationStatement, json, serializer);
-      break;
-    case 'EnhancedForLoopStatement':
-    case 'DoWhileLoopStatement':
-      // Use generic serialization
-      break;
-
-    // Expression nodes
-    case 'BinaryExpression':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific expression type
-      serializeBinaryExpression(node as BinaryExpression, json, serializer);
-      break;
-    case 'CallExpression':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific expression type
-      serializeCallExpression(node as CallExpression, json, serializer);
-      break;
-    case 'FieldExpression':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific expression type
-      serializeFieldExpression(node as FieldExpression, json, serializer);
-      break;
-    case 'ArrayExpression':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific expression type
-      serializeArrayExpression(node as ArrayExpression, json, serializer);
-      break;
-    case 'AssignExpression':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific expression type
-      serializeAssignExpression(node as AssignExpression, json, serializer);
-      break;
-    case 'NewExpression':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific expression type
-      serializeNewExpression(node as NewExpression, json, serializer);
-      break;
-    case 'VariableExpression':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific expression type
-      serializeVariableExpression(node as VariableExpression, json, serializer);
-      break;
-    case 'SoqlExpression':
-    case 'SoslExpression':
-      // Use generic serialization
-      break;
-
-    // Literal nodes
-    case 'StringVal':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific literal type
-      serializeStringVal(node as StringVal, json);
-      break;
-    case 'IntegerVal':
-    case 'DoubleVal':
-    case 'LongVal':
-    case 'DecimalVal':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific literal type
-      serializeNumericLiteral(node as DecimalVal | DoubleVal | IntegerVal | LongVal, json);
-      break;
-    case 'BooleanVal':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific literal type
-      serializeBooleanVal(node as BooleanVal, json);
-      break;
-    case 'NullVal':
-      // No additional properties
-      break;
-
-    // Declaration nodes
-    case 'VariableDeclaration':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific declaration type
-      serializeVariableDeclaration(node as VariableDeclaration, json, serializer);
-      break;
-
-    // Modifier
-    case 'Modifier':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific modifier type
-      serializeModifier(node as Modifier, json);
-      break;
-
-    // TypeRef (AST node in summit-ast)
-    case 'TypeRef':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific type ref
-      serializeTypeRefNode(node as TypeRef, json, serializer);
-      break;
-
-    // Initializer nodes
-    case 'ConstructorInitializer':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific initializer type
-      serializeConstructorInitializer(node as ConstructorInitializer, json, serializer);
-      break;
-    case 'ValuesInitializer':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific initializer type
-      serializeValuesInitializer(node as ValuesInitializer, json, serializer);
-      break;
-    case 'SizedArrayInitializer':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific initializer type
-      serializeSizedArrayInitializer(node as SizedArrayInitializer, json, serializer);
-      break;
-    case 'MapInitializer':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific initializer type
-      serializeMapInitializer(node as MapInitializer, json, serializer);
-      break;
-
-    // ElementValue nodes
-    case 'ExpressionElementValue':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific element value type
-      serializeExpressionElementValue(node as ExpressionElementValue, json, serializer);
-      break;
-    case 'AnnotationElementValue':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific element value type
-      serializeAnnotationElementValue(node as AnnotationElementValue, json, serializer);
-      break;
-    case 'ArrayElementValue':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific element value type
-      serializeArrayElementValue(node as ArrayElementValue, json, serializer);
-      break;
-
-    // Declaration nodes
-    case 'AnnotationArgument':
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing from ASTNode to specific annotation argument type
-      serializeAnnotationArgument(node as AnnotationArgument, json, serializer);
-      break;
-
-    default:
-      // For unknown node types, try to serialize all properties
-      serializeUnknownNode(node, json, serializer);
+  if (isIfStatement(node)) {
+    serializeIfStatement(node, json, serializer);
+  } else if (isForLoopStatement(node)) {
+    serializeForLoopStatement(node, json, serializer);
+  } else if (isWhileLoopStatement(node)) {
+    serializeWhileLoopStatement(node, json, serializer);
+  } else if (isReturnStatement(node)) {
+    serializeReturnStatement(node, json, serializer);
+  } else if (isCompoundStatement(node)) {
+    serializeCompoundStatement(node, json, serializer);
+  } else if (isExpressionStatement(node)) {
+    serializeExpressionStatement(node, json, serializer);
+  } else if (isVariableDeclarationStatement(node)) {
+    serializeVariableDeclarationStatement(node, json, serializer);
+  } else if (isBinaryExpression(node)) {
+    serializeBinaryExpression(node, json, serializer);
+  } else if (isCallExpression(node)) {
+    serializeCallExpression(node, json, serializer);
+  } else if (isFieldExpression(node)) {
+    serializeFieldExpression(node, json, serializer);
+  } else if (isArrayExpression(node)) {
+    serializeArrayExpression(node, json, serializer);
+  } else if (isAssignExpression(node)) {
+    serializeAssignExpression(node, json, serializer);
+  } else if (isNewExpression(node)) {
+    serializeNewExpression(node, json, serializer);
+  } else if (isVariableExpression(node)) {
+    serializeVariableExpression(node, json, serializer);
+  } else if (isStringVal(node)) {
+    serializeStringVal(node, json);
+  } else if (isNumberLiteral(node)) {
+    serializeNumericLiteral(node, json);
+  } else if (isBooleanVal(node)) {
+    serializeBooleanVal(node, json);
+  } else if (isVariableDeclaration(node)) {
+    serializeVariableDeclaration(node, json, serializer);
+  } else if (isModifier(node)) {
+    serializeModifier(node, json);
+  } else if (isTypeRef(node)) {
+    serializeTypeRefNode(node, json, serializer);
+  } else if (isConstructorInitializer(node)) {
+    serializeConstructorInitializer(node, json, serializer);
+  } else if (isValuesInitializer(node)) {
+    serializeValuesInitializer(node, json, serializer);
+  } else if (isSizedArrayInitializer(node)) {
+    serializeSizedArrayInitializer(node, json, serializer);
+  } else if (isMapInitializer(node)) {
+    serializeMapInitializer(node, json, serializer);
+  } else if (isExpressionElementValue(node)) {
+    serializeExpressionElementValue(node, json, serializer);
+  } else if (isAnnotationElementValue(node)) {
+    serializeAnnotationElementValue(node, json, serializer);
+  } else if (isArrayElementValue(node)) {
+    serializeArrayElementValue(node, json, serializer);
+  } else if (isAnnotationArgument(node)) {
+    serializeAnnotationArgument(node, json, serializer);
+  } else {
+    serializeUnknownNode(node, json, serializer);
   }
 }
 

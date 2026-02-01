@@ -23,12 +23,11 @@ import type {
   AnnotationElementValue,
   ArrayElementValue,
 } from '../ast/initializer.js';
-import type { AnnotationArgument, VariableDeclaration, Modifier } from '../ast/declaration.js';
-import type { Annotation } from '../ast/declaration.js';
+import type { AnnotationArgument, Modifier, VariableDeclaration } from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
 import type { Identifier } from '../ast/baseNode.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
-import { isElementValue, isExpression, isModifier } from '../guard/index.js';
+import { isAnnotation, isElementValue, isExpression, isModifier } from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
 import {
@@ -384,12 +383,12 @@ function deserializeAnnotationElementValue(
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON deserialization requires type assertions
-  const value = deserializer.deserializeNode(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-    json.value as JsonASTNode
-  ) as Annotation;
-  return NodeFactory.createAnnotationElementValue(value, locationOption);
+  const valueNode = getJsonASTNodeProperty(json, 'value');
+  const deserialized = deserializer.deserializeNode(valueNode);
+  if (!isAnnotation(deserialized)) {
+    throw new Error('Invalid AnnotationElementValue: value is not an Annotation node');
+  }
+  return NodeFactory.createAnnotationElementValue(deserialized, locationOption);
 }
 
 /**
@@ -472,8 +471,7 @@ function deserializeAnnotationArgument(
  */
 function deserializeVariableDeclaration(
   json: Readonly<JsonASTNode>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Options object needs to be mutable
-  locationOption?: { location: SourceRange },
+  locationOption?: Readonly<{ location: SourceRange }>,
   deserializer?: Readonly<JsonDeserializer>
 ): VariableDeclaration {
   if (!deserializer) {
@@ -517,39 +515,56 @@ function deserializeVariableDeclaration(
  * @returns The deserialized Modifier node.
  * @throws {Error} If the modifier keyword is invalid.
  */
+/** Valid modifier keywords for runtime validation. */
+const VALID_MODIFIER_KEYWORDS: readonly Modifier['keyword'][] = [
+  'abstract',
+  'deprecated',
+  'final',
+  'future',
+  'global',
+  'native',
+  'override',
+  'private',
+  'protected',
+  'public',
+  'static',
+  'strictfp',
+  'synchronized',
+  'testMethod',
+  'transient',
+  'volatile',
+  'webservice',
+] as const;
+
+/**
+ * Parse and validate a modifier keyword from JSON.
+ * @param value - Raw value from JSON.
+ * @returns Valid Modifier keyword.
+ * @throws {Error} If the keyword is invalid.
+ */
+function parseModifierKeyword(value: unknown): Modifier['keyword'] {
+  const s = typeof value === 'string' ? value : '';
+  const found = VALID_MODIFIER_KEYWORDS.find((k) => k === s);
+  if (found !== undefined) {
+    return found;
+  }
+  throw new Error(`Invalid modifier keyword: ${String(value)}`);
+}
+
+/**
+ * Deserializes a Modifier node.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @returns The deserialized Modifier node.
+ * @throws {Error} If the modifier keyword is invalid.
+ */
 function deserializeModifier(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): Modifier {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON property access
-  const keyword = json.keyword as string;
-  // Validate keyword is a valid ModifierKeyword
-  const validKeywords = [
-    'public',
-    'private',
-    'protected',
-    'static',
-    'final',
-    'abstract',
-    'transient',
-    'volatile',
-    'synchronized',
-    'native',
-    'strictfp',
-    'global',
-    'webservice',
-    'override',
-    'testMethod',
-    'future',
-    'deprecated',
-  ];
-  if (!validKeywords.includes(keyword)) {
-    throw new Error(`Invalid modifier keyword: ${keyword}`);
-  }
-
+  const keyword = parseModifierKeyword(getStringProperty(json, 'keyword'));
   return {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowing to ModifierKeyword
-    keyword: keyword as Modifier['keyword'],
+    keyword,
     kind: 'Modifier',
     location: locationOption?.location,
   };

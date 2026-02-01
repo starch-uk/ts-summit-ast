@@ -20,6 +20,7 @@ import type {
   ContinueStatement,
   ThrowStatement,
   TryStatement,
+  SwitchCase,
   SwitchStatement,
 } from '../ast/statement.js';
 
@@ -106,6 +107,15 @@ function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
  */
 function isSwitchStatement(node: ASTNode): node is SwitchStatement {
   return 'kind' in node && node.kind === 'SwitchStatement';
+}
+
+/**
+ * Type guard for SwitchCase nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is a SwitchCase.
+ */
+function isSwitchCase(node: ASTNode): node is SwitchCase {
+  return 'kind' in node && node.kind === 'SwitchCase';
 }
 
 /**
@@ -244,6 +254,7 @@ export {
   isWhileLoopStatement,
   isForStatement,
   isWhileStatement,
+  isSwitchCase,
   isSwitchStatement,
   isReturnStatement,
   isCompoundStatement,

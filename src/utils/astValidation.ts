@@ -3,15 +3,13 @@
  * Utilities for validating AST structure and comparing AST nodes.
  */
 
-/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
-
 import type { ASTNode } from '../ast/baseNode.js';
 import { walkAST, buildParentMap, getNodeChildren } from './traversal.js';
 
 /**
  * Result of AST validation.
  */
-export interface ASTValidationResult {
+interface ASTValidationResult {
   /**
    * Whether the AST structure is valid.
    */
@@ -49,7 +47,7 @@ export interface ASTValidationResult {
  * }
  * ```
  */
-export function validateAST(ast: ASTNode): ASTValidationResult {
+function validateAST(ast: ASTNode): ASTValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -111,7 +109,7 @@ export function validateAST(ast: ASTNode): ASTValidationResult {
 /**
  * Result of AST comparison.
  */
-export interface ASTComparisonResult {
+interface ASTComparisonResult {
   /**
    * Whether the ASTs are structurally equal.
    */
@@ -151,7 +149,7 @@ export interface ASTComparisonResult {
  * }
  * ```
  */
-export function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
+function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
   const differences: string[] = [];
   let typesMatch = true;
 
@@ -176,7 +174,7 @@ export function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
 /**
  * AST statistics information.
  */
-export interface ASTStatistics {
+interface ASTStatistics {
   /**
    * Total number of nodes in the AST.
    */
@@ -224,7 +222,7 @@ export interface ASTStatistics {
  * }
  * ```
  */
-export function getASTStatistics(ast: ASTNode): ASTStatistics {
+function getASTStatistics(ast: ASTNode): ASTStatistics {
   const nodeTypeCounts: Record<string, number> = {};
   let totalNodes = 0;
   let nodesWithLocation = 0;
@@ -300,3 +298,6 @@ export function getASTStatistics(ast: ASTNode): ASTStatistics {
     totalNodes,
   };
 }
+
+export type { ASTComparisonResult, ASTStatistics, ASTValidationResult };
+export { compareASTs, getASTStatistics, validateAST };

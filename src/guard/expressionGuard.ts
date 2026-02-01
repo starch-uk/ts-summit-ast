@@ -6,6 +6,7 @@
 import type { ASTNode } from '../ast/baseNode.js';
 import type {
   Expression,
+  AssignExpression,
   BinaryExpression,
   UnaryExpression,
   CallExpression,
@@ -61,6 +62,15 @@ function isExpression(node: ASTNode): node is Expression {
       'TriggerContextVariableExpression',
     ].includes(node.kind)
   );
+}
+
+/**
+ * Type guard for BinaryExpression nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is a BinaryExpression.
+ */
+function isAssignExpression(node: ASTNode): node is AssignExpression {
+  return 'kind' in node && node.kind === 'AssignExpression';
 }
 
 /**
@@ -252,6 +262,7 @@ function isSuperExpression(node: ASTNode): node is SuperExpression {
 
 export {
   isExpression,
+  isAssignExpression,
   isBinaryExpression,
   isUnaryExpression,
   isCallExpression,

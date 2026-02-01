@@ -16,6 +16,7 @@ import type { ElementValue } from '../ast/initializer.js';
 import type { Expression } from '../ast/expression.js';
 import type { Statement } from '../ast/statement.js';
 import type { Declaration } from '../ast/declaration.js';
+import { LAST_ELEMENT_OFFSET, MIN_NON_EMPTY_ARRAY_LENGTH } from '../constants.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 import { NodeFactory } from './nodeFactory.js';
 
@@ -70,25 +71,21 @@ export interface TranslateContext {
   tryTranslateType: (node: Readonly<ParseTreeNode>) => TypeRef | null;
 
   /**
-   * Get child expression from node.
+   * Options for getChildExpression and getChildStatement.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
   getChildExpression: (
     node: Readonly<ParseTreeNode>,
     propertyName: string,
-    optionalOrAlt?: boolean | string,
-    altPropertyName?: string
+    options?: Readonly<{ optional?: boolean; altPropertyName?: string }>
   ) => Expression | undefined;
 
   /**
    * Get child statement from node.
    */
-  // eslint-disable-next-line @typescript-eslint/max-params -- Method requires 4 parameters for flexibility
   getChildStatement: (
     node: Readonly<ParseTreeNode>,
     propertyName: string,
-    altPropertyName?: string,
-    optional?: boolean
+    options?: Readonly<{ altPropertyName?: string; optional?: boolean }>
   ) => Statement | undefined;
 
   /**
@@ -126,9 +123,12 @@ export interface TranslateContext {
 
   /**
    * Get property from node.
+   * @template T - Expected type of the property (defaults to unknown).
    */
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
-  getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
+  getProperty: <T = unknown>(
+    node: Readonly<ParseTreeNode>,
+    ...names: readonly string[]
+  ) => T | undefined;
 
   /**
    * Get text from node.
@@ -162,6 +162,29 @@ export interface TranslateContext {
 }
 
 /**
+ * Type guard for ParseTreeNode.
+ * @param value - Value to check.
+ * @returns True if value is a ParseTreeNode.
+ */
+function isParseTreeNode(value: unknown): value is ParseTreeNode {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  return 'type' in value && typeof (value as { type: unknown }).type === 'string';
+}
+
+/**
+ * Type guard for ParseTreeNode array.
+ * @param value - Value to check.
+ * @returns True if value is a readonly array of ParseTreeNode.
+ */
+function isParseTreeNodeArray(value: unknown): value is readonly ParseTreeNode[] {
+  return (
+    Array.isArray(value) && value.every((item): item is ParseTreeNode => isParseTreeNode(item))
+  );
+}
+
+/**
  * Get children from a parse tree node.
  * @param node - The parse tree node.
  * @param propertyName - Optional property name to look for.
@@ -173,39 +196,27 @@ function getChildren(
   propertyName?: string,
   altPropertyName?: string
 ): Readonly<ParseTreeNode>[] {
-  // Try named property first
+  const tryProperty = (key: string): Readonly<ParseTreeNode>[] => {
+    const value = node[key as keyof ParseTreeNode];
+    if (isParseTreeNodeArray(value)) {
+      return [...value];
+    }
+    if (isParseTreeNode(value)) {
+      return [value];
+    }
+    return [];
+  };
+
   if (propertyName != null && propertyName in node) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
-    const value = (node as unknown as Record<string, unknown>)[propertyName];
-    if (Array.isArray(value)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Array type validated by Array.isArray
-      return value as Readonly<ParseTreeNode>[];
-    }
-    if (value !== undefined && value !== null) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Value validated by null check
-      return [value as Readonly<ParseTreeNode>];
-    }
-    return [];
+    return tryProperty(propertyName);
   }
 
-  // Try alternate property name
   if (altPropertyName != null && altPropertyName in node) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
-    const value = (node as unknown as Record<string, unknown>)[altPropertyName];
-    if (Array.isArray(value)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Array type validated by Array.isArray
-      return value as Readonly<ParseTreeNode>[];
-    }
-    if (value !== undefined && value !== null) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Value validated by null check
-      return [value as Readonly<ParseTreeNode>];
-    }
-    return [];
+    return tryProperty(altPropertyName);
   }
 
-  // Fall back to children array
   const children = node.children ?? [];
-  return [...children] as Readonly<ParseTreeNode>[];
+  return isParseTreeNodeArray(children) ? [...children] : [];
 }
 
 /**
@@ -220,25 +231,23 @@ function getChild(
   propertyName: string,
   altPropertyName?: string
 ): Readonly<ParseTreeNode> | null {
-  // First check if it's a direct property
+  const tryProperty = (key: string): ParseTreeNode | null => {
+    const value = node[key as keyof ParseTreeNode];
+    return isParseTreeNode(value) ? value : null;
+  };
+
   if (propertyName in node) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
-    const value = (node as unknown as Record<string, unknown>)[propertyName];
-    if (value !== undefined && value !== null && typeof value === 'object' && 'type' in value) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by property checks
-      return value as ParseTreeNode;
+    const result = tryProperty(propertyName);
+    if (result !== null) {
+      return result;
     }
-    return null;
   }
 
   if (altPropertyName != null && altPropertyName in node) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check
-    const value = (node as unknown as Record<string, unknown>)[altPropertyName];
-    if (value !== undefined && value !== null && typeof value === 'object' && 'type' in value) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by property checks
-      return value as Readonly<ParseTreeNode>;
+    const result = tryProperty(altPropertyName);
+    if (result !== null) {
+      return result;
     }
-    return null;
   }
 
   // If not a property, search through children for matching type
@@ -267,20 +276,31 @@ function getChild(
 
 /**
  * Get a property value from a parse tree node.
- * @template T - The type of the property value.
+ * @template T - Expected type of the property (defaults to unknown).
  * @param node - The parse tree node.
  * @param names - Property names to try.
  * @returns The property value, or undefined if not found.
  */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
-function getProperty<T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]): T | undefined {
+function getProperty<T = unknown>(
+  node: Readonly<ParseTreeNode>,
+  ...names: readonly string[]
+): T | undefined {
   for (const name of names) {
     if (name in node) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by 'in' check, generic type T is caller's responsibility
-      return (node as Record<string, unknown>)[name] as T;
+      return node[name as keyof ParseTreeNode] as T | undefined;
     }
   }
   return undefined;
+}
+
+/**
+ * Get parent node from a parse tree node.
+ * @param node - The parse tree node.
+ * @returns The parent node, or undefined if not present.
+ */
+function getParent(node: Readonly<ParseTreeNode>): ParseTreeNode | undefined {
+  const parent = getProperty<ParseTreeNode>(node, 'parent');
+  return parent && typeof parent === 'object' && 'type' in parent ? parent : undefined;
 }
 
 /**
@@ -363,8 +383,7 @@ function tryTranslateType(node: Readonly<ParseTreeNode>, includeLocation: boolea
   if (nodeType === 'type') {
     // First, try to get the text directly from the type node
     const directText = getText(node);
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Checking if string has content after trimming
-    if (directText != null && directText.trim().length > 0) {
+    if (directText != null && directText.trim().length > MIN_NON_EMPTY_ARRAY_LENGTH) {
       if (directText.toLowerCase() === 'void') {
         const emptyComponents: TypeRefComponent[] = [];
         const voidArrayNesting = 0;
@@ -420,11 +439,9 @@ function tryTranslateType(node: Readonly<ParseTreeNode>, includeLocation: boolea
       }
 
       // Split qualified name (e.g. "A.B.C") into components; type args apply only to the last
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Filtering out empty strings
-      const parts = qualifiedName.split('.').filter((s) => s.length > 0);
-      const lastIndexOffset = 1;
+      const parts = qualifiedName.split('.').filter((s) => s.length > MIN_NON_EMPTY_ARRAY_LENGTH);
       const components = parts.map((part, i) => ({
-        args: i === parts.length - lastIndexOffset ? typeArguments : [],
+        args: i === parts.length - LAST_ELEMENT_OFFSET ? typeArguments : [],
         id: NodeFactory.createIdentifier(part),
       }));
 
@@ -471,8 +488,7 @@ function extractModifiers(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
-    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
+    getProperty: (node: Readonly<ParseTreeNode>, ...names: readonly string[]) => unknown;
   }>,
   node: Readonly<ParseTreeNode>
 ): Modifier[] {
@@ -481,9 +497,9 @@ function extractModifiers(
   if (modifiersNode) {
     const modifierChildren = ctx.getChildren(modifiersNode);
     for (const modifierNode of modifierChildren) {
-      const modifierText =
-        ctx.getText(modifierNode) ?? ctx.getProperty<string>(modifierNode, 'text') ?? '';
-      if (modifierText) {
+      const rawText = ctx.getText(modifierNode) ?? ctx.getProperty(modifierNode, 'text');
+      const modifierText = typeof rawText === 'string' ? rawText : '';
+      if (modifierText.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
         const lowerText = modifierText.toLowerCase();
         // Map Apex-specific keywords to ModifierKeyword type
         let keyword: ModifierKeyword | null = null;
@@ -537,8 +553,7 @@ function extractTypeParameters(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
-    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
+    getProperty: (node: Readonly<ParseTreeNode>, ...names: readonly string[]) => unknown;
     tryTranslateType: (node: Readonly<ParseTreeNode>) => TypeRef | null;
   }>,
   node: Readonly<ParseTreeNode>
@@ -553,10 +568,11 @@ function extractTypeParameters(
         paramNode.type.toLowerCase() === 'type_parameter'
       ) {
         const nameNode = ctx.getChild(paramNode, 'name');
-        const name = nameNode
-          ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? '')
-          : '';
-        if (name) {
+        const nameRaw = nameNode
+          ? (ctx.getText(nameNode) ?? ctx.getProperty(nameNode, 'name'))
+          : undefined;
+        const name = typeof nameRaw === 'string' ? nameRaw : '';
+        if (name.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
           // Look for extends bound - it's the child that's not 'name'
           const allChildren = ctx.getChildren(paramNode);
           let extendsBound: TypeRef | undefined = undefined;
@@ -602,17 +618,17 @@ function buildAnnotationFromNode(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- Type parameter used for API clarity and type assertions
-    getProperty: <T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]) => T | undefined;
+    getProperty: (node: Readonly<ParseTreeNode>, ...names: readonly string[]) => unknown;
     parseElementValue: (valueNode: Readonly<ParseTreeNode>) => ElementValue | null;
   }>,
   annotationNode: Readonly<ParseTreeNode>
 ): Annotation | null {
   const annotationNameNode = ctx.getChild(annotationNode, 'name');
-  const annotationName = annotationNameNode
-    ? (ctx.getText(annotationNameNode) ?? ctx.getProperty<string>(annotationNameNode, 'name') ?? '')
-    : '';
-  if (!annotationName) return null;
+  const annotationNameRaw = annotationNameNode
+    ? (ctx.getText(annotationNameNode) ?? ctx.getProperty(annotationNameNode, 'name'))
+    : undefined;
+  const annotationName = typeof annotationNameRaw === 'string' ? annotationNameRaw : '';
+  if (annotationName.length <= MIN_NON_EMPTY_ARRAY_LENGTH) return null;
 
   const argsNode = ctx.getChild(annotationNode, 'arguments', 'args');
   const args: AnnotationArgument[] = [];
@@ -620,17 +636,17 @@ function buildAnnotationFromNode(
     const argChildren = ctx.getChildren(argsNode);
     for (const argNode of argChildren) {
       const argNameNode = ctx.getChild(argNode, 'name');
-      const argName = argNameNode
-        ? (ctx.getText(argNameNode) ?? ctx.getProperty<string>(argNameNode, 'name'))
+      const argNameRaw = argNameNode
+        ? (ctx.getText(argNameNode) ?? ctx.getProperty(argNameNode, 'name'))
         : undefined;
+      const argName = typeof argNameRaw === 'string' ? argNameRaw : undefined;
       // Parser: annotation_argument has children [value] or [name, value]; value has type annotation_expression, new_expression, or expression
       const argChildrenList = ctx.getChildren(argNode);
       const emptyArrayLengthLocal = 0;
       if (argChildrenList.length === emptyArrayLengthLocal) continue;
-      const lastIndexOffset = 1;
       const valueNode =
         argChildrenList.find((c) => c.type !== 'name') ??
-        argChildrenList[argChildrenList.length - lastIndexOffset];
+        argChildrenList[argChildrenList.length - LAST_ELEMENT_OFFSET];
       const elementValue = ctx.parseElementValue(valueNode);
       if (elementValue === null) continue;
       args.push({
@@ -741,6 +757,7 @@ export {
   TranslationError,
   getChildren,
   getChild,
+  getParent,
   getProperty,
   getText,
   getLocationOption,

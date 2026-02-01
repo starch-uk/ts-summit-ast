@@ -62,14 +62,14 @@ interface VisitableNode extends ASTNode {
  * Default visitor implementation that traverses the tree.
  */
 class DefaultVisitor implements ASTVisitor {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Default implementation intentionally does nothing
   public visit(_node: ASTNode): void {
+    void this;
     // Default implementation does nothing
     // Override in subclasses for specific behavior
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Default implementation intentionally does nothing
   public visitChildren(_node: ASTNode): never[] {
+    void this;
     // Default implementation returns empty array
     // Subclasses should override to visit child nodes
     return [];
@@ -134,7 +134,6 @@ interface TypeRefComponent {
  * Type alias for backward compatibility during migration.
  * @deprecated Use TypeRef instead.
  */
-// eslint-disable-next-line @typescript-eslint/no-type-alias -- Type alias needed for backward compatibility
 type Type = TypeRef;
 
 /**

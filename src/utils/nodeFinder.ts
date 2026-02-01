@@ -3,17 +3,15 @@
  * Functions for finding AST nodes at positions or within ranges.
  */
 
-/* eslint-disable import/group-exports -- Inline exports are standard TypeScript practice */
-
 import type { ASTNode, SourceRange } from '../ast/baseNode.js';
 import type { Position } from './sourceExtraction.js';
 import { isPositionInRange } from './sourceExtraction.js';
-import { walkAST, getAncestors, buildParentMap } from './traversal.js';
+import { walkAST, getAncestors, buildParentMap, getNodeChildren } from './traversal.js';
 
 /**
  * Result of finding a node at a position.
  */
-export interface NodeAtPositionResult {
+interface NodeAtPositionResult {
   readonly node: ASTNode;
   readonly nodeType: string;
   readonly location: SourceRange;
@@ -28,7 +26,7 @@ export interface NodeAtPositionResult {
 /**
  * Options for finding nodes at position.
  */
-export interface FindNodeAtPositionOptions {
+interface FindNodeAtPositionOptions {
   /**
    * Include comment nodes.
    */
@@ -53,7 +51,7 @@ export interface FindNodeAtPositionOptions {
  * @param options - Options for finding nodes.
  * @returns The node at the position, or null if not found.
  */
-export function findNodeAtPosition(
+function findNodeAtPosition(
   ast: Readonly<ASTNode>,
   position: Readonly<Position>,
   options: Readonly<FindNodeAtPositionOptions> = {}
@@ -129,7 +127,7 @@ export function findNodeAtPosition(
 /**
  * Result of finding nodes in a range.
  */
-export interface NodesInRangeResult {
+interface NodesInRangeResult {
   readonly nodes: ASTNode[];
 
   /**
@@ -146,7 +144,7 @@ export interface NodesInRangeResult {
 /**
  * Options for finding nodes in range.
  */
-export interface FindNodesInRangeOptions {
+interface FindNodesInRangeOptions {
   /**
    * Include partially overlapping nodes.
    */
@@ -155,8 +153,10 @@ export interface FindNodesInRangeOptions {
   /**
    * Filter by specific node types.
    */
-  readonly nodeTypes?: string[];
+  readonly nodeTypes?: readonly string[];
 }
+
+const EMPTY_FIND_OPTIONS: Readonly<FindNodesInRangeOptions> = {};
 
 /**
  * Check if a range is fully contained within another range.
@@ -201,11 +201,10 @@ function doRangesOverlap(range1: Readonly<SourceRange>, range2: Readonly<SourceR
  * @param options - Options for finding nodes.
  * @returns Result containing all overlapping nodes.
  */
-export function findNodesInRange(
+function findNodesInRange(
   ast: Readonly<ASTNode>,
   range: Readonly<SourceRange>,
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- Default value is readonly-compatible
-  options: Readonly<FindNodesInRangeOptions> = {} as Readonly<FindNodesInRangeOptions>
+  options: Readonly<FindNodesInRangeOptions> = EMPTY_FIND_OPTIONS
 ): NodesInRangeResult {
   const { includePartial = true, nodeTypes } = options;
   const allNodes: ASTNode[] = [];
@@ -257,7 +256,7 @@ import { getSourceRange } from './sourceExtraction.js';
 /**
  * Node path information.
  */
-export interface NodePath {
+interface NodePath {
   readonly nodes: ASTNode[];
 
   /**
@@ -273,7 +272,7 @@ export interface NodePath {
  * @param root - The root AST node.
  * @returns The path from root to node, or null if node is not in tree.
  */
-export function getNodePath(node: Readonly<ASTNode>, root: Readonly<ASTNode>): NodePath | null {
+function getNodePath(node: Readonly<ASTNode>, root: Readonly<ASTNode>): NodePath | null {
   const ancestors = getAncestors(node, root);
 
   const emptyArrayLength = 0;
@@ -294,7 +293,7 @@ export function getNodePath(node: Readonly<ASTNode>, root: Readonly<ASTNode>): N
 /**
  * Comprehensive metadata about an AST node, including its location, relationships, and structure.
  */
-export interface NodeMetadata {
+interface NodeMetadata {
   readonly nodeType: string;
   readonly location: SourceRange | null;
   readonly parent?: ASTNode;
@@ -326,82 +325,12 @@ function findRoot(node: Readonly<ASTNode>): ASTNode {
 }
 
 /**
- * Get children of a node (simplified version).
- * @param node - The AST node to get children for.
- * @returns An array of child AST nodes.
- */
-function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
-  const children: ASTNode[] = [];
-
-  // This is a simplified version - see traversal.ts for full implementation
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Dynamic property access requires type assertions
-  if ('condition' in node && (node as { condition?: ASTNode }).condition != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { condition: ASTNode }).condition);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('thenStatement' in node && (node as { thenStatement?: ASTNode }).thenStatement != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { thenStatement: ASTNode }).thenStatement);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('elseStatement' in node && (node as { elseStatement?: ASTNode }).elseStatement != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { elseStatement: ASTNode }).elseStatement);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('body' in node && (node as { body?: ASTNode }).body != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { body: ASTNode }).body);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('statements' in node && Array.isArray((node as { statements?: ASTNode[] }).statements)) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const { statements } = node as { statements: ASTNode[] };
-    children.push(...statements);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('expression' in node && (node as { expression?: ASTNode }).expression != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { expression: ASTNode }).expression);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('left' in node && (node as { left?: ASTNode }).left != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { left: ASTNode }).left);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('right' in node && (node as { right?: ASTNode }).right != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { right: ASTNode }).right);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('arguments' in node && Array.isArray((node as { arguments?: ASTNode[] }).arguments)) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const args = (node as { arguments: ASTNode[] }).arguments;
-    children.push(...args);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('type' in node && (node as { type?: ASTNode }).type != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { type: ASTNode }).type);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  if ('initializer' in node && (node as { initializer?: ASTNode }).initializer != null) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    children.push((node as { initializer: ASTNode }).initializer);
-  }
-
-  return children;
-}
-
-/**
  * Get comprehensive metadata about an AST node.
  * @param node - The AST node to get metadata for.
  * @param source - Optional source code to extract text from.
  * @returns Metadata about the node.
  */
-export function getNodeMetadata(node: Readonly<ASTNode>, source?: string): NodeMetadata {
+function getNodeMetadata(node: Readonly<ASTNode>, source?: string): NodeMetadata {
   // Build parent map to find parent and siblings
   // We need to find the root first - this is a limitation
   // In practice, you'd pass the root separately
@@ -466,6 +395,16 @@ export function getNodeMetadata(node: Readonly<ASTNode>, source?: string): NodeM
  * @param nodeType - The node type to check for.
  * @returns True if the node is of the specified type.
  */
-export function isNodeType(node: Readonly<ASTNode>, nodeType: string): boolean {
+function isNodeType(node: Readonly<ASTNode>, nodeType: string): boolean {
   return node.kind === nodeType;
 }
+
+export type {
+  FindNodeAtPositionOptions,
+  FindNodesInRangeOptions,
+  NodeAtPositionResult,
+  NodeMetadata,
+  NodesInRangeResult,
+  NodePath,
+};
+export { findNodeAtPosition, findNodesInRange, getNodeMetadata, getNodePath, isNodeType };

@@ -86,7 +86,6 @@ import type {
 import type { Initializer, ElementValue } from './initializer.js';
 import type { Literal } from './literal.js';
 
-/* eslint-disable @typescript-eslint/no-type-alias -- Type alias needed for union type in AST structure */
 export type AnyASTNode =
   | Annotation
   | AnnotationArgument
@@ -148,4 +147,3 @@ export type AnyASTNode =
   | VariableDeclarationStatement
   | VariableExpression
   | WhileLoopStatement;
-/* eslint-enable @typescript-eslint/no-type-alias */

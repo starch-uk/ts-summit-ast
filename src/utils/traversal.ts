@@ -4,49 +4,48 @@
  */
 
 import type { ASTNode } from '../ast/baseNode.js';
-import type {
-  IfStatement,
-  ForLoopStatement,
-  EnhancedForLoopStatement,
-  WhileLoopStatement,
-  ReturnStatement,
-  CompoundStatement,
-  ExpressionStatement,
-  VariableDeclarationStatement,
-  DmlStatement,
-  ThrowStatement,
-  SwitchStatement,
-  SwitchCase,
-} from '../ast/statement.js';
-import type {
-  BinaryExpression,
-  CallExpression,
-  FieldExpression,
-  ArrayExpression,
-  NewExpression,
-  CastExpression,
-  ParenthesizedExpression,
-  TernaryExpression,
-  SoqlExpression,
-  SoslExpression,
-} from '../ast/expression.js';
-import type {
-  VariableDeclaration,
-  ClassDeclaration,
-  MethodDeclaration,
-} from '../ast/declaration.js';
-import type { TypeRef } from '../ast/baseNode.js';
-import type {
-  ConstructorInitializer,
-  ValuesInitializer,
-  SizedArrayInitializer,
-  MapInitializer,
-  ExpressionElementValue,
-  AnnotationElementValue,
-  ArrayElementValue,
-} from '../ast/initializer.js';
-import type { AnnotationArgument } from '../ast/declaration.js';
-import type { SoqlOrSoslBinding } from '../ast/expression.js';
+import {
+  isIfStatement,
+  isForLoopStatement,
+  isEnhancedForLoopStatement,
+  isWhileLoopStatement,
+  isReturnStatement,
+  isCompoundStatement,
+  isExpressionStatement,
+  isVariableDeclarationStatement,
+  isDmlStatement,
+  isThrowStatement,
+  isSwitchCase,
+  isSwitchStatement,
+} from '../guard/statementGuard.js';
+import { isSoqlExpression, isSoslExpression } from '../guard/expressionGuard.js';
+import {
+  isBinaryExpression,
+  isCallExpression,
+  isFieldExpression,
+  isArrayExpression,
+  isNewExpression,
+  isCastExpression,
+  isParenthesizedExpression,
+  isTernaryExpression,
+} from '../guard/expressionGuard.js';
+import {
+  isVariableDeclaration,
+  isClassDeclaration,
+  isMethodDeclaration,
+  isTypeRef,
+  isAnnotationArgument,
+} from '../guard/declarationGuard.js';
+import {
+  isConstructorInitializer,
+  isValuesInitializer,
+  isSizedArrayInitializer,
+  isMapInitializer,
+  isExpressionElementValue,
+  isAnnotationElementValue,
+  isArrayElementValue,
+  isSoqlOrSoslBinding,
+} from '../guard/initGuard.js';
 
 // ============================================================================
 // Traversal Functions
@@ -71,34 +70,39 @@ interface ASTWalkVisitor {
 }
 
 /**
+ * Type guard for values that look like AST nodes (have 'kind' property).
+ * @param obj - Value to check.
+ * @returns True if obj has shape of AST node.
+ */
+function looksLikeASTNode(obj: unknown): obj is ASTNode {
+  return obj !== null && typeof obj === 'object' && 'kind' in obj;
+}
+
+/**
  * Find children generically by inspecting object properties.
  * @param node - The AST node to find children for.
  * @returns An array of child AST nodes.
  */
 function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
   const children: ASTNode[] = [];
+  const record: Record<string, unknown> = { ...node };
 
-  for (const key in node) {
+  for (const key in record) {
     if (key === 'kind' || key === 'location') {
       continue;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Property access validated by key iteration
-    const value = (node as unknown as Record<string, unknown>)[key];
+    const value = record[key];
     if (value === null || value === undefined) {
       continue;
     }
 
-    if (typeof value === 'object' && 'kind' in value) {
-      // It's an AST node
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by 'kind' property check
-      children.push(value as ASTNode);
+    if (looksLikeASTNode(value)) {
+      children.push(value);
     } else if (Array.isArray(value)) {
-      // It's an array - check if it contains AST nodes
       for (const item of value) {
-        if (item !== null && item !== undefined && typeof item === 'object' && 'kind' in item) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by 'kind' property check
-          children.push(item as ASTNode);
+        if (looksLikeASTNode(item)) {
+          children.push(item);
         }
       }
     }
@@ -115,288 +119,116 @@ function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
 function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
   const children: ASTNode[] = [];
 
-  // Handle different node types
-  switch (node.kind) {
-    // Statements
-    case 'IfStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as IfStatement;
-      children.push(stmt.condition);
-      children.push(stmt.thenStatement);
-      if (stmt.elseStatement) {
-        children.push(stmt.elseStatement);
+  // Handle different node types with type guards
+  if (isIfStatement(node)) {
+    children.push(node.condition);
+    children.push(node.thenStatement);
+    if (node.elseStatement) children.push(node.elseStatement);
+  } else if (isForLoopStatement(node)) {
+    if (node.init) children.push(node.init);
+    if (node.condition) children.push(node.condition);
+    if (node.update) children.push(node.update);
+    children.push(node.body);
+  } else if (isEnhancedForLoopStatement(node)) {
+    children.push(node.variable);
+    children.push(node.iterable);
+    children.push(node.body);
+  } else if (isWhileLoopStatement(node)) {
+    children.push(node.condition);
+    children.push(node.body);
+  } else if (isReturnStatement(node)) {
+    if (node.expression) children.push(node.expression);
+  } else if (isCompoundStatement(node)) {
+    children.push(...node.statements);
+  } else if (isExpressionStatement(node)) {
+    children.push(node.expression);
+  } else if (isVariableDeclarationStatement(node)) {
+    children.push(node.declaration);
+  } else if (node.kind === 'BreakStatement' || node.kind === 'ContinueStatement') {
+    // No children
+  } else if (isDmlStatement(node)) {
+    children.push(node.target);
+  } else if (isThrowStatement(node)) {
+    children.push(node.expression);
+  } else if (isSwitchStatement(node)) {
+    children.push(node.expression);
+    children.push(...node.cases);
+    if (node.defaultCase) children.push(node.defaultCase);
+  } else if (isSwitchCase(node)) {
+    if (node.value) children.push(node.value);
+    children.push(...node.statements);
+  } else if (isBinaryExpression(node)) {
+    children.push(node.left);
+    children.push(node.right);
+  } else if (isCallExpression(node)) {
+    if (node.target) children.push(node.target);
+    children.push(...node.arguments);
+  } else if (isFieldExpression(node)) {
+    if (node.target) children.push(node.target);
+    children.push(node.field);
+  } else if (isArrayExpression(node)) {
+    children.push(node.array);
+    children.push(node.index);
+  } else if (isNewExpression(node)) {
+    children.push(node.initializer);
+  } else if (isCastExpression(node)) {
+    children.push(node.type);
+    children.push(node.expression);
+  } else if (isParenthesizedExpression(node)) {
+    children.push(node.expression);
+  } else if (isTernaryExpression(node)) {
+    children.push(node.condition);
+    children.push(node.thenExpression);
+    children.push(node.elseExpression);
+  } else if (isVariableDeclaration(node)) {
+    if (node.modifiers) children.push(...node.modifiers);
+    if (node.annotations) children.push(...node.annotations);
+    if (node.initializer) children.push(node.initializer);
+  } else if (isClassDeclaration(node)) {
+    children.push(...node.modifiers);
+    if (node.annotations) children.push(...node.annotations);
+    children.push(...node.members);
+  } else if (isMethodDeclaration(node)) {
+    children.push(...node.modifiers);
+    if (node.annotations) children.push(...node.annotations);
+    children.push(...node.parameters);
+    if (node.body) children.push(node.body);
+  } else if (isTypeRef(node)) {
+    for (const comp of node.components) {
+      children.push(comp.id);
+      for (const arg of comp.args) {
+        children.push(arg);
       }
-      break;
     }
-    case 'ForLoopStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as ForLoopStatement;
-      if (stmt.init) {
-        children.push(stmt.init);
-      }
-      if (stmt.condition) {
-        children.push(stmt.condition);
-      }
-      if (stmt.update) {
-        children.push(stmt.update);
-      }
-      children.push(stmt.body);
-      break;
+  } else if (isConstructorInitializer(node)) {
+    children.push(node.type);
+    children.push(...node.args);
+  } else if (isValuesInitializer(node)) {
+    children.push(node.type);
+    children.push(...node.values);
+  } else if (isSizedArrayInitializer(node)) {
+    children.push(node.type);
+    children.push(node.size);
+  } else if (isMapInitializer(node)) {
+    children.push(node.type);
+    for (const pair of node.pairs) {
+      children.push(pair.key);
+      children.push(pair.value);
     }
-    case 'EnhancedForLoopStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as EnhancedForLoopStatement;
-      children.push(stmt.variable);
-      children.push(stmt.iterable);
-      children.push(stmt.body);
-      break;
-    }
-    case 'WhileLoopStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as WhileLoopStatement;
-      children.push(stmt.condition);
-      children.push(stmt.body);
-      break;
-    }
-    case 'ReturnStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as ReturnStatement;
-      if (stmt.expression) {
-        children.push(stmt.expression);
-      }
-      break;
-    }
-    case 'CompoundStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as CompoundStatement;
-      children.push(...stmt.statements);
-      break;
-    }
-    case 'ExpressionStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as ExpressionStatement;
-      children.push(stmt.expression);
-      break;
-    }
-    case 'VariableDeclarationStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as VariableDeclarationStatement;
-      children.push(stmt.declaration);
-      break;
-    }
-    case 'BreakStatement':
-    case 'ContinueStatement': {
-      // Break and continue statements have no children (label is a string, not an AST node)
-      break;
-    }
-    case 'DmlStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as DmlStatement;
-      children.push(stmt.target);
-      break;
-    }
-    case 'ThrowStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as ThrowStatement;
-      children.push(stmt.expression);
-      break;
-    }
-    case 'SwitchStatement': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const stmt = node as SwitchStatement;
-      children.push(stmt.expression);
-      children.push(...stmt.cases);
-      if (stmt.defaultCase) {
-        children.push(stmt.defaultCase);
-      }
-      break;
-    }
-    case 'SwitchCase': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const c = node as SwitchCase;
-      if (c.value) {
-        children.push(c.value);
-      }
-      children.push(...c.statements);
-      break;
-    }
-
-    // Expressions
-    case 'BinaryExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as BinaryExpression;
-      children.push(expr.left);
-      children.push(expr.right);
-      break;
-    }
-    case 'CallExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as CallExpression;
-      if (expr.target) {
-        children.push(expr.target);
-      }
-      children.push(...expr.arguments);
-      // TypeRef is not a node type, so we don't traverse typeArguments
-      break;
-    }
-    case 'FieldExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as FieldExpression;
-      if (expr.target) {
-        children.push(expr.target);
-      }
-      children.push(expr.field);
-      break;
-    }
-    case 'ArrayExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as ArrayExpression;
-      children.push(expr.array);
-      children.push(expr.index);
-      break;
-    }
-    case 'NewExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by kind check in switch
-      const expr = node as NewExpression;
-      children.push(expr.initializer);
-      break;
-    }
-    case 'CastExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as CastExpression;
-      children.push(expr.type);
-      children.push(expr.expression);
-      break;
-    }
-    case 'ParenthesizedExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as ParenthesizedExpression;
-      children.push(expr.expression);
-      break;
-    }
-    case 'TernaryExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as TernaryExpression;
-      children.push(expr.condition);
-      children.push(expr.thenExpression);
-      children.push(expr.elseExpression);
-      break;
-    }
-
-    // Declarations
-    case 'VariableDeclaration': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const decl = node as VariableDeclaration;
-      // TypeRef is not a node type, so we don't traverse it
-      if (decl.modifiers) children.push(...decl.modifiers);
-      if (decl.annotations) children.push(...decl.annotations);
-      if (decl.initializer) children.push(decl.initializer);
-      break;
-    }
-    case 'ClassDeclaration': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const decl = node as ClassDeclaration;
-      // TypeRef is not a node type, so we don't traverse extendsClause or implementsClause
-      children.push(...decl.modifiers);
-      if (decl.annotations) children.push(...decl.annotations);
-      children.push(...decl.members);
-      break;
-    }
-    case 'MethodDeclaration': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const decl = node as MethodDeclaration;
-      children.push(...decl.modifiers);
-      if (decl.annotations) children.push(...decl.annotations);
-      children.push(...decl.parameters);
-      if (decl.body) children.push(decl.body);
-      break;
-    }
-    case 'TypeRef': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const typeRef = node as TypeRef;
-      // TypeRef children are: identifiers from all components + type arguments from all components
-      for (const comp of typeRef.components) {
-        children.push(comp.id);
-        for (const arg of comp.args) {
-          children.push(arg);
-        }
-      }
-      break;
-    }
-    case 'ConstructorInitializer': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const init = node as ConstructorInitializer;
-      children.push(init.type);
-      children.push(...init.args);
-      break;
-    }
-    case 'ValuesInitializer': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const init = node as ValuesInitializer;
-      children.push(init.type);
-      children.push(...init.values);
-      break;
-    }
-    case 'SizedArrayInitializer': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const init = node as SizedArrayInitializer;
-      children.push(init.type);
-      children.push(init.size);
-      break;
-    }
-    case 'MapInitializer': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const init = node as MapInitializer;
-      children.push(init.type);
-      for (const pair of init.pairs) {
-        children.push(pair.key);
-        children.push(pair.value);
-      }
-      break;
-    }
-    case 'ExpressionElementValue': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const elem = node as ExpressionElementValue;
-      children.push(elem.value);
-      break;
-    }
-    case 'AnnotationElementValue': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const elem = node as AnnotationElementValue;
-      children.push(elem.value);
-      break;
-    }
-    case 'ArrayElementValue': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const elem = node as ArrayElementValue;
-      children.push(...elem.values);
-      break;
-    }
-    case 'AnnotationArgument': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const arg = node as AnnotationArgument;
-      children.push(arg.value);
-      break;
-    }
-    case 'SoqlOrSoslBinding': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const binding = node as SoqlOrSoslBinding;
-      children.push(binding.expr);
-      break;
-    }
-    case 'SoqlExpression':
-    case 'SoslExpression': {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const expr = node as SoqlExpression | SoslExpression;
-      children.push(...expr.bindings);
-      break;
-    }
-
-    default:
-      // For unknown node types, try to find children generically
-      const genericChildren = findGenericChildren(node);
-      children.push(...genericChildren);
-      break;
+  } else if (isExpressionElementValue(node)) {
+    children.push(node.value);
+  } else if (isAnnotationElementValue(node)) {
+    children.push(node.value);
+  } else if (isArrayElementValue(node)) {
+    children.push(...node.values);
+  } else if (isAnnotationArgument(node)) {
+    children.push(node.value);
+  } else if (isSoqlOrSoslBinding(node)) {
+    children.push(node.expr);
+  } else if (isSoqlExpression(node) || isSoslExpression(node)) {
+    children.push(...node.bindings);
+  } else {
+    children.push(...findGenericChildren(node));
   }
 
   return children;

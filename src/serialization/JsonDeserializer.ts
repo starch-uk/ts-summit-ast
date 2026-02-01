@@ -4,7 +4,7 @@
  * Converts JSON back to AST nodes.
  */
 
-import type { ASTNode, SourceRange } from '../ast/baseNode.js';
+import type { ASTNode, SourceLocation, SourceRange } from '../ast/baseNode.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 
 import { deserializeNodeByKind } from './astDeserializer.js';
@@ -12,6 +12,56 @@ import { deserializeNodeByKind } from './astDeserializer.js';
 // ============================================================================
 // Validation (used by JsonDeserializer.deserialize)
 // ============================================================================
+
+/**
+ * Validates and extracts SourceRange from unknown value.
+ * @param value - Value from JSON.
+ * @returns SourceRange if valid, undefined otherwise.
+ */
+function parseSourceRange(value: unknown): SourceRange | undefined {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return undefined;
+  }
+  const rec: Record<string, unknown> = { ...value };
+  const { end, start } = rec;
+  if (
+    start !== null &&
+    typeof start === 'object' &&
+    end !== null &&
+    typeof end === 'object' &&
+    'line' in start &&
+    'column' in start &&
+    'line' in end &&
+    'column' in end
+  ) {
+    const s = start as Record<string, unknown>;
+    const e = end as Record<string, unknown>;
+    const { column: sCol, line: sLine, offset: sOffset } = s;
+    const { column: eCol, line: eLine, offset: eOffset } = e;
+    if (
+      typeof sLine === 'number' &&
+      typeof sCol === 'number' &&
+      typeof eLine === 'number' &&
+      typeof eCol === 'number'
+    ) {
+      const startLoc: SourceLocation = {
+        column: sCol,
+        line: sLine,
+        ...(typeof sOffset === 'number' ? { offset: sOffset } : {}),
+      };
+      const endLoc: SourceLocation = {
+        column: eCol,
+        line: eLine,
+        ...(typeof eOffset === 'number' ? { offset: eOffset } : {}),
+      };
+      return {
+        end: endLoc,
+        start: startLoc,
+      };
+    }
+  }
+  return undefined;
+}
 
 /**
  * Runtime validation that a parsed JSON value is a JsonASTNode.
@@ -25,17 +75,18 @@ function validateJsonASTNode(value: unknown): JsonASTNode {
     throw new Error('Invalid JSON AST node: expected object');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by typeof check above
-  const candidate = value as Record<string, unknown>;
-  const { kind } = candidate;
-  const type = candidate['@type'];
+  const candidate: Record<string, unknown> = { ...value };
+  const { kind, '@type': type } = candidate;
 
   if (typeof kind !== 'string' && typeof type !== 'string') {
     throw new Error('Invalid JSON AST node: missing @type or kind property');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by property checks above
-  return candidate as JsonASTNode;
+  const out: JsonASTNode = {
+    '@type': typeof type === 'string' ? type : typeof kind === 'string' ? kind : '',
+    ...candidate,
+  };
+  return out;
 }
 
 // ============================================================================
@@ -84,18 +135,13 @@ export class JsonDeserializer {
    */
   public deserializeNode(json: Readonly<JsonASTNode>): ASTNode {
     // Get node type from @type or kind field
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- @type is required but json.kind may be used as fallback
     const nodeType = json['@type'] ?? json.kind;
     if (typeof nodeType !== 'string') {
       throw new Error('Invalid JSON AST node: missing @type or kind property');
     }
 
     // Extract location if present
-    const location =
-      json.location !== null && json.location !== undefined && typeof json.location === 'object'
-        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by typeof check
-          (json.location as SourceRange)
-        : undefined;
+    const location = parseSourceRange(json.location);
 
     // Deserialize using the dispatcher
     return deserializeNodeByKind(json, nodeType, location, this);
