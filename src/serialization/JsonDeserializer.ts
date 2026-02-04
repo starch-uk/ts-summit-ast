@@ -94,29 +94,9 @@ function validateJsonASTNode(value: unknown): JsonASTNode {
 // ============================================================================
 
 /**
- * Options for JSON deserialization.
- */
-export interface DeserializationOptions {
-  /**
-   * Whether to validate the JSON structure.
-   */
-  validate?: boolean;
-
-  /**
-   * Custom reviver function (similar to JSON.parse reviver).
-   */
-  reviver?: (key: string, value: unknown) => unknown;
-}
-
-/**
  * JSON Deserializer for AST nodes.
  */
 export class JsonDeserializer {
-  public constructor(_options: Readonly<DeserializationOptions> = {}) {
-    // Options are currently unused but kept for future use
-    void _options;
-  }
-
   /**
    * Deserialize a JSON string to an AST node.
    * @param jsonString - The JSON string to deserialize.

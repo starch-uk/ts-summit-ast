@@ -400,10 +400,7 @@ const json = serializer.serialize(astNode);
 Deserializes JSON to AST nodes.
 
 ```typescript
-const deserializer = new JsonDeserializer({
-  validate: true,
-});
-
+const deserializer = new JsonDeserializer();
 const astNode = deserializer.deserialize(jsonString);
 ```
 

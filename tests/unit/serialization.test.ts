@@ -788,8 +788,8 @@ describe('Comprehensive Serialization', () => {
       }).toThrow('Invalid modifier keyword: invalidModifier');
     });
 
-    it('should validate node type when validation is enabled', () => {
-      const localDeserializer = new JsonDeserializer({ validate: true });
+    it('should throw for invalid node type', () => {
+      const localDeserializer = new JsonDeserializer();
       const json = {
         '@type': null,
       };
@@ -798,8 +798,8 @@ describe('Comprehensive Serialization', () => {
       }).toThrow();
     });
 
-    it('should skip validation when disabled', () => {
-      const localDeserializer = new JsonDeserializer({ validate: false });
+    it('should deserialize valid StringVal node', () => {
+      const localDeserializer = new JsonDeserializer();
       const json = {
         '@type': 'StringVal',
         value: 'test',
@@ -808,21 +808,14 @@ describe('Comprehensive Serialization', () => {
       expect(result.kind).toBe('StringVal');
     });
 
-    it('should use reviver function if provided', () => {
-      const reviver = (key: string, value: unknown): unknown => {
-        if (key === 'value' && typeof value === 'string') {
-          return value.toUpperCase();
-        }
-        return value;
-      };
-      const localDeserializer = new JsonDeserializer({ reviver });
+    it('should deserialize JSON string to AST node', () => {
+      const localDeserializer = new JsonDeserializer();
       const json = JSON.stringify({
         '@type': 'StringVal',
         value: 'test',
       });
       const result = localDeserializer.deserialize(json);
       expect(result.kind).toBe('StringVal');
-      // Note: reviver is applied during JSON.parse, but we still verify it doesn't break
     });
 
     it('should handle location with offset', () => {

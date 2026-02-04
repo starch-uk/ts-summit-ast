@@ -60,9 +60,6 @@ const EVEN_MODULO_REMAINDER = 0;
 /** Single element count. */
 const SINGLE_ELEMENT_COUNT = 1;
 
-/** Default array dimension. */
-const DEFAULT_ARRAY_DIMENSION = 0;
-
 /** First index in array. */
 const FIRST_INDEX = 0;
 
@@ -89,9 +86,6 @@ const INITIAL_POSITION = 0;
 
 /** Initial line number. */
 const INITIAL_LINE = 1;
-
-/** Initial column number. */
-const INITIAL_COLUMN = 0;
 
 /** Lexer initial column (1-based). */
 const LEXER_INITIAL_COLUMN = 1;
@@ -138,13 +132,11 @@ export {
   CAPTURE_GROUP_TAG_CONTENT,
   CAPTURE_GROUP_TAG_NAME,
   CLI_ARGS_START_INDEX,
-  DEFAULT_ARRAY_DIMENSION,
   DEFAULT_ARRAY_NESTING,
   EMPTY_ARRAY_LENGTH,
   EVEN_MODULO_REMAINDER,
   FIRST_CAPTURE_GROUP_INDEX,
   FIRST_INDEX,
-  INITIAL_COLUMN,
   INITIAL_COUNTER,
   DOUBLE_CHAR_OFFSET,
   LEXER_INITIAL_COLUMN,
