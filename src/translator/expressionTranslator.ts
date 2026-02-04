@@ -2,7 +2,6 @@
  * @file Expression translation helpers.
  * Translates parse tree expression nodes to AST expression nodes.
  */
-
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type {
   Expression,
@@ -15,7 +14,12 @@ import type {
   VariableExpression,
 } from '../ast/expression.js';
 import type { TypeRef } from '../ast/baseNode.js';
-import type { Initializer } from '../ast/initializer.js';
+import type {
+  ConstructorInitializer,
+  MapInitializer,
+  SizedArrayInitializer,
+  ValuesInitializer,
+} from '../ast/initializer.js';
 import {
   EVEN_MODULO_REMAINDER,
   LENGTH_EVEN_DIVISOR,
@@ -212,7 +216,7 @@ function translateMethodCall(
     target = targetFromProp;
   }
 
-  const methodNameFromProp = ctx.getProperty<string>(node, 'methodName', 'name');
+  const methodNameFromProp = ctx.getStringProperty(node, 'methodName', 'name');
 
   if (
     typeof methodNameFromProp === 'string' &&
@@ -252,7 +256,7 @@ function translateMethodCall(
     //   - super_expression or this_expression: super(x, y) or this(x, y) (constructor chaining)
     if (firstChild.type === 'identifier') {
       // No target, first child is the method name
-      methodName = ctx.getText(firstChild) ?? ctx.getProperty<string>(firstChild, 'name') ?? '';
+      methodName = ctx.getText(firstChild) ?? ctx.getStringProperty(firstChild, 'name') ?? '';
     } else if (firstChild.type === 'super_expression' || firstChild.type === 'this_expression') {
       // Constructor chaining: super(x, y) or this(x, y)
       // Extract the method name from the expression text
@@ -313,16 +317,15 @@ function translateMethodCall(
     }
   }
 
-  const callExpr = NodeFactory.createCallExpression(
-    methodName,
+  const callExpr = NodeFactory.createCallExpression({
     args,
+    methodName,
+    options: ctx.getLocationOption(node),
     target,
-    undefined,
-    ctx.getLocationOption(node)
-  );
+  });
 
   // Check for safe navigation flag from parse tree, or from target when it's a FieldExpression (e.g. x?.method())
-  const isSafe = ctx.getProperty<boolean>(node, 'isSafe') ?? isSafeFromTarget ?? false;
+  const isSafe = ctx.getBooleanProperty(node, 'isSafe') ?? isSafeFromTarget ?? false;
   (callExpr as { isSafe?: boolean }).isSafe = isSafe;
 
   return callExpr;
@@ -339,7 +342,7 @@ function translateBinaryExpression(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
-  const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '==';
+  const operator = ctx.getStringProperty(node, 'operator', 'op') ?? '==';
   // Try to get left and right as optional first (to allow fallback)
   let left = ctx.getChildExpression(node, 'left', { optional: true });
   let right = ctx.getChildExpression(node, 'right', { optional: true });
@@ -363,23 +366,21 @@ function translateBinaryExpression(
       );
       if (leftExpr && rightExpr) {
         const validOperator = parseBinaryOperator(operator);
-        return NodeFactory.createBinaryExpression(
-          validOperator,
-          leftExpr,
-          rightExpr,
-          ctx.getLocationOption(node)
-        );
+        return NodeFactory.createBinaryExpression(validOperator, {
+          left: leftExpr,
+          right: rightExpr,
+          ...ctx.getLocationOption(node),
+        });
       }
     }
     throw new TranslationError('Binary expression requires both left and right operands', node);
   }
 
-  return NodeFactory.createBinaryExpression(
-    parseBinaryOperator(operator),
+  return NodeFactory.createBinaryExpression(parseBinaryOperator(operator), {
     left,
     right,
-    ctx.getLocationOption(node)
-  );
+    ...ctx.getLocationOption(node),
+  });
 }
 
 /**
@@ -393,8 +394,8 @@ function translateUnaryExpression(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
-  const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '!';
-  const prefix = ctx.getProperty<boolean>(node, 'prefix') ?? true;
+  const operator = ctx.getStringProperty(node, 'operator', 'op') ?? '!';
+  const prefix = ctx.getBooleanProperty(node, 'prefix') ?? true;
   const operand = ctx.getChildExpression(node, 'operand', { optional: true });
   if (!operand) {
     // Try to get from children array
@@ -405,23 +406,21 @@ function translateUnaryExpression(
       const firstChild = children[firstChildIndex];
       const expr = ctx.tryTranslateExpression(firstChild, firstChild.type.toLowerCase());
       if (expr) {
-        return NodeFactory.createUnaryExpression(
-          parseUnaryOperator(operator),
-          expr,
+        return NodeFactory.createUnaryExpression(parseUnaryOperator(operator), {
+          operand: expr,
           prefix,
-          ctx.getLocationOption(node)
-        );
+          ...ctx.getLocationOption(node),
+        });
       }
     }
     throw new TranslationError('Unary expression requires an operand', node);
   }
 
-  return NodeFactory.createUnaryExpression(
-    parseUnaryOperator(operator),
+  return NodeFactory.createUnaryExpression(parseUnaryOperator(operator), {
     operand,
     prefix,
-    ctx.getLocationOption(node)
-  );
+    ...ctx.getLocationOption(node),
+  });
 }
 
 /**
@@ -435,7 +434,7 @@ function translateAssignExpression(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
-  const operator = ctx.getProperty<string>(node, 'operator', 'op') ?? '=';
+  const operator = ctx.getStringProperty(node, 'operator', 'op') ?? '=';
   const left = ctx.getChildExpression(node, 'left');
   const right = ctx.getChildExpression(node, 'right');
 
@@ -443,12 +442,11 @@ function translateAssignExpression(
     throw new TranslationError('Assignment expression requires both left and right operands', node);
   }
 
-  return NodeFactory.createAssignExpression(
-    parseAssignOperator(operator),
+  return NodeFactory.createAssignExpression(parseAssignOperator(operator), {
     left,
     right,
-    ctx.getLocationOption(node)
-  );
+    ...ctx.getLocationOption(node),
+  });
 }
 
 /**
@@ -486,8 +484,8 @@ function translateFieldAccess(
   if (fieldNode) {
     fieldName =
       ctx.getText(fieldNode) ??
-      ctx.getProperty<string>(fieldNode, 'name') ??
-      ctx.getProperty<string>(fieldNode, 'text') ??
+      ctx.getStringProperty(fieldNode, 'name') ??
+      ctx.getStringProperty(fieldNode, 'text') ??
       '';
   } else {
     const minimumChildrenForField = 2;
@@ -497,8 +495,8 @@ function translateFieldAccess(
       const fieldChild = children[secondChildIndex];
       fieldName =
         ctx.getText(fieldChild) ??
-        ctx.getProperty<string>(fieldChild, 'name') ??
-        ctx.getProperty<string>(fieldChild, 'text') ??
+        ctx.getStringProperty(fieldChild, 'name') ??
+        ctx.getStringProperty(fieldChild, 'text') ??
         '';
     }
   }
@@ -514,7 +512,7 @@ function translateFieldAccess(
   );
 
   // Check for safe navigation flag from parse tree
-  const isSafe = ctx.getProperty<boolean>(node, 'isSafe') ?? false;
+  const isSafe = ctx.getBooleanProperty(node, 'isSafe') ?? false;
   (fieldExpr as { isSafe?: boolean }).isSafe = isSafe;
 
   return fieldExpr;
@@ -606,7 +604,12 @@ function translateTernaryExpression(
       const then = ctx.tryTranslateExpression(thenChild, thenChild.type.toLowerCase());
       const els = ctx.tryTranslateExpression(elseChild, elseChild.type.toLowerCase());
       if (cond && then && els) {
-        return NodeFactory.createTernaryExpression(cond, then, els, ctx.getLocationOption(node));
+        return NodeFactory.createTernaryExpression({
+          condition: cond,
+          elseExpression: els,
+          options: ctx.getLocationOption(node),
+          thenExpression: then,
+        });
       }
     }
     throw new TranslationError(
@@ -615,12 +618,12 @@ function translateTernaryExpression(
     );
   }
 
-  return NodeFactory.createTernaryExpression(
+  return NodeFactory.createTernaryExpression({
     condition,
-    thenExpr,
-    elseExpr,
-    ctx.getLocationOption(node)
-  );
+    elseExpression: elseExpr,
+    options: ctx.getLocationOption(node),
+    thenExpression: thenExpr,
+  });
 }
 
 /**
@@ -786,7 +789,11 @@ function translateNewExpression(
   // Create the appropriate Initializer based on what's present
   const locationOption = ctx.getLocationOption(node);
   // Default to ConstructorInitializer with no args (will be overridden if needed)
-  let initializer: Initializer = NodeFactory.createConstructorInitializer(type, [], locationOption);
+  let initializer:
+    | ConstructorInitializer
+    | MapInitializer
+    | SizedArrayInitializer
+    | ValuesInitializer = NodeFactory.createConstructorInitializer(type, [], locationOption);
 
   if (arrayInitNode !== null) {
     // Check if this is a map (has map_entry children) or a list/set/array
@@ -931,7 +938,7 @@ function translateLambdaExpression(
   if (paramsNode) {
     const parameterNodes = ctx.getChildren(paramsNode);
     for (const paramNode of parameterNodes) {
-      const name = ctx.getText(paramNode) ?? ctx.getProperty<string>(paramNode, 'name') ?? '';
+      const name = ctx.getText(paramNode) ?? ctx.getStringProperty(paramNode, 'name') ?? '';
       const typeNode = ctx.getChild(paramNode, 'type');
       const type = typeNode ? ctx.tryTranslateType(typeNode) : undefined;
       parameters.push({
@@ -1001,7 +1008,7 @@ function translateSoqlQuery(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
-  const query = ctx.getText(node) ?? ctx.getProperty<string>(node, 'query') ?? '';
+  const query = ctx.getText(node) ?? ctx.getStringProperty(node, 'query') ?? '';
   // Extract bound expressions from children
   const boundExpressions: Expression[] = [];
   const boundExpressionsNode = ctx.getChild(node, 'bound_expressions');
@@ -1031,7 +1038,7 @@ function translateSoslQuery(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Expression {
-  const query = ctx.getText(node) ?? ctx.getProperty<string>(node, 'query') ?? '';
+  const query = ctx.getText(node) ?? ctx.getStringProperty(node, 'query') ?? '';
   // Extract bound expressions from children
   const boundExpressions: Expression[] = [];
   const boundExpressionsNode = ctx.getChild(node, 'bound_expressions');
@@ -1062,7 +1069,7 @@ function translateTriggerContextVariable(
   node: Readonly<ParseTreeNode>
 ): Expression {
   // Extract variable name from text like "Trigger.new" -> "new"
-  const text = ctx.getText(node) ?? ctx.getProperty<string>(node, 'text') ?? '';
+  const text = ctx.getText(node) ?? ctx.getStringProperty(node, 'text') ?? '';
   const variableName = text.replace(/^Trigger\./i, '');
   return NodeFactory.createTriggerContextVariableExpression(
     variableName,

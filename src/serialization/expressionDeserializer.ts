@@ -185,12 +185,11 @@ function deserializeBinaryExpression(
     throw new Error('Invalid BinaryExpression: right is not an Expression node');
   }
 
-  return NodeFactory.createBinaryExpression(
-    operator,
-    leftDeserialized,
-    rightDeserialized,
-    locationOption
-  );
+  return NodeFactory.createBinaryExpression(operator, {
+    left: leftDeserialized,
+    right: rightDeserialized,
+    ...locationOption,
+  });
 }
 
 /**
@@ -239,7 +238,13 @@ function deserializeCallExpression(
         )
       : undefined;
 
-  return NodeFactory.createCallExpression(methodName, args, target, typeArguments, locationOption);
+  return NodeFactory.createCallExpression({
+    args,
+    methodName,
+    options: locationOption,
+    target,
+    typeArguments,
+  });
 }
 
 /**
@@ -335,12 +340,11 @@ function deserializeAssignExpression(
     throw new Error('Invalid AssignExpression: right is not an Expression node');
   }
 
-  return NodeFactory.createAssignExpression(
-    operator,
-    leftDeserialized,
-    rightDeserialized,
-    locationOption
-  );
+  return NodeFactory.createAssignExpression(operator, {
+    left: leftDeserialized,
+    right: rightDeserialized,
+    ...locationOption,
+  });
 }
 
 /**

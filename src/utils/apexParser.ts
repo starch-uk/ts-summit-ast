@@ -89,13 +89,13 @@ interface ApexParseOptions {
 interface ApexParseResult {
   readonly ast?: ASTNode;
   readonly source?: string;
-  readonly errors: ApexParseError[];
+  readonly errors: readonly ApexParseError[];
 
   /**
    * Warnings that occurred during parsing (non-fatal issues)
    * Separated from errors to allow different handling strategies.
    */
-  readonly warnings?: ApexParseError[];
+  readonly warnings?: readonly ApexParseError[];
 
   /**
    * Indicates if parsing was partially successful
@@ -108,7 +108,16 @@ interface ApexParseResult {
    * When true, the AST can be used for analysis even if there are issues.
    */
   readonly isUsable?: boolean;
-  readonly comments?: ExtractedComment[];
+  readonly comments?: readonly ExtractedComment[];
+}
+
+/**
+ * Minimal readonly view of a parse result used by helpers like isUsableParseResult.
+ * Deliberately only includes the fields those helpers actually read.
+ */
+interface ApexParseResultView {
+  readonly ast?: ASTNode;
+  readonly isUsable?: boolean;
 }
 
 /**
@@ -128,8 +137,8 @@ interface ApexParseResult {
  * ```
  */
 function isUsableParseResult(
-  result: Readonly<ApexParseResult>
-): result is ApexParseResult & { ast: NonNullable<ASTNode>; isUsable: true } {
+  result: ApexParseResultView
+): result is ApexParseResultView & { ast: NonNullable<ASTNode>; isUsable: true } {
   return result.isUsable === true && result.ast !== undefined;
 }
 
@@ -156,7 +165,10 @@ function isUsableParseResult(
  * }
  * ```
  */
-function parseApexCode(source: string, options: ApexParseOptions = {}): ApexParseResult {
+function parseApexCode(
+  source: string,
+  options: ApexParseOptions = {} as ApexParseOptions
+): ApexParseResult {
   const {
     includeComments = false,
     includeLocation = true,
@@ -286,7 +298,7 @@ function parseApexCode(source: string, options: ApexParseOptions = {}): ApexPars
  */
 function parseMultipleFiles(
   sources: readonly string[],
-  options: Readonly<ApexParseOptions> = {}
+  options: ApexParseOptions = {} as ApexParseOptions
 ): ApexParseResult[] {
   return sources.map((source) => parseApexCode(source, options));
 }
@@ -313,7 +325,18 @@ function parseMultipleFiles(
  * });
  * ```
  */
-const EMPTY_EXTRACT_COMMENTS_OPTIONS: Readonly<ExtractCommentsOptions> = {};
+const EMPTY_EXTRACT_COMMENTS_OPTIONS: ExtractCommentsOptions = {};
+
+/**
+ * Readonly view of extract-comments options used at API boundaries.
+ * Kept intentionally small and free of obviously mutable shapes.
+ */
+interface ExtractCommentsOptionsView {
+  readonly includeBlockComments?: boolean;
+  readonly includeLineComments?: boolean;
+  readonly associateNodes?: boolean;
+  readonly parseApexDoc?: boolean;
+}
 
 /**
  * Extract comments from multiple ASTs efficiently.
@@ -327,9 +350,9 @@ const EMPTY_EXTRACT_COMMENTS_OPTIONS: Readonly<ExtractCommentsOptions> = {};
  * @throws {Error} If the lengths of asts and sources arrays do not match.
  */
 function extractCommentsBatch(
-  asts: readonly Readonly<ASTNode>[],
+  asts: readonly ASTNode[],
   sources: readonly string[],
-  options: Readonly<ExtractCommentsOptions> = EMPTY_EXTRACT_COMMENTS_OPTIONS
+  options: ExtractCommentsOptionsView = EMPTY_EXTRACT_COMMENTS_OPTIONS
 ): ExtractedComment[][] {
   if (asts.length !== sources.length) {
     throw new Error(

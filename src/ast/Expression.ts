@@ -7,7 +7,12 @@ import type { ASTNode, SourceRange } from './baseNode.js';
 import type { TypeRef } from './baseNode.js';
 import type { Statement } from './statement.js';
 import type { Identifier } from './baseNode.js';
-import type { Initializer } from './initializer.js';
+import type {
+  ConstructorInitializer,
+  MapInitializer,
+  SizedArrayInitializer,
+  ValuesInitializer,
+} from './initializer.js';
 
 /**
  * Base interface for all expression nodes.
@@ -175,7 +180,11 @@ interface ArrayExpression extends Expression {
  */
 interface NewExpression extends Expression {
   readonly kind: 'NewExpression';
-  readonly initializer: Initializer;
+  readonly initializer:
+    | ConstructorInitializer
+    | MapInitializer
+    | SizedArrayInitializer
+    | ValuesInitializer;
 
   /**
    * Type from the initializer.
@@ -359,6 +368,3 @@ export type {
   TriggerContextVariableExpression,
   SoqlOrSoslBinding,
 };
-
-// Re-export Initializer for convenience
-export type { Initializer } from './initializer.js';

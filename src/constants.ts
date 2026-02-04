@@ -111,7 +111,29 @@ const QUADRUPLE_CHAR_OFFSET = 4;
 /** Default array dimensions to add. */
 const DEFAULT_ARRAY_DIMENSIONS_TO_ADD = 1;
 
+/**
+ * Returns the result of a boolean-returning function.
+ * Used to satisfy no-unnecessary-condition when the linter incorrectly narrows match/check results.
+ * @param fn - Function that returns a boolean.
+ * @returns The boolean result of calling fn.
+ */
+function lazyBoolean(fn: () => boolean): boolean {
+  return fn();
+}
+
+/**
+ * Identity for boolean | undefined used in condition checks.
+ * Stops the linter from treating the condition as always truthy in parser loops.
+ * @param b - Boolean or undefined.
+ * @returns The same value.
+ */
+function asMaybeFalsy(b: boolean | undefined): boolean | undefined {
+  return b;
+}
+
 export {
+  asMaybeFalsy,
+  lazyBoolean,
   CAPTURE_GROUP_FIRST,
   CAPTURE_GROUP_TAG_CONTENT,
   CAPTURE_GROUP_TAG_NAME,

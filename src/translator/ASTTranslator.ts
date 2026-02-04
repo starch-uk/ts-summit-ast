@@ -4,7 +4,6 @@
  * This is a parser-agnostic translator that works with any parse tree
  * conforming to the ParseTreeNode interface.
  */
-
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type { ASTNode } from '../ast/baseNode.js';
 import type { Statement } from '../ast/statement.js';
@@ -12,7 +11,11 @@ import type { Expression } from '../ast/expression.js';
 import type { Declaration, Annotation, TypeParameter } from '../ast/declaration.js';
 import type { Modifier } from '../ast/declaration.js';
 import type { TypeRef } from '../ast/baseNode.js';
-import type { ElementValue } from '../ast/initializer.js';
+import type {
+  AnnotationElementValue,
+  ArrayElementValue,
+  ExpressionElementValue,
+} from '../ast/initializer.js';
 import { isDeclaration } from '../guard/declarationGuard.js';
 import { NodeFactory } from './nodeFactory.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
@@ -22,6 +25,9 @@ import {
   getChild,
   getParent,
   getProperty,
+  getStringProperty,
+  getBooleanProperty,
+  getNodeProperty,
   getText,
   getLocationOption as getLocationOptionUtil,
   tryTranslateType as tryTranslateTypeUtil,
@@ -56,7 +62,7 @@ interface TranslationOptions {
   /**
    * Custom error handler.
    */
-  onError?: (error: ReadonlyTranslationErrorLike) => void;
+  onError?: (error: Readonly<ReadonlyTranslationErrorLike>) => void;
 
   /**
    * Whether to continue translation on errors.
@@ -95,7 +101,7 @@ class ASTTranslator implements TranslateContext {
   public currentClassName: string | undefined = undefined;
   private readonly options: Required<TranslationOptions>;
 
-  public constructor(options: Readonly<TranslationOptions> = {}) {
+  public constructor(options: Readonly<TranslationOptions> = {} as Readonly<TranslationOptions>) {
     this.options = {
       continueOnError: options.continueOnError ?? false,
       includeLocation: options.includeLocation ?? true,
@@ -432,20 +438,16 @@ class ASTTranslator implements TranslateContext {
         const triggerNameNode = this.getChild(node, 'name');
         const triggerName = triggerNameNode
           ? (this.getText(triggerNameNode) ??
-            this.getProperty<string>(triggerNameNode, 'name') ??
+            this.getStringProperty(triggerNameNode, 'name') ??
             'Unknown')
           : 'Unknown';
         // Return a minimal class declaration as a placeholder
         // This allows the compilation unit to be valid
-        return NodeFactory.createClassDeclaration(
-          triggerName + '_trigger_placeholder',
-          [],
-          [],
-          undefined,
-          undefined,
-          undefined,
-          this.getLocationOption(node)
-        );
+        return NodeFactory.createClassDeclaration({
+          members: [],
+          name: triggerName + '_trigger_placeholder',
+          options: this.getLocationOption(node),
+        });
       case 'instance_initializer':
       case 'static_initializer':
       case 'initializer_block':
@@ -539,7 +541,7 @@ class ASTTranslator implements TranslateContext {
       if (current.type === 'class_declaration' || current.type === 'class') {
         const nameNode = this.getChild(current, 'name');
         return nameNode
-          ? (this.getText(nameNode) ?? this.getProperty<string>(nameNode, 'name'))
+          ? (this.getText(nameNode) ?? this.getStringProperty(nameNode, 'name'))
           : undefined;
       }
       current = getParent(current);
@@ -551,9 +553,33 @@ class ASTTranslator implements TranslateContext {
     return tryTranslateTypeUtil(node, this.options.includeLocation);
   }
 
-  public getProperty<T>(node: Readonly<ParseTreeNode>, ...names: readonly string[]): T | undefined {
+  public getProperty(node: Readonly<ParseTreeNode>, ...names: readonly string[]): unknown {
     void this;
-    return getProperty<T>(node, ...names);
+    return getProperty(node, ...names);
+  }
+
+  public getStringProperty(
+    node: Readonly<ParseTreeNode>,
+    ...names: readonly string[]
+  ): string | undefined {
+    void this;
+    return getStringProperty(node, ...names);
+  }
+
+  public getBooleanProperty(
+    node: Readonly<ParseTreeNode>,
+    ...names: readonly string[]
+  ): boolean | undefined {
+    void this;
+    return getBooleanProperty(node, ...names);
+  }
+
+  public getNodeProperty(
+    node: Readonly<ParseTreeNode>,
+    ...names: readonly string[]
+  ): ParseTreeNode | undefined {
+    void this;
+    return getNodeProperty(node, ...names);
   }
 
   public getText(node: Readonly<ParseTreeNode>): string | undefined {
@@ -584,7 +610,9 @@ class ASTTranslator implements TranslateContext {
     return buildAnnotationFromNode(this, annotationNode);
   }
 
-  public parseElementValue(valueNode: Readonly<ParseTreeNode>): ElementValue | null {
+  public parseElementValue(
+    valueNode: Readonly<ParseTreeNode>
+  ): AnnotationElementValue | ArrayElementValue | ExpressionElementValue | null {
     return parseElementValue(this, valueNode);
   }
 

@@ -2,17 +2,19 @@
  * @file Translation utility functions, error types, and context interface.
  * Shared utilities for parse tree to AST translation.
  */
-
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type { TypeRef, TypeRefComponent, ASTNode } from '../ast/baseNode.js';
 import type {
   Modifier,
-  ModifierKeyword,
   Annotation,
   AnnotationArgument,
   TypeParameter,
 } from '../ast/declaration.js';
-import type { ElementValue } from '../ast/initializer.js';
+import type {
+  AnnotationElementValue,
+  ArrayElementValue,
+  ExpressionElementValue,
+} from '../ast/initializer.js';
 import type { Expression } from '../ast/expression.js';
 import type { Statement } from '../ast/statement.js';
 import type { Declaration } from '../ast/declaration.js';
@@ -122,13 +124,33 @@ export interface TranslateContext {
   ) => Readonly<ParseTreeNode> | null;
 
   /**
-   * Get property from node.
-   * @template T - Expected type of the property (defaults to unknown).
+   * Get property from node (untyped).
    */
-  getProperty: <T = unknown>(
+  getProperty: (node: Readonly<ParseTreeNode>, ...names: readonly string[]) => unknown;
+
+  /**
+   * Get string property from node.
+   */
+  getStringProperty: (
     node: Readonly<ParseTreeNode>,
     ...names: readonly string[]
-  ) => T | undefined;
+  ) => string | undefined;
+
+  /**
+   * Get boolean property from node.
+   */
+  getBooleanProperty: (
+    node: Readonly<ParseTreeNode>,
+    ...names: readonly string[]
+  ) => boolean | undefined;
+
+  /**
+   * Get parse tree node property from node.
+   */
+  getNodeProperty: (
+    node: Readonly<ParseTreeNode>,
+    ...names: readonly string[]
+  ) => ParseTreeNode | undefined;
 
   /**
    * Get text from node.
@@ -275,22 +297,80 @@ function getChild(
 }
 
 /**
- * Get a property value from a parse tree node.
- * @template T - Expected type of the property (defaults to unknown).
+ * Get a property value from a parse tree node (untyped).
  * @param node - The parse tree node.
  * @param names - Property names to try.
  * @returns The property value, or undefined if not found.
  */
-function getProperty<T = unknown>(
-  node: Readonly<ParseTreeNode>,
-  ...names: readonly string[]
-): T | undefined {
+function getPropertyValue(node: Readonly<ParseTreeNode>, ...names: readonly string[]): unknown {
   for (const name of names) {
     if (name in node) {
-      return node[name as keyof ParseTreeNode] as T | undefined;
+      return node[name as keyof ParseTreeNode];
     }
   }
   return undefined;
+}
+
+/**
+ * Get a string property from a parse tree node.
+ * @param node - The parse tree node.
+ * @param names - Property names to try.
+ * @returns The string value, or undefined if not found or not a string.
+ */
+function getStringProperty(
+  node: Readonly<ParseTreeNode>,
+  ...names: readonly string[]
+): string | undefined {
+  const value = getPropertyValue(node, ...names);
+  return typeof value === 'string' ? value : undefined;
+}
+
+/**
+ * Get a boolean property from a parse tree node.
+ * @param node - The parse tree node.
+ * @param names - Property names to try.
+ * @returns The boolean value, or undefined if not found or not a boolean.
+ */
+function getBooleanProperty(
+  node: Readonly<ParseTreeNode>,
+  ...names: readonly string[]
+): boolean | undefined {
+  const value = getPropertyValue(node, ...names);
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+/**
+ * Type guard for parse tree node-like values.
+ * @param value - Value to check.
+ * @returns True if value looks like a ParseTreeNode.
+ */
+function isParseTreeNodeLike(value: unknown): value is ParseTreeNode {
+  return value !== null && typeof value === 'object' && 'type' in value;
+}
+
+/**
+ * Get a parse tree node property from a parse tree node.
+ * @param node - The parse tree node.
+ * @param names - Property names to try.
+ * @returns The node value, or undefined if not found or not an object with type.
+ */
+function getNodeProperty(
+  node: Readonly<ParseTreeNode>,
+  ...names: readonly string[]
+): ParseTreeNode | undefined {
+  const value = getPropertyValue(node, ...names);
+  return isParseTreeNodeLike(value) ? value : undefined;
+}
+
+/**
+ * Get a property value from a parse tree node with type coercion.
+ * Uses typed helpers for string, boolean, and node; otherwise returns unknown.
+ * @param node - The parse tree node.
+ * @param names - Property names to try.
+ * @returns The property value, or undefined if not found.
+ */
+function getProperty(node: Readonly<ParseTreeNode>, ...names: readonly string[]): unknown {
+  return getPropertyValue(node, ...names);
 }
 
 /**
@@ -299,7 +379,7 @@ function getProperty<T = unknown>(
  * @returns The parent node, or undefined if not present.
  */
 function getParent(node: Readonly<ParseTreeNode>): ParseTreeNode | undefined {
-  const parent = getProperty<ParseTreeNode>(node, 'parent');
+  const parent = getNodeProperty(node, 'parent');
   return parent && typeof parent === 'object' && 'type' in parent ? parent : undefined;
 }
 
@@ -309,7 +389,7 @@ function getParent(node: Readonly<ParseTreeNode>): ParseTreeNode | undefined {
  * @returns The text content, or undefined if not found.
  */
 function getText(node: Readonly<ParseTreeNode>): string | undefined {
-  return node.text ?? getProperty<string>(node, 'value', 'content');
+  return node.text ?? getStringProperty(node, 'value', 'content');
 }
 
 /**
@@ -338,7 +418,7 @@ function tryTranslateType(node: Readonly<ParseTreeNode>, includeLocation: boolea
 
   // Handle base_type nodes (children of type nodes)
   if (nodeType === 'base_type') {
-    const name = getText(node) ?? getProperty<string>(node, 'name') ?? 'Object';
+    const name = getText(node) ?? getStringProperty(node, 'name') ?? 'Object';
     // Void type has empty components array
     if (name.toLowerCase() === 'void') {
       const emptyComponents: TypeRefComponent[] = [];
@@ -354,7 +434,7 @@ function tryTranslateType(node: Readonly<ParseTreeNode>, includeLocation: boolea
 
   // Handle primitive_type nodes
   if (nodeType === 'primitive_type') {
-    const name = getText(node) ?? getProperty<string>(node, 'name') ?? 'Object';
+    const name = getText(node) ?? getStringProperty(node, 'name') ?? 'Object';
     // Void type has empty components array
     if (name.toLowerCase() === 'void') {
       const emptyComponents: TypeRefComponent[] = [];
@@ -407,7 +487,7 @@ function tryTranslateType(node: Readonly<ParseTreeNode>, includeLocation: boolea
     const baseTypeNode = getChild(node, 'base_type') ?? getChild(node, 'primitive_type');
     if (baseTypeNode) {
       const qualifiedName =
-        getText(baseTypeNode) ?? getProperty<string>(baseTypeNode, 'name') ?? 'Object';
+        getText(baseTypeNode) ?? getStringProperty(baseTypeNode, 'name') ?? 'Object';
 
       // Void type has empty components array (not a component named "void")
       if (qualifiedName.toLowerCase() === 'void') {
@@ -453,7 +533,7 @@ function tryTranslateType(node: Readonly<ParseTreeNode>, includeLocation: boolea
     }
 
     // Fallback: try to get name directly from type node
-    const name = getText(node) ?? getProperty<string>(node, 'name') ?? 'Object';
+    const name = getText(node) ?? getStringProperty(node, 'name') ?? 'Object';
     // Void type has empty components array
     if (name === 'void') {
       const emptyComponents: TypeRefComponent[] = [];
@@ -488,7 +568,10 @@ function extractModifiers(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    getProperty: (node: Readonly<ParseTreeNode>, ...names: readonly string[]) => unknown;
+    getStringProperty: (
+      node: Readonly<ParseTreeNode>,
+      ...names: readonly string[]
+    ) => string | undefined;
   }>,
   node: Readonly<ParseTreeNode>
 ): Modifier[] {
@@ -497,12 +580,12 @@ function extractModifiers(
   if (modifiersNode) {
     const modifierChildren = ctx.getChildren(modifiersNode);
     for (const modifierNode of modifierChildren) {
-      const rawText = ctx.getText(modifierNode) ?? ctx.getProperty(modifierNode, 'text');
-      const modifierText = typeof rawText === 'string' ? rawText : '';
+      const modifierText =
+        ctx.getText(modifierNode) ?? ctx.getStringProperty(modifierNode, 'text') ?? '';
       if (modifierText.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
         const lowerText = modifierText.toLowerCase();
-        // Map Apex-specific keywords to ModifierKeyword type
-        let keyword: ModifierKeyword | null = null;
+        // Map Apex-specific keywords to Modifier keyword type
+        let keyword: Modifier['keyword'] | null = null;
         if (lowerText === 'public') keyword = 'public';
         else if (lowerText === 'private') keyword = 'private';
         else if (lowerText === 'protected') keyword = 'protected';
@@ -553,7 +636,10 @@ function extractTypeParameters(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    getProperty: (node: Readonly<ParseTreeNode>, ...names: readonly string[]) => unknown;
+    getStringProperty: (
+      node: Readonly<ParseTreeNode>,
+      ...names: readonly string[]
+    ) => string | undefined;
     tryTranslateType: (node: Readonly<ParseTreeNode>) => TypeRef | null;
   }>,
   node: Readonly<ParseTreeNode>
@@ -568,10 +654,9 @@ function extractTypeParameters(
         paramNode.type.toLowerCase() === 'type_parameter'
       ) {
         const nameNode = ctx.getChild(paramNode, 'name');
-        const nameRaw = nameNode
-          ? (ctx.getText(nameNode) ?? ctx.getProperty(nameNode, 'name'))
-          : undefined;
-        const name = typeof nameRaw === 'string' ? nameRaw : '';
+        const name = nameNode
+          ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? '')
+          : '';
         if (name.length > MIN_NON_EMPTY_ARRAY_LENGTH) {
           // Look for extends bound - it's the child that's not 'name'
           const allChildren = ctx.getChildren(paramNode);
@@ -618,16 +703,20 @@ function buildAnnotationFromNode(
       altPropertyName?: string
     ) => Readonly<ParseTreeNode>[];
     getText: (node: Readonly<ParseTreeNode>) => string | undefined;
-    getProperty: (node: Readonly<ParseTreeNode>, ...names: readonly string[]) => unknown;
-    parseElementValue: (valueNode: Readonly<ParseTreeNode>) => ElementValue | null;
+    getStringProperty: (
+      node: Readonly<ParseTreeNode>,
+      ...names: readonly string[]
+    ) => string | undefined;
+    parseElementValue: (
+      valueNode: Readonly<ParseTreeNode>
+    ) => AnnotationElementValue | ArrayElementValue | ExpressionElementValue | null;
   }>,
   annotationNode: Readonly<ParseTreeNode>
 ): Annotation | null {
   const annotationNameNode = ctx.getChild(annotationNode, 'name');
-  const annotationNameRaw = annotationNameNode
-    ? (ctx.getText(annotationNameNode) ?? ctx.getProperty(annotationNameNode, 'name'))
-    : undefined;
-  const annotationName = typeof annotationNameRaw === 'string' ? annotationNameRaw : '';
+  const annotationName = annotationNameNode
+    ? (ctx.getText(annotationNameNode) ?? ctx.getStringProperty(annotationNameNode, 'name') ?? '')
+    : '';
   if (annotationName.length <= MIN_NON_EMPTY_ARRAY_LENGTH) return null;
 
   const argsNode = ctx.getChild(annotationNode, 'arguments', 'args');
@@ -636,10 +725,9 @@ function buildAnnotationFromNode(
     const argChildren = ctx.getChildren(argsNode);
     for (const argNode of argChildren) {
       const argNameNode = ctx.getChild(argNode, 'name');
-      const argNameRaw = argNameNode
-        ? (ctx.getText(argNameNode) ?? ctx.getProperty(argNameNode, 'name'))
+      const argName = argNameNode
+        ? (ctx.getText(argNameNode) ?? ctx.getStringProperty(argNameNode, 'name') ?? undefined)
         : undefined;
-      const argName = typeof argNameRaw === 'string' ? argNameRaw : undefined;
       // Parser: annotation_argument has children [value] or [name, value]; value has type annotation_expression, new_expression, or expression
       const argChildrenList = ctx.getChildren(argNode);
       const emptyArrayLengthLocal = 0;
@@ -687,10 +775,12 @@ function parseElementValue(
     getLocationOption: (node: Readonly<ParseTreeNode>) => Readonly<NodeFactoryOptions> | undefined;
     buildAnnotationFromNode: (annotationNode: Readonly<ParseTreeNode>) => Annotation | null;
     tryTranslateExpression: (node: Readonly<ParseTreeNode>, nodeType: string) => Expression | null;
-    parseElementValue: (valueNode: Readonly<ParseTreeNode>) => ElementValue | null;
+    parseElementValue: (
+      valueNode: Readonly<ParseTreeNode>
+    ) => AnnotationElementValue | ArrayElementValue | ExpressionElementValue | null;
   }>,
   valueNode: Readonly<ParseTreeNode>
-): ElementValue | null {
+): AnnotationElementValue | ArrayElementValue | ExpressionElementValue | null {
   const nodeType = valueNode.type.toLowerCase();
   if (nodeType === 'annotation_expression') {
     const children = ctx.getChildren(valueNode);
@@ -709,7 +799,9 @@ function parseElementValue(
     const elNodes = ctx.getChildren(valsInit);
     const evals = elNodes
       .map((e) => ctx.parseElementValue(e))
-      .filter((x): x is ElementValue => x != null);
+      .filter(
+        (x): x is AnnotationElementValue | ArrayElementValue | ExpressionElementValue => x != null
+      );
     return NodeFactory.createArrayElementValue(evals, ctx.getLocationOption(valueNode));
   }
   const expr = ctx.tryTranslateExpression(valueNode, nodeType);
@@ -759,6 +851,9 @@ export {
   getChild,
   getParent,
   getProperty,
+  getStringProperty,
+  getBooleanProperty,
+  getNodeProperty,
   getText,
   getLocationOption,
   tryTranslateType,

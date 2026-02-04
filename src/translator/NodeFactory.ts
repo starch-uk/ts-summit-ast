@@ -2,7 +2,6 @@
  * @file Factory for creating AST nodes.
  * Provides a unified interface delegating to specialized factory classes.
  */
-
 import { DEFAULT_ARRAY_NESTING } from '../constants.js';
 import type {
   IfStatement,
@@ -20,8 +19,6 @@ import type {
   ExpressionStatement,
   VariableDeclarationStatement,
   DmlStatement,
-  SwitchCase,
-  CatchClause,
 } from '../ast/statement.js';
 import type {
   BinaryExpression,
@@ -65,33 +62,45 @@ import type {
   TypeParameter,
   Modifier,
   Annotation,
-  Parameter,
 } from '../ast/declaration.js';
 import type {
-  Initializer,
   ConstructorInitializer,
-  ValuesInitializer,
-  SizedArrayInitializer,
   MapInitializer,
+  SizedArrayInitializer,
+  ValuesInitializer,
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
-  ElementValue,
 } from '../ast/initializer.js';
 import type { Identifier } from '../ast/baseNode.js';
 import type { Expression } from '../ast/expression.js';
 import type { Statement } from '../ast/statement.js';
 import type { SoqlOrSoslBinding } from '../ast/expression.js';
 import type { SourceRange } from '../ast/baseNode.js';
-import { StatementFactory } from './statementFactory.js';
+import {
+  StatementFactory,
+  type CreateEnhancedForLoopStatementOptions,
+  type CreateForLoopStatementOptions,
+  type CreateIfStatementOptions,
+  type CreateSwitchStatementOptions,
+  type CreateTryStatementOptions,
+} from './statementFactory.js';
 import {
   ExpressionFactory,
   LiteralFactory,
   InitializerFactory,
   ElementValueFactory,
   SoqlOrSoslBindingFactory,
+  type CreateCallExpressionOptions,
+  type CreateTernaryExpressionOptions,
 } from './expressionFactory.js';
-import { DeclarationFactory } from './declarationFactory.js';
+import {
+  DeclarationFactory,
+  type CreateClassDeclarationOptions,
+  type CreateEnumDeclarationOptions,
+  type CreateInterfaceDeclarationOptions,
+  type CreateMethodDeclarationOptions,
+} from './declarationFactory.js';
 
 /**
  * Options for creating AST nodes.
@@ -103,19 +112,47 @@ interface NodeFactoryOptions {
   readonly location?: SourceRange;
 }
 
-/** Options object for creating an enhanced for-loop statement (variable, iterable, body, options). */
-interface CreateEnhancedForLoopStatementOptions {
-  readonly variable: Readonly<VariableDeclaration>;
-  readonly iterable: Readonly<Expression>;
-  readonly body: Readonly<Statement>;
-  readonly options?: Readonly<NodeFactoryOptions>;
+/** Readonly spec for a single type ref component (id and optional args). */
+interface TypeRefComponentSpec {
+  readonly id: Identifier;
+  readonly args?: readonly TypeRef[];
 }
 
-/** Options for createEnumDeclaration. */
-interface CreateEnumDeclarationOptions {
+/** Options for createPropertyDeclaration (all properties readonly, no wrapper types). */
+interface CreatePropertyDeclarationOptions {
   readonly name: string;
-  readonly values: readonly EnumValue[];
+  readonly type: TypeRef;
   readonly modifiers?: readonly Modifier[];
+  readonly getter?: CompoundStatement;
+  readonly setter?: CompoundStatement;
+  readonly annotations?: readonly Annotation[];
+  readonly options?: NodeFactoryOptions;
+}
+
+/**
+ * Readonly view options for createClassDeclaration used at NodeFactory boundary.
+ * Structurally matches the declaration factory options but is kept local here.
+ */
+interface CreateClassDeclarationOptionsView {
+  readonly annotations?: readonly Annotation[];
+  readonly extendsClause?: TypeRef;
+  readonly implementsClause?: readonly TypeRef[];
+  readonly members: readonly (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly typeParameters?: readonly TypeParameter[];
+}
+
+/** Readonly view options for createEnumDeclaration at NodeFactory boundary. */
+interface CreateEnumDeclarationOptionsView {
   readonly members?: readonly (
     | ClassDeclaration
     | EnumDeclaration
@@ -124,39 +161,25 @@ interface CreateEnumDeclarationOptions {
     | PropertyDeclaration
     | VariableDeclaration
   )[];
-  readonly options?: Readonly<NodeFactoryOptions>;
-}
-
-/** Options for createIfStatement. */
-interface CreateIfStatementOptions {
-  readonly condition: Readonly<Expression>;
-  readonly thenStatement: Readonly<Statement>;
-  readonly elseStatement?: Readonly<Statement>;
-  readonly options?: Readonly<NodeFactoryOptions>;
-}
-
-/** Options for createMethodDeclaration. */
-interface CreateMethodDeclarationOptions {
-  readonly name: string;
-  readonly returnType: Readonly<TypeRef>;
-  readonly parameters?: readonly Parameter[];
-  readonly body?: Readonly<CompoundStatement>;
   readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly values: readonly EnumValue[];
+}
+
+/** Readonly view options for createInterfaceDeclaration at NodeFactory boundary. */
+interface CreateInterfaceDeclarationOptionsView {
+  readonly extendsClause?: readonly TypeRef[];
+  readonly members: readonly (
+    | ClassDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
   readonly typeParameters?: readonly TypeParameter[];
-  readonly annotations?: readonly Annotation[];
-  readonly isConstructor?: boolean;
-  readonly options?: Readonly<NodeFactoryOptions>;
-}
-
-/** Options for createPropertyDeclaration. */
-interface CreatePropertyDeclarationOptions {
-  readonly name: string;
-  readonly type: Readonly<TypeRef>;
-  readonly modifiers?: readonly Modifier[];
-  readonly getter?: Readonly<CompoundStatement>;
-  readonly setter?: Readonly<CompoundStatement>;
-  readonly annotations?: readonly Annotation[];
-  readonly options?: Readonly<NodeFactoryOptions>;
 }
 
 /**
@@ -165,9 +188,9 @@ interface CreatePropertyDeclarationOptions {
  */
 const NodeFactory = {
   createAnnotationElementValue(
-    value: Readonly<Annotation>,
+    value: Annotation,
 
-    options?: Readonly<NodeFactoryOptions>
+    options?: NodeFactoryOptions
   ): AnnotationElementValue {
     return ElementValueFactory.createAnnotationElementValue(value, options);
   },
@@ -189,7 +212,7 @@ const NodeFactory = {
   },
 
   createArrayElementValue(
-    values: readonly ElementValue[],
+    values: readonly (AnnotationElementValue | ArrayElementValue | ExpressionElementValue)[],
     options?: Readonly<NodeFactoryOptions>
   ): ArrayElementValue {
     return ElementValueFactory.createArrayElementValue([...values], options);
@@ -213,53 +236,44 @@ const NodeFactory = {
   /**
    * Creates an assignment expression.
    * @param operator - The assignment operator (e.g., '=', '+=', '-=').
-   * @param left - The left-hand side expression (target).
-   * @param right - The right-hand side expression (value).
-   * @param options - Optional factory options.
+   * @param options - Object with left and right expressions and optional factory options.
    * @returns The created assignment expression.
    */
   createAssignExpression(
     operator: AssignExpression['operator'],
-    left: Readonly<Expression>,
-    right: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ left: Readonly<Expression>; right: Readonly<Expression> }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): AssignExpression {
-    return ExpressionFactory.createAssignExpression(operator, left, right, options);
+    return ExpressionFactory.createAssignExpression(operator, options);
   },
 
   /**
    * Creates an assignment expression.
    * @param operator - The assignment operator (e.g., '=', '+=', '-=').
-   * @param left - The left-hand side expression (target).
-   * @param right - The right-hand side expression (value).
-   * @param options - Optional factory options.
+   * @param options - Object with left and right expressions and optional factory options.
    * @returns The created assignment expression.
    * @deprecated Use createAssignExpression instead.
    */
   createAssignmentExpression(
     operator: AssignExpression['operator'],
-    left: Readonly<Expression>,
-    right: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ left: Readonly<Expression>; right: Readonly<Expression> }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): AssignExpression {
-    return this.createAssignExpression(operator, left, right, options);
+    return this.createAssignExpression(operator, options);
   },
 
   /**
    * Creates a binary expression.
    * @param operator - The binary operator to apply (e.g., '+', '-', '==', '!=').
-   * @param left - The left-hand side expression.
-   * @param right - The right-hand side expression.
-   * @param options - Optional factory options.
+   * @param options - Object with left and right expressions and optional factory options.
    * @returns The created binary expression.
    */
   createBinaryExpression(
     operator: BinaryExpression['operator'],
-    left: Readonly<Expression>,
-    right: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ left: Readonly<Expression>; right: Readonly<Expression> }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): BinaryExpression {
-    return ExpressionFactory.createBinaryExpression(operator, left, right, options);
+    return ExpressionFactory.createBinaryExpression(operator, options);
   },
 
   /**
@@ -309,22 +323,11 @@ const NodeFactory = {
 
   /**
    * Creates a call expression.
-   * @param methodName - The name of the method to call.
-   * @param args - The arguments to pass to the method.
-   * @param target - The target expression on which to call the method.
-   * @param typeArguments - The type arguments for generic method calls.
-   * @param options - Optional factory options.
+   * @param opts - Options (methodName, args, target, typeArguments, options).
    * @returns The created call expression.
    */
-  createCallExpression(
-    methodName: string,
-
-    args: readonly Expression[] = [],
-    target?: Readonly<Expression>,
-    typeArguments?: readonly TypeRef[],
-    options?: Readonly<NodeFactoryOptions>
-  ): CallExpression {
-    return ExpressionFactory.createCallExpression(methodName, args, target, typeArguments, options);
+  createCallExpression(opts: Readonly<CreateCallExpressionOptions>): CallExpression {
+    return ExpressionFactory.createCallExpression(opts);
   },
   createCastExpression(
     type: Readonly<TypeRef>,
@@ -335,38 +338,8 @@ const NodeFactory = {
     return ExpressionFactory.createCastExpression(type, expression, options);
   },
 
-  createClassDeclaration(
-    name: string,
-
-    members: Readonly<
-      readonly (
-        | Readonly<ClassDeclaration>
-        | Readonly<EnumDeclaration>
-        | Readonly<InterfaceDeclaration>
-        | Readonly<MethodDeclaration>
-        | Readonly<PropertyDeclaration>
-        | Readonly<VariableDeclaration>
-      )[]
-    >,
-
-    modifiers: readonly Readonly<Modifier>[] = [],
-    extendsClause?: Readonly<TypeRef>,
-    implementsClause?: readonly Readonly<TypeRef>[],
-    typeParameters?: readonly Readonly<TypeParameter>[],
-
-    options?: Readonly<NodeFactoryOptions>,
-    annotations?: readonly Readonly<Annotation>[]
-  ): ClassDeclaration {
-    return DeclarationFactory.createClassDeclaration(
-      name,
-      members,
-      modifiers,
-      extendsClause,
-      implementsClause,
-      typeParameters,
-      options,
-      annotations
-    );
+  createClassDeclaration(opts: CreateClassDeclarationOptionsView): ClassDeclaration {
+    return DeclarationFactory.createClassDeclaration(opts);
   },
 
   /**
@@ -492,12 +465,7 @@ const NodeFactory = {
   createEnhancedForLoopStatement(
     opts: Readonly<CreateEnhancedForLoopStatementOptions>
   ): EnhancedForLoopStatement {
-    return StatementFactory.createEnhancedForLoopStatement(
-      opts.variable,
-      opts.iterable,
-      opts.body,
-      opts.options
-    );
+    return StatementFactory.createEnhancedForLoopStatement(opts);
   },
 
   /**
@@ -505,14 +473,8 @@ const NodeFactory = {
    * @param opts - Options (name, values, modifiers, members, options).
    * @returns The created enum declaration.
    */
-  createEnumDeclaration(opts: Readonly<CreateEnumDeclarationOptions>): EnumDeclaration {
-    return DeclarationFactory.createEnumDeclaration(
-      opts.name,
-      opts.values,
-      opts.modifiers ?? [],
-      opts.members,
-      opts.options
-    );
+  createEnumDeclaration(opts: CreateEnumDeclarationOptionsView): EnumDeclaration {
+    return DeclarationFactory.createEnumDeclaration(opts);
   },
 
   createEnumValue(
@@ -591,36 +553,18 @@ const NodeFactory = {
     return NodeFactory.createEnhancedForLoopStatement(opts);
   },
 
-  createForLoopStatement(
-    body: Readonly<Statement>,
-
-    init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
-    condition?: Readonly<Expression>,
-    update?: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
-  ): ForLoopStatement {
-    return StatementFactory.createForLoopStatement(body, init, condition, update, options);
+  createForLoopStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
+    return StatementFactory.createForLoopStatement(opts);
   },
 
   /**
    * Creates a for loop statement.
-   * @param body - The body statement of the for loop.
-   * @param init - The initialization statement.
-   * @param condition - The loop condition expression.
-   * @param update - The update expression.
-   * @param options - Optional factory options.
+   * @param opts - Body, init, condition, update, options.
    * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
-  createForStatement(
-    body: Readonly<Statement>,
-
-    init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
-    condition?: Readonly<Expression>,
-    update?: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
-  ): ForLoopStatement {
-    return NodeFactory.createForLoopStatement(body, init, condition, update, options);
+  createForStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
+    return NodeFactory.createForLoopStatement(opts);
   },
   createIdentifier(name: string, options?: Readonly<NodeFactoryOptions>): Identifier {
     return {
@@ -636,12 +580,7 @@ const NodeFactory = {
    * @returns The created if statement.
    */
   createIfStatement(opts: Readonly<CreateIfStatementOptions>): IfStatement {
-    return StatementFactory.createIfStatement(
-      opts.condition,
-      opts.thenStatement,
-      opts.elseStatement,
-      opts.options
-    );
+    return StatementFactory.createIfStatement(opts);
   },
 
   createInstanceOfExpression(
@@ -669,31 +608,8 @@ const NodeFactory = {
     return LiteralFactory.createIntegerVal(value, raw, options);
   },
 
-  createInterfaceDeclaration(
-    name: string,
-    members: Readonly<
-      readonly (
-        | Readonly<ClassDeclaration>
-        | Readonly<InterfaceDeclaration>
-        | Readonly<MethodDeclaration>
-        | Readonly<PropertyDeclaration>
-      )[]
-    >,
-
-    modifiers: readonly Readonly<Modifier>[] = [],
-    extendsClause?: readonly Readonly<TypeRef>[],
-    typeParameters?: readonly Readonly<TypeParameter>[],
-
-    options?: Readonly<NodeFactoryOptions>
-  ): InterfaceDeclaration {
-    return DeclarationFactory.createInterfaceDeclaration(
-      name,
-      members,
-      modifiers,
-      extendsClause,
-      typeParameters,
-      options
-    );
+  createInterfaceDeclaration(opts: CreateInterfaceDeclarationOptionsView): InterfaceDeclaration {
+    return DeclarationFactory.createInterfaceDeclaration(opts);
   },
 
   createLambdaExpression(
@@ -728,23 +644,12 @@ const NodeFactory = {
 
   /**
    * Creates a method call expression.
-   * @param methodName - The name of the method to call.
-   * @param args - The arguments to pass to the method.
-   * @param target - The target expression on which to call the method.
-   * @param typeArguments - The type arguments for generic method calls.
-   * @param options - Optional factory options.
+   * @param opts - Options (methodName, args, target, typeArguments, options).
    * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
-  createMethodCallExpression(
-    methodName: string,
-
-    args: readonly Expression[] = [],
-    target?: Readonly<Expression>,
-    typeArguments?: readonly TypeRef[],
-    options?: Readonly<NodeFactoryOptions>
-  ): CallExpression {
-    return this.createCallExpression(methodName, args, target, typeArguments, options);
+  createMethodCallExpression(opts: Readonly<CreateCallExpressionOptions>): CallExpression {
+    return this.createCallExpression(opts);
   },
 
   /**
@@ -753,17 +658,7 @@ const NodeFactory = {
    * @returns The created method declaration.
    */
   createMethodDeclaration(opts: Readonly<CreateMethodDeclarationOptions>): MethodDeclaration {
-    return DeclarationFactory.createMethodDeclaration(
-      opts.name,
-      opts.returnType,
-      opts.parameters ?? [],
-      opts.body,
-      opts.modifiers ?? [],
-      opts.typeParameters,
-      opts.annotations,
-      opts.isConstructor ?? false,
-      opts.options
-    );
+    return DeclarationFactory.createMethodDeclaration(opts);
   },
 
   createNewArrayExpression(
@@ -779,7 +674,9 @@ const NodeFactory = {
   },
 
   createNewExpression(
-    initializer: Readonly<Readonly<Initializer>>,
+    initializer: Readonly<
+      Readonly<ConstructorInitializer | MapInitializer | SizedArrayInitializer | ValuesInitializer>
+    >,
 
     options?: Readonly<NodeFactoryOptions>
   ): NewExpression {
@@ -837,15 +734,13 @@ const NodeFactory = {
    * @returns The created property declaration.
    */
   createPropertyDeclaration(opts: Readonly<CreatePropertyDeclarationOptions>): PropertyDeclaration {
-    return DeclarationFactory.createPropertyDeclaration(
-      opts.name,
-      opts.type,
-      opts.modifiers ?? [],
-      opts.getter,
-      opts.setter,
-      opts.annotations,
-      opts.options
-    );
+    return DeclarationFactory.createPropertyDeclaration(opts.name, opts.type, {
+      annotations: opts.annotations,
+      getter: opts.getter,
+      modifiers: opts.modifiers,
+      setter: opts.setter,
+      ...opts.options,
+    });
   },
 
   /**
@@ -988,34 +883,15 @@ const NodeFactory = {
 
   /**
    * Creates a switch statement.
-   * @param expression - The expression to switch on.
-   * @param cases - The list of switch case statements.
-   * @param defaultCase - The default case statement, if any.
-   * @param options - Optional factory options.
+   * @param opts - Options (expression, cases, defaultCase, options).
    * @returns The created switch statement.
    */
-  createSwitchStatement(
-    expression: Readonly<Expression>,
-    cases: readonly SwitchCase[],
-    defaultCase?: Readonly<SwitchCase>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): SwitchStatement {
-    return StatementFactory.createSwitchStatement(expression, [...cases], defaultCase, options);
+  createSwitchStatement(opts: Readonly<CreateSwitchStatementOptions>): SwitchStatement {
+    return StatementFactory.createSwitchStatement(opts);
   },
 
-  createTernaryExpression(
-    condition: Readonly<Expression>,
-    thenExpression: Readonly<Expression>,
-    elseExpression: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
-  ): TernaryExpression {
-    return ExpressionFactory.createTernaryExpression(
-      condition,
-      thenExpression,
-      elseExpression,
-      options
-    );
+  createTernaryExpression(opts: Readonly<CreateTernaryExpressionOptions>): TernaryExpression {
+    return ExpressionFactory.createTernaryExpression(opts);
   },
   createThisExpression(options?: Readonly<NodeFactoryOptions>): ThisExpression {
     return ExpressionFactory.createThisExpression(options);
@@ -1042,20 +918,11 @@ const NodeFactory = {
 
   /**
    * Creates a try statement.
-   * @param tryBlock - The compound statement to execute in the try block.
-   * @param catchClauses - The list of catch clause handlers.
-   * @param finallyBlock - The compound statement to execute in the finally block, if any.
-   * @param options - Optional factory options.
+   * @param opts - Options (tryBlock, catchClauses, finallyBlock, options).
    * @returns The created try statement.
    */
-  createTryStatement(
-    tryBlock: Readonly<CompoundStatement>,
-    catchClauses: readonly CatchClause[],
-    finallyBlock?: Readonly<CompoundStatement>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): TryStatement {
-    return StatementFactory.createTryStatement(tryBlock, [...catchClauses], finallyBlock, options);
+  createTryStatement(opts: Readonly<CreateTryStatementOptions>): TryStatement {
+    return StatementFactory.createTryStatement(opts);
   },
 
   createTypeParameter(
@@ -1076,12 +943,9 @@ const NodeFactory = {
    * @returns The created type reference.
    */
   createTypeRef(
-    components: Readonly<
-      readonly { id: Readonly<Identifier>; args?: readonly Readonly<TypeRef>[] }[]
-    >,
+    components: readonly TypeRefComponentSpec[],
     arrayNesting = DEFAULT_ARRAY_NESTING,
-
-    options?: Readonly<NodeFactoryOptions>
+    options?: NodeFactoryOptions
   ): TypeRef {
     return {
       arrayNesting,
@@ -1097,18 +961,15 @@ const NodeFactory = {
   /**
    * Creates a unary expression.
    * @param operator - The unary operator to apply (e.g., '!', '++', '--').
-   * @param operand - The expression to apply the operator to.
-   * @param prefix - Whether the operator is prefix (true) or postfix (false).
-   * @param options - Optional factory options.
+   * @param options - Object with operand, prefix, and optional factory options.
    * @returns The created unary expression.
    */
   createUnaryExpression(
     operator: UnaryExpression['operator'],
-    operand: Readonly<Expression>,
-    prefix: boolean,
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ operand: Readonly<Expression>; prefix: boolean }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): UnaryExpression {
-    return ExpressionFactory.createUnaryExpression(operator, operand, prefix, options);
+    return ExpressionFactory.createUnaryExpression(operator, options);
   },
   createValuesInitializer(
     type: Readonly<TypeRef>,
@@ -1122,29 +983,20 @@ const NodeFactory = {
 
   /**
    * Creates a variable declaration.
-   * @param name - The identifier name for the variable.
-   * @param type - The declared type of the variable.
-   * @param initializer - The optional initializer expression.
-   * @param modifiers - Optional modifiers (e.g., 'final', 'static').
-   * @param options - Optional factory options.
+   * @param opts - Options (name, type, initializer, modifiers, options).
    * @returns The created variable declaration.
    */
   createVariableDeclaration(
-    name: string,
-    type: Readonly<TypeRef>,
-    initializer?: Readonly<Expression>,
-
-    modifiers?: readonly Modifier[],
-
-    options?: Readonly<NodeFactoryOptions>
+    opts: Readonly<
+      NodeFactoryOptions & {
+        initializer?: Readonly<Expression>;
+        modifiers?: readonly Modifier[];
+        name: string;
+        type: Readonly<TypeRef>;
+      }
+    >
   ): VariableDeclaration {
-    return DeclarationFactory.createVariableDeclaration({
-      initializer,
-      modifiers,
-      name,
-      type,
-      ...(options ?? {}),
-    });
+    return DeclarationFactory.createVariableDeclaration(opts);
   },
 
   /**
@@ -1193,10 +1045,17 @@ const NodeFactory = {
 
 export {
   NodeFactory,
+  type CreateCallExpressionOptions,
+  type CreateClassDeclarationOptions,
   type CreateEnhancedForLoopStatementOptions,
   type CreateEnumDeclarationOptions,
+  type CreateForLoopStatementOptions,
   type CreateIfStatementOptions,
+  type CreateInterfaceDeclarationOptions,
   type CreateMethodDeclarationOptions,
   type CreatePropertyDeclarationOptions,
+  type CreateSwitchStatementOptions,
+  type CreateTernaryExpressionOptions,
+  type CreateTryStatementOptions,
   type NodeFactoryOptions,
 };

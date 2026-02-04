@@ -8,14 +8,10 @@
 import type { SourceRange } from '../ast/baseNode.js';
 
 /**
- * Base interface for parse tree nodes
- * This is intentionally minimal to support various parser outputs.
+ * Base interface for parse tree nodes.
+ * Uses readonly index signature for extensibility (parser-specific properties).
  */
 interface ParseTreeNode {
-  /**
-   * Additional properties that parsers may include
-   * This allows for parser-specific data while maintaining compatibility.
-   */
   readonly [key: string]: unknown;
 
   /**
@@ -40,11 +36,6 @@ interface ParseTreeNode {
    */
   readonly text?: string;
 }
-
-/**
- * Parse tree with named children (for parsers that use property-based children).
- */
-type NamedChildrenParseTree = ParseTreeNode & Record<string, ParseTreeNode | ParseTreeNode[]>;
 
 /**
  * Parse tree with positional children.
@@ -117,7 +108,6 @@ interface ParseTreeAdapter<T = unknown> {
 
 export type {
   ParseTreeNode,
-  NamedChildrenParseTree,
   PositionalChildrenParseTree,
   Token,
   TokenizedParseTree,

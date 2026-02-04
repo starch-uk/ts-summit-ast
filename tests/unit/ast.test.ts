@@ -754,16 +754,14 @@ describe('AST Validation', () => {
     });
 
     it('should compare complex AST structures', () => {
-      const expr1 = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createIntegerVal(5, '5'),
-        NodeFactory.createIntegerVal(3, '3')
-      );
-      const expr2 = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createIntegerVal(5, '5'),
-        NodeFactory.createIntegerVal(3, '3')
-      );
+      const expr1 = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createIntegerVal(5, '5'),
+        right: NodeFactory.createIntegerVal(3, '3'),
+      });
+      const expr2 = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createIntegerVal(5, '5'),
+        right: NodeFactory.createIntegerVal(3, '3'),
+      });
       const result = compareASTs(expr1, expr2);
 
       expect(result.typesMatch).toBe(true);
@@ -781,11 +779,10 @@ describe('AST Validation', () => {
     });
 
     it('should count all node types in a complex AST', () => {
-      const condition = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createIntegerVal(5, '5'),
-        NodeFactory.createIntegerVal(3, '3')
-      );
+      const condition = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createIntegerVal(5, '5'),
+        right: NodeFactory.createIntegerVal(3, '3'),
+      });
       const thenStatement = NodeFactory.createReturnStatement(
         NodeFactory.createStringVal('result', '"result"')
       );
@@ -820,15 +817,13 @@ describe('AST Validation', () => {
     });
 
     it('should calculate average depth for leaf nodes', () => {
-      const deepExpr = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createBinaryExpression(
-          '+',
-          NodeFactory.createIntegerVal(1, '1'),
-          NodeFactory.createIntegerVal(2, '2')
-        ),
-        NodeFactory.createIntegerVal(3, '3')
-      );
+      const deepExpr = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createBinaryExpression('+', {
+          left: NodeFactory.createIntegerVal(1, '1'),
+          right: NodeFactory.createIntegerVal(2, '2'),
+        }),
+        right: NodeFactory.createIntegerVal(3, '3'),
+      });
       const stats = getASTStatistics(deepExpr);
 
       expect(stats.maxDepth).toBeGreaterThan(1);
@@ -863,11 +858,10 @@ describe('AST Validation', () => {
     it('should count different node types correctly', () => {
       const ast = NodeFactory.createBlock([
         NodeFactory.createExpressionStatement(
-          NodeFactory.createBinaryExpression(
-            '+',
-            NodeFactory.createIntegerVal(1, '1'),
-            NodeFactory.createIntegerVal(2, '2')
-          )
+          NodeFactory.createBinaryExpression('+', {
+            left: NodeFactory.createIntegerVal(1, '1'),
+            right: NodeFactory.createIntegerVal(2, '2'),
+          })
         ),
         NodeFactory.createReturnStatement(NodeFactory.createStringVal('done', '"done"')),
       ]);

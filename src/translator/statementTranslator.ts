@@ -2,7 +2,6 @@
  * @file Statement translation helpers.
  * Translates parse tree statement nodes to AST statement nodes.
  */
-
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type {
   Statement,
@@ -375,13 +374,13 @@ function translateForLoopStatement(
       }
     }
   }
-  return NodeFactory.createForLoopStatement(
+  return NodeFactory.createForLoopStatement({
     body,
-    initStatement,
     condition,
+    init: initStatement,
+    options: ctx.getLocationOption(node),
     update,
-    ctx.getLocationOption(node)
-  );
+  });
 }
 
 /**
@@ -423,7 +422,7 @@ function translateEnhancedForLoopStatement(
       if (!varType) {
         throw new TranslationError('For-each statement requires a valid type', typeNode);
       }
-      const varName = ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? '';
+      const varName = ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? '';
       if (!varName) {
         throw new TranslationError('For-each statement requires a variable name', nameNode);
       }
@@ -468,16 +467,13 @@ function translateEnhancedForLoopStatement(
     if (varChildren.length >= minimumChildrenForVariable) {
       const [typeChild, varNameNode] = varChildren;
       const varType = ctx.tryTranslateType(typeChild);
-      const varName =
-        ctx.getText(varNameNode) ?? ctx.getProperty<string>(varNameNode, 'name') ?? '';
+      const varName = ctx.getText(varNameNode) ?? ctx.getStringProperty(varNameNode, 'name') ?? '';
       if (varType && varName) {
-        varDecl = NodeFactory.createVariableDeclaration(
-          varName,
-          varType,
-          undefined,
-          undefined,
-          ctx.getLocationOption(varNameNode)
-        );
+        varDecl = NodeFactory.createVariableDeclaration({
+          name: varName,
+          ...ctx.getLocationOption(varNameNode),
+          type: varType,
+        });
       }
     }
   }
@@ -582,13 +578,11 @@ function translateSwitchStatement(
           varName.length > MIN_NON_EMPTY_ARRAY_LENGTH
         ) {
           downcastDeclarations = [
-            NodeFactory.createVariableDeclaration(
-              varName,
-              matchType,
-              undefined,
-              undefined,
-              ctx.getLocationOption(typeMatchNode)
-            ),
+            NodeFactory.createVariableDeclaration({
+              name: varName,
+              ...ctx.getLocationOption(typeMatchNode),
+              type: matchType,
+            }),
           ];
         }
       }
@@ -707,12 +701,12 @@ function translateSwitchStatement(
     };
   }
 
-  return NodeFactory.createSwitchStatement(
-    expression,
+  return NodeFactory.createSwitchStatement({
     cases,
     defaultCase,
-    ctx.getLocationOption(node)
-  );
+    expression,
+    options: ctx.getLocationOption(node),
+  });
 }
 
 /**
@@ -844,16 +838,14 @@ function translateTryStatement(
 
         const nameNode = catchNodeChildren[secondChildIndex];
         if (nameNode.type === 'name') {
-          const name = ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? '';
+          const name = ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? '';
           if (name && exceptionType) {
             // Create a variable declaration for the catch parameter
-            varDecl = NodeFactory.createVariableDeclaration(
+            varDecl = NodeFactory.createVariableDeclaration({
               name,
-              exceptionType,
-              undefined,
-              undefined,
-              ctx.getLocationOption(nameNode)
-            );
+              ...ctx.getLocationOption(nameNode),
+              type: exceptionType,
+            });
           }
         }
       }
@@ -894,12 +886,12 @@ function translateTryStatement(
     finallyBlockStmt = finallyBlockResult;
   }
 
-  return NodeFactory.createTryStatement(
-    tryBlockStmt,
+  return NodeFactory.createTryStatement({
     catchClauses,
-    finallyBlockStmt,
-    ctx.getLocationOption(node)
-  );
+    finallyBlock: finallyBlockStmt,
+    options: ctx.getLocationOption(node),
+    tryBlock: tryBlockStmt,
+  });
 }
 
 /**
@@ -912,7 +904,7 @@ function translateBreakStatement(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
-  const label = ctx.getProperty<string>(node, 'label');
+  const label = ctx.getStringProperty(node, 'label');
   return NodeFactory.createBreakStatement(label, ctx.getLocationOption(node));
 }
 
@@ -926,7 +918,7 @@ function translateContinueStatement(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
-  const label = ctx.getProperty<string>(node, 'label');
+  const label = ctx.getStringProperty(node, 'label');
   return NodeFactory.createContinueStatement(label, ctx.getLocationOption(node));
 }
 
@@ -1048,7 +1040,7 @@ function translateDmlStatement(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Statement {
-  const raw = ctx.getText(node) ?? ctx.getProperty<string>(node, 'text') ?? 'insert';
+  const raw = ctx.getText(node) ?? ctx.getStringProperty(node, 'text') ?? 'insert';
   const operation = parseDmlOperation(raw);
   const children = ctx.getChildren(node);
   if (children.length === EMPTY_ARRAY_LENGTH) {

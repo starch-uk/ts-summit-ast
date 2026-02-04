@@ -43,7 +43,6 @@ import type {
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
-  ElementValue,
 } from '../ast/initializer.js';
 import type { VariableDeclaration, AnnotationArgument, Modifier } from '../ast/declaration.js';
 import {
@@ -565,7 +564,10 @@ function serializeArrayElementValue(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  out.values = node.values.map((val: Readonly<ElementValue>) => serializer.serializeNode(val));
+  out.values = node.values.map(
+    (val: Readonly<AnnotationElementValue | ArrayElementValue | ExpressionElementValue>) =>
+      serializer.serializeNode(val)
+  );
 }
 
 // ============================================================================

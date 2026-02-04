@@ -45,8 +45,8 @@ function typeRefToCodeString(typeRef: TypeRef): string {
     .map((comp) => {
       let result: string = comp.id.name;
       if (comp.args != null && comp.args.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- typeRefToCodeString returns string, map result is string[]
-        result += `<${comp.args.map(typeRefToCodeString).join(', ')}>`;
+        const argsString = String(comp.args.map(typeRefToCodeString).join(', '));
+        result = result + '<' + argsString + '>';
       }
       return result;
     })
@@ -77,8 +77,7 @@ function isVoidType(typeRef: TypeRef | undefined): boolean {
  */
 function getQualifiedName(decl: ClassMember, enclosingClassName?: string): string {
   if (enclosingClassName != null && enclosingClassName !== '') {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- ClassMember.name is string, type may be unresolved in test context
-    return `${enclosingClassName}.${decl.name}`;
+    return enclosingClassName + '.' + String(decl.name);
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- ClassMember type may be unresolved in test context
   return decl.name;
@@ -176,7 +175,6 @@ describe('Class Declaration Translation', () => {
     if (enclosingClassDecl) {
       // Filter inner types from members
       const innerTypes = enclosingClassDecl.members.filter(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
         (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
           isClassDeclaration(m) || isInterfaceDeclaration(m) || isEnumDeclaration(m)
       );
@@ -195,7 +193,6 @@ describe('Class Declaration Translation', () => {
       // Find inner class
       /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isClassDeclaration guard */
       const innerClassDecl = innerTypes.find(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
         (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
           isClassDeclaration(m) && m.name === 'InnerClass'
       ) as ClassDeclaration | undefined;
@@ -213,7 +210,6 @@ describe('Class Declaration Translation', () => {
       // Find inner interface
       /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isInterfaceDeclaration guard */
       const innerInterfaceDecl = innerTypes.find(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
         (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
           isInterfaceDeclaration(m) && m.name === 'InnerInterface'
       ) as InterfaceDeclaration | undefined;
@@ -230,7 +226,6 @@ describe('Class Declaration Translation', () => {
       // Find inner enum
       /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isEnumDeclaration guard */
       const innerEnumDecl = innerTypes.find(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
         (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
           isEnumDeclaration(m) && m.name === 'InnerEnum'
         // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- EnumDeclaration may be unresolved in test context
@@ -499,14 +494,12 @@ describe('Class Declaration Translation', () => {
       // Find property declarations
       // Original: propertyDeclarations.singleOrNull() is not null
       const propDecls = classDecl.members.filter(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
         (m: Readonly<Readonly<ClassDeclaration['members'][number]>>): m is PropertyDeclaration =>
           m.kind === 'PropertyDeclaration'
       );
       // Properties may not be fully implemented yet, so we check if they exist
       if (propDecls.length > 0) {
         const propDecl = propDecls.find(
-          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
           (p: Readonly<Readonly<PropertyDeclaration>>) => p.name === 'property'
         );
         expect(propDecl).toBeDefined();

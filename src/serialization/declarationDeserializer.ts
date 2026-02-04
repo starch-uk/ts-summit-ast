@@ -505,7 +505,13 @@ function deserializeVariableDeclaration(
         })
       : undefined;
 
-  return NodeFactory.createVariableDeclaration(name, type, initializer, modifiers, locationOption);
+  return NodeFactory.createVariableDeclaration({
+    initializer,
+    modifiers,
+    name,
+    ...(locationOption ?? {}),
+    type,
+  });
 }
 
 /**

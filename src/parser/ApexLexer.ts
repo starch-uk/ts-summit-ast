@@ -173,72 +173,81 @@ export class ApexLexer {
     if (char === '+') {
       if (this.peek(this.singleCharOffset) === '+') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.INCREMENT, '++', startLine, startCol);
+        return this.createToken(TokenType.INCREMENT, '++', { column: startCol, line: startLine });
       }
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.PLUS_ASSIGN, '+=', startLine, startCol);
+        return this.createToken(TokenType.PLUS_ASSIGN, '+=', { column: startCol, line: startLine });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.PLUS, '+', startLine, startCol);
+      return this.createToken(TokenType.PLUS, '+', { column: startCol, line: startLine });
     }
 
     if (char === '-') {
       if (this.peek(this.singleCharOffset) === '-') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.DECREMENT, '--', startLine, startCol);
+        return this.createToken(TokenType.DECREMENT, '--', { column: startCol, line: startLine });
       }
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.MINUS_ASSIGN, '-=', startLine, startCol);
+        return this.createToken(TokenType.MINUS_ASSIGN, '-=', {
+          column: startCol,
+          line: startLine,
+        });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.MINUS, '-', startLine, startCol);
+      return this.createToken(TokenType.MINUS, '-', { column: startCol, line: startLine });
     }
 
     if (char === '*') {
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.MULTIPLY_ASSIGN, '*=', startLine, startCol);
+        return this.createToken(TokenType.MULTIPLY_ASSIGN, '*=', {
+          column: startCol,
+          line: startLine,
+        });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.MULTIPLY, '*', startLine, startCol);
+      return this.createToken(TokenType.MULTIPLY, '*', { column: startCol, line: startLine });
     }
 
     if (char === '/') {
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.DIVIDE_ASSIGN, '/=', startLine, startCol);
+        return this.createToken(TokenType.DIVIDE_ASSIGN, '/=', {
+          column: startCol,
+          line: startLine,
+        });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.DIVIDE, '/', startLine, startCol);
+      return this.createToken(TokenType.DIVIDE, '/', { column: startCol, line: startLine });
     }
 
     if (char === '%') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.MODULO, '%', startLine, startCol);
+      return this.createToken(TokenType.MODULO, '%', { column: startCol, line: startLine });
     }
 
     if (char === '=') {
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.EQUALS, '==', startLine, startCol);
+        return this.createToken(TokenType.EQUALS, '==', { column: startCol, line: startLine });
       }
       if (this.peek(this.singleCharOffset) === '>') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.ARROW, '=>', startLine, startCol);
+        return this.createToken(TokenType.ARROW, '=>', { column: startCol, line: startLine });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.ASSIGN, '=', startLine, startCol);
+      return this.createToken(TokenType.ASSIGN, '=', { column: startCol, line: startLine });
     }
 
     if (char === '!') {
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.NOT_EQUALS, '!=', startLine, startCol);
+        return this.createToken(TokenType.NOT_EQUALS, '!=', { column: startCol, line: startLine });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.NOT, '!', startLine, startCol);
+      return this.createToken(TokenType.NOT, '!', { column: startCol, line: startLine });
     }
 
     if (char === '<') {
@@ -246,17 +255,20 @@ export class ApexLexer {
         // Check for << or <<=
         if (this.peek(this.doubleCharOffset) === '=') {
           this.advance(this.tripleCharOffset);
-          return this.createToken(TokenType.LEFT_SHIFT_ASSIGN, '<<=', startLine, startCol);
+          return this.createToken(TokenType.LEFT_SHIFT_ASSIGN, '<<=', {
+            column: startCol,
+            line: startLine,
+          });
         }
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.LEFT_SHIFT, '<<', startLine, startCol);
+        return this.createToken(TokenType.LEFT_SHIFT, '<<', { column: startCol, line: startLine });
       }
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.LESS_EQUAL, '<=', startLine, startCol);
+        return this.createToken(TokenType.LESS_EQUAL, '<=', { column: startCol, line: startLine });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.LESS_THAN, '<', startLine, startCol);
+      return this.createToken(TokenType.LESS_THAN, '<', { column: startCol, line: startLine });
     }
 
     if (char === '>') {
@@ -266,124 +278,134 @@ export class ApexLexer {
           // >>> or >>>=
           if (this.peek(this.tripleCharOffset) === '=') {
             this.advance(this.quadrupleCharOffset);
-            return this.createToken(
-              TokenType.RIGHT_SHIFT_UNSIGNED_ASSIGN,
-              '>>>=',
-              startLine,
-              startCol
-            );
+            return this.createToken(TokenType.RIGHT_SHIFT_UNSIGNED_ASSIGN, '>>>=', {
+              column: startCol,
+              line: startLine,
+            });
           }
           this.advance(this.tripleCharOffset);
-          return this.createToken(TokenType.RIGHT_SHIFT_UNSIGNED, '>>>', startLine, startCol);
+          return this.createToken(TokenType.RIGHT_SHIFT_UNSIGNED, '>>>', {
+            column: startCol,
+            line: startLine,
+          });
         }
         if (this.peek(this.doubleCharOffset) === '=') {
           this.advance(this.tripleCharOffset);
-          return this.createToken(TokenType.RIGHT_SHIFT_ASSIGN, '>>=', startLine, startCol);
+          return this.createToken(TokenType.RIGHT_SHIFT_ASSIGN, '>>=', {
+            column: startCol,
+            line: startLine,
+          });
         }
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.RIGHT_SHIFT, '>>', startLine, startCol);
+        return this.createToken(TokenType.RIGHT_SHIFT, '>>', { column: startCol, line: startLine });
       }
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.GREATER_EQUAL, '>=', startLine, startCol);
+        return this.createToken(TokenType.GREATER_EQUAL, '>=', {
+          column: startCol,
+          line: startLine,
+        });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.GREATER_THAN, '>', startLine, startCol);
+      return this.createToken(TokenType.GREATER_THAN, '>', { column: startCol, line: startLine });
     }
 
     if (char === '&') {
       if (this.peek(this.singleCharOffset) === '&') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.AND, '&&', startLine, startCol);
+        return this.createToken(TokenType.AND, '&&', { column: startCol, line: startLine });
       }
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.AND_ASSIGN, '&=', startLine, startCol);
+        return this.createToken(TokenType.AND_ASSIGN, '&=', { column: startCol, line: startLine });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.BITWISE_AND, '&', startLine, startCol);
+      return this.createToken(TokenType.BITWISE_AND, '&', { column: startCol, line: startLine });
     }
 
     if (char === '|') {
       if (this.peek(this.singleCharOffset) === '|') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.OR, '||', startLine, startCol);
+        return this.createToken(TokenType.OR, '||', { column: startCol, line: startLine });
       }
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.OR_ASSIGN, '|=', startLine, startCol);
+        return this.createToken(TokenType.OR_ASSIGN, '|=', { column: startCol, line: startLine });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.BITWISE_OR, '|', startLine, startCol);
+      return this.createToken(TokenType.BITWISE_OR, '|', { column: startCol, line: startLine });
     }
 
     if (char === '^') {
       if (this.peek(this.singleCharOffset) === '=') {
         this.advance(this.doubleCharOffset);
-        return this.createToken(TokenType.XOR_ASSIGN, '^=', startLine, startCol);
+        return this.createToken(TokenType.XOR_ASSIGN, '^=', { column: startCol, line: startLine });
       }
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.BITWISE_XOR, '^', startLine, startCol);
+      return this.createToken(TokenType.BITWISE_XOR, '^', { column: startCol, line: startLine });
     }
 
     if (char === '?' && this.peek(this.singleCharOffset) === '?') {
       this.advance(this.doubleCharOffset);
-      return this.createToken(TokenType.NULL_COALESCING, '??', startLine, startCol);
+      return this.createToken(TokenType.NULL_COALESCING, '??', {
+        column: startCol,
+        line: startLine,
+      });
     }
 
     // Punctuation
     if (char === ';') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.SEMICOLON, ';', startLine, startCol);
+      return this.createToken(TokenType.SEMICOLON, ';', { column: startCol, line: startLine });
     }
     if (char === ',') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.COMMA, ',', startLine, startCol);
+      return this.createToken(TokenType.COMMA, ',', { column: startCol, line: startLine });
     }
     if (char === '.') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.DOT, '.', startLine, startCol);
+      return this.createToken(TokenType.DOT, '.', { column: startCol, line: startLine });
     }
     if (char === ':') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.COLON, ':', startLine, startCol);
+      return this.createToken(TokenType.COLON, ':', { column: startCol, line: startLine });
     }
     if (char === '?') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.QUESTION, '?', startLine, startCol);
+      return this.createToken(TokenType.QUESTION, '?', { column: startCol, line: startLine });
     }
     if (char === '(') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.LEFT_PAREN, '(', startLine, startCol);
+      return this.createToken(TokenType.LEFT_PAREN, '(', { column: startCol, line: startLine });
     }
     if (char === ')') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.RIGHT_PAREN, ')', startLine, startCol);
+      return this.createToken(TokenType.RIGHT_PAREN, ')', { column: startCol, line: startLine });
     }
     if (char === '{') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.LEFT_BRACE, '{', startLine, startCol);
+      return this.createToken(TokenType.LEFT_BRACE, '{', { column: startCol, line: startLine });
     }
     if (char === '}') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.RIGHT_BRACE, '}', startLine, startCol);
+      return this.createToken(TokenType.RIGHT_BRACE, '}', { column: startCol, line: startLine });
     }
     if (char === '[') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.LEFT_BRACKET, '[', startLine, startCol);
+      return this.createToken(TokenType.LEFT_BRACKET, '[', { column: startCol, line: startLine });
     }
     if (char === ']') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.RIGHT_BRACKET, ']', startLine, startCol);
+      return this.createToken(TokenType.RIGHT_BRACKET, ']', { column: startCol, line: startLine });
     }
     if (char === '@') {
       this.advance(this.singleCharOffset);
-      return this.createToken(TokenType.AT, '@', startLine, startCol);
+      return this.createToken(TokenType.AT, '@', { column: startCol, line: startLine });
     }
 
     // Unknown character
     this.advance(this.singleCharOffset);
-    return this.createToken(TokenType.ERROR, char, startLine, startCol);
+    return this.createToken(TokenType.ERROR, char, { column: startCol, line: startLine });
   }
 
   private skipWhitespace(): Token | null {
@@ -406,7 +428,7 @@ export class ApexLexer {
       this.position++;
     }
 
-    return this.createToken(TokenType.WHITESPACE, text, startLine, startCol);
+    return this.createToken(TokenType.WHITESPACE, text, { column: startCol, line: startLine });
   }
 
   private readLineComment(): Token {
@@ -425,7 +447,7 @@ export class ApexLexer {
       this.advance(this.singleCharOffset);
     }
 
-    return this.createToken(TokenType.LINE_COMMENT, text, startLine, startCol);
+    return this.createToken(TokenType.LINE_COMMENT, text, { column: startCol, line: startLine });
   }
 
   private readBlockComment(): Token {
@@ -454,7 +476,7 @@ export class ApexLexer {
       this.advance(this.singleCharOffset);
     }
 
-    return this.createToken(TokenType.BLOCK_COMMENT, text, startLine, startCol);
+    return this.createToken(TokenType.BLOCK_COMMENT, text, { column: startCol, line: startLine });
   }
 
   private readStringLiteral(quote: string): Token {
@@ -487,7 +509,7 @@ export class ApexLexer {
       this.advance(this.singleCharOffset);
     }
 
-    return this.createToken(TokenType.STRING_LITERAL, text, startLine, startCol);
+    return this.createToken(TokenType.STRING_LITERAL, text, { column: startCol, line: startLine });
   }
 
   private readNumberLiteral(): Token {
@@ -513,7 +535,7 @@ export class ApexLexer {
       }
     }
 
-    return this.createToken(TokenType.NUMBER_LITERAL, text, startLine, startCol);
+    return this.createToken(TokenType.NUMBER_LITERAL, text, { column: startCol, line: startLine });
   }
 
   private readIdentifier(): Token {
@@ -534,13 +556,17 @@ export class ApexLexer {
     const keywordType = this.keywords.get(lowerText);
     const tokenType = keywordType ?? TokenType.IDENTIFIER;
 
-    return this.createToken(tokenType, text, startLine, startCol);
+    return this.createToken(tokenType, text, { column: startCol, line: startLine });
   }
 
-  private createToken(type: TokenType, text: string, line: number, column: number): Token {
+  private createToken(
+    type: TokenType,
+    text: string,
+    location: Readonly<{ column: number; line: number }>
+  ): Token {
     void this;
     return {
-      location: { column, line },
+      location: { column: location.column, line: location.line },
       text,
       type,
     };

@@ -9,12 +9,6 @@ import type { VariableDeclaration } from './declaration.js';
 import type { TypeRef } from './baseNode.js';
 
 /**
- * Alias for backward compatibility during migration.
- * @deprecated Use CompoundStatement instead.
- */
-type Block = CompoundStatement;
-
-/**
  * Base interface for all statement nodes.
  */
 interface Statement extends ASTNode {
@@ -228,7 +222,6 @@ interface DmlStatement extends Statement {
  */
 
 export type {
-  Block,
   Statement,
   IfStatement,
   ForLoopStatement,

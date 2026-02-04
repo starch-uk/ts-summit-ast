@@ -2,7 +2,6 @@
  * @file Declaration translation helpers.
  * Translates parse tree declaration nodes (classes, interfaces, enums, members) to AST declaration nodes.
  */
-
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type {
   Declaration,
@@ -39,6 +38,26 @@ import { isCompoundStatement } from '../guard/statementGuard.js';
 import type { TranslateContext } from './translateUtil.js';
 import { NodeFactory } from './nodeFactory.js';
 
+/** Member with index (readonly, for filter callback). */
+interface MemberWithIndex {
+  readonly decl: Declaration;
+  readonly sourceIndex: number;
+  readonly statementId?: number;
+}
+
+/** Sorted class member with index (readonly, for map callback after filter). */
+interface SortedMemberWithIndex {
+  readonly decl:
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration;
+  readonly sourceIndex: number;
+  readonly statementId?: number;
+}
+
 /**
  * Translate a class declaration from parse tree to AST.
  * @param ctx - The translation context.
@@ -51,7 +70,7 @@ function translateClassDeclaration(
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
   const name = nameNode
-    ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? 'Unknown')
+    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'Unknown')
     : 'Unknown';
   const prevClassName = ctx.currentClassName;
   ctx.setCurrentClassName(name);
@@ -619,26 +638,8 @@ function translateClassDeclaration(
       isPropertyDeclaration(d) ||
       isVariableDeclaration(d);
     const sortedDecls = membersWithIndex
-      .filter(
-        (
-          m: Readonly<{
-            decl: Declaration;
-            sourceIndex: number;
-            statementId?: number;
-          }>
-        ): m is Readonly<{
-          decl:
-            | ClassDeclaration
-            | EnumDeclaration
-            | InterfaceDeclaration
-            | MethodDeclaration
-            | PropertyDeclaration
-            | VariableDeclaration;
-          sourceIndex: number;
-          statementId?: number;
-        }> => classMemberDecl(m.decl)
-      )
-      .map((m) => m.decl);
+      .filter((m: MemberWithIndex): m is SortedMemberWithIndex => classMemberDecl(m.decl))
+      .map((m: SortedMemberWithIndex) => m.decl);
     members.push(...sortedDecls);
   }
 
@@ -667,16 +668,16 @@ function translateClassDeclaration(
   }
 
   ctx.setCurrentClassName(prevClassName);
-  return NodeFactory.createClassDeclaration(
-    name,
+  return NodeFactory.createClassDeclaration({
+    annotations: annotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? annotations : undefined,
+    extendsClause: extendsType,
+    implementsClause: implementsTypes,
     members,
     modifiers,
-    extendsType,
-    implementsTypes,
-    typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
-    ctx.getLocationOption(node),
-    annotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? annotations : undefined
-  );
+    name,
+    options: ctx.getLocationOption(node),
+    typeParameters: typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
+  });
 }
 
 /**
@@ -691,7 +692,7 @@ function translateEnumDeclaration(
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
   const name = nameNode
-    ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? 'Unknown')
+    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'Unknown')
     : 'Unknown';
   const modifiers = ctx.extractModifiers(node);
   const constants: EnumValue[] = [];
@@ -714,7 +715,7 @@ function translateEnumDeclaration(
         const constNameNode = ctx.getChild(childNode, 'name');
         const constName = constNameNode
           ? (ctx.getText(constNameNode) ??
-            ctx.getProperty<string>(constNameNode, 'name') ??
+            ctx.getStringProperty(constNameNode, 'name') ??
             'UNKNOWN')
           : 'UNKNOWN';
         // Enum constants can have arguments (constructor-like) - but EnumValue doesn't store them
@@ -761,7 +762,7 @@ function translateInterfaceDeclaration(
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
   const name = nameNode
-    ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? 'Unknown')
+    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'Unknown')
     : 'Unknown';
   const modifiers = ctx.extractModifiers(node);
   const typeParameters = ctx.extractTypeParameters(node);
@@ -790,19 +791,19 @@ function translateInterfaceDeclaration(
     }
   }
 
-  return NodeFactory.createInterfaceDeclaration(
-    name,
-    members,
-    modifiers,
-    extendsClause
+  return NodeFactory.createInterfaceDeclaration({
+    extendsClause: extendsClause
       ? ctx
           .getChildren(extendsClause)
           .map((c) => ctx.tryTranslateType(c))
           .filter((type): type is TypeRef => type !== null)
       : undefined,
-    typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
-    ctx.getLocationOption(node)
-  );
+    members,
+    modifiers,
+    name,
+    options: ctx.getLocationOption(node),
+    typeParameters: typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
+  });
 }
 
 /**
@@ -817,7 +818,7 @@ function translateMethodDeclaration(
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
   const name = nameNode
-    ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? 'unknown')
+    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'unknown')
     : 'unknown';
   const modifiers = ctx.extractModifiers(node);
   const annotations = ctx.extractAnnotations(node);
@@ -855,7 +856,7 @@ function translateMethodDeclaration(
     for (const paramNode of parameterNodes) {
       const paramNameNode = ctx.getChild(paramNode, 'name');
       const paramName = paramNameNode
-        ? (ctx.getText(paramNameNode) ?? ctx.getProperty<string>(paramNameNode, 'name') ?? 'param')
+        ? (ctx.getText(paramNameNode) ?? ctx.getStringProperty(paramNameNode, 'name') ?? 'param')
         : 'param';
       const paramChildren = ctx.getChildren(paramNode);
       let paramTypeNode = ctx.getChild(paramNode, 'type');
@@ -943,7 +944,7 @@ function translateFieldDeclaration(
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
   const name = nameNode
-    ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? 'unknown')
+    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'unknown')
     : 'unknown';
   const modifiers = ctx.extractModifiers(node);
   // Type might be a direct child with type 'type' or 'primitive_type'
@@ -1115,13 +1116,13 @@ function translateFieldDeclaration(
     }
   }
 
-  return NodeFactory.createVariableDeclaration(
+  return NodeFactory.createVariableDeclaration({
+    ...ctx.getLocationOption(node),
+    initializer,
+    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : undefined,
     name,
     type,
-    initializer,
-    modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : undefined,
-    ctx.getLocationOption(node)
-  );
+  });
 }
 
 /**
@@ -1136,7 +1137,7 @@ function translatePropertyDeclaration(
 ): Declaration {
   const nameNode = ctx.getChild(node, 'name');
   const name = nameNode
-    ? (ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name') ?? 'unknown')
+    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'unknown')
     : 'unknown';
   const modifiers = ctx.extractModifiers(node);
   const annotations = ctx.extractAnnotations(node);
@@ -1173,14 +1174,14 @@ function translateVariableDeclaration(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
 ): Declaration {
-  const nameFromProperty = ctx.getProperty<string>(node, 'name');
+  const nameFromProperty = ctx.getStringProperty(node, 'name');
   let name = nameFromProperty;
   if (name == null || name === '') {
     // Try to get name from second child (nameNode) if available
     const children = ctx.getChildren(node);
     if (children.length >= MIN_CHILDREN_FOR_TYPE_AND_NAME) {
       const [, nameNode] = children;
-      const nameFromChild = ctx.getText(nameNode) ?? ctx.getProperty<string>(nameNode, 'name');
+      const nameFromChild = ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name');
       name = nameFromChild ?? 'unknown';
     } else {
       name = 'unknown';
@@ -1205,13 +1206,12 @@ function translateVariableDeclaration(
     }
   }
 
-  return NodeFactory.createVariableDeclaration(
+  return NodeFactory.createVariableDeclaration({
+    ...ctx.getLocationOption(node),
+    initializer,
     name,
     type,
-    initializer,
-    undefined,
-    ctx.getLocationOption(node)
-  );
+  });
 }
 
 export {

@@ -363,8 +363,10 @@ class ApexParser implements ParserContext {
           line: lastLineNum,
         };
       } else {
-        // Use the last non-EOF token's location and extend to end of that token
-        const lastNonEofToken = this.tokens[this.tokens.length - DOUBLE_CHAR_OFFSET];
+        // Use the last non-EOF token's location and extend to end of that token (may be undefined if only EOF)
+        const lastNonEofToken = this.tokens[this.tokens.length - DOUBLE_CHAR_OFFSET] as
+          | Token
+          | undefined;
         if (lastNonEofToken != null) {
           endLocation = {
             column: lastNonEofToken.location.column + lastNonEofToken.text.length,

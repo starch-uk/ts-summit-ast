@@ -367,12 +367,11 @@ describe('Node Finder Utilities', () => {
       };
 
       const inner = NodeFactory.createIdentifier('inner', { location: innerLocation });
-      const outer = NodeFactory.createBinaryExpression(
-        '+',
-        inner,
-        NodeFactory.createNumberLiteral(1, '1'),
-        { location: outerLocation }
-      );
+      const outer = NodeFactory.createBinaryExpression('+', {
+        left: inner,
+        location: outerLocation,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const position: Position = { column: 17, line: 5 };
       const result = findNodeAtPosition(outer, position, { preferLeaf: true });
@@ -446,11 +445,10 @@ describe('Node Finder Utilities', () => {
   describe('getNodePath', () => {
     it('should return path from root to node', () => {
       const inner = NodeFactory.createIdentifier('inner');
-      const outer = NodeFactory.createBinaryExpression(
-        '+',
-        inner,
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const outer = NodeFactory.createBinaryExpression('+', {
+        left: inner,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const path = getNodePath(inner, outer);
       expect(path).not.toBeNull();
@@ -487,11 +485,10 @@ describe('Node Finder Utilities', () => {
     });
 
     it('should identify non-leaf nodes', () => {
-      const node = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createNumberLiteral(1, '1'),
-        NodeFactory.createNumberLiteral(2, '2')
-      );
+      const node = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createNumberLiteral(1, '1'),
+        right: NodeFactory.createNumberLiteral(2, '2'),
+      });
       const metadata = getNodeMetadata(node);
       expect(metadata.isLeaf).toBe(false);
       expect(metadata.children.length).toBeGreaterThan(0);

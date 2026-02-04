@@ -27,6 +27,47 @@ import type { Statement, SwitchCase } from '../ast/statement.js';
 
 import type { NodeFactoryOptions } from './nodeFactory.js';
 
+/** Options for createEnhancedForLoopStatement / createForEachStatement. */
+interface CreateEnhancedForLoopStatementOptions {
+  readonly body: Readonly<Statement>;
+  readonly iterable: Readonly<Expression>;
+  readonly options?: Readonly<NodeFactoryOptions>;
+  readonly variable: Readonly<VariableDeclaration>;
+}
+
+/** Options object for creating a for-loop or for-each statement (body, condition, init, update, options). */
+interface CreateForLoopStatementOptions {
+  readonly body: Readonly<Statement>;
+  readonly condition?: Readonly<Expression>;
+  readonly init?: Readonly<ExpressionStatement | VariableDeclarationStatement>;
+  readonly options?: Readonly<NodeFactoryOptions>;
+  readonly update?: Readonly<Expression>;
+}
+
+/** Options for createIfStatement. */
+interface CreateIfStatementOptions {
+  readonly condition: Readonly<Expression>;
+  readonly elseStatement?: Readonly<Statement>;
+  readonly options?: Readonly<NodeFactoryOptions>;
+  readonly thenStatement: Readonly<Statement>;
+}
+
+/** Options for createSwitchStatement. */
+interface CreateSwitchStatementOptions {
+  readonly cases: readonly SwitchCase[];
+  readonly defaultCase?: Readonly<SwitchCase>;
+  readonly expression: Readonly<Expression>;
+  readonly options?: Readonly<NodeFactoryOptions>;
+}
+
+/** Options for createTryStatement. */
+interface CreateTryStatementOptions {
+  readonly catchClauses: readonly CatchClause[];
+  readonly finallyBlock?: Readonly<CompoundStatement>;
+  readonly options?: Readonly<NodeFactoryOptions>;
+  readonly tryBlock: Readonly<CompoundStatement>;
+}
+
 /**
  * Factory for statement nodes.
  */
@@ -151,18 +192,13 @@ export const StatementFactory = {
 
   /**
    * Creates an enhanced for loop statement.
-   * @param variable - The loop iteration variable declaration.
-   * @param iterable - The expression producing the collection to iterate over.
-   * @param body - The statement executed for each iteration.
-   * @param options - Optional factory options.
+   * @param opts - Variable, iterable, body, options.
    * @returns The created enhanced for loop statement.
    */
   createEnhancedForLoopStatement(
-    variable: Readonly<VariableDeclaration>,
-    iterable: Readonly<Expression>,
-    body: Readonly<Statement>,
-    options?: Readonly<NodeFactoryOptions>
+    opts: Readonly<CreateEnhancedForLoopStatementOptions>
   ): EnhancedForLoopStatement {
+    const { body, iterable, options, variable } = opts;
     return {
       body,
       iterable,
@@ -191,38 +227,23 @@ export const StatementFactory = {
 
   /**
    * Creates a for-each loop statement.
-   * @param variable - The loop iteration variable declaration.
-   * @param iterable - The expression producing the collection to iterate over.
-   * @param body - The statement executed for each iteration.
-   * @param options - Optional factory options.
+   * @param opts - Variable, iterable, body, options.
    * @returns The created enhanced for loop statement.
    * @deprecated Use createEnhancedForLoopStatement instead.
    */
   createForEachStatement(
-    variable: Readonly<VariableDeclaration>,
-    iterable: Readonly<Expression>,
-    body: Readonly<Statement>,
-    options?: Readonly<NodeFactoryOptions>
+    opts: Readonly<CreateEnhancedForLoopStatementOptions>
   ): EnhancedForLoopStatement {
-    return StatementFactory.createEnhancedForLoopStatement(variable, iterable, body, options);
+    return StatementFactory.createEnhancedForLoopStatement(opts);
   },
 
   /**
    * Creates a for loop statement.
-   * @param body - The statement executed for each iteration.
-   * @param init - The optional initialization statement.
-   * @param condition - The optional loop condition expression.
-   * @param update - The optional update expression executed after each iteration.
-   * @param options - Optional factory options.
+   * @param opts - Body, init, condition, update, options.
    * @returns The created for loop statement.
    */
-  createForLoopStatement(
-    body: Readonly<Statement>,
-    init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
-    condition?: Readonly<Expression>,
-    update?: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
-  ): ForLoopStatement {
+  createForLoopStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
+    const { body, condition, init, options, update } = opts;
     return {
       body,
       condition,
@@ -235,38 +256,21 @@ export const StatementFactory = {
 
   /**
    * Creates a for loop statement.
-   * @param body - The statement executed for each iteration.
-   * @param init - The optional initialization statement.
-   * @param condition - The optional loop condition expression.
-   * @param update - The optional update expression executed after each iteration.
-   * @param options - Optional factory options.
+   * @param opts - Body, init, condition, update, options.
    * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
-  createForStatement(
-    body: Readonly<Statement>,
-    init?: Readonly<ExpressionStatement | VariableDeclarationStatement>,
-    condition?: Readonly<Expression>,
-    update?: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
-  ): ForLoopStatement {
-    return StatementFactory.createForLoopStatement(body, init, condition, update, options);
+  createForStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
+    return StatementFactory.createForLoopStatement(opts);
   },
 
   /**
    * Creates an if statement.
-   * @param condition - The condition expression.
-   * @param thenStatement - The statement to execute if the condition is true.
-   * @param elseStatement - The statement to execute if the condition is false.
-   * @param options - Optional factory options.
+   * @param opts - Condition, thenStatement, elseStatement, options.
    * @returns The created if statement.
    */
-  createIfStatement(
-    condition: Expression,
-    thenStatement: Statement,
-    elseStatement?: Statement,
-    options?: Readonly<NodeFactoryOptions>
-  ): IfStatement {
+  createIfStatement(opts: Readonly<CreateIfStatementOptions>): IfStatement {
+    const { condition, elseStatement, options, thenStatement } = opts;
     return {
       condition,
       elseStatement,
@@ -295,19 +299,11 @@ export const StatementFactory = {
 
   /**
    * Creates a switch statement.
-   * @param expression - The expression to switch on.
-   * @param cases - The list of switch cases.
-   * @param defaultCase - The default case, if any.
-   * @param options - Optional factory options.
+   * @param opts - Expression, cases, defaultCase, options.
    * @returns The created switch statement.
    */
-  createSwitchStatement(
-    expression: Readonly<Expression>,
-    cases: readonly SwitchCase[],
-    defaultCase?: Readonly<SwitchCase>,
-
-    options?: Readonly<NodeFactoryOptions>
-  ): SwitchStatement {
+  createSwitchStatement(opts: Readonly<CreateSwitchStatementOptions>): SwitchStatement {
+    const { cases, defaultCase, expression, options } = opts;
     return {
       cases: [...cases],
       defaultCase,
@@ -336,18 +332,11 @@ export const StatementFactory = {
 
   /**
    * Creates a try statement.
-   * @param tryBlock - The compound statement to execute in the try block.
-   * @param catchClauses - The list of catch clause handlers.
-   * @param finallyBlock - The compound statement to execute in the finally block, if any.
-   * @param options - Optional factory options.
+   * @param opts - TryBlock, catchClauses, finallyBlock, options.
    * @returns The created try statement.
    */
-  createTryStatement(
-    tryBlock: Readonly<CompoundStatement>,
-    catchClauses: readonly CatchClause[],
-    finallyBlock?: Readonly<CompoundStatement>,
-    options?: Readonly<NodeFactoryOptions>
-  ): TryStatement {
+  createTryStatement(opts: Readonly<CreateTryStatementOptions>): TryStatement {
+    const { catchClauses, finallyBlock, options, tryBlock } = opts;
     return {
       catchClauses: [...catchClauses],
       finallyBlock,
@@ -409,4 +398,12 @@ export const StatementFactory = {
   ): WhileLoopStatement {
     return StatementFactory.createWhileLoopStatement(condition, body, options);
   },
+};
+
+export type {
+  CreateEnhancedForLoopStatementOptions,
+  CreateForLoopStatementOptions,
+  CreateIfStatementOptions,
+  CreateSwitchStatementOptions,
+  CreateTryStatementOptions,
 };

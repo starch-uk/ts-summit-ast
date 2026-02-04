@@ -26,7 +26,7 @@ import type {
 } from '../ast/expression.js';
 import type { Expression, Statement } from '../ast/index.js';
 import type { TypeRef, Identifier } from '../ast/baseNode.js';
-import type { Initializer, SoqlOrSoslBinding } from '../ast/expression.js';
+import type { SoqlOrSoslBinding } from '../ast/expression.js';
 import type {
   StringVal,
   IntegerVal,
@@ -46,10 +46,26 @@ import type {
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
-  ElementValue,
 } from '../ast/initializer.js';
 import type { Annotation } from '../ast/declaration.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
+
+/** Options for createCallExpression. */
+interface CreateCallExpressionOptions {
+  readonly args?: readonly Readonly<Expression>[];
+  readonly methodName: string;
+  readonly options?: Readonly<NodeFactoryOptions>;
+  readonly target?: Readonly<Expression>;
+  readonly typeArguments?: readonly TypeRef[];
+}
+
+/** Options for createTernaryExpression. */
+interface CreateTernaryExpressionOptions {
+  readonly condition: Readonly<Expression>;
+  readonly elseExpression: Readonly<Expression>;
+  readonly options?: Readonly<NodeFactoryOptions>;
+  readonly thenExpression: Readonly<Expression>;
+}
 
 // ============================================================================
 // SoqlOrSoslBinding Factory (used by ExpressionFactory)
@@ -66,7 +82,7 @@ const SoqlOrSoslBindingFactory = {
    * @returns The created SoqlOrSoslBinding node.
    */
   createSoqlOrSoslBinding(
-    expr: Expression,
+    expr: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
   ): SoqlOrSoslBinding {
     return {
@@ -101,7 +117,7 @@ const InitializerFactory = {
 
   createMapInitializer(
     type: Readonly<TypeRef>,
-    pairs: Readonly<readonly { key: Readonly<Expression>; value: Readonly<Expression> }[]>,
+    pairs: readonly Readonly<{ key: Readonly<Expression>; value: Readonly<Expression> }>[],
     options?: Readonly<NodeFactoryOptions>
   ): MapInitializer {
     return {
@@ -186,93 +202,69 @@ const ExpressionFactory = {
   /**
    * Creates an assignment expression.
    * @param operator - The assignment operator.
-   * @param left - The left-hand side expression (target).
-   * @param right - The right-hand side expression (value).
-   * @param options - Optional factory options.
+   * @param options - Object with left (target), right (value), and optional factory options.
    * @returns The created assignment expression.
    */
   createAssignExpression(
     operator: AssignExpression['operator'],
-
-    left: Readonly<Expression>,
-    right: Expression,
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ left: Readonly<Expression>; right: Expression }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): AssignExpression {
     return {
       kind: 'AssignExpression',
-      left,
-      location: options?.location,
+      left: options.left,
+      location: options.location,
       operator,
-      right,
+      right: options.right,
     };
   },
 
   /**
    * Creates an assignment expression.
    * @param operator - The assignment operator (e.g., '=', '+=', '-=').
-   * @param left - The left-hand side expression (target).
-   * @param right - The right-hand side expression (value).
-   * @param options - Optional factory options.
+   * @param options - Object with left (target), right (value), and optional factory options.
    * @returns The created assignment expression.
    * @deprecated Use createAssignExpression instead.
    */
   createAssignmentExpression(
     operator: AssignExpression['operator'],
-
-    left: Readonly<Expression>,
-
-    right: Readonly<Expression>,
-
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ left: Readonly<Expression>; right: Readonly<Expression> }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): AssignExpression {
-    return ExpressionFactory.createAssignExpression(operator, left, right, options);
+    return ExpressionFactory.createAssignExpression(operator, options);
   },
 
   /**
    * Creates a binary expression.
    * @param operator - The binary operator to apply (e.g., '+', '-', '==', '!=').
-   * @param left - The left-hand side expression.
-   * @param right - The right-hand side expression.
-   * @param options - Optional factory options.
+   * @param options - Object with left, right, and optional factory options.
    * @returns The created binary expression.
    */
   createBinaryExpression(
     operator: BinaryExpression['operator'],
-    left: Readonly<Expression>,
-    right: Readonly<Expression>,
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ left: Readonly<Expression>; right: Readonly<Expression> }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): BinaryExpression {
     return {
       kind: 'BinaryExpression',
-      left,
-      location: options?.location,
+      left: options.left,
+      location: options.location,
       operator,
-      right,
+      right: options.right,
     };
   },
 
   /**
    * Creates a call expression.
-   * @param methodName - The name of the method to call.
-   * @param args - The arguments to pass to the method.
-   * @param target - The target expression on which to call the method.
-   * @param typeArguments - The type arguments for generic method calls.
-   * @param options - Optional factory options.
+   * @param options - MethodName, args, target, typeArguments, options.
    * @returns The created call expression.
    */
-  createCallExpression(
-    methodName: string,
-
-    args: readonly Readonly<Expression>[] = [],
-
-    target?: Readonly<Expression>,
-    typeArguments?: readonly TypeRef[],
-    options?: Readonly<NodeFactoryOptions>
-  ): CallExpression {
+  createCallExpression(options: Readonly<CreateCallExpressionOptions>): CallExpression {
+    const { args = [], methodName, options: opts, target, typeArguments } = options;
     return {
       arguments: [...args],
       kind: 'CallExpression',
-      location: options?.location,
+      location: opts?.location,
       methodName,
       target,
       typeArguments: typeArguments ? [...typeArguments] : undefined,
@@ -383,25 +375,12 @@ const ExpressionFactory = {
 
   /**
    * Creates a method call expression.
-   * @param methodName - The name of the method to call.
-   * @param args - The arguments to pass to the method.
-   * @param target - The target expression on which to call the method.
-   * @param typeArguments - The type arguments for generic method calls.
-   * @param options - Optional factory options.
+   * @param options - MethodName, args, target, typeArguments, options.
    * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
-  createMethodCallExpression(
-    methodName: string,
-
-    args: readonly Expression[] = [],
-
-    target?: Readonly<Expression>,
-    typeArguments?: readonly TypeRef[],
-
-    options?: Readonly<NodeFactoryOptions>
-  ): CallExpression {
-    return ExpressionFactory.createCallExpression(methodName, args, target, typeArguments, options);
+  createMethodCallExpression(options: Readonly<CreateCallExpressionOptions>): CallExpression {
+    return ExpressionFactory.createCallExpression(options);
   },
 
   /**
@@ -430,7 +409,9 @@ const ExpressionFactory = {
    * @returns The created new expression.
    */
   createNewExpression(
-    initializer: Readonly<Readonly<Initializer>>,
+    initializer: Readonly<
+      Readonly<ConstructorInitializer | MapInitializer | SizedArrayInitializer | ValuesInitializer>
+    >,
 
     options?: Readonly<NodeFactoryOptions>
   ): NewExpression {
@@ -562,24 +543,16 @@ const ExpressionFactory = {
 
   /**
    * Creates a ternary (conditional) expression.
-   * @param condition - The boolean expression to evaluate.
-   * @param thenExpression - The expression to evaluate if condition is true.
-   * @param elseExpression - The expression to evaluate if condition is false.
-   * @param options - Optional factory options.
+   * @param options - Condition, thenExpression, elseExpression, options.
    * @returns The created ternary expression.
    */
-  createTernaryExpression(
-    condition: Readonly<Expression>,
-
-    thenExpression: Readonly<Expression>,
-    elseExpression: Expression,
-    options?: Readonly<NodeFactoryOptions>
-  ): TernaryExpression {
+  createTernaryExpression(options: Readonly<CreateTernaryExpressionOptions>): TernaryExpression {
+    const { condition, elseExpression, options: opts, thenExpression } = options;
     return {
       condition,
       elseExpression,
       kind: 'TernaryExpression',
-      location: options?.location,
+      location: opts?.location,
       thenExpression,
     };
   },
@@ -616,25 +589,20 @@ const ExpressionFactory = {
   /**
    * Creates a unary expression.
    * @param operator - The unary operator to apply (e.g., '!', '++', '--').
-   * @param operand - The expression to apply the operator to.
-   * @param prefix - Whether the operator is prefix (true) or postfix (false).
-   * @param options - Optional factory options.
+   * @param options - Object with operand, prefix (boolean), and optional factory options.
    * @returns The created unary expression.
    */
   createUnaryExpression(
     operator: UnaryExpression['operator'],
-
-    operand: Readonly<Expression>,
-    prefix: boolean,
-
-    options?: Readonly<NodeFactoryOptions>
+    options: Readonly<{ operand: Readonly<Expression>; prefix: boolean }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): UnaryExpression {
     return {
       kind: 'UnaryExpression',
-      location: options?.location,
-      operand,
+      location: options.location,
+      operand: options.operand,
       operator,
-      prefix,
+      prefix: options.prefix,
     };
   },
 
@@ -805,7 +773,7 @@ const ElementValueFactory = {
   },
 
   createArrayElementValue(
-    values: readonly ElementValue[],
+    values: readonly (AnnotationElementValue | ArrayElementValue | ExpressionElementValue)[],
     options?: Readonly<NodeFactoryOptions>
   ): ArrayElementValue {
     return {
@@ -827,6 +795,7 @@ const ElementValueFactory = {
   },
 };
 
+export type { CreateCallExpressionOptions, CreateTernaryExpressionOptions };
 export {
   ExpressionFactory,
   SoqlOrSoslBindingFactory,

@@ -5,6 +5,7 @@
  * would require a more sophisticated parser and matcher.
  */
 
+import { EMPTY_ARRAY_LENGTH } from '../constants.js';
 import type { ASTNode, SourceRange } from '../ast/baseNode.js';
 import { getSourceRange } from './sourceExtraction.js';
 import { walkAST, buildParentMap, getNodeChildren } from './traversal.js';
@@ -319,32 +320,31 @@ function wouldTriggerRule(
 
   // Check descendants if requested
   if (includeDescendants) {
-    let foundMatch: ASTNode | undefined = undefined;
+    const matches: ASTNode[] = [];
 
     walkAST(node, {
       enterNode: (child): undefined => {
-        if (child !== node) {
+        if (child !== node && matches.length === EMPTY_ARRAY_LENGTH) {
           const childResult = wouldTriggerRule(child, xpathExpression, {
             includeDescendants: false,
             strict,
           });
-          if (childResult.matches && foundMatch === undefined) {
-            foundMatch = child;
+          if (childResult.matches) {
+            matches.push(child);
           }
         }
         return undefined;
       },
     });
 
-    if (foundMatch !== undefined) {
-      const matchNode: ASTNode = foundMatch;
+    for (const foundMatch of matches) {
       return {
         confidence: 'partial',
         matchDetails: {
-          matchedPattern: matchNode.kind,
+          matchedPattern: foundMatch.kind,
           xpathExpression,
         },
-        matchedNode: matchNode,
+        matchedNode: foundMatch,
         matches: true,
       };
     }

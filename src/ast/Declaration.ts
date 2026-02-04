@@ -8,44 +8,43 @@ import type { TypeRef } from './baseNode.js';
 import type { Expression } from './expression.js';
 import type { CompoundStatement } from './statement.js';
 import type { Identifier } from './baseNode.js';
-import type { ElementValue } from './initializer.js';
+import type {
+  AnnotationElementValue,
+  ArrayElementValue,
+  ExpressionElementValue,
+} from './initializer.js';
 
 /**
  * Modifier node types.
  */
 
 /**
- * Modifier keywords.
- */
-type ModifierKeyword =
-  | 'abstract'
-  | 'deprecated'
-  | 'final'
-  | 'future'
-  | 'global'
-  | 'inherited sharing'
-  | 'native'
-  | 'override'
-  | 'private'
-  | 'protected'
-  | 'public'
-  | 'static'
-  | 'strictfp'
-  | 'synchronized'
-  | 'testMethod'
-  | 'transient'
-  | 'virtual'
-  | 'volatile'
-  | 'webservice'
-  | 'with sharing'
-  | 'without sharing';
-
-/**
  * Modifier node.
  */
 interface Modifier extends ASTNode {
   readonly kind: 'Modifier';
-  readonly keyword: ModifierKeyword;
+  readonly keyword:
+    | 'abstract'
+    | 'deprecated'
+    | 'final'
+    | 'future'
+    | 'global'
+    | 'inherited sharing'
+    | 'native'
+    | 'override'
+    | 'private'
+    | 'protected'
+    | 'public'
+    | 'static'
+    | 'strictfp'
+    | 'synchronized'
+    | 'testMethod'
+    | 'transient'
+    | 'virtual'
+    | 'volatile'
+    | 'webservice'
+    | 'with sharing'
+    | 'without sharing';
 }
 
 /**
@@ -144,7 +143,7 @@ interface ConstructorDeclaration {
   readonly modifiers: readonly Modifier[];
   readonly parameters: readonly Parameter[];
   readonly body: CompoundStatement;
-  readonly annotations?: Annotation[];
+  readonly annotations?: readonly Annotation[];
   readonly location?: SourceRange;
 }
 
@@ -170,7 +169,7 @@ interface PropertyDeclaration extends Declaration {
   readonly modifiers: readonly Modifier[];
   readonly getter?: CompoundStatement;
   readonly setter?: CompoundStatement;
-  readonly annotations?: Annotation[];
+  readonly annotations?: readonly Annotation[];
 }
 
 /**
@@ -246,7 +245,7 @@ interface AnnotationArgument extends ASTNode {
    * Undefined for positional arguments (implicitly "value").
    */
   readonly name?: string;
-  readonly value: ElementValue;
+  readonly value: AnnotationElementValue | ArrayElementValue | ExpressionElementValue;
 
   /**
    * True if the name is implicitly set to "value" (unnamed argument).
@@ -265,7 +264,6 @@ interface AnnotationMember extends ASTNode {
 }
 
 export type {
-  ModifierKeyword,
   Modifier,
   Declaration,
   ClassDeclaration,

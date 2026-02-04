@@ -81,7 +81,6 @@ describe('Statement Translation', () => {
     // Original: val methodDecl = classDecl.methodDeclarations.first()
     if (!classDecl) throw new Error('Expected classDecl to be defined');
     const methodDecl = classDecl.members.find(
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
       (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) => isMethodDeclaration(m)
     );
     // Original: assertNotNull(methodDecl.body)

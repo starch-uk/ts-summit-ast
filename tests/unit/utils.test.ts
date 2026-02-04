@@ -42,7 +42,6 @@ import {
   validateXPath,
   getXPathFeatureSupport,
 } from '../../src/utils/ruleMatching.js';
-import type { RuleMatch } from '../../src/utils/ruleMatching.js';
 import { parseAndTranslate, findFirstNodeOfType } from '../translateHelpers.js';
 import {
   getAncestors,
@@ -537,19 +536,16 @@ describe('ApexDoc Parser', () => {
         if (!result) throw new Error('Expected parseApexDocComment to return a result');
         expect(
           result.blockTags.some(
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
             (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocGroup'
           )
         ).toBe(true);
         expect(
           result.blockTags.some(
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
             (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocAuthor'
           )
         ).toBe(true);
         expect(
           result.blockTags.some(
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
             (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocVersion'
           )
         ).toBe(true);
@@ -579,7 +575,7 @@ describe('Comment Mapping Utilities', () => {
         type: 'line',
       };
 
-      const result = findAssociatedNode(node, comment, source);
+      const result = findAssociatedNode({ ast: node, comment, source });
       // Result may be null if no good match found, which is acceptable
       if (result) {
         expect(result.distance).toBeGreaterThanOrEqual(0);
@@ -601,7 +597,7 @@ describe('Comment Mapping Utilities', () => {
         type: 'line',
       };
 
-      const result = findAssociatedNode(node, comment, 'test // comment');
+      const result = findAssociatedNode({ ast: node, comment, source: 'test // comment' });
       // Result may find enclosing node or be null
       if (result) {
         expect(result.relationship).toBe('enclosing');
@@ -622,8 +618,11 @@ describe('Comment Mapping Utilities', () => {
         type: 'line',
       };
 
-      const result = findAssociatedNode(node, comment, 'test // comment', {
+      const result = findAssociatedNode({
+        ast: node,
+        comment,
         preferPreceding: true,
+        source: 'test // comment',
       });
       // If a node is found, we should prefer a preceding relationship for this layout.
       if (result) {
@@ -645,8 +644,11 @@ describe('Comment Mapping Utilities', () => {
         type: 'line',
       };
 
-      const result = findAssociatedNode(node, comment, '// comment test', {
+      const result = findAssociatedNode({
+        ast: node,
+        comment,
         preferPreceding: false,
+        source: '// comment test',
       });
       // If a node is found, we should prefer following when preferPreceding is false.
       if (result) {
@@ -668,8 +670,11 @@ describe('Comment Mapping Utilities', () => {
         type: 'line',
       };
 
-      const result = findAssociatedNode(node, comment, 'test ' + ' '.repeat(190) + '// comment', {
+      const result = findAssociatedNode({
+        ast: node,
+        comment,
         maxDistance: 10,
+        source: 'test ' + ' '.repeat(190) + '// comment',
       });
       // Result should be null if distance exceeds maxDistance
       expect(result).toBeNull();
@@ -685,7 +690,7 @@ describe('Comment Mapping Utilities', () => {
         type: 'line',
       };
 
-      const result = findAssociatedNode(node, comment, 'test');
+      const result = findAssociatedNode({ ast: node, comment, source: 'test' });
       expect(result).toBeNull();
     });
   });
@@ -807,7 +812,6 @@ public void utility() {}`;
 
         expect(comments[0].apexDocComment).toBeDefined();
         const groupTag = comments[0].apexDocComment?.blockTags.find(
-          // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
           (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocGroup'
         );
         expect(groupTag).toBeDefined();
@@ -908,11 +912,12 @@ public void method() {}`;
       const source = `// TODO: Fix this bug
 public class Test {}`;
 
+      const todoPattern = /^TODO:\s*(.+)$/i;
       const ast = NodeFactory.createBlock([]);
       const comments = extractComments(ast, source, {
         commentPatterns: [
           {
-            pattern: /^TODO:\s*(.+)$/i,
+            test: (text: string): RegExpMatchArray | null => todoPattern.exec(text),
             type: 'todo',
           },
         ],
@@ -927,11 +932,12 @@ public class Test {}`;
       const source = `// Just a regular comment
 public class Test {}`;
 
+      const todoPattern = /^TODO:\s*(.+)$/i;
       const ast = NodeFactory.createBlock([]);
       const comments = extractComments(ast, source, {
         commentPatterns: [
           {
-            pattern: /^TODO:\s*(.+)$/i,
+            test: (text: string): RegExpMatchArray | null => todoPattern.exec(text),
             type: 'todo',
           },
         ],
@@ -1449,12 +1455,11 @@ describe('Node Finder Utilities', () => {
       };
 
       const inner = NodeFactory.createIdentifier('inner', { location: innerLocation });
-      const outer = NodeFactory.createBinaryExpression(
-        '+',
-        inner,
-        NodeFactory.createNumberLiteral(1, '1'),
-        { location: outerLocation }
-      );
+      const outer = NodeFactory.createBinaryExpression('+', {
+        left: inner,
+        location: outerLocation,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const position: Position = { column: 17, line: 5 };
       const result = findNodeAtPosition(outer, position, { preferLeaf: true });
@@ -1528,11 +1533,10 @@ describe('Node Finder Utilities', () => {
   describe('getNodePath', () => {
     it('should return path from root to node', () => {
       const inner = NodeFactory.createIdentifier('inner');
-      const outer = NodeFactory.createBinaryExpression(
-        '+',
-        inner,
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const outer = NodeFactory.createBinaryExpression('+', {
+        left: inner,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const path = getNodePath(inner, outer);
       expect(path).not.toBeNull();
@@ -1571,11 +1575,10 @@ describe('Node Finder Utilities', () => {
     });
 
     it('should identify non-leaf nodes', () => {
-      const node = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createNumberLiteral(1, '1'),
-        NodeFactory.createNumberLiteral(2, '2')
-      );
+      const node = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createNumberLiteral(1, '1'),
+        right: NodeFactory.createNumberLiteral(2, '2'),
+      });
       const metadata = getNodeMetadata(node);
       expect(metadata.isLeaf).toBe(false);
       expect(metadata.children.length).toBeGreaterThan(0);
@@ -1620,11 +1623,10 @@ describe('Rule Matching Utilities', () => {
     });
 
     it('should match with attribute filter', () => {
-      const node = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createNumberLiteral(1, '1'),
-        NodeFactory.createNumberLiteral(2, '2')
-      );
+      const node = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createNumberLiteral(1, '1'),
+        right: NodeFactory.createNumberLiteral(2, '2'),
+      });
       const result = wouldTriggerRule(node, "//BinaryExpression[@operator='+']");
 
       expect(result.matches).toBe(true);
@@ -1632,11 +1634,10 @@ describe('Rule Matching Utilities', () => {
 
     it('should check descendants when requested', () => {
       const inner = NodeFactory.createIdentifier('inner');
-      const outer = NodeFactory.createBinaryExpression(
-        '+',
-        inner,
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const outer = NodeFactory.createBinaryExpression('+', {
+        left: inner,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const result = wouldTriggerRule(outer, '//Identifier', {
         includeDescendants: true,
@@ -1683,22 +1684,20 @@ describe('Rule Matching Utilities', () => {
 
     it('should not include nested matches when includeNested is false', () => {
       const inner = NodeFactory.createIdentifier('inner');
-      const outer = NodeFactory.createBinaryExpression(
-        '+',
-        inner,
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const outer = NodeFactory.createBinaryExpression('+', {
+        left: inner,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const matches = findRuleMatches(outer, '//BinaryExpression', { includeNested: false });
       expect(matches.length).toBeGreaterThan(0);
     });
 
     it('should extract match reason and attributes', () => {
-      const node = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createNumberLiteral(1, '1'),
-        NodeFactory.createNumberLiteral(2, '2')
-      );
+      const node = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createNumberLiteral(1, '1'),
+        right: NodeFactory.createNumberLiteral(2, '2'),
+      });
       const ast = NodeFactory.createBlock([NodeFactory.createExpressionStatement(node)]);
 
       const matches = findRuleMatches(ast, "//BinaryExpression[@operator='+']");
@@ -1720,8 +1719,8 @@ describe('Rule Matching Utilities', () => {
       expect(matches.length).toBeGreaterThan(0);
       // Sibling nodes should be populated when parent has statements
       const matchWithSiblings = matches.find(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
-        (m: Readonly<Readonly<RuleMatch>>) => m.siblingNodes != null && m.siblingNodes.length > 0
+        (_match: unknown, index: number) =>
+          matches[index]?.siblingNodes != null && matches[index]?.siblingNodes.length > 0
       );
       if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
@@ -1743,13 +1742,17 @@ describe('Rule Matching Utilities', () => {
         parameters: [],
         returnType: NodeFactory.createSimpleTypeRef('void'),
       });
-      const classDecl = NodeFactory.createClassDeclaration('Test', [member1, member2], []);
+      const classDecl = NodeFactory.createClassDeclaration({
+        members: [member1, member2],
+        modifiers: [],
+        name: 'Test',
+      });
 
       const matches = findRuleMatches(classDecl, '//MethodDeclaration', { includeContext: true });
       expect(matches.length).toBeGreaterThan(0);
       const matchWithSiblings = matches.find(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
-        (m: Readonly<Readonly<RuleMatch>>) => m.siblingNodes != null && m.siblingNodes.length > 0
+        (_match: unknown, index: number) =>
+          matches[index]?.siblingNodes != null && matches[index]?.siblingNodes.length > 0
       );
       if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
@@ -1759,13 +1762,16 @@ describe('Rule Matching Utilities', () => {
     it('should include sibling nodes when parent has arguments property', () => {
       const arg1 = NodeFactory.createIdentifier('arg1');
       const arg2 = NodeFactory.createIdentifier('arg2');
-      const methodCall = NodeFactory.createMethodCallExpression('method', [arg1, arg2]);
+      const methodCall = NodeFactory.createMethodCallExpression({
+        args: [arg1, arg2],
+        methodName: 'method',
+      });
 
       const matches = findRuleMatches(methodCall, '//Identifier', { includeContext: true });
       expect(matches.length).toBeGreaterThan(0);
       const matchWithSiblings = matches.find(
-        // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
-        (m: Readonly<Readonly<RuleMatch>>) => m.siblingNodes != null && m.siblingNodes.length > 0
+        (_match: unknown, index: number) =>
+          matches[index]?.siblingNodes != null && matches[index]?.siblingNodes.length > 0
       );
       if (matchWithSiblings != null) {
         expect(matchWithSiblings.siblingNodes).toBeDefined();
@@ -2243,11 +2249,10 @@ describe('AST Traversal Utilities', () => {
   describe('getAncestors', () => {
     it('should return ancestors from root to node', () => {
       const inner = NodeFactory.createIdentifier('inner');
-      const outer = NodeFactory.createBinaryExpression(
-        '+',
-        inner,
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const outer = NodeFactory.createBinaryExpression('+', {
+        left: inner,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const ancestors = getAncestors(inner, outer);
       expect(ancestors.length).toBeGreaterThan(0);
@@ -2258,11 +2263,10 @@ describe('AST Traversal Utilities', () => {
   describe('buildParentMap', () => {
     it('should build parent map', () => {
       const child = NodeFactory.createIdentifier('child');
-      const parent = NodeFactory.createBinaryExpression(
-        '+',
-        child,
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const parent = NodeFactory.createBinaryExpression('+', {
+        left: child,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const parentMap = buildParentMap(parent);
       expect(parentMap.get(child)).toBe(parent);
@@ -2295,11 +2299,10 @@ describe('AST Traversal Utilities', () => {
   describe('getParentNode', () => {
     it('should return parent node for child', () => {
       const child = NodeFactory.createIdentifier('child');
-      const parent = NodeFactory.createBinaryExpression(
-        '+',
-        child,
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const parent = NodeFactory.createBinaryExpression('+', {
+        left: child,
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
       const result = getParentNode(parent, child);
       expect(result).toBe(parent);
@@ -2347,20 +2350,19 @@ describe('AST Traversal Utilities', () => {
       expect(blockChildren.length).toBeGreaterThan(0);
 
       // Test BinaryExpression children
-      const binary = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createIdentifier('a'),
-        NodeFactory.createIdentifier('b')
-      );
+      const binary = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createIdentifier('a'),
+        right: NodeFactory.createIdentifier('b'),
+      });
       const binaryChildren = getNodeChildren(binary);
       expect(binaryChildren.length).toBe(2);
 
       // Test MethodCallExpression children
-      const methodCall = NodeFactory.createMethodCallExpression(
-        'method',
-        [NodeFactory.createIdentifier('arg1')],
-        NodeFactory.createIdentifier('target')
-      );
+      const methodCall = NodeFactory.createMethodCallExpression({
+        args: [NodeFactory.createIdentifier('arg1')],
+        methodName: 'method',
+        target: NodeFactory.createIdentifier('target'),
+      });
       const methodCallChildren = getNodeChildren(methodCall);
       expect(methodCallChildren.length).toBe(2); // target and arg1
     });

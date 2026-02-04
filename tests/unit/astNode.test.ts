@@ -121,18 +121,21 @@ describe('AST Node Creation', () => {
     it('should create ForStatement', () => {
       const body = NodeFactory.createBlock([]);
       const init = NodeFactory.createExpressionStatement(NodeFactory.createIdentifier('i'));
-      const condition = NodeFactory.createBinaryExpression(
-        '<',
-        NodeFactory.createIdentifier('i'),
-        NodeFactory.createNumberLiteral(10, '10')
-      );
-      const update = NodeFactory.createBinaryExpression(
-        '++',
-        NodeFactory.createIdentifier('i'),
-        NodeFactory.createNumberLiteral(1, '1')
-      );
+      const condition = NodeFactory.createBinaryExpression('<', {
+        left: NodeFactory.createIdentifier('i'),
+        right: NodeFactory.createNumberLiteral(10, '10'),
+      });
+      const update = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createIdentifier('i'),
+        right: NodeFactory.createNumberLiteral(1, '1'),
+      });
 
-      const node = NodeFactory.createForStatement(body, init, condition, update);
+      const node = NodeFactory.createForStatement({
+        body,
+        condition,
+        init,
+        update,
+      });
 
       expect(isForStatement(node)).toBe(true);
       expect(node.body).toBe(body);
@@ -144,7 +147,7 @@ describe('AST Node Creation', () => {
     it('should create ForStatement with optional parts', () => {
       const body = NodeFactory.createBlock([]);
 
-      const node = NodeFactory.createForStatement(body);
+      const node = NodeFactory.createForStatement({ body });
 
       expect(isForStatement(node)).toBe(true);
       expect(node.init).toBeUndefined();
@@ -227,7 +230,7 @@ describe('AST Node Creation', () => {
       ] as const;
 
       for (const op of operators) {
-        const node = NodeFactory.createBinaryExpression(op, left, right);
+        const node = NodeFactory.createBinaryExpression(op, { left, right });
         expect(isBinaryExpression(node)).toBe(true);
         expect(node.operator).toBe(op);
         expect(node.left).toBe(left);
@@ -240,7 +243,7 @@ describe('AST Node Creation', () => {
         NodeFactory.createStringLiteral('arg1', '"arg1"'),
         NodeFactory.createNumberLiteral(42, '42'),
       ];
-      const node = NodeFactory.createMethodCallExpression('doSomething', args);
+      const node = NodeFactory.createMethodCallExpression({ args, methodName: 'doSomething' });
 
       expect(isMethodCallExpression(node)).toBe(true);
       expect(node.methodName).toBe('doSomething');
@@ -251,7 +254,11 @@ describe('AST Node Creation', () => {
     it('should create MethodCallExpression with target', () => {
       const target = NodeFactory.createIdentifier('obj');
       const args: never[] = [];
-      const node = NodeFactory.createMethodCallExpression('method', args, target);
+      const node = NodeFactory.createMethodCallExpression({
+        args,
+        methodName: 'method',
+        target,
+      });
 
       expect(isMethodCallExpression(node)).toBe(true);
       expect(node.target).toBe(target);
@@ -262,7 +269,10 @@ describe('AST Node Creation', () => {
         NodeFactory.createSimpleTypeRef('String'),
         NodeFactory.createSimpleTypeRef('Integer'),
       ];
-      const node = NodeFactory.createMethodCallExpression('genericMethod', [], undefined, typeArgs);
+      const node = NodeFactory.createMethodCallExpression({
+        methodName: 'genericMethod',
+        typeArguments: typeArgs,
+      });
 
       expect(isMethodCallExpression(node)).toBe(true);
       expect(node.typeArguments).toHaveLength(2);
@@ -360,7 +370,7 @@ describe('AST Node Creation', () => {
   describe('Declaration Nodes', () => {
     it('should create VariableDeclaration without initializer', () => {
       const type = NodeFactory.createSimpleTypeRef('String');
-      const node = NodeFactory.createVariableDeclaration('myVar', type);
+      const node = NodeFactory.createVariableDeclaration({ name: 'myVar', type });
 
       expect(isVariableDeclaration(node)).toBe(true);
       expect(node.name).toBe('myVar');
@@ -371,17 +381,21 @@ describe('AST Node Creation', () => {
     it('should create VariableDeclaration with initializer', () => {
       const type = NodeFactory.createSimpleTypeRef('String');
       const initializer = NodeFactory.createStringLiteral('value', '"value"');
-      const node = NodeFactory.createVariableDeclaration('myVar', type, initializer);
+      const node = NodeFactory.createVariableDeclaration({
+        initializer,
+        name: 'myVar',
+        type,
+      });
 
       expect(isVariableDeclaration(node)).toBe(true);
       expect(node.initializer).toBe(initializer);
     });
 
     it('should create VariableDeclarationStatement', () => {
-      const decl = NodeFactory.createVariableDeclaration(
-        'x',
-        NodeFactory.createSimpleTypeRef('Integer')
-      );
+      const decl = NodeFactory.createVariableDeclaration({
+        name: 'x',
+        type: NodeFactory.createSimpleTypeRef('Integer'),
+      });
       const node = NodeFactory.createVariableDeclarationStatement(decl);
 
       expect(node.kind).toBe('VariableDeclarationStatement');

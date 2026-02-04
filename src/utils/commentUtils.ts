@@ -74,16 +74,15 @@ interface FindAssociatedNodeOptions {
  * Find a node preceding the comment position.
  * @param ast - The root AST node to search in.
  * @param position - The comment position.
- * @param _source - The source code string.
- * @param maxDistance - Maximum character distance to search.
+ * @param options - Options including maxDistance.
  * @returns The preceding node result, or null if not found.
  */
 function findPrecedingNode(
   ast: ASTNode,
   position: Position,
-  _source: string,
-  maxDistance: number
+  options: Readonly<{ maxDistance: number }>
 ): AssociatedNodeResult | null {
+  const { maxDistance } = options;
   let bestMatch: AssociatedNodeResult | null = null;
   let bestDistance = Infinity;
 
@@ -117,16 +116,15 @@ function findPrecedingNode(
  * Find a node following the comment position.
  * @param ast - The root AST node to search in.
  * @param position - The comment position.
- * @param source - The source code string.
- * @param maxDistance - Maximum character distance to search.
+ * @param options - Options including source and maxDistance.
  * @returns The following node result, or null if not found.
  */
 function findFollowingNode(
   ast: ASTNode,
   position: Position,
-  source: string,
-  maxDistance: number
+  options: Readonly<{ maxDistance: number; source: string }>
 ): AssociatedNodeResult | null {
+  const { maxDistance, source } = options;
   const lines = source.split(/\r?\n/);
   const lineIndexOffset = 1;
   const lineLength = (lines[position.line - lineIndexOffset] ?? '').length;
@@ -179,20 +177,26 @@ function findFollowingNode(
 
 /**
  * Find the AST node associated with a comment.
- * @param ast - The root AST node to search in.
- * @param comment - The comment information.
- * @param source - The source code string.
- * @param options - Options for finding the associated node.
+ * @param options - Options including ast, comment, source, and search options.
  * @returns The associated node result, or null if not found.
  */
 function findAssociatedNode(
-  ast: ASTNode,
-  comment: CommentInfo,
-  source: string,
-  options: FindAssociatedNodeOptions = {}
+  options: Readonly<
+    FindAssociatedNodeOptions & {
+      ast: ASTNode;
+      comment: CommentInfo;
+      source: string;
+    }
+  >
 ): AssociatedNodeResult | null {
   const defaultMaxDistance = 100;
-  const { maxDistance = defaultMaxDistance, preferPreceding = true } = options;
+  const {
+    ast,
+    comment,
+    source,
+    maxDistance = defaultMaxDistance,
+    preferPreceding = true,
+  } = options;
   const position: Position = { column: comment.column, line: comment.line };
 
   // First, try to find a node at the comment position (for inline comments)
@@ -211,21 +215,21 @@ function findAssociatedNode(
 
   // Try to find preceding node (on same line, before comment)
   if (preferPreceding) {
-    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
+    const precedingNode = findPrecedingNode(ast, position, { maxDistance });
     if (precedingNode) {
       return precedingNode;
     }
   }
 
   // Try to find following node (on same line or next line, after comment)
-  const followingNode = findFollowingNode(ast, position, source, maxDistance);
+  const followingNode = findFollowingNode(ast, position, { maxDistance, source });
   if (followingNode) {
     return followingNode;
   }
 
   // If preferPreceding was false and we didn't find following, try preceding
   if (!preferPreceding) {
-    const precedingNode = findPrecedingNode(ast, position, source, maxDistance);
+    const precedingNode = findPrecedingNode(ast, position, { maxDistance });
     if (precedingNode) {
       return precedingNode;
     }
@@ -253,6 +257,16 @@ interface CommentPattern {
    * Default: first capture group.
    */
   readonly descriptionGroup?: number;
+}
+
+/**
+ * Readonly view of a comment pattern used during matching.
+ * Exposes only a pure matcher function and readonly metadata.
+ */
+interface CommentPatternView {
+  readonly type: string;
+  readonly descriptionGroup?: number;
+  readonly test: (text: string) => RegExpMatchArray | null;
 }
 
 /**
@@ -357,7 +371,31 @@ interface ExtractCommentsOptions {
   readonly commentPatterns?: readonly CommentPattern[];
 }
 
-const EMPTY_EXTRACT_OPTIONS: Readonly<ExtractCommentsOptions> = {};
+/**
+ * Readonly view of comment-extraction options used at public boundaries.
+ * This omits the concrete regex type and instead exposes pattern views.
+ */
+interface ExtractCommentsOptionsView {
+  readonly includeBlockComments?: boolean;
+  readonly includeLineComments?: boolean;
+  readonly associateNodes?: boolean;
+  readonly parseApexDoc?: boolean;
+  readonly apexDocParseOptions?: ApexDocParseOptions;
+  readonly commentPatterns?: readonly CommentPatternView[];
+}
+
+const EMPTY_EXTRACT_OPTIONS_VIEW: ExtractCommentsOptionsView = {};
+
+/**
+ * Readonly view of comment-extraction options used at public boundaries.
+ * This intentionally omits complex matcher shapes which are handled via views.
+ */
+interface ExtractCommentsOptionsView {
+  readonly includeBlockComments?: boolean;
+  readonly includeLineComments?: boolean;
+  readonly associateNodes?: boolean;
+  readonly parseApexDoc?: boolean;
+}
 
 /**
  * Matches a comment against a set of patterns.
@@ -367,7 +405,7 @@ const EMPTY_EXTRACT_OPTIONS: Readonly<ExtractCommentsOptions> = {};
  */
 function matchCommentPattern(
   commentText: string,
-  patterns?: Readonly<readonly Readonly<CommentPattern>[]>
+  patterns?: readonly CommentPatternView[]
 ): { type: string; matches: RegExpMatchArray } | null {
   const emptyArrayLength = 0;
   if (!patterns || patterns.length === emptyArrayLength) {
@@ -375,7 +413,7 @@ function matchCommentPattern(
   }
 
   for (const patternConfig of patterns) {
-    const match = commentText.match(patternConfig.pattern);
+    const match = patternConfig.test(commentText);
     if (match) {
       return {
         matches: match,
@@ -389,14 +427,12 @@ function matchCommentPattern(
 
 /**
  * Calculate the source range for a comment block.
- * @param _source - The source code string (unused).
  * @param startLine - The starting line number.
  * @param startColumn - The starting column number.
  * @param commentText - The full comment text (may span multiple lines).
  * @returns The source range for the comment.
  */
 function calculateCommentLocation(
-  _source: string,
   startLine: number,
   startColumn: number,
   commentText: string
@@ -447,9 +483,9 @@ function calculateCommentLocation(
  * ```
  */
 function extractComments(
-  ast: Readonly<ASTNode>,
+  ast: ASTNode,
   source: string,
-  options: Readonly<Readonly<ExtractCommentsOptions>> = EMPTY_EXTRACT_OPTIONS
+  options: ExtractCommentsOptionsView = EMPTY_EXTRACT_OPTIONS_VIEW
 ): ExtractedComment[] {
   const {
     includeBlockComments = true,
@@ -459,6 +495,7 @@ function extractComments(
     apexDocParseOptions,
     commentPatterns,
   } = options;
+  const commentPatternViews = commentPatterns;
 
   const comments: ExtractedComment[] = [];
   const lines = source.split(/\r?\n/);
@@ -498,7 +535,7 @@ function extractComments(
         const description = commentText;
 
         // Match comment against patterns
-        const patternMatch = matchCommentPattern(commentText, commentPatterns);
+        const patternMatch = matchCommentPattern(commentText, commentPatternViews);
 
         const baseComment: Omit<
           ExtractedComment,
@@ -524,7 +561,7 @@ function extractComments(
 
         const comment: ExtractedComment = ((): ExtractedComment => {
           if (!associateNodes) return baseComment;
-          const associated = findAssociatedNode(ast, baseComment, source);
+          const associated = findAssociatedNode({ ast, comment: baseComment, source });
           if (!associated) return baseComment;
           const distanceThreshold = 10;
           const maxConfidence = 1.0;
@@ -584,14 +621,13 @@ function extractComments(
           const description = commentText;
 
           // Match comment against patterns
-          const patternMatch = matchCommentPattern(commentText, commentPatterns);
+          const patternMatch = matchCommentPattern(commentText, commentPatternViews);
 
           // Parse ApexDoc if requested
 
           let apexDocComment: ApexDocComment | undefined = undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
             const location = calculateCommentLocation(
-              source,
               blockCommentStartLine,
               blockCommentStartColumn,
               fullCommentText
@@ -625,7 +661,7 @@ function extractComments(
 
           const comment: ExtractedComment = ((): ExtractedComment => {
             if (!associateNodes) return baseComment;
-            const associated = findAssociatedNode(ast, baseComment, source);
+            const associated = findAssociatedNode({ ast, comment: baseComment, source });
             if (!associated) return baseComment;
             const maxDistanceForFullConfidence = 10;
             const fullConfidence = 1.0;
@@ -666,14 +702,13 @@ function extractComments(
           const description = commentText;
 
           // Match comment against patterns
-          const patternMatch = matchCommentPattern(commentText, commentPatterns);
+          const patternMatch = matchCommentPattern(commentText, commentPatternViews);
 
           // Parse ApexDoc if requested
 
           let apexDocComment: ApexDocComment | undefined = undefined;
           if (parseApexDoc && isApexDocComment(fullCommentText)) {
             const location = calculateCommentLocation(
-              source,
               blockCommentStartLine,
               blockCommentStartColumn,
               fullCommentText
@@ -707,7 +742,7 @@ function extractComments(
 
           const comment: ExtractedComment = ((): ExtractedComment => {
             if (!associateNodes) return baseComment;
-            const associated = findAssociatedNode(ast, baseComment, source);
+            const associated = findAssociatedNode({ ast, comment: baseComment, source });
             if (!associated) return baseComment;
             const maxDistanceForFullConfidence = 10;
             const fullConfidence = 1.0;

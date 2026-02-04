@@ -27,63 +27,153 @@ import {
 import type { NodeFactoryOptions } from './nodeFactory.js';
 import { NodeFactory } from './nodeFactory.js';
 
+/** Empty modifiers array for readonly default in destructuring. */
+const EMPTY_MODIFIERS: readonly Modifier[] = [];
+
+/** Options for createClassDeclaration (all properties readonly). */
+interface CreateClassDeclarationOptions {
+  readonly annotations?: readonly Annotation[];
+  readonly extendsClause?: TypeRef;
+  readonly implementsClause?: readonly TypeRef[];
+  readonly members: readonly (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly typeParameters?: readonly TypeParameter[];
+}
+
+/**
+ * Readonly view options for createClassDeclaration used at API boundaries.
+ * Mirrors CreateClassDeclarationOptions but is kept separate so we can evolve
+ * call-site contracts independently of the concrete options shape.
+ */
+interface CreateClassDeclarationOptionsView {
+  readonly annotations?: readonly Annotation[];
+  readonly extendsClause?: TypeRef;
+  readonly implementsClause?: readonly TypeRef[];
+  readonly members: readonly (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly typeParameters?: readonly TypeParameter[];
+}
+
+/** Options for createEnumDeclaration (all properties readonly). */
+interface CreateEnumDeclarationOptions {
+  readonly members?: readonly (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly values: readonly EnumValue[];
+}
+
+/** Readonly view options for createEnumDeclaration used at API boundaries. */
+interface CreateEnumDeclarationOptionsView {
+  readonly members?: readonly (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly values: readonly EnumValue[];
+}
+
+/** Options for createInterfaceDeclaration (all properties readonly). */
+interface CreateInterfaceDeclarationOptions {
+  readonly extendsClause?: readonly TypeRef[];
+  readonly members: readonly (
+    | ClassDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly typeParameters?: readonly TypeParameter[];
+}
+
+/** Readonly view options for createInterfaceDeclaration used at API boundaries. */
+interface CreateInterfaceDeclarationOptionsView {
+  readonly extendsClause?: readonly TypeRef[];
+  readonly members: readonly (
+    | ClassDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+  )[];
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly typeParameters?: readonly TypeParameter[];
+}
+
+/** Options for createMethodDeclaration (all properties readonly). */
+interface CreateMethodDeclarationOptions {
+  readonly annotations?: readonly Annotation[];
+  readonly body?: CompoundStatement;
+  readonly isConstructor?: boolean;
+  readonly modifiers?: readonly Modifier[];
+  readonly name: string;
+  readonly options?: NodeFactoryOptions;
+  readonly parameters?: readonly Parameter[];
+  readonly returnType: TypeRef;
+  readonly typeParameters?: readonly TypeParameter[];
+}
+
 /**
  * Factory for declaration nodes.
  */
 const DeclarationFactory = {
-  createClassDeclaration(
-    name: string,
-    members: Readonly<
-      readonly (
-        | Readonly<ClassDeclaration>
-        | Readonly<EnumDeclaration>
-        | Readonly<InterfaceDeclaration>
-        | Readonly<MethodDeclaration>
-        | Readonly<PropertyDeclaration>
-        | Readonly<VariableDeclaration>
-      )[]
-    >,
-
-    modifiers: readonly Readonly<Modifier>[] = [],
-    extendsClause?: Readonly<TypeRef>,
-    implementsClause?: readonly Readonly<TypeRef>[],
-    typeParameters?: readonly Readonly<TypeParameter>[],
-    options?: Readonly<NodeFactoryOptions>,
-    annotations?: readonly Readonly<Annotation>[]
-  ): ClassDeclaration {
+  createClassDeclaration(opts: CreateClassDeclarationOptionsView): ClassDeclaration {
     const emptyArrayLength = 0;
     return {
       annotations:
-        annotations && annotations.length > emptyArrayLength ? [...annotations] : undefined,
-      extendsClause,
-      implementsClause: implementsClause ? [...implementsClause] : undefined,
+        opts.annotations && opts.annotations.length > emptyArrayLength
+          ? [...opts.annotations]
+          : undefined,
+      extendsClause: opts.extendsClause,
+      implementsClause: opts.implementsClause ? [...opts.implementsClause] : undefined,
       kind: 'ClassDeclaration',
-      location: options?.location,
-      members: [...members],
-      modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
-      name,
-      typeParameters: typeParameters ? [...typeParameters] : undefined,
+      location: opts.options?.location,
+      members: [...opts.members],
+      modifiers:
+        (opts.modifiers ?? EMPTY_MODIFIERS).length > emptyArrayLength
+          ? [...(opts.modifiers ?? EMPTY_MODIFIERS)]
+          : [],
+      name: opts.name,
+      typeParameters: opts.typeParameters ? [...opts.typeParameters] : undefined,
     };
   },
 
-  createEnumDeclaration(
-    name: string,
-    values: Readonly<readonly Readonly<EnumValue>[]>,
-
-    modifiers: readonly Readonly<Modifier>[] = [],
-
-    members?: Readonly<
-      readonly (
-        | Readonly<ClassDeclaration>
-        | Readonly<EnumDeclaration>
-        | Readonly<InterfaceDeclaration>
-        | Readonly<MethodDeclaration>
-        | Readonly<PropertyDeclaration>
-        | Readonly<VariableDeclaration>
-      )[]
-    >,
-    options?: Readonly<NodeFactoryOptions>
-  ): EnumDeclaration {
+  createEnumDeclaration(opts: CreateEnumDeclarationOptionsView): EnumDeclaration {
+    const { members, modifiers = EMPTY_MODIFIERS, name, options, values } = opts;
     const emptyArrayLength = 0;
     return {
       kind: 'EnumDeclaration',
@@ -94,7 +184,7 @@ const DeclarationFactory = {
       values: [...values],
     };
   },
-  createEnumValue(id: Readonly<Identifier>, options?: Readonly<NodeFactoryOptions>): EnumValue {
+  createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
     return {
       id,
       kind: 'EnumValue',
@@ -102,22 +192,15 @@ const DeclarationFactory = {
     };
   },
 
-  createInterfaceDeclaration(
-    name: string,
-    members: Readonly<
-      readonly (
-        | Readonly<ClassDeclaration>
-        | Readonly<InterfaceDeclaration>
-        | Readonly<MethodDeclaration>
-        | Readonly<PropertyDeclaration>
-      )[]
-    >,
-
-    modifiers: readonly Readonly<Modifier>[] = [],
-    extendsClause?: readonly Readonly<TypeRef>[],
-    typeParameters?: readonly Readonly<TypeParameter>[],
-    options?: Readonly<NodeFactoryOptions>
-  ): InterfaceDeclaration {
+  createInterfaceDeclaration(opts: CreateInterfaceDeclarationOptionsView): InterfaceDeclaration {
+    const {
+      extendsClause,
+      members,
+      modifiers = EMPTY_MODIFIERS,
+      name,
+      options,
+      typeParameters,
+    } = opts;
     const emptyArrayLength = 0;
     return {
       extendsClause: extendsClause ? [...extendsClause] : undefined,
@@ -130,18 +213,18 @@ const DeclarationFactory = {
     };
   },
 
-  createMethodDeclaration(
-    name: string,
-    returnType: Readonly<TypeRef>,
-    parameters: readonly Readonly<Parameter>[] = [],
-    body?: Readonly<CompoundStatement>,
-
-    modifiers: readonly Readonly<Modifier>[] = [],
-    typeParameters?: readonly Readonly<TypeParameter>[],
-    annotations?: readonly Readonly<Annotation>[],
-    isConstructor = false,
-    options?: Readonly<NodeFactoryOptions>
-  ): MethodDeclaration {
+  createMethodDeclaration(opts: CreateMethodDeclarationOptions): MethodDeclaration {
+    const {
+      annotations,
+      body,
+      isConstructor = false,
+      modifiers = [],
+      name,
+      options,
+      parameters = [],
+      returnType,
+      typeParameters,
+    } = opts;
     const emptyArrayLength = 0;
     return {
       annotations: annotations ? [...annotations] : undefined,
@@ -160,22 +243,28 @@ const DeclarationFactory = {
   createPropertyDeclaration(
     name: string,
     type: Readonly<TypeRef>,
-
-    modifiers: readonly Readonly<Modifier>[] = [],
-    getter?: Readonly<CompoundStatement>,
-    setter?: Readonly<CompoundStatement>,
-    annotations?: readonly Readonly<Annotation>[],
-    options?: Readonly<NodeFactoryOptions>
+    options?: Readonly<{
+      annotations?: readonly Readonly<Annotation>[];
+      getter?: Readonly<CompoundStatement>;
+      modifiers?: readonly Readonly<Modifier>[];
+      setter?: Readonly<CompoundStatement>;
+    }> &
+      Readonly<Partial<NodeFactoryOptions>>
   ): PropertyDeclaration {
     const emptyArrayLength = 0;
+    const modifiers = options?.modifiers ?? [];
     return {
-      annotations: annotations ? [...annotations] : undefined,
-      getter,
+      annotations: options?.annotations
+        ? options.annotations.length > emptyArrayLength
+          ? [...options.annotations]
+          : undefined
+        : undefined,
+      getter: options?.getter,
       kind: 'PropertyDeclaration',
       location: options?.location,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
-      setter,
+      setter: options?.setter,
       type,
     };
   },
@@ -292,4 +381,10 @@ const TypeFactory = {
   },
 };
 
+export type {
+  CreateClassDeclarationOptions,
+  CreateEnumDeclarationOptions,
+  CreateInterfaceDeclarationOptions,
+  CreateMethodDeclarationOptions,
+};
 export { DeclarationFactory, TypeFactory };

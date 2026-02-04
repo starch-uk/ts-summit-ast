@@ -5,17 +5,15 @@
 
 import type { ASTNode } from '../ast/baseNode.js';
 import type {
-  Initializer,
   ConstructorInitializer,
-  ValuesInitializer,
-  SizedArrayInitializer,
   MapInitializer,
+  SizedArrayInitializer,
+  ValuesInitializer,
 } from '../ast/initializer.js';
 import type {
-  ElementValue,
-  ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,
+  ExpressionElementValue,
 } from '../ast/initializer.js';
 import type { SoqlOrSoslBinding } from '../ast/expression.js';
 
@@ -24,7 +22,9 @@ import type { SoqlOrSoslBinding } from '../ast/expression.js';
  * @param node - The AST node to check.
  * @returns True if the node is an Initializer.
  */
-function isInitializer(node: ASTNode): node is Initializer {
+function isInitializer(
+  node: ASTNode
+): node is ConstructorInitializer | MapInitializer | SizedArrayInitializer | ValuesInitializer {
   return (
     'kind' in node &&
     (node.kind === 'ConstructorInitializer' ||
@@ -75,7 +75,9 @@ function isMapInitializer(node: ASTNode): node is MapInitializer {
  * @param node - The AST node to check.
  * @returns True if the node is an ElementValue.
  */
-function isElementValue(node: ASTNode): node is ElementValue {
+function isElementValue(
+  node: ASTNode
+): node is AnnotationElementValue | ArrayElementValue | ExpressionElementValue {
   return (
     'kind' in node &&
     (node.kind === 'ExpressionElementValue' ||

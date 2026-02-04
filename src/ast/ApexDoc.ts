@@ -19,49 +19,46 @@ interface ApexDocComment extends ASTNode {
   /**
    * Block tags like `@param`, `@return`, etc.
    */
-  readonly blockTags: ApexDocBlockTag[];
+  readonly blockTags: (
+    | ApexDocAuthor
+    | ApexDocDeprecated
+    | ApexDocExample
+    | ApexDocGroup
+    | ApexDocParam
+    | ApexDocReturn
+    | ApexDocSee
+    | ApexDocSince
+    | ApexDocThrows
+    | ApexDocVersion
+  )[];
 }
-
-/**
- * Block tag types (appear on their own line after the main description).
- */
-type ApexDocBlockTag =
-  | ApexDocAuthor
-  | ApexDocDeprecated
-  | ApexDocExample
-  | ApexDocGroup
-  | ApexDocParam
-  | ApexDocReturn
-  | ApexDocSee
-  | ApexDocSince
-  | ApexDocThrows
-  | ApexDocVersion;
-
-/**
- * Block tag kind discriminator.
- */
-type ApexDocBlockTagKind =
-  | 'ApexDocAuthor'
-  | 'ApexDocDeprecated'
-  | 'ApexDocExample'
-  | 'ApexDocGroup'
-  | 'ApexDocParam'
-  | 'ApexDocReturn'
-  | 'ApexDocSee'
-  | 'ApexDocSince'
-  | 'ApexDocThrows'
-  | 'ApexDocVersion';
 
 /**
  * Base interface for block tags.
  */
 interface ApexDocBlockTagBase extends ASTNode {
-  readonly kind: ApexDocBlockTagKind;
+  readonly kind:
+    | 'ApexDocAuthor'
+    | 'ApexDocDeprecated'
+    | 'ApexDocExample'
+    | 'ApexDocGroup'
+    | 'ApexDocParam'
+    | 'ApexDocReturn'
+    | 'ApexDocSee'
+    | 'ApexDocSince'
+    | 'ApexDocThrows'
+    | 'ApexDocVersion';
 
   /**
    * Description text (can contain inline tags).
    */
-  readonly description: ApexDocContent[];
+  readonly description: (
+    | ApexDocCode
+    | ApexDocHidden
+    | ApexDocLink
+    | ApexDocLiteral
+    | ApexDocText
+  )[];
 }
 
 /**
@@ -101,7 +98,7 @@ interface ApexDocExample extends ApexDocBlockTagBase {
 }
 
 /**
- * @group groupName - Groups related members together in documentation.
+ * Groups related members together in documentation (groupName).
  */
 interface ApexDocGroup extends ApexDocBlockTagBase {
   readonly kind: 'ApexDocGroup';
@@ -145,24 +142,14 @@ interface ApexDocVersion extends ApexDocBlockTagBase {
 }
 
 /**
- * Inline tag types (appear within descriptions, enclosed in {}).
- */
-type ApexDocInlineTag = ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral;
-
-/**
- * Inline tag kind discriminator.
- */
-type ApexDocInlineTagKind = 'ApexDocCode' | 'ApexDocHidden' | 'ApexDocLink' | 'ApexDocLiteral';
-
-/**
  * Base interface for inline tags.
  */
 interface ApexDocInlineTagBase extends ASTNode {
-  readonly kind: ApexDocInlineTagKind;
+  readonly kind: 'ApexDocCode' | 'ApexDocHidden' | 'ApexDocLink' | 'ApexDocLiteral';
 }
 
 /**
- * {@code text} - Formats text as inline code. If text contains Apex code, it's parsed as nested AST.
+ * Inline code: formats text as code. If text contains Apex code, it's parsed as nested AST.
  */
 interface ApexDocCode extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocCode';
@@ -179,7 +166,7 @@ interface ApexDocCode extends ApexDocInlineTagBase {
 }
 
 /**
- * {@hidden text} - Prevents element from appearing in generated docs.
+ * Hidden content: prevents element from appearing in generated docs.
  */
 interface ApexDocHidden extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocHidden';
@@ -187,13 +174,13 @@ interface ApexDocHidden extends ApexDocInlineTagBase {
 }
 
 /**
- * {@link reference} - Creates an inline link.
+ * Inline link: target is Class#member, quoted text, or HTML URL.
  */
 interface ApexDocLink extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocLink';
 
   /**
-   * Class#member, "text", or HTML link.
+   * Link target: Class#member, quoted text, or HTML URL.
    */
   readonly reference?: string;
 
@@ -204,17 +191,12 @@ interface ApexDocLink extends ApexDocInlineTagBase {
 }
 
 /**
- * {@literal text} - Shows text literally without HTML tag interpretation.
+ * Literal text: shown without HTML tag interpretation.
  */
 interface ApexDocLiteral extends ApexDocInlineTagBase {
   readonly kind: 'ApexDocLiteral';
   readonly text: string;
 }
-
-/**
- * Content within ApexDoc (can be plain text or inline tags).
- */
-type ApexDocContent = ApexDocInlineTag | ApexDocText;
 
 /**
  * Plain text content in ApexDoc.
@@ -226,8 +208,6 @@ interface ApexDocText extends ASTNode {
 
 export type {
   ApexDocComment,
-  ApexDocBlockTag,
-  ApexDocBlockTagKind,
   ApexDocBlockTagBase,
   ApexDocParam,
   ApexDocReturn,
@@ -239,13 +219,10 @@ export type {
   ApexDocSince,
   ApexDocThrows,
   ApexDocVersion,
-  ApexDocInlineTag,
-  ApexDocInlineTagKind,
   ApexDocInlineTagBase,
   ApexDocCode,
   ApexDocHidden,
   ApexDocLink,
   ApexDocLiteral,
-  ApexDocContent,
   ApexDocText,
 };

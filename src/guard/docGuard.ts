@@ -5,13 +5,21 @@
 
 import type { ASTNode } from '../ast/baseNode.js';
 import type {
+  ApexDocAuthor,
+  ApexDocCode,
   ApexDocComment,
-  ApexDocBlockTag,
-  ApexDocInlineTag,
+  ApexDocDeprecated,
+  ApexDocExample,
+  ApexDocGroup,
+  ApexDocHidden,
+  ApexDocLink,
+  ApexDocLiteral,
   ApexDocParam,
   ApexDocReturn,
-  ApexDocGroup,
-  ApexDocCode,
+  ApexDocSee,
+  ApexDocSince,
+  ApexDocThrows,
+  ApexDocVersion,
 } from '../ast/apexDoc.js';
 
 /**
@@ -28,7 +36,19 @@ function isApexDocComment(node: ASTNode): node is ApexDocComment {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocBlockTag.
  */
-function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
+function isApexDocBlockTag(
+  node: ASTNode
+): node is
+  | ApexDocAuthor
+  | ApexDocDeprecated
+  | ApexDocExample
+  | ApexDocGroup
+  | ApexDocParam
+  | ApexDocReturn
+  | ApexDocSee
+  | ApexDocSince
+  | ApexDocThrows
+  | ApexDocVersion {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&
@@ -52,7 +72,9 @@ function isApexDocBlockTag(node: ASTNode): node is ApexDocBlockTag {
  * @param node - The AST node to check.
  * @returns True if the node is an ApexDocInlineTag.
  */
-function isApexDocInlineTag(node: ASTNode): node is ApexDocInlineTag {
+function isApexDocInlineTag(
+  node: ASTNode
+): node is ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral {
   return (
     'kind' in node &&
     typeof node.kind === 'string' &&

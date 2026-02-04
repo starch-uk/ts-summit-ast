@@ -2,7 +2,7 @@
  * @file Statement parsing.
  * Parses statements: if, switch, try, break, continue, throw, return, variable declarations, blocks, loops.
  */
-
+import { asMaybeFalsy, lazyBoolean } from '../constants.js';
 import type { ParseTreeNode } from './parseTree.js';
 import { TokenType } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
@@ -704,7 +704,7 @@ parseThrowStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   ctx.consume(TokenType.SEMICOLON, 'Expected ; after throw');
 
   const children: ParseTreeNode[] = [];
-  if (expression !== null && expression !== undefined) {
+  if (expression != null) {
     children.push(expression);
   }
 
@@ -735,7 +735,7 @@ parseReturnStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
   ctx.consume(TokenType.SEMICOLON, 'Expected ; after return');
 
   const children: ParseTreeNode[] = [];
-  if (expression !== null && expression !== undefined) {
+  if (expression != null) {
     children.push(expression);
   }
 
@@ -762,13 +762,15 @@ parseVariableDeclaration = function (ctx: Readonly<ParserContext>): ParseTreeNod
   const declarations: ParseTreeNode[] = [];
 
   // Parse declarators (can be multiple, separated by commas)
-  while (true) {
+  let continueDeclarators: boolean | undefined = true;
+  while (asMaybeFalsy(continueDeclarators) === true) {
     const declStart = ctx.getCurrent();
     ctx.skipWhitespaceAndComments();
     const name = ctx.consume(TokenType.IDENTIFIER, 'Expected variable name');
     let initializer: ParseTreeNode | undefined = undefined;
 
-    if (ctx.match(TokenType.ASSIGN)) {
+    const hasAssign: boolean | undefined = lazyBoolean(() => ctx.match(TokenType.ASSIGN));
+    if (asMaybeFalsy(hasAssign) === true) {
       const expr = ctx.parseExpression();
       initializer = expr ?? undefined;
     }
@@ -777,7 +779,7 @@ parseVariableDeclaration = function (ctx: Readonly<ParserContext>): ParseTreeNod
       type,
       { location: ctx.locationToRange(name.location), text: name.text, type: 'name' },
     ];
-    if (initializer !== null && initializer !== undefined) {
+    if (initializer != null) {
       declChildren.push(initializer);
     }
 
@@ -790,6 +792,7 @@ parseVariableDeclaration = function (ctx: Readonly<ParserContext>): ParseTreeNod
     // Check for comma (multiple declarators)
     ctx.skipWhitespaceAndComments();
     if (!ctx.match(TokenType.COMMA)) {
+      continueDeclarators = false;
       break;
     }
     // Skip whitespace after comma before next declarator
@@ -916,13 +919,15 @@ parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
         const declarations: ParseTreeNode[] = [];
 
         // Parse declarators (can be multiple, separated by commas)
-        while (true) {
+        let continueForDeclarators: boolean | undefined = true;
+        while (asMaybeFalsy(continueForDeclarators) === true) {
           const declStart = ctx.getCurrent();
           ctx.skipWhitespaceAndComments();
           const name = ctx.consume(TokenType.IDENTIFIER, 'Expected variable name');
           let initializer: ParseTreeNode | undefined = undefined;
 
-          if (ctx.match(TokenType.ASSIGN)) {
+          const hasAssign: boolean | undefined = lazyBoolean(() => ctx.match(TokenType.ASSIGN));
+          if (asMaybeFalsy(hasAssign) === true) {
             const expr = ctx.parseExpression();
             initializer = expr ?? undefined;
           }
@@ -944,6 +949,7 @@ parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
           // Check for comma (multiple declarators)
           ctx.skipWhitespaceAndComments();
           if (!ctx.match(TokenType.COMMA)) {
+            continueForDeclarators = false;
             break;
           }
           // Skip whitespace after comma before next declarator
@@ -998,7 +1004,7 @@ parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
         while (ctx.match(TokenType.COMMA)) {
           ctx.skipWhitespaceAndComments();
           const expr = ctx.parseExpression();
-          if (expr !== null && expr !== undefined) {
+          if (expr != null) {
             expressions.push(expr);
           }
           ctx.skipWhitespaceAndComments();
@@ -1056,7 +1062,7 @@ parseForStatement = function (ctx: Readonly<ParserContext>): ParseTreeNode {
       while (ctx.match(TokenType.COMMA)) {
         ctx.skipWhitespaceAndComments();
         const expr = ctx.parseExpression();
-        if (expr !== null && expr !== undefined) {
+        if (expr != null) {
           updateExpressions.push(expr);
         }
         ctx.skipWhitespaceAndComments();

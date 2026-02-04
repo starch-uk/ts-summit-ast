@@ -77,13 +77,13 @@ console.log('Deserialized AST kind:', deserialized.kind);
 // Example 6: Round-trip test
 console.log('\n=== Example 6: Round-Trip Test ===');
 
-const original = NodeFactory.createMethodCallExpression(
-  'doSomething',
-  [
+const original = NodeFactory.createMethodCallExpression({
+  args: [
     NodeFactory.createStringLiteral('arg1', '"arg1"'),
     NodeFactory.createNumberLiteral(42, '42'),
-  ]
-);
+  ],
+  methodName: 'doSomething',
+});
 
 const serialized = serializer.serialize(original);
 const roundTrip = deserializer.deserialize(serialized);

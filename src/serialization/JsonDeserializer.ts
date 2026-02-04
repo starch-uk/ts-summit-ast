@@ -134,8 +134,8 @@ export class JsonDeserializer {
    * @throws {Error} If the JSON node is missing \@type or kind property.
    */
   public deserializeNode(json: Readonly<JsonASTNode>): ASTNode {
-    // Get node type from @type or kind field
-    const nodeType = json['@type'] ?? json.kind;
+    // Get node type from @type or kind (kind for backward compatibility with legacy JSON)
+    const nodeType = typeof json['@type'] === 'string' ? json['@type'] : json.kind;
     if (typeof nodeType !== 'string') {
       throw new Error('Invalid JSON AST node: missing @type or kind property');
     }
@@ -144,6 +144,6 @@ export class JsonDeserializer {
     const location = parseSourceRange(json.location);
 
     // Deserialize using the dispatcher
-    return deserializeNodeByKind(json, nodeType, location, this);
+    return deserializeNodeByKind(json, { deserializer: this, location, nodeType });
   }
 }

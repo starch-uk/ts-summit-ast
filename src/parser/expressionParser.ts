@@ -4,7 +4,12 @@
  */
 
 import type { SourceRange } from '../ast/baseNode.js';
-import { CAPTURE_GROUP_FIRST, PREVIOUS_POSITION_OFFSET } from '../constants.js';
+import {
+  asMaybeFalsy,
+  CAPTURE_GROUP_FIRST,
+  lazyBoolean,
+  PREVIOUS_POSITION_OFFSET,
+} from '../constants.js';
 import type { ParseTreeNode } from './parseTree.js';
 import { TokenType, type Token } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
@@ -395,20 +400,22 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
   }
 
   // Handle postfix operations (method calls, field access, array access) for super/this expressions
-  if (expr !== null && (expr.type === 'super_expression' || expr.type === 'this_expression')) {
+  if (expr.type === 'super_expression' || expr.type === 'this_expression') {
     // Get the token that created this expression (super or this)
     const previousTokenIndex = 1;
     const token = ctx.tokens[ctx.getCurrent() - previousTokenIndex];
     // Parse postfix operations (method calls, field access, array access)
-    while (true) {
+    let continuePostfix: boolean | undefined = true;
+    while (asMaybeFalsy(continuePostfix) === true) {
       // Check for safe navigation operator ?. or ?(
       const peekOffset = 1;
       const peekToken = ctx.peek(peekOffset);
-      const isSafe =
-        ctx.check(TokenType.QUESTION) &&
-        (peekToken.type === TokenType.DOT || peekToken.type === TokenType.LEFT_PAREN);
+      const isQuestion: boolean | undefined = lazyBoolean(() => ctx.check(TokenType.QUESTION));
+      const isDotOrParen =
+        peekToken.type === TokenType.DOT || peekToken.type === TokenType.LEFT_PAREN;
+      const isSafeNav = isQuestion && isDotOrParen;
 
-      if (isSafe) {
+      if (asMaybeFalsy(isSafeNav) === true) {
         ctx.advance(); // Consume QUESTION
       }
 
@@ -432,7 +439,7 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
 
         const methodCallNode: ParseTreeNode = {
           children: [expr, { children: args, type: 'arguments' }],
-          ...(isSafe ? { isSafe: true } : {}),
+          ...(isSafeNav ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ((): SourceRange => {
@@ -454,7 +461,7 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
             expr,
             { location: ctx.locationToRange(field.location), text: field.text, type: 'field' },
           ],
-          ...(isSafe ? { isSafe: true } : {}),
+          ...(isSafeNav ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ctx.locationToRange(field.location)
@@ -466,6 +473,7 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
         // Array access
         const index = parseExpression(ctx);
         if (!index) {
+          continuePostfix = false;
           break;
         }
         ctx.consume(TokenType.RIGHT_BRACKET, 'Expected ] after array index');
@@ -481,6 +489,7 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
           type: 'array_access_expression',
         };
       } else {
+        continuePostfix = false;
         break;
       }
     }
@@ -488,15 +497,18 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
 
   /**
    * Generic postfix handling (method calls, field access, array access) for any primary expression.
+   * Expr is never null here (we returned above if parsePrimary returned null).
    */
-  while (expr !== null) {
+  let continueGenericPostfix: boolean | undefined = true;
+  while (asMaybeFalsy(continueGenericPostfix) === true) {
     const peekOffset = 1;
     const peekToken = ctx.peek(peekOffset);
-    const isSafe =
-      ctx.check(TokenType.QUESTION) &&
-      (peekToken.type === TokenType.DOT || peekToken.type === TokenType.LEFT_PAREN);
+    const isQuestion: boolean | undefined = lazyBoolean(() => ctx.check(TokenType.QUESTION));
+    const isDotOrParen =
+      peekToken.type === TokenType.DOT || peekToken.type === TokenType.LEFT_PAREN;
+    const isSafe = isQuestion && isDotOrParen;
 
-    if (isSafe) {
+    if (asMaybeFalsy(isSafe) === true) {
       ctx.advance(); // Consume QUESTION
     }
 
@@ -552,6 +564,7 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
       // Array access
       const index = parseExpression(ctx);
       if (!index) {
+        continueGenericPostfix = false;
         break;
       }
       ctx.consume(TokenType.RIGHT_BRACKET, 'Expected ] after array index');
@@ -566,6 +579,7 @@ parseUnary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
         type: 'array_access_expression',
       };
     } else {
+      continueGenericPostfix = false;
       break;
     }
   }
@@ -842,15 +856,17 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
     }
 
     // Parse postfix operations (method calls, field access, array access)
-    while (true) {
+    let continueTriggerPostfix: boolean | undefined = true;
+    while (asMaybeFalsy(continueTriggerPostfix) === true) {
       // Check for safe navigation operator ?. or ?(
       const singleCharOffset = 1;
       const peekToken = ctx.peek(singleCharOffset);
-      const isSafe =
-        ctx.check(TokenType.QUESTION) &&
-        (peekToken.type === TokenType.DOT || peekToken.type === TokenType.LEFT_PAREN);
+      const isQuestion: boolean | undefined = lazyBoolean(() => ctx.check(TokenType.QUESTION));
+      const isDotOrParen =
+        peekToken.type === TokenType.DOT || peekToken.type === TokenType.LEFT_PAREN;
+      const isSafePostfix = isQuestion && isDotOrParen;
 
-      if (isSafe) {
+      if (asMaybeFalsy(isSafePostfix) === true) {
         ctx.advance(); // Consume QUESTION
       }
 
@@ -874,7 +890,7 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
 
         const methodCallNode: ParseTreeNode = {
           children: [expr, { children: args, type: 'arguments' }],
-          ...(isSafe ? { isSafe: true } : {}),
+          ...(isSafePostfix ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ctx.getLocation(ctx.getCurrent() - singleIndexOffset, ctx.getCurrent())
@@ -893,7 +909,7 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
             expr,
             { location: ctx.locationToRange(field.location), text: field.text, type: 'field' },
           ],
-          ...(isSafe ? { isSafe: true } : {}),
+          ...(isSafePostfix ? { isSafe: true } : {}),
           location: ctx.combineLocations(
             expr.location ?? ctx.locationToRange(token.location),
             ctx.locationToRange(field.location)
@@ -920,6 +936,7 @@ parsePrimary = function (ctx: Readonly<ParserContext>): ParseTreeNode | null {
           type: 'array_access_expression',
         };
       } else {
+        continueTriggerPostfix = false;
         break;
       }
     }

@@ -2,8 +2,12 @@
  * @file Declaration parsing.
  * Parses declarations: classes, interfaces, triggers, enums, annotations, members, types.
  */
-
-import { FIRST_INDEX, MIN_NON_EMPTY_ARRAY_LENGTH } from '../constants.js';
+import {
+  asMaybeFalsy,
+  FIRST_INDEX,
+  lazyBoolean,
+  MIN_NON_EMPTY_ARRAY_LENGTH,
+} from '../constants.js';
 import type { ParseTreeNode } from './parseTree.js';
 import { TokenType, type Token } from './tokenType.js';
 import type { ParserContext } from './apexParser.js';
@@ -130,13 +134,14 @@ function parseTriggerDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode {
       text: eventText,
       type: 'trigger_event',
     });
-    // Check for comma and skip whitespace if found
-    if (ctx.match(TokenType.COMMA)) {
+    // Check for comma and skip whitespace if found (match can return false)
+    const hasComma: boolean | undefined = lazyBoolean(() => ctx.match(TokenType.COMMA));
+    if (asMaybeFalsy(hasComma) === true) {
       ctx.skipWhitespaceAndComments();
     } else {
       break;
     }
-  } while (true);
+  } while (asMaybeFalsy(true) === true);
   ctx.skipWhitespaceAndComments();
   ctx.consume(TokenType.RIGHT_PAREN, 'Expected )');
 
@@ -906,23 +911,25 @@ function parseClassDeclaration(
 // Member Parsing
 // ============================================================================
 
+/** Options for parseMethodOrConstructor. */
+interface ParseMethodOrConstructorOptions {
+  readonly ctx: Readonly<ParserContext>;
+  readonly name: Readonly<Token>;
+  readonly modifiers: readonly ParseTreeNode[];
+  readonly annotations: readonly ParseTreeNode[];
+  readonly returnType: Readonly<ParseTreeNode> | null;
+}
+
 /**
  * Parse method or constructor declaration.
- * @param ctx - The parser context.
- * @param name - The method/constructor name token.
- * @param modifiers - Array of modifier parse tree nodes.
- * @param annotations - Array of annotation parse tree nodes.
- * @param returnType - The return type parse tree node.
+ * @param options - Parser context, name, modifiers, annotations, and return type.
  * @returns The method or constructor declaration parse tree node.
  * @throws {Error} If parsing fails or returnType is null.
  */
 function parseMethodOrConstructor(
-  ctx: Readonly<ParserContext>,
-  name: Readonly<Token>,
-  modifiers: readonly ParseTreeNode[],
-  annotations: readonly ParseTreeNode[],
-  returnType: Readonly<ParseTreeNode> | null
+  options: Readonly<ParseMethodOrConstructorOptions>
 ): ParseTreeNode {
+  const { ctx, name, modifiers, annotations, returnType } = options;
   if (returnType == null) {
     throw new Error('returnType is required for method/constructor');
   }
@@ -1060,23 +1067,25 @@ function parseParameter(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   };
 }
 
+/** Options for parsePropertyDeclaration. */
+interface ParsePropertyDeclarationOptions {
+  readonly ctx: Readonly<ParserContext>;
+  readonly name: Readonly<Token>;
+  readonly modifiers: readonly ParseTreeNode[];
+  readonly annotations: readonly ParseTreeNode[];
+  readonly type: Readonly<ParseTreeNode> | null;
+}
+
 /**
  * Parse property declaration (with getter/setter).
- * @param ctx - The parser context.
- * @param name - The property name token.
- * @param modifiers - Array of modifier parse tree nodes.
- * @param annotations - Array of annotation parse tree nodes.
- * @param type - The property type parse tree node.
+ * @param options - Parser context, name, modifiers, annotations, and type.
  * @returns The property declaration parse tree node.
  * @throws {Error} If parsing fails or type is null.
  */
 function parsePropertyDeclaration(
-  ctx: Readonly<ParserContext>,
-  name: Readonly<Token>,
-  modifiers: readonly ParseTreeNode[],
-  annotations: readonly ParseTreeNode[],
-  type: Readonly<ParseTreeNode> | null
+  options: Readonly<ParsePropertyDeclarationOptions>
 ): ParseTreeNode {
+  const { ctx, name, modifiers, annotations, type } = options;
   if (type == null) {
     throw new Error('type is required for property declaration');
   }
@@ -1147,25 +1156,24 @@ function parsePropertyDeclaration(
   };
 }
 
+/** Options for parseFieldDeclaration. */
+interface ParseFieldDeclarationOptions {
+  readonly ctx: Readonly<ParserContext>;
+  readonly name: Readonly<Token>;
+  readonly modifiers: readonly ParseTreeNode[];
+  readonly annotations: readonly ParseTreeNode[];
+  readonly type: Readonly<ParseTreeNode> | null;
+  readonly typeStart: number;
+}
+
 /**
  * Parses a field declaration from the token stream.
- * @param ctx - The parser context.
- * @param name - The field name token.
- * @param modifiers - Array of modifier parse tree nodes.
- * @param annotations - Array of annotation parse tree nodes.
- * @param type - The field type parse tree node.
- * @param typeStart - Start position for location tracking.
+ * @param options - Parser context, name, modifiers, annotations, type, and typeStart.
  * @returns The field declaration parse tree node.
  * @throws {Error} If the field name is missing or if unexpected tokens are encountered.
  */
-function parseFieldDeclaration(
-  ctx: Readonly<ParserContext>,
-  name: Readonly<Token>,
-  modifiers: readonly ParseTreeNode[],
-  annotations: readonly ParseTreeNode[],
-  type: Readonly<ParseTreeNode> | null,
-  typeStart: number
-): ParseTreeNode {
+function parseFieldDeclaration(options: Readonly<ParseFieldDeclarationOptions>): ParseTreeNode {
+  const { ctx, name, modifiers, annotations, type, typeStart } = options;
   if (type == null) {
     throw new Error('type is required for field declaration');
   }
@@ -1182,13 +1190,17 @@ function parseFieldDeclaration(
   const declarationData: { start: number; children: ParseTreeNode[] }[] = [];
 
   // Parse declarators (can be multiple, separated by commas)
-  while (true) {
-    // For first declarator, use fieldStart (before type parsing); for subsequent ones, use current position
-    const declStart = declarationData.length === zeroIndex ? fieldStart : ctx.getCurrent();
+  let isFirstDeclarator = true;
+  let continueDeclarators: boolean | undefined = true;
+  while (asMaybeFalsy(continueDeclarators) === true) {
+    // For first declarator, use fieldStart (before type parsing); subsequent ones use current position
+    const currentIsFirst = isFirstDeclarator;
+    const isFirst: boolean | undefined = lazyBoolean(() => currentIsFirst);
+    const declStart = asMaybeFalsy(isFirst) === true ? fieldStart : ctx.getCurrent();
 
     // First declarator uses the provided name (already consumed), subsequent ones need to be consumed
     let fieldName: Token | undefined = undefined;
-    if (declarationData.length === zeroIndex) {
+    if (asMaybeFalsy(isFirst) === true) {
       // First declarator - name was already consumed, we're positioned after it
       // Skip whitespace before checking for initializer
       ctx.skipWhitespaceAndComments();
@@ -1214,23 +1226,23 @@ function parseFieldDeclaration(
       declChildren.push({ children: [...modifiers], type: 'modifiers' });
     }
     declChildren.push(type);
-    if (fieldName === undefined) {
-      throw new Error('Expected field name');
-    }
+    // fieldName is Token here: either name (first declarator) or ctx.consume (subsequent)
     declChildren.push({
       location: ctx.locationToRange(fieldName.location),
       text: fieldName.text,
       type: 'name',
     });
-    if (initializer !== null && initializer !== undefined) {
+    if (initializer != null) {
       declChildren.push(initializer);
     }
 
     declarationData.push({ children: declChildren, start: declStart });
+    isFirstDeclarator = false;
 
     // Check for comma (multiple declarators)
     ctx.skipWhitespaceAndComments();
     if (!ctx.match(TokenType.COMMA)) {
+      continueDeclarators = false;
       break;
     }
     // Skip whitespace after comma before next declarator
@@ -1288,11 +1300,12 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   // Parse modifiers
   const modifiers: ParseTreeNode[] = [];
   const singleIndexOffset = 1;
-  while (true) {
+  let continueModifiers: boolean | undefined = true;
+  while (asMaybeFalsy(continueModifiers) === true) {
     let modifierText: string | null = null;
     let modifierStart: number | null = null;
 
-    if (
+    const matchedModifier: boolean | undefined = lazyBoolean(() =>
       ctx.match(
         TokenType.PUBLIC,
         TokenType.PRIVATE,
@@ -1307,15 +1320,11 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
         TokenType.WEBSERVICE,
         TokenType.TRANSIENT
       )
-    ) {
+    );
+    if (asMaybeFalsy(matchedModifier) === true) {
       const prevToken = ctx.tokens[ctx.getCurrent() - singleIndexOffset];
       modifierText = prevToken.text;
       modifierStart = ctx.getCurrent() - singleIndexOffset;
-    } else {
-      break;
-    }
-
-    if (modifierText !== null && modifierStart !== null) {
       modifiers.push({
         location: ctx.getLocation(modifierStart, ctx.getCurrent()),
         text: modifierText,
@@ -1323,6 +1332,7 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       });
       ctx.skipWhitespaceAndComments();
     } else {
+      continueModifiers = false;
       break;
     }
   }
@@ -1455,7 +1465,7 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
             line: savedTypeLocation.start.line,
           }
         : (type.location?.start ?? { column: 1, line: 1 }),
-      text: savedTypeName ?? 'Unknown',
+      text: savedTypeName || 'Unknown',
       type: TokenType.IDENTIFIER,
     };
     // For constructors, create a void_type node instead of using the type node
@@ -1465,7 +1475,13 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       location: type.location,
       type: 'void_type',
     };
-    return parseMethodOrConstructor(ctx, nameToken, modifiers, annotations, voidTypeNode);
+    return parseMethodOrConstructor({
+      annotations,
+      ctx,
+      modifiers,
+      name: nameToken,
+      returnType: voidTypeNode,
+    });
   }
 
   // Check if it's a property (has { after name)
@@ -1475,13 +1491,32 @@ function parseClassMember(ctx: Readonly<ParserContext>): ParseTreeNode | null {
 
     if (ctx.check(TokenType.LEFT_BRACE)) {
       // Property declaration
-      return parsePropertyDeclaration(ctx, name, modifiers, annotations, type);
+      return parsePropertyDeclaration({
+        annotations,
+        ctx,
+        modifiers,
+        name,
+        type,
+      });
     } else if (ctx.check(TokenType.LEFT_PAREN)) {
       // Method/constructor
-      return parseMethodOrConstructor(ctx, name, modifiers, annotations, type);
+      return parseMethodOrConstructor({
+        annotations,
+        ctx,
+        modifiers,
+        name,
+        returnType: type,
+      });
     } else {
       // Field declaration
-      return parseFieldDeclaration(ctx, name, modifiers, annotations, type, typeStart);
+      return parseFieldDeclaration({
+        annotations,
+        ctx,
+        modifiers,
+        name,
+        type,
+        typeStart,
+      });
     }
   }
 
@@ -1526,17 +1561,25 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
 
   // Parse modifiers (public, private, etc.) that can come before class/interface/enum
   const modifiers: ParseTreeNode[] = [];
-  while (true) {
+  let continueDeclarationModifiers: boolean | undefined = true;
+  while (asMaybeFalsy(continueDeclarationModifiers) === true) {
     const beforeMatch = ctx.getCurrent();
     let modifierText: string | null = null;
     let modifierStart: number | null = null;
 
     // Check for multi-word modifiers first: "with sharing", "without sharing", "inherited sharing"
-    if (ctx.match(TokenType.WITH)) {
+    const hasWith: boolean | undefined = lazyBoolean(() => ctx.match(TokenType.WITH));
+    if (asMaybeFalsy(hasWith) === true) {
       modifierStart = ctx.getCurrent() - singleIndexOffset;
       ctx.skipWhitespaceAndComments();
       if (ctx.match(TokenType.SHARING)) {
         modifierText = 'with sharing';
+        modifiers.push({
+          location: ctx.getLocation(modifierStart, ctx.getCurrent()),
+          text: modifierText,
+          type: 'modifier',
+        });
+        ctx.skipWhitespaceAndComments();
       } else {
         // "with" without "sharing" is not a modifier, reset
         ctx.setCurrent(beforeMatch);
@@ -1547,6 +1590,12 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       ctx.skipWhitespaceAndComments();
       if (ctx.match(TokenType.SHARING)) {
         modifierText = 'without sharing';
+        modifiers.push({
+          location: ctx.getLocation(modifierStart, ctx.getCurrent()),
+          text: modifierText,
+          type: 'modifier',
+        });
+        ctx.skipWhitespaceAndComments();
       } else {
         // "without" without "sharing" is not a modifier, reset
         ctx.setCurrent(beforeMatch);
@@ -1557,9 +1606,16 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       ctx.skipWhitespaceAndComments();
       if (ctx.match(TokenType.SHARING)) {
         modifierText = 'inherited sharing';
+        modifiers.push({
+          location: ctx.getLocation(modifierStart, ctx.getCurrent()),
+          text: modifierText,
+          type: 'modifier',
+        });
+        ctx.skipWhitespaceAndComments();
       } else {
         // "inherited" without "sharing" is not a modifier, reset
         ctx.setCurrent(beforeMatch);
+        continueDeclarationModifiers = false;
         break;
       }
     } else if (
@@ -1581,12 +1637,6 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       const prevToken = ctx.tokens[ctx.getCurrent() - singleIndexOffset];
       modifierText = prevToken.text;
       modifierStart = ctx.getCurrent() - singleIndexOffset;
-    } else {
-      // No more modifiers
-      break;
-    }
-
-    if (modifierText !== null && modifierStart !== null) {
       modifiers.push({
         location: ctx.getLocation(modifierStart, ctx.getCurrent()),
         text: modifierText,
@@ -1594,6 +1644,8 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
       });
       ctx.skipWhitespaceAndComments();
     } else {
+      // No more modifiers
+      continueDeclarationModifiers = false;
       break;
     }
   }

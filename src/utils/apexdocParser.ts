@@ -6,24 +6,21 @@
 import type { ASTNode } from '../ast/baseNode.js';
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type {
-  ApexDocComment,
-  ApexDocBlockTag,
-  ApexDocParam,
-  ApexDocReturn,
   ApexDocAuthor,
+  ApexDocCode,
+  ApexDocComment,
   ApexDocDeprecated,
   ApexDocExample,
   ApexDocGroup,
+  ApexDocHidden,
+  ApexDocLink,
+  ApexDocLiteral,
+  ApexDocParam,
+  ApexDocReturn,
   ApexDocSee,
   ApexDocSince,
   ApexDocThrows,
   ApexDocVersion,
-  ApexDocInlineTag,
-  ApexDocCode,
-  ApexDocHidden,
-  ApexDocLink,
-  ApexDocLiteral,
-  ApexDocContent,
   ApexDocText,
 } from '../ast/apexDoc.js';
 import type { SourceRange } from '../ast/baseNode.js';
@@ -90,7 +87,13 @@ let parseContent: (
   text: string,
   location: SourceRange | undefined,
   options: ApexDocParseOptions
-) => ApexDocContent[] = (): ApexDocContent[] => {
+) => (ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral | ApexDocText)[] = (): (
+  | ApexDocCode
+  | ApexDocHidden
+  | ApexDocLink
+  | ApexDocLiteral
+  | ApexDocText
+)[] => {
   throw new Error('parseContent not yet initialized');
 };
 
@@ -147,17 +150,15 @@ function splitMainDescriptionAndTags(commentText: string): {
  * Parses an inline ApexDoc tag.
  * @param tagName - The inline tag name (e.g., "code", "link").
  * @param content - The raw inline tag content.
- * @param location - Optional source location range for the tag.
- * @param options - Parser options controlling inline parsing behavior.
+ * @param options - Parser options including optional location.
  * @returns The parsed inline tag, or null if parsing fails.
  */
 function parseInlineTag(
   tagName: string,
   content: string,
-  location: SourceRange | undefined,
-  options: ApexDocParseOptions
-): ApexDocInlineTag | null {
-  const { parseCodeInCodeTag = true, parseTreeAdapter } = options;
+  options: Readonly<ApexDocParseOptions & { location?: SourceRange }>
+): ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral | null {
+  const { location, parseCodeInCodeTag = true, parseTreeAdapter } = options;
 
   const baseTag = location ? { location } : {};
 
@@ -235,8 +236,8 @@ parseContent = (
   text: string,
   location: SourceRange | undefined,
   options: ApexDocParseOptions
-): ApexDocContent[] => {
-  const result: ApexDocContent[] = [];
+): (ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral | ApexDocText)[] => {
+  const result: (ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral | ApexDocText)[] = [];
   let currentPos = 0;
 
   const inlineTagRegex = /\{@(\w+)(?:\s+([^}]*))?\}/g;
@@ -258,7 +259,7 @@ parseContent = (
     const [, tagName, tagContentRaw] = match;
     const tagContent = tagContentRaw || '';
 
-    const inlineTag = parseInlineTag(tagName, tagContent, location, options);
+    const inlineTag = parseInlineTag(tagName, tagContent, { ...options, location });
     if (inlineTag) {
       result.push(inlineTag);
     }
@@ -302,7 +303,18 @@ function parseBlockTag(
   tagLine: string,
   location: SourceRange | undefined,
   options: ApexDocParseOptions
-): ApexDocBlockTag | null {
+):
+  | ApexDocAuthor
+  | ApexDocDeprecated
+  | ApexDocExample
+  | ApexDocGroup
+  | ApexDocParam
+  | ApexDocReturn
+  | ApexDocSee
+  | ApexDocSince
+  | ApexDocThrows
+  | ApexDocVersion
+  | null {
   const match = /^@(\w+)\s*(.*)$/.exec(tagLine);
   if (!match) {
     return null;
@@ -480,7 +492,18 @@ function parseApexDocComment(
   const { mainDescription, blockTagLines } = splitMainDescriptionAndTags(cleaned);
 
   // Parse block tags
-  const blockTags: ApexDocBlockTag[] = [];
+  const blockTags: (
+    | ApexDocAuthor
+    | ApexDocDeprecated
+    | ApexDocExample
+    | ApexDocGroup
+    | ApexDocParam
+    | ApexDocReturn
+    | ApexDocSee
+    | ApexDocSince
+    | ApexDocThrows
+    | ApexDocVersion
+  )[] = [];
   for (const tagLine of blockTagLines) {
     const tag = parseBlockTag(tagLine, includeLocation ? location : undefined, {
       parseCodeInCodeTag,

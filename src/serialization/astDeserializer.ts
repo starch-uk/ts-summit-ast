@@ -318,13 +318,13 @@ function deserializeForLoopStatement(
     throw new Error('Invalid ForLoopStatement: body is not a Statement node');
   }
 
-  return NodeFactory.createForLoopStatement(
-    bodyDeserialized,
-    init,
+  return NodeFactory.createForLoopStatement({
+    body: bodyDeserialized,
     condition,
+    init,
+    options: locationOption,
     update,
-    locationOption
-  );
+  });
 }
 
 /**
@@ -486,18 +486,19 @@ function deserializeVariableDeclarationStatement(
 /**
  * Deserialize node based on its kind.
  * @param json - The JSON object to deserialize.
- * @param nodeType - The kind of AST node to deserialize (e.g., 'IfStatement', 'BinaryExpression').
- * @param location - The optional source location.
- * @param deserializer - The deserializer instance.
+ * @param options - Options including nodeType, location, and deserializer.
  * @returns The deserialized AST node.
  * @throws {Error} If the node type is unknown or not yet implemented.
  */
 function deserializeNodeByKind(
   json: Readonly<JsonASTNode>,
-  nodeType: string,
-  location: SourceRange | undefined,
-  deserializer: Readonly<JsonDeserializer>
+  options: Readonly<{
+    deserializer: Readonly<JsonDeserializer>;
+    location?: SourceRange;
+    nodeType: string;
+  }>
 ): ASTNode {
+  const { nodeType, location, deserializer } = options;
   const locationOption = location ? { location } : undefined;
 
   switch (nodeType) {

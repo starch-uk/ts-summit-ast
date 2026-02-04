@@ -50,21 +50,6 @@ interface MapInitializer extends ASTNode {
 }
 
 /**
- * Union type for all initializer node types.
- */
-type Initializer =
-  | ConstructorInitializer
-  | MapInitializer
-  | SizedArrayInitializer
-  | ValuesInitializer;
-
-/**
- * Base type for all element value nodes.
- * A value that can be assigned to an annotation element.
- */
-type ElementValue = AnnotationElementValue | ArrayElementValue | ExpressionElementValue;
-
-/**
  * An element value that is an Expression.
  */
 interface ExpressionElementValue extends ASTNode {
@@ -85,11 +70,11 @@ interface AnnotationElementValue extends ASTNode {
 }
 
 /**
- * An element value that is an array of ElementValues.
+ * An element value that is an array of element values.
  */
 interface ArrayElementValue extends ASTNode {
   readonly kind: 'ArrayElementValue';
-  readonly values: readonly ElementValue[];
+  readonly values: readonly (AnnotationElementValue | ArrayElementValue | ExpressionElementValue)[];
   readonly location?: SourceRange;
 }
 
@@ -98,8 +83,6 @@ export type {
   ValuesInitializer,
   SizedArrayInitializer,
   MapInitializer,
-  Initializer,
-  ElementValue,
   ExpressionElementValue,
   AnnotationElementValue,
   ArrayElementValue,

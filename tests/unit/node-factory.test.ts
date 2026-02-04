@@ -32,7 +32,9 @@ describe('NodeFactory', () => {
       expect(isIfStatement(ifStmt)).toBe(true);
 
       // ForLoopStatement
-      const forStmt = NodeFactory.createForLoopStatement(NodeFactory.createCompoundStatement([]));
+      const forStmt = NodeFactory.createForLoopStatement({
+        body: NodeFactory.createCompoundStatement([]),
+      });
       expect(isForLoopStatement(forStmt)).toBe(true);
 
       // WhileLoopStatement
@@ -61,15 +63,14 @@ describe('NodeFactory', () => {
   describe('Expression Creation', () => {
     it('should create all expression types correctly', () => {
       // BinaryExpression
-      const binary = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createIntegerVal(1, '1'),
-        NodeFactory.createIntegerVal(2, '2')
-      );
+      const binary = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createIntegerVal(1, '1'),
+        right: NodeFactory.createIntegerVal(2, '2'),
+      });
       expect(isBinaryExpression(binary)).toBe(true);
 
       // CallExpression
-      const methodCall = NodeFactory.createCallExpression('test', []);
+      const methodCall = NodeFactory.createCallExpression({ methodName: 'test' });
       expect(isCallExpression(methodCall)).toBe(true);
 
       // Identifier
@@ -109,15 +110,13 @@ describe('NodeFactory', () => {
   describe('Declaration Creation', () => {
     it('should create variable declarations correctly', () => {
       // TypeRef creation
-      const varDecl = NodeFactory.createVariableDeclaration(
-        'x',
-        {
+      const varDecl = NodeFactory.createVariableDeclaration({
+        name: 'x',
+        type: {
           arrayNesting: 0,
           components: [{ args: [], id: NodeFactory.createIdentifier('Integer') }],
         },
-        undefined,
-        undefined
-      );
+      });
       expect(isVariableDeclaration(varDecl)).toBe(true);
     });
   });
@@ -162,7 +161,7 @@ describe('NodeFactory', () => {
 
     it('should handle long method names', () => {
       const longName = 'a'.repeat(100);
-      const node = NodeFactory.createMethodCallExpression(longName, []);
+      const node = NodeFactory.createMethodCallExpression({ methodName: longName });
       expect(node.methodName).toBe(longName);
     });
 
@@ -174,7 +173,7 @@ describe('NodeFactory', () => {
 
   describe('Deprecated methods - ExpressionFactory', () => {
     it('should support createMethodCallExpression (deprecated)', () => {
-      const node = NodeFactory.createMethodCallExpression('test', []);
+      const node = NodeFactory.createMethodCallExpression({ methodName: 'test' });
       expect(node.kind).toBe('CallExpression');
       expect(node.methodName).toBe('test');
     });
@@ -182,7 +181,7 @@ describe('NodeFactory', () => {
     it('should support createAssignmentExpression (deprecated)', () => {
       const left = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const right = NodeFactory.createIntegerVal(5, '5');
-      const node = NodeFactory.createAssignmentExpression('=', left, right);
+      const node = NodeFactory.createAssignmentExpression('=', { left, right });
       expect(node.kind).toBe('AssignExpression');
       expect(node.operator).toBe('=');
     });
@@ -219,7 +218,7 @@ describe('NodeFactory', () => {
 
     it('should create UnaryExpression', () => {
       const operand = NodeFactory.createIntegerVal(5, '5');
-      const node = NodeFactory.createUnaryExpression('!', operand, true);
+      const node = NodeFactory.createUnaryExpression('!', { operand, prefix: true });
       expect(node.kind).toBe('UnaryExpression');
       expect(node.operator).toBe('!');
       expect(node.prefix).toBe(true);
@@ -229,7 +228,11 @@ describe('NodeFactory', () => {
       const condition = NodeFactory.createBooleanVal(true);
       const thenExpr = NodeFactory.createIntegerVal(1, '1');
       const elseExpr = NodeFactory.createIntegerVal(0, '0');
-      const node = NodeFactory.createTernaryExpression(condition, thenExpr, elseExpr);
+      const node = NodeFactory.createTernaryExpression({
+        condition,
+        elseExpression: elseExpr,
+        thenExpression: thenExpr,
+      });
       expect(node.kind).toBe('TernaryExpression');
       expect(node.condition).toBe(condition);
     });
@@ -356,14 +359,20 @@ describe('NodeFactory', () => {
           components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
         },
       ];
-      const node = NodeFactory.createCallExpression('method', [], undefined, typeArgs);
+      const node = NodeFactory.createCallExpression({
+        methodName: 'method',
+        typeArguments: typeArgs,
+      });
       expect(node.kind).toBe('CallExpression');
       expect(node.typeArguments).toStrictEqual(typeArgs);
     });
 
     it('should create CallExpression with target', () => {
       const target = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('obj'));
-      const node = NodeFactory.createCallExpression('method', [], target);
+      const node = NodeFactory.createCallExpression({
+        methodName: 'method',
+        target,
+      });
       expect(node.kind).toBe('CallExpression');
       expect(node.target).toBe(target);
     });
@@ -383,24 +392,29 @@ describe('NodeFactory', () => {
       const right = ExpressionFactory.createVariableExpression(NodeFactory.createIdentifier('y'));
 
       // BinaryExpression
-      const binary = ExpressionFactory.createBinaryExpression('+', left, right);
+      const binary = ExpressionFactory.createBinaryExpression('+', { left, right });
       expect(binary.kind).toBe('BinaryExpression');
 
       // CallExpression with all options
-      const call = ExpressionFactory.createCallExpression('test', [left], right, [
-        {
-          arrayNesting: 0,
-          components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
-        },
-      ]);
+      const call = ExpressionFactory.createCallExpression({
+        args: [left],
+        methodName: 'test',
+        target: right,
+        typeArguments: [
+          {
+            arrayNesting: 0,
+            components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
+          },
+        ],
+      });
       expect(call.kind).toBe('CallExpression');
 
       // UnaryExpression
-      const unary = ExpressionFactory.createUnaryExpression('!', left, true);
+      const unary = ExpressionFactory.createUnaryExpression('!', { operand: left, prefix: true });
       expect(unary.kind).toBe('UnaryExpression');
 
       // AssignExpression
-      const assign = ExpressionFactory.createAssignExpression('=', left, right);
+      const assign = ExpressionFactory.createAssignExpression('=', { left, right });
       expect(assign.kind).toBe('AssignExpression');
 
       // FieldExpression
@@ -412,7 +426,11 @@ describe('NodeFactory', () => {
       expect(arrayExpr.kind).toBe('ArrayExpression');
 
       // TernaryExpression
-      const ternary = ExpressionFactory.createTernaryExpression(left, right, left);
+      const ternary = ExpressionFactory.createTernaryExpression({
+        condition: left,
+        elseExpression: left,
+        thenExpression: right,
+      });
       expect(ternary.kind).toBe('TernaryExpression');
 
       // CastExpression
@@ -486,10 +504,10 @@ describe('NodeFactory', () => {
       expect(triggerVar.kind).toBe('TriggerContextVariableExpression');
 
       // Deprecated methods
-      const methodCall = ExpressionFactory.createMethodCallExpression('test', []);
+      const methodCall = ExpressionFactory.createMethodCallExpression({ methodName: 'test' });
       expect(methodCall.kind).toBe('CallExpression');
 
-      const assignment = ExpressionFactory.createAssignmentExpression('=', left, right);
+      const assignment = ExpressionFactory.createAssignmentExpression('=', { left, right });
       expect(assignment.kind).toBe('AssignExpression');
 
       const fieldAccess = ExpressionFactory.createFieldAccessExpression('field', left);

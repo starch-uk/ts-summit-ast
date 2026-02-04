@@ -131,12 +131,6 @@ interface TypeRefComponent {
 }
 
 /**
- * Type alias for backward compatibility during migration.
- * @deprecated Use TypeRef instead.
- */
-type Type = TypeRef;
-
-/**
  * Converts a TypeRef to its source-like string (e.g. "A[][]", "Map<String>").
  * Equivalent to asCodeString in Kotlin summit-ast.
  * @param typeRef - The type reference to convert to a string.
@@ -170,6 +164,5 @@ export type {
   Identifier,
   TypeRef,
   TypeRefComponent,
-  Type,
 };
 export { DefaultVisitor, typeRefToCodeString };

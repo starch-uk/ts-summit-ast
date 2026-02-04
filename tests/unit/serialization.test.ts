@@ -371,7 +371,7 @@ describe('JSON Serialization', () => {
     it('should serialize and deserialize binary expression', () => {
       const left = NodeFactory.createIntegerVal(5, '5');
       const right = NodeFactory.createIntegerVal(3, '3');
-      const node = NodeFactory.createBinaryExpression('+', left, right);
+      const node = NodeFactory.createBinaryExpression('+', { left, right });
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
@@ -384,7 +384,10 @@ describe('JSON Serialization', () => {
     it('should serialize and deserialize method call', () => {
       const arg1 = NodeFactory.createStringVal('arg1', '"arg1"');
       const arg2 = NodeFactory.createIntegerVal(42, '42');
-      const node = NodeFactory.createCallExpression('doSomething', [arg1, arg2]);
+      const node = NodeFactory.createCallExpression({
+        args: [arg1, arg2],
+        methodName: 'doSomething',
+      });
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
@@ -461,11 +464,10 @@ describe('JSON Serialization', () => {
   describe('Round-trip compatibility', () => {
     it('should maintain round-trip compatibility for complex AST', () => {
       // Create a complex AST structure
-      const condition = NodeFactory.createBinaryExpression(
-        '+',
-        NodeFactory.createNumberLiteral(5, '5'),
-        NodeFactory.createNumberLiteral(3, '3')
-      );
+      const condition = NodeFactory.createBinaryExpression('+', {
+        left: NodeFactory.createNumberLiteral(5, '5'),
+        right: NodeFactory.createNumberLiteral(3, '3'),
+      });
       const thenStatement = NodeFactory.createBlock([
         NodeFactory.createReturnStatement(NodeFactory.createStringLiteral('success', '"success"')),
       ]);
@@ -547,12 +549,12 @@ describe('Comprehensive Serialization', () => {
 
   describe('All Statement Types', () => {
     it('should serialize and deserialize ForStatement', () => {
-      const node = NodeFactory.createForStatement(
-        NodeFactory.createBlock([]),
-        NodeFactory.createExpressionStatement(NodeFactory.createIdentifier('i')),
-        NodeFactory.createBooleanLiteral(true),
-        NodeFactory.createIdentifier('i')
-      );
+      const node = NodeFactory.createForStatement({
+        body: NodeFactory.createBlock([]),
+        condition: NodeFactory.createBooleanLiteral(true),
+        init: NodeFactory.createExpressionStatement(NodeFactory.createIdentifier('i')),
+        update: NodeFactory.createIdentifier('i'),
+      });
 
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
@@ -584,12 +586,12 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should serialize and deserialize VariableDeclarationStatement', () => {
-      const decl = NodeFactory.createVariableDeclaration(
-        'x',
-        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
-        undefined,
-        undefined
-      );
+      const decl = NodeFactory.createVariableDeclaration({
+        name: 'x',
+        type: NodeFactory.createTypeRef([
+          { args: [], id: NodeFactory.createIdentifier('Integer') },
+        ]),
+      });
       const node = NodeFactory.createVariableDeclarationStatement(decl);
 
       const json = serializer.serialize(node);
@@ -620,7 +622,7 @@ describe('Comprehensive Serialization', () => {
       const right = NodeFactory.createIntegerVal(3, '3');
 
       for (const op of operators) {
-        const node = NodeFactory.createBinaryExpression(op, left, right);
+        const node = NodeFactory.createBinaryExpression(op, { left, right });
         const json = serializer.serialize(node);
         const deserialized = deserializer.deserialize(json);
 
@@ -640,7 +642,12 @@ describe('Comprehensive Serialization', () => {
       const typeArgs = [
         NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('String') }]),
       ];
-      const node = NodeFactory.createCallExpression('method', args, target, typeArgs);
+      const node = NodeFactory.createCallExpression({
+        args,
+        methodName: 'method',
+        target,
+        typeArguments: typeArgs,
+      });
 
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
@@ -662,7 +669,11 @@ describe('Comprehensive Serialization', () => {
         { args: [], id: NodeFactory.createIdentifier('String') },
       ]);
       const initializer = NodeFactory.createStringVal('default', '"default"');
-      const node = NodeFactory.createVariableDeclaration('var', type, initializer);
+      const node = NodeFactory.createVariableDeclaration({
+        initializer,
+        name: 'var',
+        type,
+      });
 
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
@@ -678,18 +689,16 @@ describe('Comprehensive Serialization', () => {
   describe('Complex Nested Structures', () => {
     it('should serialize and deserialize deeply nested AST', () => {
       const nested = NodeFactory.createIfStatement({
-        condition: NodeFactory.createBinaryExpression(
-          '>',
-          NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x')),
-          NodeFactory.createIntegerVal(0, '0')
-        ),
+        condition: NodeFactory.createBinaryExpression('>', {
+          left: NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x')),
+          right: NodeFactory.createIntegerVal(0, '0'),
+        }),
         thenStatement: NodeFactory.createCompoundStatement([
           NodeFactory.createIfStatement({
-            condition: NodeFactory.createBinaryExpression(
-              '>',
-              NodeFactory.createVariableExpression(NodeFactory.createIdentifier('y')),
-              NodeFactory.createIntegerVal(0, '0')
-            ),
+            condition: NodeFactory.createBinaryExpression('>', {
+              left: NodeFactory.createVariableExpression(NodeFactory.createIdentifier('y')),
+              right: NodeFactory.createIntegerVal(0, '0'),
+            }),
             thenStatement: NodeFactory.createReturnStatement(
               NodeFactory.createStringVal('both positive', '"both positive"')
             ),
@@ -704,11 +713,13 @@ describe('Comprehensive Serialization', () => {
     });
 
     it('should serialize and deserialize method call chain', () => {
-      const chain = NodeFactory.createCallExpression(
-        'c',
-        [],
-        NodeFactory.createCallExpression('b', [], NodeFactory.createCallExpression('a', []))
-      );
+      const chain = NodeFactory.createCallExpression({
+        methodName: 'c',
+        target: NodeFactory.createCallExpression({
+          methodName: 'b',
+          target: NodeFactory.createCallExpression({ methodName: 'a' }),
+        }),
+      });
 
       const json = serializer.serialize(chain);
       const deserialized = deserializer.deserialize(json);
@@ -855,7 +866,7 @@ describe('Comprehensive Serialization', () => {
       const localSerializer = new JsonSerializer();
       const left = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const right = NodeFactory.createIntegerVal(5, '5');
-      const node = NodeFactory.createAssignExpression('=', left, right);
+      const node = NodeFactory.createAssignExpression('=', { left, right });
       const json = localSerializer.serialize(node);
       const parsed = JSON.parse(json);
       expect(parsed['@type']).toBe('AssignExpression');
@@ -969,10 +980,12 @@ describe('Comprehensive Serialization', () => {
     it('should deserialize VariableDeclarationStatement', () => {
       const localSerializer = new JsonSerializer();
       const localDeserializer = new JsonDeserializer();
-      const decl = NodeFactory.createVariableDeclaration(
-        'x',
-        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }])
-      );
+      const decl = NodeFactory.createVariableDeclaration({
+        name: 'x',
+        type: NodeFactory.createTypeRef([
+          { args: [], id: NodeFactory.createIdentifier('Integer') },
+        ]),
+      });
       const node = NodeFactory.createVariableDeclarationStatement(decl);
       const json = localSerializer.serialize(node);
       const deserialized = localDeserializer.deserialize(json);
@@ -986,12 +999,13 @@ describe('Comprehensive Serialization', () => {
         keyword: 'public',
         kind: 'Modifier',
       };
-      const decl = NodeFactory.createVariableDeclaration(
-        'x',
-        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
-        undefined,
-        [modifier]
-      );
+      const decl = NodeFactory.createVariableDeclaration({
+        modifiers: [modifier],
+        name: 'x',
+        type: NodeFactory.createTypeRef([
+          { args: [], id: NodeFactory.createIdentifier('Integer') },
+        ]),
+      });
       const json = localSerializer.serialize(decl);
       const deserialized = localDeserializer.deserialize(json);
       expect(deserialized.kind).toBe('VariableDeclaration');
@@ -1125,12 +1139,13 @@ describe('Comprehensive Serialization', () => {
         keyword: 'public',
         kind: 'Modifier',
       };
-      const decl = NodeFactory.createVariableDeclaration(
-        'x',
-        NodeFactory.createTypeRef([{ args: [], id: NodeFactory.createIdentifier('Integer') }]),
-        undefined,
-        [modifier]
-      );
+      const decl = NodeFactory.createVariableDeclaration({
+        modifiers: [modifier],
+        name: 'x',
+        type: NodeFactory.createTypeRef([
+          { args: [], id: NodeFactory.createIdentifier('Integer') },
+        ]),
+      });
       const json = localSerializer.serialize(decl);
       const parsed = JSON.parse(json);
       expect(parsed.modifiers).toBeDefined();

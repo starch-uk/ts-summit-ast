@@ -84,7 +84,6 @@ describe('Error Recovery and Partial Parsing', () => {
         // Should have at least the valid method
         if (classDecl) {
           const validMethod = classDecl.members.find(
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
             (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
               isMethodDeclaration(m) && m.name === 'validMethod'
           );

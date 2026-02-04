@@ -374,7 +374,6 @@ describe('Complex Apex Code Parsing', () => {
         expect(classDecl).not.toBeNull();
         if (classDecl) {
           const methods = classDecl.members.filter(
-            // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- callback param uses Readonly<> but rule still flags
             (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) => isMethodDeclaration(m)
           );
           expect(methods.length).toBeGreaterThanOrEqual(2);
