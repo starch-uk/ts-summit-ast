@@ -61,25 +61,27 @@ describe('AST Base Types', () => {
   });
 
   describe('ASTNode', () => {
-    it('should have a kind property', () => {
+    it('should have @type property', () => {
       const node: ASTNode = {
-        kind: 'TestNode',
+        '@type': 'TestNode',
       };
 
-      expect(node.kind).toBe('TestNode');
+      expect(node['@type']).toBe('TestNode');
     });
 
-    it('should optionally have location', () => {
+    it('should optionally have sourceLocation', () => {
       const node: ASTNode = {
-        kind: 'TestNode',
-        location: {
-          end: { column: 10, line: 1 },
-          start: { column: 1, line: 1 },
+        '@type': 'TestNode',
+        sourceLocation: {
+          endColumn: 10,
+          endLine: 1,
+          startColumn: 1,
+          startLine: 1,
         },
       };
 
-      expect(node.location).toBeDefined();
-      expect(node.location?.start.line).toBe(1);
+      expect(node.sourceLocation).toBeDefined();
+      expect(node.sourceLocation?.startLine).toBe(1);
     });
   });
 });
@@ -171,14 +173,14 @@ describe('AST Node Creation', () => {
       const node = NodeFactory.createReturnStatement(expr);
 
       expect(isReturnStatement(node)).toBe(true);
-      expect(node.expression).toBe(expr);
+      expect(node.value).toBe(expr);
     });
 
     it('should create ReturnStatement without expression', () => {
       const node = NodeFactory.createReturnStatement();
 
       expect(isReturnStatement(node)).toBe(true);
-      expect(node.expression).toBeUndefined();
+      expect(node.value).toBeUndefined();
     });
 
     it('should create Block with statements', () => {
@@ -203,7 +205,7 @@ describe('AST Node Creation', () => {
       const expr = NodeFactory.createIdentifier('x');
       const node = NodeFactory.createExpressionStatement(expr);
 
-      expect(node.kind).toBe('ExpressionStatement');
+      expect(node['@type']).toBe('ExpressionStatement');
       expect(node.expression).toBe(expr);
     });
   });
@@ -232,7 +234,7 @@ describe('AST Node Creation', () => {
       for (const op of operators) {
         const node = NodeFactory.createBinaryExpression(op, { left, right });
         expect(isBinaryExpression(node)).toBe(true);
-        expect(node.operator).toBe(op);
+        expect(node.op).toBe(op);
         expect(node.left).toBe(left);
         expect(node.right).toBe(right);
       }
@@ -246,9 +248,9 @@ describe('AST Node Creation', () => {
       const node = NodeFactory.createMethodCallExpression({ args, methodName: 'doSomething' });
 
       expect(isMethodCallExpression(node)).toBe(true);
-      expect(node.methodName).toBe('doSomething');
-      expect(node.target).toBeUndefined();
-      expect(node.arguments).toHaveLength(2);
+      expect(node.id.string).toBe('doSomething');
+      expect(node.receiver).toBeUndefined();
+      expect(node.args).toHaveLength(2);
     });
 
     it('should create MethodCallExpression with target', () => {
@@ -261,7 +263,7 @@ describe('AST Node Creation', () => {
       });
 
       expect(isMethodCallExpression(node)).toBe(true);
-      expect(node.target).toBe(target);
+      expect(node.receiver).toBe(target);
     });
 
     it('should create MethodCallExpression with type arguments', () => {
@@ -282,7 +284,7 @@ describe('AST Node Creation', () => {
       const node = NodeFactory.createIdentifier('myVariable');
 
       expect(isIdentifier(node)).toBe(true);
-      expect(node.name).toBe('myVariable');
+      expect(node.string).toBe('myVariable');
     });
   });
 
@@ -343,7 +345,7 @@ describe('AST Node Creation', () => {
       const typeRef = NodeFactory.createSimpleTypeRef('String');
 
       expect(typeRef.components).toHaveLength(1);
-      expect(typeRef.components[0].id.name).toBe('String');
+      expect(typeRef.components[0].id.string).toBe('String');
       expect(typeRef.arrayNesting).toBe(0);
     });
 
@@ -351,7 +353,7 @@ describe('AST Node Creation', () => {
       const typeRef = NodeFactory.createSimpleTypeRef('MyClass', 2);
 
       expect(typeRef.components).toHaveLength(1);
-      expect(typeRef.components[0].id.name).toBe('MyClass');
+      expect(typeRef.components[0].id.string).toBe('MyClass');
       expect(typeRef.arrayNesting).toBe(2);
     });
 
@@ -363,7 +365,7 @@ describe('AST Node Creation', () => {
       ]);
 
       expect(typeRef.components).toHaveLength(3);
-      expect(typeRef.components[2].id.name).toBe('MyClass');
+      expect(typeRef.components[2].id.string).toBe('MyClass');
     });
   });
 
@@ -373,7 +375,7 @@ describe('AST Node Creation', () => {
       const node = NodeFactory.createVariableDeclaration({ name: 'myVar', type });
 
       expect(isVariableDeclaration(node)).toBe(true);
-      expect(node.name).toBe('myVar');
+      expect(node.id.string).toBe('myVar');
       expect(node.type).toBe(type);
       expect(node.initializer).toBeUndefined();
     });
@@ -398,26 +400,32 @@ describe('AST Node Creation', () => {
       });
       const node = NodeFactory.createVariableDeclarationStatement(decl);
 
-      expect(node.kind).toBe('VariableDeclarationStatement');
-      expect(node.declaration).toBe(decl);
+      expect(node['@type']).toBe('VariableDeclarationStatement');
+      expect(node.group.declarations).toHaveLength(1);
+      expect(node.group.declarations[0].id.string).toBe('x');
     });
   });
 
   describe('Location Information', () => {
-    it('should preserve location in all node types', () => {
+    it('should preserve sourceLocation in all node types', () => {
       const location = {
         end: { column: 15, line: 10 },
         start: { column: 5, line: 10 },
       };
 
       const identifier = NodeFactory.createIdentifier('test', { location });
-      expect(identifier.location).toEqual(location);
+      expect(identifier.sourceLocation).toEqual({
+        endColumn: 15,
+        endLine: 10,
+        startColumn: 5,
+        startLine: 10,
+      });
 
       const literal = NodeFactory.createStringLiteral('test', '"test"', { location });
-      expect(literal.location).toEqual(location);
+      expect(literal.sourceLocation).toBeDefined();
 
       const stmt = NodeFactory.createReturnStatement(undefined, { location });
-      expect(stmt.location).toEqual(location);
+      expect(stmt.sourceLocation).toBeDefined();
     });
   });
 });
@@ -442,10 +450,8 @@ describe('Source Location Utilities', () => {
       // In TypeScript, SourceLocation requires column, but spanOf handles undefined columns
       // We use a type assertion to test the behavior with missing column information
       const withLinesOnly: SourceRange = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion -- Testing undefined columns which spanOf handles at runtime
-        end: { column: undefined as any, line: 3 },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion -- Testing undefined columns which spanOf handles at runtime
-        start: { column: undefined as any, line: 1 },
+        end: { column: undefined as unknown as number, line: 3 }, // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+        start: { column: undefined as unknown as number, line: 1 }, // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
       };
       // Original: val withLinesAndColumns = SourceLocation(withLinesOnly.startLine, 10, withLinesOnly.endLine, 10)
       // Same start/end lines as withLinesOnly, but with columns

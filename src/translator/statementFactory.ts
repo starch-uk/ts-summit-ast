@@ -23,8 +23,9 @@ import type {
 } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import type { VariableDeclaration } from '../ast/declaration.js';
-import type { Statement, SwitchCase } from '../ast/statement.js';
+import type { Statement, SwitchCase, VariableDeclarationGroup } from '../ast/statement.js';
 
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 
 /** Options for createEnhancedForLoopStatement / createForEachStatement. */
@@ -94,9 +95,9 @@ export const StatementFactory = {
    */
   createBreakStatement(label?: string, options?: Readonly<NodeFactoryOptions>): BreakStatement {
     return {
-      kind: 'BreakStatement',
-      label,
-      location: options?.location,
+      '@type': 'BreakStatement',
+      ...(label !== undefined && { label }),
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -111,9 +112,9 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): CompoundStatement {
     return {
-      kind: 'CompoundStatement',
-      location: options?.location,
+      '@type': 'CompoundStatement',
       statements: [...statements],
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -128,29 +129,40 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ContinueStatement {
     return {
-      kind: 'ContinueStatement',
-      label,
-      location: options?.location,
+      '@type': 'ContinueStatement',
+      ...(label !== undefined && { label }),
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
   /**
    * Creates a DML statement.
    * @param operation - The DML operation type.
-   * @param target - The target expression.
+   * @param value - The target expression (e.g., SObject to delete/update).
    * @param options - Optional factory options.
    * @returns The created DML statement.
    */
   createDmlStatement(
     operation: 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert',
-    target: Expression,
+    value: Expression,
     options?: Readonly<NodeFactoryOptions>
   ): DmlStatement {
+    const DML_OP_TO_TYPE: Record<
+      'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert',
+      DmlStatement['@type']
+    > = {
+      delete: 'Delete',
+      insert: 'Insert',
+      merge: 'Merge',
+      undelete: 'Undelete',
+      update: 'Update',
+      upsert: 'Upsert',
+    };
+    const dmlType = DML_OP_TO_TYPE[operation];
     return {
-      kind: 'DmlStatement',
-      location: options?.location,
-      operation,
-      target,
+      '@type': dmlType,
+      value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -167,10 +179,10 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): DoWhileLoopStatement {
     return {
+      '@type': 'DoWhileLoopStatement',
       body,
       condition,
-      kind: 'DoWhileLoopStatement',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -200,11 +212,11 @@ export const StatementFactory = {
   ): EnhancedForLoopStatement {
     const { body, iterable, options, variable } = opts;
     return {
+      '@type': 'EnhancedForLoopStatement',
       body,
       iterable,
-      kind: 'EnhancedForLoopStatement',
-      location: options?.location,
       variable,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -219,9 +231,9 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ExpressionStatement {
     return {
+      '@type': 'ExpressionStatement',
       expression,
-      kind: 'ExpressionStatement',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -245,12 +257,12 @@ export const StatementFactory = {
   createForLoopStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
     const { body, condition, init, options, update } = opts;
     return {
+      '@type': 'ForLoopStatement',
       body,
       condition,
       init,
-      kind: 'ForLoopStatement',
-      location: options?.location,
       update,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -272,28 +284,28 @@ export const StatementFactory = {
   createIfStatement(opts: Readonly<CreateIfStatementOptions>): IfStatement {
     const { condition, elseStatement, options, thenStatement } = opts;
     return {
+      '@type': 'IfStatement',
       condition,
-      elseStatement,
-      kind: 'IfStatement',
-      location: options?.location,
       thenStatement,
+      ...(elseStatement !== undefined && { elseStatement }),
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
   /**
    * Creates a return statement.
-   * @param expression - The expression to return, if any.
+   * @param value - The expression to return, if any.
    * @param options - Optional factory options.
    * @returns The created return statement.
    */
   createReturnStatement(
-    expression?: Expression,
+    value?: Expression,
     options?: Readonly<NodeFactoryOptions>
   ): ReturnStatement {
     return {
-      expression,
-      kind: 'ReturnStatement',
-      location: options?.location,
+      '@type': 'ReturnStatement',
+      ...(value !== undefined && { value }),
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -305,11 +317,11 @@ export const StatementFactory = {
   createSwitchStatement(opts: Readonly<CreateSwitchStatementOptions>): SwitchStatement {
     const { cases, defaultCase, expression, options } = opts;
     return {
+      '@type': 'SwitchStatement',
       cases: [...cases],
-      defaultCase,
       expression,
-      kind: 'SwitchStatement',
-      location: options?.location,
+      ...(defaultCase !== undefined && { defaultCase }),
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -324,9 +336,9 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ThrowStatement {
     return {
+      '@type': 'ThrowStatement',
       expression,
-      kind: 'ThrowStatement',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -338,11 +350,11 @@ export const StatementFactory = {
   createTryStatement(opts: Readonly<CreateTryStatementOptions>): TryStatement {
     const { catchClauses, finallyBlock, options, tryBlock } = opts;
     return {
+      '@type': 'TryStatement',
       catchClauses: [...catchClauses],
-      finallyBlock,
-      kind: 'TryStatement',
-      location: options?.location,
       tryBlock,
+      ...(finallyBlock !== undefined && { finallyBlock }),
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -356,10 +368,21 @@ export const StatementFactory = {
     declaration: Readonly<VariableDeclaration>,
     options?: Readonly<NodeFactoryOptions>
   ): VariableDeclarationStatement {
+    const group: VariableDeclarationGroup = {
+      declarations: [
+        {
+          id: declaration.id,
+          ...(declaration.initializer !== undefined && { initializer: declaration.initializer }),
+        },
+      ],
+      modifiers: declaration.modifiers ?? [],
+      type: declaration.type,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+    };
     return {
-      declaration,
-      kind: 'VariableDeclarationStatement',
-      location: options?.location,
+      '@type': 'VariableDeclarationStatement',
+      group,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -376,10 +399,10 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): WhileLoopStatement {
     return {
+      '@type': 'WhileLoopStatement',
       body,
       condition,
-      kind: 'WhileLoopStatement',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 

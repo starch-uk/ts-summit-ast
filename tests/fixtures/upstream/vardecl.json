@@ -1,0 +1,224 @@
+{
+  "group": {
+    "type": {
+      "components": [
+        {
+          "id": {
+            "string": "Map",
+            "sourceLocation": {
+              "startLine": 1,
+              "startColumn": 0,
+              "endLine": 1,
+              "endColumn": 3
+            }
+          },
+          "args": [
+            {
+              "components": [
+                {
+                  "id": {
+                    "string": "String",
+                    "sourceLocation": {
+                      "startLine": 1,
+                      "startColumn": 4,
+                      "endLine": 1,
+                      "endColumn": 10
+                    }
+                  },
+                  "args": []
+                }
+              ],
+              "arrayNesting": 0
+            },
+            {
+              "components": [
+                {
+                  "id": {
+                    "string": "String",
+                    "sourceLocation": {
+                      "startLine": 1,
+                      "startColumn": 12,
+                      "endLine": 1,
+                      "endColumn": 18
+                    }
+                  },
+                  "args": []
+                }
+              ],
+              "arrayNesting": 0
+            }
+          ]
+        }
+      ],
+      "arrayNesting": 0
+    },
+    "declarations": [
+      {
+        "initializer": {
+          "@type": "NewExpression",
+          "initializer": {
+            "@type": "MapInitializer",
+            "pairs": [
+              {
+                "first": {
+                  "@type": "StringVal",
+                  "value": "a",
+                  "sourceLocation": {
+                    "startLine": 1,
+                    "startColumn": 56,
+                    "endLine": 1,
+                    "endColumn": 59
+                  }
+                },
+                "second": {
+                  "@type": "StringVal",
+                  "value": "b",
+                  "sourceLocation": {
+                    "startLine": 1,
+                    "startColumn": 63,
+                    "endLine": 1,
+                    "endColumn": 66
+                  }
+                }
+              },
+              {
+                "first": {
+                  "@type": "StringVal",
+                  "value": "c",
+                  "sourceLocation": {
+                    "startLine": 1,
+                    "startColumn": 68,
+                    "endLine": 1,
+                    "endColumn": 71
+                  }
+                },
+                "second": {
+                  "@type": "CallExpression",
+                  "receiver": {
+                    "@type": "StringVal",
+                    "value": "d",
+                    "sourceLocation": {
+                      "startLine": 1,
+                      "startColumn": 75,
+                      "endLine": 1,
+                      "endColumn": 78
+                    }
+                  },
+                  "id": {
+                    "string": "toUpperCase",
+                    "sourceLocation": {
+                      "startLine": 1,
+                      "startColumn": 79,
+                      "endLine": 1,
+                      "endColumn": 90
+                    }
+                  },
+                  "args": [],
+                  "isSafe": false,
+                  "sourceLocation": {
+                    "startLine": 1,
+                    "startColumn": 75,
+                    "endLine": 1,
+                    "endColumn": 92
+                  }
+                }
+              }
+            ],
+            "type": {
+              "components": [
+                {
+                  "id": {
+                    "string": "Map",
+                    "sourceLocation": {
+                      "startLine": 1,
+                      "startColumn": 36,
+                      "endLine": 1,
+                      "endColumn": 39
+                    }
+                  },
+                  "args": [
+                    {
+                      "components": [
+                        {
+                          "id": {
+                            "string": "String",
+                            "sourceLocation": {
+                              "startLine": 1,
+                              "startColumn": 40,
+                              "endLine": 1,
+                              "endColumn": 46
+                            }
+                          },
+                          "args": []
+                        }
+                      ],
+                      "arrayNesting": 0
+                    },
+                    {
+                      "components": [
+                        {
+                          "id": {
+                            "string": "String",
+                            "sourceLocation": {
+                              "startLine": 1,
+                              "startColumn": 48,
+                              "endLine": 1,
+                              "endColumn": 54
+                            }
+                          },
+                          "args": []
+                        }
+                      ],
+                      "arrayNesting": 0
+                    }
+                  ]
+                }
+              ],
+              "arrayNesting": 0
+            },
+            "sourceLocation": {
+              "startLine": 1,
+              "startColumn": 36,
+              "endLine": 1,
+              "endColumn": 93
+            }
+          },
+          "sourceLocation": {
+            "startLine": 1,
+            "startColumn": 32,
+            "endLine": 1,
+            "endColumn": 93
+          }
+        },
+        "id": {
+          "string": "MyStrings",
+          "sourceLocation": {
+            "startLine": 1,
+            "startColumn": 20,
+            "endLine": 1,
+            "endColumn": 29
+          }
+        },
+        "sourceLocation": {
+          "startLine": 1,
+          "startColumn": 20,
+          "endLine": 1,
+          "endColumn": 93
+        }
+      }
+    ],
+    "modifiers": [],
+    "sourceLocation": {
+      "startLine": 1,
+      "startColumn": 0,
+      "endLine": 1,
+      "endColumn": 93
+    }
+  },
+  "sourceLocation": {
+    "startLine": 1,
+    "startColumn": 0,
+    "endLine": 1,
+    "endColumn": 94
+  }
+}

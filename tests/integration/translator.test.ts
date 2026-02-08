@@ -33,7 +33,7 @@ describe('AST Translator', () => {
       if (!result.ast) throw new Error('Expected ast to be defined');
       expect(isVariableExpression(result.ast)).toBe(true);
       if (isVariableExpression(result.ast)) {
-        expect(result.ast.id.name).toBe('myVariable');
+        expect(result.ast.id.string).toBe('myVariable');
       }
     });
 
@@ -117,7 +117,7 @@ describe('AST Translator', () => {
       if (!result.ast) throw new Error('Expected ast to be defined');
       expect(isBinaryExpression(result.ast)).toBe(true);
       if (isBinaryExpression(result.ast)) {
-        expect(result.ast.operator).toBe('+');
+        expect(result.ast.op).toBe('+');
       }
     });
 
@@ -143,8 +143,8 @@ describe('AST Translator', () => {
       if (!result.ast) throw new Error('Expected ast to be defined');
       expect(isMethodCallExpression(result.ast)).toBe(true);
       if (isMethodCallExpression(result.ast)) {
-        expect(result.ast.methodName).toBe('doSomething');
-        expect(result.ast.arguments).toHaveLength(2);
+        expect(result.ast.id.string).toBe('doSomething');
+        expect(result.ast.args).toHaveLength(2);
       }
     });
   });
@@ -275,8 +275,8 @@ describe('AST Translator', () => {
 
       const result = translator.translate(parseTree);
       expect(result.errors).toHaveLength(0);
-      expect(result.ast?.location).toBeDefined();
-      expect(result.ast?.location?.start.line).toBe(10);
+      expect(result.ast?.sourceLocation).toBeDefined();
+      expect(result.ast?.sourceLocation?.startLine).toBe(10);
     });
   });
 });

@@ -28,7 +28,7 @@ import type {
  * @returns True if the node is an ApexDocComment.
  */
 function isApexDocComment(node: ASTNode): node is ApexDocComment {
-  return 'kind' in node && node.kind === 'ApexDocComment';
+  return '@type' in node && node['@type'] === 'ApexDocComment';
 }
 
 /**
@@ -50,8 +50,8 @@ function isApexDocBlockTag(
   | ApexDocThrows
   | ApexDocVersion {
   return (
-    'kind' in node &&
-    typeof node.kind === 'string' &&
+    '@type' in node &&
+    typeof node['@type'] === 'string' &&
     [
       'ApexDocParam',
       'ApexDocReturn',
@@ -63,7 +63,7 @@ function isApexDocBlockTag(
       'ApexDocSince',
       'ApexDocThrows',
       'ApexDocVersion',
-    ].includes(node.kind)
+    ].includes(node['@type'])
   );
 }
 
@@ -76,9 +76,9 @@ function isApexDocInlineTag(
   node: ASTNode
 ): node is ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral {
   return (
-    'kind' in node &&
-    typeof node.kind === 'string' &&
-    ['ApexDocCode', 'ApexDocHidden', 'ApexDocLink', 'ApexDocLiteral'].includes(node.kind)
+    '@type' in node &&
+    typeof node['@type'] === 'string' &&
+    ['ApexDocCode', 'ApexDocHidden', 'ApexDocLink', 'ApexDocLiteral'].includes(node['@type'])
   );
 }
 
@@ -88,7 +88,7 @@ function isApexDocInlineTag(
  * @returns True if the node is an ApexDocParam.
  */
 function isApexDocParam(node: ASTNode): node is ApexDocParam {
-  return 'kind' in node && node.kind === 'ApexDocParam';
+  return '@type' in node && node['@type'] === 'ApexDocParam';
 }
 
 /**
@@ -97,7 +97,7 @@ function isApexDocParam(node: ASTNode): node is ApexDocParam {
  * @returns True if the node is an ApexDocReturn.
  */
 function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
-  return 'kind' in node && node.kind === 'ApexDocReturn';
+  return '@type' in node && node['@type'] === 'ApexDocReturn';
 }
 
 /**
@@ -106,7 +106,7 @@ function isApexDocReturn(node: ASTNode): node is ApexDocReturn {
  * @returns True if the node is an ApexDocGroup.
  */
 function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
-  return 'kind' in node && node.kind === 'ApexDocGroup';
+  return '@type' in node && node['@type'] === 'ApexDocGroup';
 }
 
 /**
@@ -115,7 +115,7 @@ function isApexDocGroup(node: ASTNode): node is ApexDocGroup {
  * @returns True if the node is an ApexDocCode.
  */
 function isApexDocCode(node: ASTNode): node is ApexDocCode {
-  return 'kind' in node && node.kind === 'ApexDocCode';
+  return '@type' in node && node['@type'] === 'ApexDocCode';
 }
 
 export {

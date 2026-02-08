@@ -4,6 +4,7 @@
  */
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import type { TypeRef, TypeRefComponent, ASTNode } from '../ast/baseNode.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type {
   Modifier,
   Annotation,
@@ -606,9 +607,11 @@ function extractModifiers(
 
         if (keyword) {
           modifiers.push({
+            '@type': 'Modifier',
             keyword,
-            kind: 'Modifier',
-            location: modifierNode.location,
+            ...(modifierNode.location && {
+              sourceLocation: toCanonicalSourceLocation(modifierNode.location),
+            }),
           });
         }
       }
@@ -671,10 +674,12 @@ function extractTypeParameters(
             }
           }
           typeParams.push({
-            extendsBound,
-            kind: 'TypeParameter',
-            location: paramNode.location,
+            '@type': 'TypeParameter',
             name,
+            ...(extendsBound !== undefined && { extendsBound }),
+            ...(paramNode.location && {
+              sourceLocation: toCanonicalSourceLocation(paramNode.location),
+            }),
           });
         }
       }
@@ -738,19 +743,22 @@ function buildAnnotationFromNode(
       const elementValue = ctx.parseElementValue(valueNode);
       if (elementValue === null) continue;
       args.push({
+        '@type': 'AnnotationArgument',
         isNameImplicit: argName == null || argName === '',
-        kind: 'AnnotationArgument',
-        location: argNode.location,
-        name: argName,
         value: elementValue,
+        ...(argName !== undefined && { name: argName }),
+        ...(argNode.location && { sourceLocation: toCanonicalSourceLocation(argNode.location) }),
       });
     }
   }
+  const EMPTY_LENGTH = 0;
   return {
-    arguments: args,
-    kind: 'Annotation',
-    location: annotationNode.location,
+    '@type': 'Annotation',
     name: annotationName,
+    ...(args.length > EMPTY_LENGTH && { arguments: args }),
+    ...(annotationNode.location && {
+      sourceLocation: toCanonicalSourceLocation(annotationNode.location),
+    }),
   };
 }
 

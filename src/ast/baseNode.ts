@@ -1,10 +1,10 @@
 /**
  * @file Base AST node interface and types.
- * Core AST node definitions, source location types, visitor pattern, identifier, and type reference.
+ * Uses Summit-AST canonical property names (`@type`, sourceLocation) so in-memory and JSON match.
  */
 
 /**
- * Source location information.
+ * Source location information (line/column).
  */
 interface SourceLocation {
   readonly line: number;
@@ -21,11 +21,21 @@ interface SourceRange {
 }
 
 /**
- * Base interface for all AST nodes.
+ * Canonical source location: flat start/end line and column (same as JSON).
+ */
+interface CanonicalSourceLocation {
+  readonly startLine: number;
+  readonly startColumn: number;
+  readonly endLine: number;
+  readonly endColumn: number;
+}
+
+/**
+ * Base interface for all AST nodes. Uses canonical names: `@type`, sourceLocation.
  */
 interface ASTNode {
-  readonly kind: string;
-  readonly location?: SourceRange;
+  readonly '@type': string;
+  readonly sourceLocation?: CanonicalSourceLocation;
 }
 
 /**
@@ -77,40 +87,22 @@ class DefaultVisitor implements ASTVisitor {
 }
 
 /**
- * Identifier: a name used within other AST nodes.
- * This is a helper node, not an expression type.
- * For variable references in expressions, use VariableExpression.
+ * Identifier: a name used within other AST nodes. Uses canonical name: string.
  */
 interface Identifier extends ASTNode {
-  readonly kind: 'Identifier';
-  readonly name: string;
+  readonly '@type': 'Identifier';
+  readonly string: string;
 }
 
 /**
  * Type reference AST node.
  * These occur in any context where a static type appears in code.
- *
- * In summit-ast, TypeRef extends Node(), so it IS an AST node.
  */
 interface TypeRef extends ASTNode {
-  readonly kind: 'TypeRef';
-
-  /**
-   * The sequence of one or more identifiers (with optional type arguments).
-   * Multiple components represent inner classes (e.g., "Outer.Inner").
-   */
+  readonly '@type': 'TypeRef';
   readonly components: readonly TypeRefComponent[];
-
-  /**
-   * The number of levels of array nesting for this type.
-   * For example, "int[][]" has arrayNesting = 2.
-   */
   readonly arrayNesting: number;
-
-  /**
-   * Optional source location.
-   */
-  readonly location?: SourceRange;
+  readonly sourceLocation?: CanonicalSourceLocation;
 }
 
 /**
@@ -131,6 +123,36 @@ interface TypeRefComponent {
 }
 
 /**
+ * Converts SourceRange to canonical sourceLocation (for AST nodes).
+ * @param range - The source range to convert.
+ * @returns The canonical location or undefined if range is undefined.
+ */
+function toCanonicalSourceLocation(
+  range: SourceRange | undefined
+): CanonicalSourceLocation | undefined {
+  if (!range) return undefined;
+  return {
+    endColumn: range.end.column,
+    endLine: range.end.line,
+    startColumn: range.start.column,
+    startLine: range.start.line,
+  };
+}
+
+/**
+ * Converts canonical sourceLocation to SourceRange (for utilities that use start/end).
+ * @param sl - The canonical source location to convert.
+ * @returns The SourceRange or undefined if sl is undefined.
+ */
+function toSourceRange(sl: CanonicalSourceLocation | undefined): SourceRange | undefined {
+  if (!sl) return undefined;
+  return {
+    end: { column: sl.endColumn, line: sl.endLine },
+    start: { column: sl.startColumn, line: sl.startLine },
+  };
+}
+
+/**
  * Converts a TypeRef to its source-like string (e.g. "A[][]", "Map<String>").
  * Equivalent to asCodeString in Kotlin summit-ast.
  * @param typeRef - The type reference to convert to a string.
@@ -143,7 +165,7 @@ function typeRefToCodeString(typeRef: Readonly<TypeRef>): string {
   }
   const typeString = typeRef.components
     .map((comp: Readonly<TypeRefComponent>) => {
-      let result = comp.id.name;
+      let result = comp.id.string;
       const emptyArgsLength = 0;
       if (comp.args.length > emptyArgsLength) {
         const readonlyArgs = comp.args;
@@ -158,6 +180,7 @@ function typeRefToCodeString(typeRef: Readonly<TypeRef>): string {
 export type {
   SourceLocation,
   SourceRange,
+  CanonicalSourceLocation,
   ASTNode,
   ASTVisitor,
   VisitableNode,
@@ -165,4 +188,4 @@ export type {
   TypeRef,
   TypeRefComponent,
 };
-export { DefaultVisitor, typeRefToCodeString };
+export { DefaultVisitor, toCanonicalSourceLocation, toSourceRange, typeRefToCodeString };

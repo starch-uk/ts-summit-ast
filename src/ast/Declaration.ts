@@ -3,7 +3,7 @@
  * AST node types for declarations (classes, interfaces, methods, etc.).
  */
 
-import type { ASTNode, SourceRange } from './baseNode.js';
+import type { ASTNode, CanonicalSourceLocation } from './baseNode.js';
 import type { TypeRef } from './baseNode.js';
 import type { Expression } from './expression.js';
 import type { CompoundStatement } from './statement.js';
@@ -22,7 +22,7 @@ import type {
  * Modifier node.
  */
 interface Modifier extends ASTNode {
-  readonly kind: 'Modifier';
+  readonly '@type': 'Modifier';
   readonly keyword:
     | 'abstract'
     | 'deprecated'
@@ -48,10 +48,20 @@ interface Modifier extends ASTNode {
 }
 
 /**
+ * Compilation unit (root): single type declaration. Uses canonical name typeDeclaration.
+ */
+interface CompilationUnit extends ASTNode {
+  readonly '@type': 'CompilationUnit';
+  readonly typeDeclaration: Declaration;
+  readonly file?: string;
+  readonly sourceLocation?: CanonicalSourceLocation;
+}
+
+/**
  * Base interface for all declaration nodes.
  */
 interface Declaration extends ASTNode {
-  readonly kind:
+  readonly '@type':
     | 'ClassDeclaration'
     | 'EnumDeclaration'
     | 'InterfaceDeclaration'
@@ -64,7 +74,7 @@ interface Declaration extends ASTNode {
  * Represents a class declaration in the AST.
  */
 interface ClassDeclaration extends Declaration {
-  readonly kind: 'ClassDeclaration';
+  readonly '@type': 'ClassDeclaration';
   readonly name: string;
   readonly modifiers: readonly Modifier[];
   readonly typeParameters?: readonly TypeParameter[];
@@ -93,7 +103,7 @@ interface ClassDeclaration extends Declaration {
  * Represents an interface declaration in the AST.
  */
 interface InterfaceDeclaration extends Declaration {
-  readonly kind: 'InterfaceDeclaration';
+  readonly '@type': 'InterfaceDeclaration';
   readonly name: string;
   readonly modifiers: readonly Modifier[];
   readonly typeParameters?: readonly TypeParameter[];
@@ -114,7 +124,7 @@ interface InterfaceDeclaration extends Declaration {
  * Represents a method declaration in the AST.
  */
 interface MethodDeclaration extends Declaration {
-  readonly kind: 'MethodDeclaration';
+  readonly '@type': 'MethodDeclaration';
   readonly name: string;
   readonly modifiers: readonly Modifier[];
   readonly returnType: TypeRef;
@@ -139,20 +149,20 @@ interface MethodDeclaration extends Declaration {
  * This interface is kept for backward compatibility but is not part of DeclarationKind.
  */
 interface ConstructorDeclaration {
-  readonly kind: 'ConstructorDeclaration';
+  readonly '@type': 'ConstructorDeclaration';
   readonly modifiers: readonly Modifier[];
   readonly parameters: readonly Parameter[];
   readonly body: CompoundStatement;
   readonly annotations?: readonly Annotation[];
-  readonly location?: SourceRange;
+  readonly sourceLocation?: CanonicalSourceLocation;
 }
 
 /**
  * Represents a variable declaration in the AST.
  */
 interface VariableDeclaration extends Declaration {
-  readonly kind: 'VariableDeclaration';
-  readonly name: string;
+  readonly '@type': 'VariableDeclaration';
+  readonly id: Identifier;
   readonly type: TypeRef;
   readonly modifiers?: readonly Modifier[];
   readonly initializer?: Expression;
@@ -163,7 +173,7 @@ interface VariableDeclaration extends Declaration {
  * Represents a property declaration (getter/setter) in the AST.
  */
 interface PropertyDeclaration extends Declaration {
-  readonly kind: 'PropertyDeclaration';
+  readonly '@type': 'PropertyDeclaration';
   readonly name: string;
   readonly type: TypeRef;
   readonly modifiers: readonly Modifier[];
@@ -176,7 +186,7 @@ interface PropertyDeclaration extends Declaration {
  * Represents an enum declaration in the AST.
  */
 interface EnumDeclaration extends Declaration {
-  readonly kind: 'EnumDeclaration';
+  readonly '@type': 'EnumDeclaration';
   readonly name: string;
   readonly modifiers: readonly Modifier[];
   readonly values: readonly EnumValue[];
@@ -200,7 +210,7 @@ interface EnumDeclaration extends Declaration {
  * but delegates getSourceLocation() to the identifier.
  */
 interface EnumValue extends ASTNode {
-  readonly kind: 'EnumValue';
+  readonly '@type': 'EnumValue';
   readonly id: Identifier;
 }
 
@@ -208,7 +218,7 @@ interface EnumValue extends ASTNode {
  * Type parameter: <T extends Bound>.
  */
 interface TypeParameter extends ASTNode {
-  readonly kind: 'TypeParameter';
+  readonly '@type': 'TypeParameter';
   readonly name: string;
   readonly extendsBound?: TypeRef;
 }
@@ -217,7 +227,7 @@ interface TypeParameter extends ASTNode {
  * Parameter: Type name.
  */
 interface Parameter extends ASTNode {
-  readonly kind: 'Parameter';
+  readonly '@type': 'Parameter';
   readonly name: string;
   readonly type: TypeRef;
   readonly modifiers?: readonly Modifier[];
@@ -229,7 +239,7 @@ interface Parameter extends ASTNode {
  * Annotation: `@AnnotationName`(args).
  */
 interface Annotation extends ASTNode {
-  readonly kind: 'Annotation';
+  readonly '@type': 'Annotation';
   readonly name: string;
   readonly arguments?: readonly AnnotationArgument[];
 }
@@ -239,7 +249,7 @@ interface Annotation extends ASTNode {
  * In summit-ast, ElementArgument extends NodeWithSourceLocation.
  */
 interface AnnotationArgument extends ASTNode {
-  readonly kind: 'AnnotationArgument';
+  readonly '@type': 'AnnotationArgument';
 
   /**
    * Undefined for positional arguments (implicitly "value").
@@ -257,13 +267,14 @@ interface AnnotationArgument extends ASTNode {
  * Annotation member (method-like).
  */
 interface AnnotationMember extends ASTNode {
-  readonly kind: 'AnnotationMember';
+  readonly '@type': 'AnnotationMember';
   readonly name: string;
   readonly type: TypeRef;
   readonly defaultValue?: Expression;
 }
 
 export type {
+  CompilationUnit,
   Modifier,
   Declaration,
   ClassDeclaration,

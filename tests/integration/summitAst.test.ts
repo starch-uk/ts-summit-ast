@@ -23,16 +23,11 @@ describe('SummitAST Parsing', () => {
     expect(result.ast).not.toBeNull();
 
     // Additional verification: ensure it's a valid CompilationUnit structure
-    // This matches the original's implicit verification that the AST is valid
+    // Summit-ast uses @type and typeDeclaration (not kind/declarations)
     if (result.ast) {
-      expect(result.ast.kind).toBe('CompilationUnit');
-      if (result.ast.kind === 'CompilationUnit') {
-        expect(result.ast.declarations).toBeDefined();
-        expect(Array.isArray(result.ast.declarations)).toBe(true);
-        expect(result.ast.declarations.length).toBeGreaterThan(0);
-        // Verify the declaration is the expected type (interface in this case)
-        expect(result.ast.declarations[0].kind).toBeDefined();
-      }
+      expect(result.ast['@type']).toBe('CompilationUnit');
+      expect(result.ast.typeDeclaration).toBeDefined();
+      expect(result.ast.typeDeclaration['@type']).toBeDefined();
     }
 
     // Original doesn't explicitly check for errors, but successful parsing implies no errors
@@ -54,19 +49,10 @@ describe('SummitAST Parsing', () => {
     expect(result.ast).not.toBeNull();
 
     // Additional verification: ensure it's a valid CompilationUnit structure
-    // This matches the original's implicit verification that the AST is valid
     if (result.ast) {
-      expect(result.ast.kind).toBe('CompilationUnit');
-      if (result.ast.kind === 'CompilationUnit') {
-        expect(result.ast.declarations).toBeDefined();
-        expect(Array.isArray(result.ast.declarations)).toBe(true);
-        // Triggers should have at least one declaration
-        // This verifies the parser correctly identified and parsed the trigger
-        // (matching the original's expectation that parsing succeeds)
-        expect(result.ast.declarations.length).toBeGreaterThan(0);
-        // Verify the declaration is the expected type (trigger in this case)
-        expect(result.ast.declarations[0].kind).toBeDefined();
-      }
+      expect(result.ast['@type']).toBe('CompilationUnit');
+      expect(result.ast.typeDeclaration).toBeDefined();
+      expect(result.ast.typeDeclaration['@type']).toBeDefined();
     }
 
     // Original doesn't explicitly check for errors, but successful parsing implies no errors
@@ -89,18 +75,11 @@ describe('SummitAST Parsing', () => {
     expect(result.ast).not.toBeNull();
 
     // Additional verification: ensure it's a valid CompilationUnit structure
-    // This matches the original's implicit verification that the AST is valid
     if (result.ast) {
-      expect(result.ast.kind).toBe('CompilationUnit');
-      if (result.ast.kind === 'CompilationUnit') {
-        expect(result.ast.declarations).toBeDefined();
-        expect(Array.isArray(result.ast.declarations)).toBe(true);
-        expect(result.ast.declarations.length).toBeGreaterThan(0);
-        // The classString is actually an interface, so check for InterfaceDeclaration
-        // This verifies the parser correctly identified and parsed the type
-        // (matching the original's expectation that parsing succeeds)
-        expect(result.ast.declarations[0].kind).toBe('InterfaceDeclaration');
-      }
+      expect(result.ast['@type']).toBe('CompilationUnit');
+      expect(result.ast.typeDeclaration).toBeDefined();
+      // The classString is actually an interface
+      expect(result.ast.typeDeclaration['@type']).toBe('InterfaceDeclaration');
     }
 
     // Original doesn't explicitly check for errors, but successful parsing implies no errors
@@ -123,17 +102,9 @@ describe('SummitAST Parsing', () => {
     expect(result.ast).not.toBeNull();
 
     // Additional verification: ensure it's a valid CompilationUnit structure
-    // This matches the original's implicit verification that the AST is valid
     if (result.ast) {
-      expect(result.ast.kind).toBe('CompilationUnit');
-      if (result.ast.kind === 'CompilationUnit') {
-        expect(result.ast.declarations).toBeDefined();
-        expect(Array.isArray(result.ast.declarations)).toBe(true);
-        // Triggers should have at least one declaration
-        // This verifies the parser correctly identified and parsed the trigger
-        // (matching the original's expectation that parsing succeeds)
-        expect(result.ast.declarations.length).toBeGreaterThan(0);
-      }
+      expect(result.ast['@type']).toBe('CompilationUnit');
+      expect(result.ast.typeDeclaration).toBeDefined();
     }
 
     // Original doesn't explicitly check for errors, but successful parsing implies no errors
@@ -161,16 +132,10 @@ describe('SummitAST Parsing', () => {
     expect(result.ast).not.toBeNull();
 
     // Verify it was parsed as a class/interface, not a trigger
-    // This ensures the auto-detection worked correctly
-    if (result.ast?.kind === 'CompilationUnit') {
-      expect(result.ast.declarations).toBeDefined();
-      if (result.ast.declarations != null && result.ast.declarations.length > 0) {
-        const [firstDecl] = result.ast.declarations;
-        // Should be InterfaceDeclaration or ClassDeclaration, not TriggerDeclaration
-        // This verifies the parser correctly identified the type
-        expect(['InterfaceDeclaration', 'ClassDeclaration']).toContain(firstDecl.kind);
-        expect(firstDecl.kind).not.toBe('TriggerDeclaration');
-      }
+    if (result.ast?.['@type'] === 'CompilationUnit' && result.ast.typeDeclaration !== undefined) {
+      const typeDecl = result.ast.typeDeclaration;
+      expect(['InterfaceDeclaration', 'ClassDeclaration']).toContain(typeDecl['@type']);
+      expect(typeDecl['@type']).not.toBe('TriggerDeclaration');
     }
 
     // Verify no errors occurred (auto-detection prevents the type mismatch error)
@@ -222,21 +187,13 @@ public class Main implements I, J {
     expect(result.ast).not.toBeNull();
 
     // Additional verification: ensure it's a valid CompilationUnit structure
-    // This matches the original's implicit verification that the AST is valid
     if (result.ast) {
-      expect(result.ast.kind).toBe('CompilationUnit');
-      if (result.ast.kind === 'CompilationUnit') {
-        expect(result.ast.declarations).toBeDefined();
-        expect(Array.isArray(result.ast.declarations)).toBe(true);
-        // The mixednodes.cls file contains a class with various members
-        expect(result.ast.declarations.length).toBeGreaterThan(0);
-        // Should have a ClassDeclaration (matching the original's expectation)
-        const classDecl = result.ast.declarations.find((d) => d.kind === 'ClassDeclaration');
-        expect(classDecl).toBeDefined();
-        // Verify the class declaration has the expected name
-        if (classDecl != null && 'name' in classDecl) {
-          expect(classDecl.name).toBeDefined();
-        }
+      expect(result.ast['@type']).toBe('CompilationUnit');
+      expect(result.ast.typeDeclaration).toBeDefined();
+      // The mixednodes.cls content has a class
+      expect(result.ast.typeDeclaration['@type']).toBe('ClassDeclaration');
+      if ('name' in result.ast.typeDeclaration) {
+        expect(result.ast.typeDeclaration.name).toBeDefined();
       }
     }
 

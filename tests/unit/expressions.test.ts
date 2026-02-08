@@ -52,7 +52,7 @@ function typeRefToTypeErasedString(typeRef: TypeRef): string {
   if (typeRef.components.length === 0) {
     return 'void';
   }
-  const typeString = typeRef.components.map((comp) => comp.id.name).join('.');
+  const typeString = typeRef.components.map((comp) => comp.id.string).join('.');
   return typeString + '[]'.repeat(typeRef.arrayNesting || 0);
 }
 
@@ -262,7 +262,7 @@ describe('Expression Translation', () => {
     expect(node).not.toBeNull();
     if (!node) throw new Error('Expected node to be defined');
     // Original: assertThat(node?.id?.asCodeString()).isEqualTo("id")
-    expect(node.name).toBe('id');
+    expect(node.string).toBe('id');
   });
 
   it('soql primary translation has bound expressions', () => {
@@ -272,8 +272,8 @@ describe('Expression Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node?.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+
+    const children = node != null ? getNodeChildren(node) : [];
     expect(children.length).toBe(1);
   });
 
@@ -284,8 +284,8 @@ describe('Expression Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Node should have one child").that(node?.getChildren()).hasSize(1)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const children = getNodeChildren(node!);
+
+    const children = node != null ? getNodeChildren(node) : [];
     expect(children.length).toBe(1);
   });
 
@@ -315,7 +315,7 @@ describe('Expression Translation', () => {
       // Original: assertNotNull(node)
       expect(node).not.toBeNull();
       // Original: assertThat(node.op).isEqualTo(op)
-      expect(node.operator).toBe(expectedOp);
+      expect(node.op).toBe(expectedOp);
     }
   });
 
@@ -332,7 +332,7 @@ describe('Expression Translation', () => {
     // Original: assertThat(node.isSafe).isFalse()
     expect(node.isSafe).toBe(false);
     // Original: assertThat(node.field.asCodeString()).isEqualTo("y")
-    expect(node.fieldName).toBe('y');
+    expect(node.field.string).toBe('y');
   });
 
   it('safe access sets field expression is safe', () => {
@@ -455,13 +455,13 @@ describe('Expression Translation', () => {
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Constructor chaining is translated as call to a method named `this`")
     //           .that(node.id.asCodeString()).isEqualTo("this")
-    expect(node.methodName).toBe('this');
+    expect(node.id.string).toBe('this');
     // Original: assertThat(node.isSafe).isFalse()
     expect(node.isSafe).toBe(false);
     // Original: assertThat(node.receiver).isNull()
-    expect(node.target).toBeUndefined();
+    expect(node.receiver).toBeUndefined();
     // Original: assertThat(node.args).hasSize(2)
-    expect(node.arguments).toHaveLength(2);
+    expect(node.args).toHaveLength(2);
   });
 
   it('base class constructor encoded as method named super', () => {
@@ -472,13 +472,13 @@ describe('Expression Translation', () => {
     expect(node).not.toBeNull();
     // Original: assertWithMessage("Base class construction is translated as call to a method named `super`")
     //           .that(node.id.asCodeString()).isEqualTo("super")
-    expect(node.methodName).toBe('super');
+    expect(node.id.string).toBe('super');
     // Original: assertThat(node.isSafe).isFalse()
     expect(node.isSafe).toBe(false);
     // Original: assertThat(node.receiver).isNull()
-    expect(node.target).toBeUndefined();
+    expect(node.receiver).toBeUndefined();
     // Original: assertThat(node.args).hasSize(2)
-    expect(node.arguments).toHaveLength(2);
+    expect(node.args).toHaveLength(2);
   });
 
   it('implicit receiver is null', () => {
@@ -488,13 +488,13 @@ describe('Expression Translation', () => {
     // Original: assertNotNull(node)
     expect(node).not.toBeNull();
     // Original: assertThat(node.receiver).isNull()
-    expect(node.target).toBeUndefined();
+    expect(node.receiver).toBeUndefined();
     // Original: assertThat(node.id.asCodeString()).isEqualTo("no_receiver")
-    expect(node.methodName).toBe('no_receiver');
+    expect(node.id.string).toBe('no_receiver');
     // Original: assertThat(node.isSafe).isFalse()
     expect(node.isSafe).toBe(false);
     // Original: assertThat(node.args).hasSize(0)
-    expect(node.arguments).toHaveLength(0);
+    expect(node.args).toHaveLength(0);
   });
 
   it('safe access sets is safe true', () => {
@@ -506,9 +506,9 @@ describe('Expression Translation', () => {
     // Original: assertThat(node.isSafe).isTrue()
     expect(node.isSafe).toBe(true);
     // Original: assertThat(node.receiver).isNotNull()
-    expect(node.target).toBeDefined();
+    expect(node.receiver).toBeDefined();
     // Original: assertThat(node.args).hasSize(0)
-    expect(node.arguments).toHaveLength(0);
+    expect(node.args).toHaveLength(0);
   });
 
   it('unsafe access sets is safe false', () => {
@@ -520,9 +520,9 @@ describe('Expression Translation', () => {
     // Original: assertThat(node.isSafe).isFalse()
     expect(node.isSafe).toBe(false);
     // Original: assertThat(node.receiver).isNotNull()
-    expect(node.target).toBeDefined();
+    expect(node.receiver).toBeDefined();
     // Original: assertThat(node.args).hasSize(1)
-    expect(node.arguments).toHaveLength(1);
+    expect(node.args).toHaveLength(1);
   });
 
   it('cast translated as cast expression', () => {
@@ -566,7 +566,7 @@ describe('Expression Translation', () => {
       // Original: assertNotNull(node)
       expect(node).not.toBeNull();
       // Original: assertThat(node.op).isEqualTo(op)
-      expect(node.operator).toBe(expected);
+      expect(node.op).toBe(expected);
     }
   });
 
@@ -580,7 +580,7 @@ describe('Expression Translation', () => {
     //           .that(expression).isInstanceOf(VariableExpression::class.java)
     // The expression should be a VariableExpression (identifier), not a ParenthesizedExpression
     expect(expression).not.toBeNull();
-    expect(expression.name).toBe('sub');
+    expect(expression.string).toBe('sub');
   });
 
   it('null coalescing translates to binary expression', () => {
@@ -590,7 +590,7 @@ describe('Expression Translation', () => {
     // Original: assertWithMessage("A `BinaryExpression` node should be created").that(node).isNotNull()
     expect(node).not.toBeNull();
     // Note: The original doesn't check the operator, but we can verify it's a binary expression
-    expect(node.operator).toBeDefined();
+    expect(node.op).toBeDefined();
   });
 });
 
@@ -683,7 +683,7 @@ describe('SOQL and SOSL Translation', () => {
       const children = getNodeChildren(binding);
       for (const child of children) {
         if (isVariableExpression(child)) {
-          varExpressions.push(child.id.name);
+          varExpressions.push(child.id.string);
         }
       }
     }
@@ -902,14 +902,14 @@ describe('Literal Expression Translation', () => {
 
     expect(node).not.toBeNull();
     if (node) {
-      expect(node.methodName).toBe('matches');
-      expect(node.arguments).toHaveLength(1);
-      expect(node.target).not.toBeUndefined();
-      expect(node.target).not.toBeNull();
-      if (node.target) {
-        expect(isStringLiteral(node.target)).toBe(true);
-        if (isStringLiteral(node.target)) {
-          expect(node.target.value).toBe('test');
+      expect(node.id.string).toBe('matches');
+      expect(node.args).toHaveLength(1);
+      expect(node.receiver).not.toBeUndefined();
+      expect(node.receiver).not.toBeNull();
+      if (node.receiver != null) {
+        expect(isStringLiteral(node.receiver)).toBe(true);
+        if (isStringLiteral(node.receiver)) {
+          expect(node.receiver.value).toBe('test');
         }
       }
     }
@@ -921,13 +921,13 @@ describe('Literal Expression Translation', () => {
 
     expect(node).not.toBeNull();
     if (node) {
-      expect(node.methodName).toBe('split');
-      expect(node.arguments).toHaveLength(1);
-      expect(node.target).not.toBeUndefined();
-      expect(node.target).not.toBeNull();
-      if (node.target && isStringLiteral(node.target)) {
-        expect(isStringLiteral(node.target)).toBe(true);
-        expect(node.target.value).toBe('a,b,c');
+      expect(node.id.string).toBe('split');
+      expect(node.args).toHaveLength(1);
+      expect(node.receiver).not.toBeUndefined();
+      expect(node.receiver).not.toBeNull();
+      if (node.receiver != null && isStringLiteral(node.receiver)) {
+        expect(isStringLiteral(node.receiver)).toBe(true);
+        expect(node.receiver.value).toBe('a,b,c');
       }
     }
   });
@@ -938,13 +938,13 @@ describe('Literal Expression Translation', () => {
 
     expect(node).not.toBeNull();
     if (node) {
-      expect(node.methodName).toBe('replaceAll');
-      expect(node.arguments).toHaveLength(2);
-      expect(node.target).not.toBeUndefined();
-      expect(node.target).not.toBeNull();
-      if (node.target && isStringLiteral(node.target)) {
-        expect(isStringLiteral(node.target)).toBe(true);
-        expect(node.target.value).toBe('abc123');
+      expect(node.id.string).toBe('replaceAll');
+      expect(node.args).toHaveLength(2);
+      expect(node.receiver).not.toBeUndefined();
+      expect(node.receiver).not.toBeNull();
+      if (node.receiver != null && isStringLiteral(node.receiver)) {
+        expect(isStringLiteral(node.receiver)).toBe(true);
+        expect(node.receiver.value).toBe('abc123');
       }
     }
   });
@@ -955,13 +955,13 @@ describe('Literal Expression Translation', () => {
 
     expect(node).not.toBeNull();
     if (node) {
-      expect(node.methodName).toBe('replaceFirst');
-      expect(node.arguments).toHaveLength(2);
-      expect(node.target).not.toBeUndefined();
-      expect(node.target).not.toBeNull();
-      if (node.target && isStringLiteral(node.target)) {
-        expect(isStringLiteral(node.target)).toBe(true);
-        expect(node.target.value).toBe('abc123');
+      expect(node.id.string).toBe('replaceFirst');
+      expect(node.args).toHaveLength(2);
+      expect(node.receiver).not.toBeUndefined();
+      expect(node.receiver).not.toBeNull();
+      if (node.receiver != null && isStringLiteral(node.receiver)) {
+        expect(isStringLiteral(node.receiver)).toBe(true);
+        expect(node.receiver.value).toBe('abc123');
       }
     }
   });
@@ -1018,8 +1018,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+
+    if (node == null) {
+      expect.fail('node should not be null');
+      return;
+    }
+    const { initializer } = node;
 
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).isEmpty()
@@ -1033,8 +1037,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+
+    if (node == null) {
+      expect.fail('node should not be null');
+      return;
+    }
+    const { initializer } = node;
 
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).isEmpty()
@@ -1048,8 +1056,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val mapInitializer = node.initializer as? MapInitializer
     // Original: assertNotNull(mapInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+
+    if (node == null) {
+      expect.fail('node should not be null');
+      return;
+    }
+    const { initializer } = node;
 
     expect(isMapInitializer(initializer)).toBe(true);
     // Original: assertThat(mapInitializer.pairs).hasSize(2)
@@ -1057,11 +1069,12 @@ describe('Initializer Translation', () => {
     // Original: val firstKeyValuePair = mapInitializer.pairs.first()
     const [firstKeyValuePair] = initializer.pairs;
     // Original: assertThat(firstKeyValuePair.first).isInstanceOf(LiteralExpression.StringVal::class.java)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- firstKeyValuePair.key type is narrowed by isStringLiteral check
-    expect(isStringLiteral(firstKeyValuePair.key)).toBe(true);
+    // MapInitializer pairs use canonical names first/second
+    const keyExpr = firstKeyValuePair.first;
+    const valueExpr = firstKeyValuePair.second;
+    expect(isStringLiteral(keyExpr)).toBe(true); // eslint-disable-line @typescript-eslint/no-unsafe-argument
     // Original: assertThat(firstKeyValuePair.second).isInstanceOf(LiteralExpression.StringVal::class.java)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- firstKeyValuePair.value type is narrowed by isStringLiteral check
-    expect(isStringLiteral(firstKeyValuePair.value)).toBe(true);
+    expect(isStringLiteral(valueExpr)).toBe(true); // eslint-disable-line @typescript-eslint/no-unsafe-argument
   });
 
   it('list initializer has values', () => {
@@ -1071,8 +1084,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+
+    if (node == null) {
+      expect.fail('node should not be null');
+      return;
+    }
+    const { initializer } = node;
 
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).hasSize(3)
@@ -1086,8 +1103,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+
+    if (node == null) {
+      expect.fail('node should not be null');
+      return;
+    }
+    const { initializer } = node;
 
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).hasSize(3)
@@ -1101,8 +1122,12 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val valuesInitializer = node.initializer as? ValuesInitializer
     // Original: assertNotNull(valuesInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+
+    if (node == null) {
+      expect.fail('node should not be null');
+      return;
+    }
+    const { initializer } = node;
 
     expect(isValuesInitializer(initializer)).toBe(true);
     // Original: assertThat(valuesInitializer.values).hasSize(3)
@@ -1116,12 +1141,16 @@ describe('Initializer Translation', () => {
     expect(node).not.toBeNull();
     // Original: val arrayInitializer = node.initializer as? SizedArrayInitializer
     // Original: assertNotNull(arrayInitializer)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Already checked with expect().not.toBeNull()
-    const { initializer } = node!;
+
+    if (node == null) {
+      expect.fail('node should not be null');
+      return;
+    }
+    const { initializer } = node;
 
     expect(isSizedArrayInitializer(initializer)).toBe(true);
     // Original: assertThat(arrayInitializer.size).isInstanceOf(LiteralExpression.IntegerVal::class.java)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- initializer.size type is narrowed after isSizedArrayInitializer check
-    expect(isIntegerVal(initializer.size)).toBe(true);
+    const sizeExpr = initializer.size;
+    expect(isIntegerVal(sizeExpr)).toBe(true); // eslint-disable-line @typescript-eslint/no-unsafe-argument
   });
 });

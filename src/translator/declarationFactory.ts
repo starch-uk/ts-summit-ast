@@ -17,6 +17,7 @@ import type {
   Parameter,
 } from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { TypeRef, Identifier, TypeRefComponent } from '../ast/baseNode.js';
 import type { CompoundStatement } from '../ast/statement.js';
 import {
@@ -154,14 +155,13 @@ const DeclarationFactory = {
   createClassDeclaration(opts: CreateClassDeclarationOptionsView): ClassDeclaration {
     const emptyArrayLength = 0;
     return {
+      '@type': 'ClassDeclaration',
       annotations:
         opts.annotations && opts.annotations.length > emptyArrayLength
           ? [...opts.annotations]
           : undefined,
       extendsClause: opts.extendsClause,
       implementsClause: opts.implementsClause ? [...opts.implementsClause] : undefined,
-      kind: 'ClassDeclaration',
-      location: opts.options?.location,
       members: [...opts.members],
       modifiers:
         (opts.modifiers ?? EMPTY_MODIFIERS).length > emptyArrayLength
@@ -169,6 +169,9 @@ const DeclarationFactory = {
           : [],
       name: opts.name,
       typeParameters: opts.typeParameters ? [...opts.typeParameters] : undefined,
+      ...(opts.options?.location && {
+        sourceLocation: toCanonicalSourceLocation(opts.options.location),
+      }),
     };
   },
 
@@ -176,19 +179,19 @@ const DeclarationFactory = {
     const { members, modifiers = EMPTY_MODIFIERS, name, options, values } = opts;
     const emptyArrayLength = 0;
     return {
-      kind: 'EnumDeclaration',
-      location: options?.location,
+      '@type': 'EnumDeclaration',
       members: members ? [...members] : undefined,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
       values: [...values],
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
   createEnumValue(id: Identifier, options?: NodeFactoryOptions): EnumValue {
     return {
+      '@type': 'EnumValue',
       id,
-      kind: 'EnumValue',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -203,13 +206,13 @@ const DeclarationFactory = {
     } = opts;
     const emptyArrayLength = 0;
     return {
+      '@type': 'InterfaceDeclaration',
       extendsClause: extendsClause ? [...extendsClause] : undefined,
-      kind: 'InterfaceDeclaration',
-      location: options?.location,
       members: [...members],
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -227,16 +230,16 @@ const DeclarationFactory = {
     } = opts;
     const emptyArrayLength = 0;
     return {
+      '@type': 'MethodDeclaration',
       annotations: annotations ? [...annotations] : undefined,
       body,
       isConstructor,
-      kind: 'MethodDeclaration',
-      location: options?.location,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
       parameters: parameters.length > emptyArrayLength ? [...parameters] : [],
       returnType,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -254,18 +257,18 @@ const DeclarationFactory = {
     const emptyArrayLength = 0;
     const modifiers = options?.modifiers ?? [];
     return {
+      '@type': 'PropertyDeclaration',
       annotations: options?.annotations
         ? options.annotations.length > emptyArrayLength
           ? [...options.annotations]
           : undefined
         : undefined,
       getter: options?.getter,
-      kind: 'PropertyDeclaration',
-      location: options?.location,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
       setter: options?.setter,
       type,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -276,10 +279,10 @@ const DeclarationFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): TypeParameter {
     return {
+      '@type': 'TypeParameter',
       extendsBound,
-      kind: 'TypeParameter',
-      location: options?.location,
       name,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -295,12 +298,12 @@ const DeclarationFactory = {
   ): VariableDeclaration {
     const { name, type, initializer, modifiers } = options;
     return {
+      '@type': 'VariableDeclaration',
+      id: NodeFactory.createIdentifier(name, options),
       initializer,
-      kind: 'VariableDeclaration',
-      location: options.location,
       modifiers: modifiers ? [...modifiers] : undefined,
-      name,
       type,
+      ...(options.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 };
@@ -319,10 +322,12 @@ const TypeFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
     return {
+      '@type': 'TypeRef',
       arrayNesting: elementType.arrayNesting + dimensions,
       components: elementType.components,
-      kind: 'TypeRef',
-      location: options?.location ?? elementType.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+      ...(elementType.sourceLocation &&
+        !options?.location && { sourceLocation: elementType.sourceLocation }),
     };
   },
 
@@ -333,6 +338,7 @@ const TypeFactory = {
   ): TypeRef {
     const fullName = packageName != null && packageName !== '' ? `${packageName}.${name}` : name;
     return {
+      '@type': 'TypeRef',
       arrayNesting: 0,
       components: [
         {
@@ -340,8 +346,7 @@ const TypeFactory = {
           id: NodeFactory.createIdentifier(fullName, options),
         },
       ],
-      kind: 'TypeRef',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -356,18 +361,21 @@ const TypeFactory = {
       args: typeArguments,
     };
     return {
+      '@type': 'TypeRef',
       arrayNesting: baseType.arrayNesting,
       components: [
         ...baseType.components.slice(SLICE_START_INDEX, lastComponentIndex),
         lastComponent,
       ],
-      kind: 'TypeRef',
-      location: options?.location ?? baseType.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+      ...(baseType.sourceLocation &&
+        !options?.location && { sourceLocation: baseType.sourceLocation }),
     };
   },
 
   createPrimitiveType(name: string, options?: Readonly<NodeFactoryOptions>): TypeRef {
     return {
+      '@type': 'TypeRef',
       arrayNesting: 0,
       components: [
         {
@@ -375,8 +383,7 @@ const TypeFactory = {
           id: NodeFactory.createIdentifier(name, options),
         },
       ],
-      kind: 'TypeRef',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 };

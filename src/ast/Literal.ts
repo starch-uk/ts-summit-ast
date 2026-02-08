@@ -10,7 +10,7 @@ import type { Expression } from './expression.js';
  * Literals are expressions, so they extend Expression.
  */
 interface Literal extends Expression {
-  readonly kind:
+  readonly '@type':
     | 'BooleanVal'
     | 'CharacterLiteral'
     | 'DecimalVal'
@@ -25,7 +25,7 @@ interface Literal extends Expression {
  * String literal: "string" or 'string'.
  */
 interface StringVal extends Literal {
-  readonly kind: 'StringVal';
+  readonly '@type': 'StringVal';
   readonly value: string;
 
   /**
@@ -38,7 +38,7 @@ interface StringVal extends Literal {
  * Integer literal: 123, 0x1F, etc.
  */
 interface IntegerVal extends Literal {
-  readonly kind: 'IntegerVal';
+  readonly '@type': 'IntegerVal';
   readonly value: number;
 
   /**
@@ -51,7 +51,7 @@ interface IntegerVal extends Literal {
  * Double literal: 123.45, etc.
  */
 interface DoubleVal extends Literal {
-  readonly kind: 'DoubleVal';
+  readonly '@type': 'DoubleVal';
   readonly value: number;
 
   /**
@@ -64,7 +64,7 @@ interface DoubleVal extends Literal {
  * Long literal: 123L, etc.
  */
 interface LongVal extends Literal {
-  readonly kind: 'LongVal';
+  readonly '@type': 'LongVal';
   readonly value: number;
 
   /**
@@ -77,7 +77,7 @@ interface LongVal extends Literal {
  * Decimal literal: 123.45d, etc.
  */
 interface DecimalVal extends Literal {
-  readonly kind: 'DecimalVal';
+  readonly '@type': 'DecimalVal';
   readonly value: number;
 
   /**
@@ -90,7 +90,7 @@ interface DecimalVal extends Literal {
  * Boolean literal: true or false.
  */
 interface BooleanVal extends Literal {
-  readonly kind: 'BooleanVal';
+  readonly '@type': 'BooleanVal';
   readonly value: boolean;
 }
 
@@ -98,14 +98,14 @@ interface BooleanVal extends Literal {
  * Null literal: null.
  */
 interface NullVal extends Literal {
-  readonly kind: 'NullVal';
+  readonly '@type': 'NullVal';
 }
 
 /**
  * Character literal: 'c'.
  */
 interface CharacterLiteral extends Literal {
-  readonly kind: 'CharacterLiteral';
+  readonly '@type': 'CharacterLiteral';
 
   /**
    * Single character.

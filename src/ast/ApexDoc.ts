@@ -9,7 +9,7 @@ import type { ASTNode } from './baseNode.js';
  * ApexDoc comment block - represents a complete ApexDoc comment (starts with /**).
  */
 interface ApexDocComment extends ASTNode {
-  readonly kind: 'ApexDocComment';
+  readonly '@type': 'ApexDocComment';
 
   /**
    * The main description (before any tags).
@@ -37,7 +37,7 @@ interface ApexDocComment extends ASTNode {
  * Base interface for block tags.
  */
 interface ApexDocBlockTagBase extends ASTNode {
-  readonly kind:
+  readonly '@type':
     | 'ApexDocAuthor'
     | 'ApexDocDeprecated'
     | 'ApexDocExample'
@@ -65,7 +65,7 @@ interface ApexDocBlockTagBase extends ASTNode {
  * @param paramName - Description.
  */
 interface ApexDocParam extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocParam';
+  readonly '@type': 'ApexDocParam';
   readonly paramName: string;
 }
 
@@ -73,35 +73,35 @@ interface ApexDocParam extends ApexDocBlockTagBase {
  * @returns Description.
  */
 interface ApexDocReturn extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocReturn';
+  readonly '@type': 'ApexDocReturn';
 }
 
 /**
  * @author value
  */
 interface ApexDocAuthor extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocAuthor';
+  readonly '@type': 'ApexDocAuthor';
 }
 
 /**
  * @deprecated Description.
  */
 interface ApexDocDeprecated extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocDeprecated';
+  readonly '@type': 'ApexDocDeprecated';
 }
 
 /**
  * Example code snippet or usage.
  */
 interface ApexDocExample extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocExample';
+  readonly '@type': 'ApexDocExample';
 }
 
 /**
  * Groups related members together in documentation (groupName).
  */
 interface ApexDocGroup extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocGroup';
+  readonly '@type': 'ApexDocGroup';
   readonly groupName: string;
 }
 
@@ -109,7 +109,7 @@ interface ApexDocGroup extends ApexDocBlockTagBase {
  * @see reference
  */
 interface ApexDocSee extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocSee';
+  readonly '@type': 'ApexDocSee';
 
   /**
    * Class#member, "text", or HTML link.
@@ -122,14 +122,14 @@ interface ApexDocSee extends ApexDocBlockTagBase {
  * @since 1.0.0
  */
 interface ApexDocSince extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocSince';
+  readonly '@type': 'ApexDocSince';
 }
 
 /**
  * @throws {string} ExceptionType - Description of when this exception is thrown.
  */
 interface ApexDocThrows extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocThrows';
+  readonly '@type': 'ApexDocThrows';
   readonly exceptionType?: string;
 }
 
@@ -138,21 +138,21 @@ interface ApexDocThrows extends ApexDocBlockTagBase {
  * @version 1.0.0
  */
 interface ApexDocVersion extends ApexDocBlockTagBase {
-  readonly kind: 'ApexDocVersion';
+  readonly '@type': 'ApexDocVersion';
 }
 
 /**
  * Base interface for inline tags.
  */
 interface ApexDocInlineTagBase extends ASTNode {
-  readonly kind: 'ApexDocCode' | 'ApexDocHidden' | 'ApexDocLink' | 'ApexDocLiteral';
+  readonly '@type': 'ApexDocCode' | 'ApexDocHidden' | 'ApexDocLink' | 'ApexDocLiteral';
 }
 
 /**
  * Inline code: formats text as code. If text contains Apex code, it's parsed as nested AST.
  */
 interface ApexDocCode extends ApexDocInlineTagBase {
-  readonly kind: 'ApexDocCode';
+  readonly '@type': 'ApexDocCode';
 
   /**
    * Raw text content.
@@ -169,7 +169,7 @@ interface ApexDocCode extends ApexDocInlineTagBase {
  * Hidden content: prevents element from appearing in generated docs.
  */
 interface ApexDocHidden extends ApexDocInlineTagBase {
-  readonly kind: 'ApexDocHidden';
+  readonly '@type': 'ApexDocHidden';
   readonly text: string;
 }
 
@@ -177,7 +177,7 @@ interface ApexDocHidden extends ApexDocInlineTagBase {
  * Inline link: target is Class#member, quoted text, or HTML URL.
  */
 interface ApexDocLink extends ApexDocInlineTagBase {
-  readonly kind: 'ApexDocLink';
+  readonly '@type': 'ApexDocLink';
 
   /**
    * Link target: Class#member, quoted text, or HTML URL.
@@ -194,7 +194,7 @@ interface ApexDocLink extends ApexDocInlineTagBase {
  * Literal text: shown without HTML tag interpretation.
  */
 interface ApexDocLiteral extends ApexDocInlineTagBase {
-  readonly kind: 'ApexDocLiteral';
+  readonly '@type': 'ApexDocLiteral';
   readonly text: string;
 }
 
@@ -202,7 +202,7 @@ interface ApexDocLiteral extends ApexDocInlineTagBase {
  * Plain text content in ApexDoc.
  */
 interface ApexDocText extends ASTNode {
-  readonly kind: 'ApexDocText';
+  readonly '@type': 'ApexDocText';
   readonly text: string;
 }
 

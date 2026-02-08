@@ -24,6 +24,7 @@ import type {
   ApexDocText,
 } from '../ast/apexDoc.js';
 import type { SourceRange } from '../ast/baseNode.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import { parseApexCode } from './apexParser.js';
 
 // ============================================================================
@@ -160,7 +161,7 @@ function parseInlineTag(
 ): ApexDocCode | ApexDocHidden | ApexDocLink | ApexDocLiteral | null {
   const { location, parseCodeInCodeTag = true, parseTreeAdapter } = options;
 
-  const baseTag = location ? { location } : {};
+  const baseTag = location ? { sourceLocation: toCanonicalSourceLocation(location) } : {};
 
   switch (tagName) {
     case 'code': {
@@ -182,7 +183,7 @@ function parseInlineTag(
       }
 
       return {
-        kind: 'ApexDocCode',
+        '@type': 'ApexDocCode',
         text: content,
         ...(nestedAST ? { nestedAST } : {}),
         ...baseTag,
@@ -191,7 +192,7 @@ function parseInlineTag(
 
     case 'hidden':
       return {
-        kind: 'ApexDocHidden',
+        '@type': 'ApexDocHidden',
         text: content,
         ...baseTag,
       } as ApexDocHidden;
@@ -207,14 +208,14 @@ function parseInlineTag(
           linkMatch.length >= minLinkMatchLength ? linkMatch[linkMatchThirdIndex] : undefined;
         const reference = linkMatch[linkFirstCaptureGroup];
         return {
-          kind: 'ApexDocLink',
+          '@type': 'ApexDocLink',
           ...(label != null && label !== '' ? { label } : {}),
           reference,
           ...baseTag,
         } as ApexDocLink;
       }
       return {
-        kind: 'ApexDocLink',
+        '@type': 'ApexDocLink',
         reference: content || undefined,
         ...baseTag,
       } as ApexDocLink;
@@ -222,7 +223,7 @@ function parseInlineTag(
 
     case 'literal':
       return {
-        kind: 'ApexDocLiteral',
+        '@type': 'ApexDocLiteral',
         text: content,
         ...baseTag,
       } as ApexDocLiteral;
@@ -249,9 +250,9 @@ parseContent = (
       const textBefore = text.substring(currentPos, match.index);
       if (textBefore) {
         result.push({
-          kind: 'ApexDocText',
+          '@type': 'ApexDocText',
           text: textBefore,
-          ...(location ? { location } : {}),
+          ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
         } as ApexDocText);
       }
     }
@@ -273,9 +274,9 @@ parseContent = (
     const remainingText = text.substring(currentPos);
     if (remainingText) {
       result.push({
-        kind: 'ApexDocText',
+        '@type': 'ApexDocText',
         text: remainingText,
-        ...(location ? { location } : {}),
+        ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
       } as ApexDocText);
     }
   }
@@ -283,9 +284,9 @@ parseContent = (
   const emptyArrayLength = 0;
   if (result.length === emptyArrayLength && text) {
     result.push({
-      kind: 'ApexDocText',
+      '@type': 'ApexDocText',
       text,
-      ...(location ? { location } : {}),
+      ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
     } as ApexDocText);
   }
 
@@ -330,11 +331,8 @@ function parseBlockTag(
 
   const baseTag = {
     description,
+    ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
   };
-
-  if (location) {
-    (baseTag as Record<string, unknown>).location = location;
-  }
 
   switch (tagName) {
     case 'param': {
@@ -345,10 +343,10 @@ function parseBlockTag(
         const desc = parseContent(descriptionText, location, options);
 
         return {
+          '@type': 'ApexDocParam',
           description: desc,
-          kind: 'ApexDocParam',
           paramName,
-          ...(location ? { location } : {}),
+          ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
         } as ApexDocParam;
       }
       return null;
@@ -356,25 +354,25 @@ function parseBlockTag(
 
     case 'return':
       return {
-        kind: 'ApexDocReturn',
+        '@type': 'ApexDocReturn',
         ...baseTag,
       } as ApexDocReturn;
 
     case 'author':
       return {
-        kind: 'ApexDocAuthor',
+        '@type': 'ApexDocAuthor',
         ...baseTag,
       } as ApexDocAuthor;
 
     case 'deprecated':
       return {
-        kind: 'ApexDocDeprecated',
+        '@type': 'ApexDocDeprecated',
         ...baseTag,
       } as ApexDocDeprecated;
 
     case 'example':
       return {
-        kind: 'ApexDocExample',
+        '@type': 'ApexDocExample',
         ...baseTag,
       } as ApexDocExample;
 
@@ -386,10 +384,10 @@ function parseBlockTag(
         const desc = descriptionText ? parseContent(descriptionText, location, options) : [];
 
         return {
+          '@type': 'ApexDocGroup',
           description: desc,
           groupName,
-          kind: 'ApexDocGroup',
-          ...(location ? { location } : {}),
+          ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
         } as ApexDocGroup;
       }
       return null;
@@ -412,24 +410,24 @@ function parseBlockTag(
           : [];
 
         return {
+          '@type': 'ApexDocSee',
           description: seeDescription,
-          kind: 'ApexDocSee',
           reference: seeReference,
-          ...(location ? { location } : {}),
+          ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
         } as ApexDocSee;
       }
       // Just description
 
       return {
+        '@type': 'ApexDocSee',
         description,
-        kind: 'ApexDocSee',
-        ...(location ? { location } : {}),
+        ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
       } as ApexDocSee;
     }
 
     case 'since':
       return {
-        kind: 'ApexDocSince',
+        '@type': 'ApexDocSince',
         ...baseTag,
       } as ApexDocSince;
 
@@ -441,24 +439,24 @@ function parseBlockTag(
         const desc = parseContent(descriptionText, location, options);
 
         return {
+          '@type': 'ApexDocThrows',
           description: desc,
           exceptionType,
-          kind: 'ApexDocThrows',
-          ...(location ? { location } : {}),
+          ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
         } as ApexDocThrows;
       }
       // Just description
 
       return {
+        '@type': 'ApexDocThrows',
         description,
-        kind: 'ApexDocThrows',
-        ...(location ? { location } : {}),
+        ...(location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
       } as ApexDocThrows;
     }
 
     case 'version':
       return {
-        kind: 'ApexDocVersion',
+        '@type': 'ApexDocVersion',
         ...baseTag,
       } as ApexDocVersion;
 
@@ -526,16 +524,16 @@ function parseApexDocComment(
   // Extract text from all content nodes (text nodes and inline tag text)
   const mainDescriptionText = mainDescriptionContent
     .map((c): string => {
-      if (c.kind === 'ApexDocText') {
+      if (c['@type'] === 'ApexDocText') {
         return c.text;
       }
-      if (c.kind === 'ApexDocCode') {
+      if (c['@type'] === 'ApexDocCode') {
         return c.text;
       }
-      if (c.kind === 'ApexDocLink') {
+      if (c['@type'] === 'ApexDocLink') {
         return c.reference ?? c.label ?? '';
       }
-      if (c.kind === 'ApexDocLiteral') {
+      if (c['@type'] === 'ApexDocLiteral') {
         return c.text;
       }
       // ApexDocHidden or any other content node with text
@@ -544,10 +542,10 @@ function parseApexDocComment(
     .join('');
 
   const result: ApexDocComment = {
+    '@type': 'ApexDocComment',
     blockTags,
-    kind: 'ApexDocComment',
     mainDescription: mainDescriptionText,
-    ...(includeLocation && location ? { location } : {}),
+    ...(includeLocation && location ? { sourceLocation: toCanonicalSourceLocation(location) } : {}),
   };
 
   return result;

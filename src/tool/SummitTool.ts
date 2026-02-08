@@ -255,7 +255,7 @@ class SummitTool {
 
     // Simple text representation
 
-    if (ast !== null && ast !== undefined && typeof ast === 'object' && 'kind' in ast) {
+    if (ast !== null && ast !== undefined && typeof ast === 'object' && '@type' in ast) {
       const { kind } = ast as Record<string, unknown>;
       return typeof kind === 'string' ? `AST Node: ${kind}` : JSON.stringify(ast);
     }

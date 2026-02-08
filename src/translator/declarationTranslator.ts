@@ -15,6 +15,7 @@ import type {
   Parameter,
 } from '../ast/declaration.js';
 import type { TypeRef, TypeRefComponent } from '../ast/baseNode.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { Expression } from '../ast/expression.js';
 import {
   INITIAL_STATEMENT_COUNTER,
@@ -186,16 +187,16 @@ function translateClassDeclaration(
      */
     const getCategoryOrder = (decl: Declaration): number => {
       if (
-        decl.kind === 'ClassDeclaration' ||
-        decl.kind === 'InterfaceDeclaration' ||
-        decl.kind === 'EnumDeclaration'
+        decl['@type'] === 'ClassDeclaration' ||
+        decl['@type'] === 'InterfaceDeclaration' ||
+        decl['@type'] === 'EnumDeclaration'
       ) {
         return MEMBER_CATEGORY_INNER_TYPES;
       }
-      if (decl.kind === 'VariableDeclaration') {
+      if (decl['@type'] === 'VariableDeclaration') {
         return MEMBER_CATEGORY_FIELDS;
       }
-      if (decl.kind === 'PropertyDeclaration') {
+      if (decl['@type'] === 'PropertyDeclaration') {
         return MEMBER_CATEGORY_PROPERTIES;
       }
       return MEMBER_CATEGORY_METHODS;
@@ -569,7 +570,10 @@ function translateClassDeclaration(
         // We do this by sorting by statementId first for fields, then by source order within each statement.
         // This ensures fields from the same statement are grouped together, and fields from
         // different statements are separated and not adjacent.
-        if (a.decl.kind === 'VariableDeclaration' && b.decl.kind === 'VariableDeclaration') {
+        if (
+          a.decl['@type'] === 'VariableDeclaration' &&
+          b.decl['@type'] === 'VariableDeclaration'
+        ) {
           if (a.statementId !== undefined && b.statementId !== undefined) {
             if (a.statementId !== b.statementId) {
               // Different statements - sort by statementId to separate them
@@ -870,13 +874,16 @@ function translateMethodDeclaration(
       const paramModifiers = ctx.extractModifiers(paramNode);
       const paramAnnotations = ctx.extractAnnotations(paramNode);
       parameters.push({
-        annotations:
-          paramAnnotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? paramAnnotations : undefined,
-        kind: 'Parameter',
-        location: paramNode.location,
-        modifiers: paramModifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? paramModifiers : undefined,
+        '@type': 'Parameter',
         name: paramName,
         type: paramType,
+        ...(paramAnnotations.length > MIN_NON_EMPTY_ARRAY_LENGTH && {
+          annotations: paramAnnotations,
+        }),
+        ...(paramModifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH && { modifiers: paramModifiers }),
+        ...(paramNode.location && {
+          sourceLocation: toCanonicalSourceLocation(paramNode.location),
+        }),
       });
     }
   }

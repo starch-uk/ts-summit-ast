@@ -17,6 +17,7 @@ import {
   offsetToLocation,
   UNKNOWN_SOURCE_LOCATION,
   isUnknownLocation,
+  spanOf,
   isPositionInRange,
   isPositionBefore,
   isPositionAfter,
@@ -83,7 +84,7 @@ describe('ApexDoc Parser', () => {
 
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
-      expect(result.kind).toBe('ApexDocComment');
+      expect(result['@type']).toBe('ApexDocComment');
       expect(result.mainDescription).toBe('This is a simple description.');
       expect(result.blockTags).toHaveLength(0);
     });
@@ -111,8 +112,8 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocParam');
-      if (result.blockTags[0].kind === 'ApexDocParam') {
+      expect(result.blockTags[0]['@type']).toBe('ApexDocParam');
+      if (result.blockTags[0]['@type'] === 'ApexDocParam') {
         expect(result.blockTags[0].paramName).toBe('name');
       }
     });
@@ -128,12 +129,12 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(2);
-      expect(result.blockTags[0].kind).toBe('ApexDocParam');
-      if (result.blockTags[0].kind === 'ApexDocParam') {
+      expect(result.blockTags[0]['@type']).toBe('ApexDocParam');
+      if (result.blockTags[0]['@type'] === 'ApexDocParam') {
         expect(result.blockTags[0].paramName).toBe('x');
       }
-      expect(result.blockTags[1].kind).toBe('ApexDocParam');
-      if (result.blockTags[1].kind === 'ApexDocParam') {
+      expect(result.blockTags[1]['@type']).toBe('ApexDocParam');
+      if (result.blockTags[1]['@type'] === 'ApexDocParam') {
         expect(result.blockTags[1].paramName).toBe('y');
       }
     });
@@ -148,7 +149,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocReturn');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocReturn');
     });
 
     it('should parse @author tag', () => {
@@ -161,7 +162,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocAuthor');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocAuthor');
     });
 
     it('should parse @deprecated tag', () => {
@@ -174,7 +175,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocDeprecated');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocDeprecated');
     });
 
     it('should parse @example tag', () => {
@@ -187,7 +188,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocExample');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocExample');
     });
 
     it('should parse @group tag', () => {
@@ -200,8 +201,8 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocGroup');
-      if (result.blockTags[0].kind === 'ApexDocGroup') {
+      expect(result.blockTags[0]['@type']).toBe('ApexDocGroup');
+      if (result.blockTags[0]['@type'] === 'ApexDocGroup') {
         expect(result.blockTags[0].groupName).toBe('Utilities');
       }
     });
@@ -215,8 +216,8 @@ describe('ApexDoc Parser', () => {
 
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
-      expect(result.blockTags[0].kind).toBe('ApexDocGroup');
-      if (result.blockTags[0].kind === 'ApexDocGroup') {
+      expect(result.blockTags[0]['@type']).toBe('ApexDocGroup');
+      if (result.blockTags[0]['@type'] === 'ApexDocGroup') {
         expect(result.blockTags[0].groupName).toBe('Utilities');
       }
     });
@@ -231,7 +232,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocSee');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocSee');
     });
 
     it('should parse @since tag', () => {
@@ -244,7 +245,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocSince');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocSince');
     });
 
     it('should parse @throws tag with exception type', () => {
@@ -257,8 +258,8 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocThrows');
-      if (result.blockTags[0].kind === 'ApexDocThrows') {
+      expect(result.blockTags[0]['@type']).toBe('ApexDocThrows');
+      if (result.blockTags[0]['@type'] === 'ApexDocThrows') {
         expect(result.blockTags[0].exceptionType).toBe('IllegalArgumentException');
       }
     });
@@ -272,7 +273,7 @@ describe('ApexDoc Parser', () => {
 
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
-      expect(result.blockTags[0].kind).toBe('ApexDocThrows');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocThrows');
     });
 
     it('should parse @version tag', () => {
@@ -285,7 +286,7 @@ describe('ApexDoc Parser', () => {
       expect(result).not.toBeNull();
       if (!result) throw new Error('Expected parseApexDocComment to return a result');
       expect(result.blockTags).toHaveLength(1);
-      expect(result.blockTags[0].kind).toBe('ApexDocVersion');
+      expect(result.blockTags[0]['@type']).toBe('ApexDocVersion');
     });
 
     it('should parse comment with all block tags', () => {
@@ -446,7 +447,12 @@ describe('ApexDoc Parser', () => {
 
         expect(result).not.toBeNull();
         if (!result) throw new Error('Expected parseApexDocComment to return a result');
-        expect(result.location).toEqual(location);
+        expect(result.sourceLocation).toEqual({
+          endColumn: location.end.column,
+          endLine: location.end.line,
+          startColumn: location.start.column,
+          startLine: location.start.line,
+        });
       });
 
       it('should handle comment without location when includeLocation is false', () => {
@@ -462,7 +468,7 @@ describe('ApexDoc Parser', () => {
 
         expect(result).not.toBeNull();
         if (!result) throw new Error('Expected parseApexDocComment to return a result');
-        expect(result.location).toBeUndefined();
+        expect(result.sourceLocation).toBeUndefined();
       });
 
       it('should handle multi-line block tags', () => {
@@ -536,17 +542,17 @@ describe('ApexDoc Parser', () => {
         if (!result) throw new Error('Expected parseApexDocComment to return a result');
         expect(
           result.blockTags.some(
-            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocGroup'
+            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag['@type'] === 'ApexDocGroup'
           )
         ).toBe(true);
         expect(
           result.blockTags.some(
-            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocAuthor'
+            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag['@type'] === 'ApexDocAuthor'
           )
         ).toBe(true);
         expect(
           result.blockTags.some(
-            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocVersion'
+            (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag['@type'] === 'ApexDocVersion'
           )
         ).toBe(true);
       });
@@ -793,9 +799,9 @@ public void method(Integer x) {}`;
 
         expect(comments.length).toBeGreaterThan(0);
         expect(comments[0].apexDocComment).toBeDefined();
-        expect(comments[0].apexDocComment?.kind).toBe('ApexDocComment');
+        expect(comments[0].apexDocComment?.['@type']).toBe('ApexDocComment');
         expect(comments[0].apexDocComment?.blockTags.length).toBeGreaterThan(0);
-        expect(comments[0].apexDocComment?.blockTags[0].kind).toBe('ApexDocParam');
+        expect(comments[0].apexDocComment?.blockTags[0]['@type']).toBe('ApexDocParam');
       });
 
       it('should parse ApexDoc with @group tag', () => {
@@ -812,7 +818,7 @@ public void utility() {}`;
 
         expect(comments[0].apexDocComment).toBeDefined();
         const groupTag = comments[0].apexDocComment?.blockTags.find(
-          (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag.kind === 'ApexDocGroup'
+          (tag: Readonly<Readonly<ApexDocBlockTag>>) => tag['@type'] === 'ApexDocGroup'
         );
         expect(groupTag).toBeDefined();
         if (groupTag) {
@@ -1070,39 +1076,42 @@ function createTestAST(): ASTNode {
  */
 function nodeToId(node: ASTNode): string {
   // NODE_0: Root Block with 2 statements (NODE_1 and NODE_2)
-  if (node.kind === 'CompoundStatement') {
+  if (node['@type'] === 'CompoundStatement') {
     const stmts = node.statements;
     if (stmts.length === 2) {
       // Check if first is a Block (NODE_1) and second is an IfStatement (NODE_2)
-      if (stmts[0].kind === 'CompoundStatement' && stmts[1].kind === 'IfStatement') {
+      if (stmts[0]['@type'] === 'CompoundStatement' && stmts[1]['@type'] === 'IfStatement') {
         return 'NODE_0';
       }
     }
   }
   // NODE_1: Block containing an IfStatement with NODE_3
-  if (node.kind === 'CompoundStatement') {
+  if (node['@type'] === 'CompoundStatement') {
     const stmts = node.statements;
-    if (stmts.length === 1 && stmts[0].kind === 'IfStatement') {
+    if (stmts.length === 1 && stmts[0]['@type'] === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
-      if (ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3') {
+      if (
+        ifStmt.thenStatement['@type'] === 'Identifier' &&
+        ifStmt.thenStatement.string === 'node3'
+      ) {
         return 'NODE_1';
       }
     }
   }
   // NODE_2: IfStatement containing NODE_4
-  if (node.kind === 'IfStatement') {
+  if (node['@type'] === 'IfStatement') {
     const ifStmt = node;
-    if (ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4') {
+    if (ifStmt.thenStatement['@type'] === 'Identifier' && ifStmt.thenStatement.string === 'node4') {
       return 'NODE_2';
     }
   }
   // NODE_3: Identifier 'node3'
-  if (node.kind === 'Identifier' && node.name === 'node3') {
+  if (node['@type'] === 'Identifier' && node.string === 'node3') {
     return 'NODE_3';
   }
   // NODE_4: Identifier 'node4'
-  if (node.kind === 'Identifier' && node.name === 'node4') {
+  if (node['@type'] === 'Identifier' && node.string === 'node4') {
     return 'NODE_4';
   }
   return 'UNKNOWN';
@@ -1115,9 +1124,11 @@ function nodeToId(node: ASTNode): string {
  */
 function nodeIdIs2(node: ASTNode): boolean {
   // NODE_2 is the IfStatement containing NODE_4
-  if (node.kind === 'IfStatement') {
+  if (node['@type'] === 'IfStatement') {
     const ifStmt = node;
-    return ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node4';
+    return (
+      ifStmt.thenStatement['@type'] === 'Identifier' && ifStmt.thenStatement.string === 'node4'
+    );
   }
   return false;
 }
@@ -1129,12 +1140,14 @@ function nodeIdIs2(node: ASTNode): boolean {
  */
 function nodeIdIs1(node: ASTNode): boolean {
   // NODE_1 is the Block containing an IfStatement with NODE_3
-  if (node.kind === 'CompoundStatement') {
+  if (node['@type'] === 'CompoundStatement') {
     const stmts = node.statements;
-    if (stmts.length === 1 && stmts[0].kind === 'IfStatement') {
+    if (stmts.length === 1 && stmts[0]['@type'] === 'IfStatement') {
       const [ifStmt] = stmts;
       // Check if the IfStatement contains NODE_3 (Identifier 'node3')
-      return ifStmt.thenStatement.kind === 'Identifier' && ifStmt.thenStatement.name === 'node3';
+      return (
+        ifStmt.thenStatement['@type'] === 'Identifier' && ifStmt.thenStatement.string === 'node3'
+      );
     }
   }
   return false;
@@ -1627,7 +1640,7 @@ describe('Rule Matching Utilities', () => {
         left: NodeFactory.createNumberLiteral(1, '1'),
         right: NodeFactory.createNumberLiteral(2, '2'),
       });
-      const result = wouldTriggerRule(node, "//BinaryExpression[@operator='+']");
+      const result = wouldTriggerRule(node, "//BinaryExpression[@op='+']");
 
       expect(result.matches).toBe(true);
     });
@@ -1700,7 +1713,7 @@ describe('Rule Matching Utilities', () => {
       });
       const ast = NodeFactory.createBlock([NodeFactory.createExpressionStatement(node)]);
 
-      const matches = findRuleMatches(ast, "//BinaryExpression[@operator='+']");
+      const matches = findRuleMatches(ast, "//BinaryExpression[@op='+']");
       expect(matches.length).toBeGreaterThan(0);
       if (matches.length > 0) {
         expect(matches[0].matchDetails.matchReason).toBeDefined();
@@ -1968,6 +1981,57 @@ describe('Source Extraction Utilities', () => {
     });
   });
 
+  describe('SourceLocation spanOf', () => {
+    it('spanOf chooses non-null values over unknown', () => {
+      const unknown = UNKNOWN_SOURCE_LOCATION;
+      const withLinesAndColumns: SourceRange = {
+        end: { column: 10, line: 3 },
+        start: { column: 1, line: 1 },
+      };
+
+      expect(spanOf(unknown, unknown)).toEqual(unknown);
+      expect(spanOf(withLinesAndColumns, unknown)).toEqual(withLinesAndColumns);
+      expect(spanOf(unknown, withLinesAndColumns)).toEqual(withLinesAndColumns);
+    });
+
+    it('spanOf returns new range from earliest start to latest end', () => {
+      const lower: SourceRange = { end: { column: 2, line: 2 }, start: { column: 1, line: 1 } };
+      const upper: SourceRange = { end: { column: 3, line: 3 }, start: { column: 2, line: 2 } };
+
+      const expected: SourceRange = {
+        end: { column: 3, line: 3 },
+        start: { column: 1, line: 1 },
+      };
+      expect(spanOf(lower, upper)).toEqual(expected);
+      expect(spanOf(upper, lower)).toEqual(expected);
+    });
+
+    it('spanOf is idempotent', () => {
+      const loc: SourceRange = {
+        end: { column: 2, line: 4 },
+        start: { column: 3, line: 1 },
+      };
+
+      expect(spanOf(loc)).toEqual(loc);
+      expect(spanOf(loc, loc, loc)).toEqual(loc);
+      expect(spanOf(loc, spanOf(loc, loc))).toEqual(loc);
+    });
+
+    it('spanOf ranks line over column', () => {
+      const widerLines: SourceRange = {
+        end: { column: 5, line: 10 },
+        start: { column: 6, line: 1 },
+      };
+      const widerColumns: SourceRange = {
+        end: { column: 10, line: 6 },
+        start: { column: 1, line: 5 },
+      };
+
+      expect(spanOf(widerLines, widerColumns)).toEqual(widerLines);
+      expect(spanOf(widerColumns, widerLines)).toEqual(widerLines);
+    });
+  });
+
   describe('Source Location Tests (from original)', () => {
     it('declaration has correct source location', () => {
       const input = 'public class Test { }';
@@ -1976,7 +2040,7 @@ describe('Source Extraction Utilities', () => {
       const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
 
       expect(classDecl).not.toBeNull();
-      if (classDecl?.location) {
+      if (classDecl?.location != null) {
         // The location should span from "class" to the end
         const classIndex = input.indexOf('class');
         expect(classDecl.location.start.line).toBe(1);
@@ -2002,7 +2066,7 @@ describe('Source Extraction Utilities', () => {
       `;
       const classDecl = findFirstNodeOfType(parseAndTranslate(input), isClassDeclaration);
       expect(classDecl).not.toBeNull();
-      if (classDecl?.location) {
+      if (classDecl?.location != null) {
         const extracted = getSourceText(classDecl, input);
         expect(extracted).toContain('Test');
       }
@@ -2018,7 +2082,7 @@ describe('Source Extraction Utilities', () => {
       const cu = parseAndTranslate(input);
       const fieldDecl = findFirstNodeOfType(cu, isVariableDeclaration);
       expect(fieldDecl).not.toBeNull();
-      if (fieldDecl?.location) {
+      if (fieldDecl?.location != null) {
         const extracted = getSourceText(fieldDecl, input);
         expect(extracted).toContain('String field');
         expect(extracted).toContain("= 'Hello'");
@@ -2033,7 +2097,7 @@ describe('Source Extraction Utilities', () => {
         }
       `.trim();
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         const extracted = getSourceText(cu, input);
         expect(extracted).toContain('class Test');
       }
@@ -2059,7 +2123,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(0);
         const extracted = getSourceText(cu, input);
@@ -2071,7 +2135,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n ';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(1);
         const extracted = getSourceText(cu, input);
@@ -2083,7 +2147,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\npublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         // The source location starts from the first regular token
         expect(cu.location.start.line).toBe(2);
         expect(cu.location.start.column).toBeGreaterThanOrEqual(0);
@@ -2094,7 +2158,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\t\tpublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.start.column).toBeGreaterThanOrEqual(2);
       }
     });
@@ -2191,7 +2255,7 @@ describe('AST Traversal Utilities', () => {
       const visited: string[] = [];
       const visitor: ASTWalkVisitor = {
         enterNode: (node) => {
-          visited.push(node.kind);
+          visited.push(node['@type']);
         },
       };
 
@@ -2210,10 +2274,10 @@ describe('AST Traversal Utilities', () => {
       const exited: string[] = [];
       const visitor: ASTWalkVisitor = {
         enterNode: (node) => {
-          entered.push(node.kind);
+          entered.push(node['@type']);
         },
         exitNode: (node) => {
-          exited.push(node.kind);
+          exited.push(node['@type']);
         },
       };
 
@@ -2227,8 +2291,8 @@ describe('AST Traversal Utilities', () => {
       const visited: string[] = [];
       const visitor: ASTWalkVisitor = {
         enterNode: (node) => {
-          visited.push(node.kind);
-          if (node.kind === 'IfStatement') {
+          visited.push(node['@type']);
+          if (node['@type'] === 'IfStatement') {
             return false; // Skip children
           }
           return true;
@@ -2378,16 +2442,14 @@ describe('AST Traversal Utilities', () => {
     });
 
     it('should handle unknown node types generically', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
-      const unknownNode: any = {
+      const unknownNode: Readonly<ASTNode> = {
+        '@type': 'UnknownNodeType',
         child1: NodeFactory.createIdentifier('child1'),
         childArray: [
           NodeFactory.createIdentifier('child2'),
           NodeFactory.createIdentifier('child3'),
         ],
-        kind: 'UnknownNodeType',
       };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
       const children = getNodeChildren(unknownNode);
       expect(children.length).toBe(3);
     });

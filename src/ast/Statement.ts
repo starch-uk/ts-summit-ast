@@ -3,29 +3,50 @@
  * AST node types for statements (if, for, while, return, etc.).
  */
 
-import type { ASTNode } from './baseNode.js';
+import type { ASTNode, CanonicalSourceLocation } from './baseNode.js';
 import type { Expression } from './expression.js';
 import type { VariableDeclaration } from './declaration.js';
-import type { TypeRef } from './baseNode.js';
+import type { Identifier, TypeRef } from './baseNode.js';
+import type { Modifier } from './declaration.js';
+
+/** Single variable in a VariableDeclarationStatement group (canonical: id, initializer, sourceLocation). */
+interface VariableDeclarationInGroup {
+  readonly id: Identifier;
+  readonly initializer?: Expression;
+  readonly sourceLocation?: CanonicalSourceLocation;
+}
+
+/** Group for VariableDeclarationStatement (canonical: type, declarations[], modifiers). */
+interface VariableDeclarationGroup {
+  readonly type: TypeRef;
+  readonly declarations: readonly VariableDeclarationInGroup[];
+  readonly modifiers: readonly Modifier[];
+  readonly sourceLocation?: CanonicalSourceLocation;
+}
 
 /**
  * Base interface for all statement nodes.
  */
 interface Statement extends ASTNode {
-  readonly kind:
+  readonly '@type':
     | 'BreakStatement'
     | 'CompoundStatement'
     | 'ContinueStatement'
-    | 'DmlStatement'
+    | 'Delete'
     | 'DoWhileLoopStatement'
     | 'EnhancedForLoopStatement'
     | 'ExpressionStatement'
     | 'ForLoopStatement'
     | 'IfStatement'
+    | 'Insert'
+    | 'Merge'
     | 'ReturnStatement'
     | 'SwitchStatement'
     | 'ThrowStatement'
     | 'TryStatement'
+    | 'Undelete'
+    | 'Update'
+    | 'Upsert'
     | 'VariableDeclarationStatement'
     | 'WhileLoopStatement';
 }
@@ -34,7 +55,7 @@ interface Statement extends ASTNode {
  * If statement: if (condition) thenStatement else elseStatement.
  */
 interface IfStatement extends Statement {
-  readonly kind: 'IfStatement';
+  readonly '@type': 'IfStatement';
   readonly condition: Expression;
   readonly thenStatement: Statement;
   readonly elseStatement?: Statement;
@@ -44,7 +65,7 @@ interface IfStatement extends Statement {
  * For loop: for (init; condition; update) body.
  */
 interface ForLoopStatement extends Statement {
-  readonly kind: 'ForLoopStatement';
+  readonly '@type': 'ForLoopStatement';
   readonly init?: ExpressionStatement | VariableDeclarationStatement;
   readonly condition?: Expression;
   readonly update?: Expression;
@@ -55,7 +76,7 @@ interface ForLoopStatement extends Statement {
  * For-each loop: for (Type variable : iterable) body.
  */
 interface EnhancedForLoopStatement extends Statement {
-  readonly kind: 'EnhancedForLoopStatement';
+  readonly '@type': 'EnhancedForLoopStatement';
   readonly variable: VariableDeclaration;
   readonly iterable: Expression;
   readonly body: Statement;
@@ -65,7 +86,7 @@ interface EnhancedForLoopStatement extends Statement {
  * While loop: while (condition) body.
  */
 interface WhileLoopStatement extends Statement {
-  readonly kind: 'WhileLoopStatement';
+  readonly '@type': 'WhileLoopStatement';
   readonly condition: Expression;
   readonly body: Statement;
 }
@@ -74,7 +95,7 @@ interface WhileLoopStatement extends Statement {
  * Do-while loop: do body while (condition).
  */
 interface DoWhileLoopStatement extends Statement {
-  readonly kind: 'DoWhileLoopStatement';
+  readonly '@type': 'DoWhileLoopStatement';
   readonly body: Statement;
   readonly condition: Expression;
 }
@@ -83,7 +104,7 @@ interface DoWhileLoopStatement extends Statement {
  * Switch statement: switch (expression) { cases }.
  */
 interface SwitchStatement extends Statement {
-  readonly kind: 'SwitchStatement';
+  readonly '@type': 'SwitchStatement';
   readonly expression: Expression;
   readonly cases: readonly SwitchCase[];
   readonly defaultCase?: SwitchCase;
@@ -95,7 +116,7 @@ interface SwitchStatement extends Statement {
  * This is simplified from summit-ast's When structure which has WhenValue, WhenType, and WhenElse subtypes.
  */
 interface SwitchCase extends ASTNode {
-  readonly kind: 'SwitchCase';
+  readonly '@type': 'SwitchCase';
 
   /**
    * Undefined for default case.
@@ -128,7 +149,7 @@ interface SwitchCase extends ASTNode {
  * Try-catch-finally statement.
  */
 interface TryStatement extends Statement {
-  readonly kind: 'TryStatement';
+  readonly '@type': 'TryStatement';
   readonly tryBlock: CompoundStatement;
   readonly catchClauses: readonly CatchClause[];
   readonly finallyBlock?: CompoundStatement;
@@ -138,7 +159,7 @@ interface TryStatement extends Statement {
  * Catch clause: catch (ExceptionType variable) { statements }.
  */
 interface CatchClause extends ASTNode {
-  readonly kind: 'CatchClause';
+  readonly '@type': 'CatchClause';
 
   /**
    * Type expression.
@@ -149,18 +170,18 @@ interface CatchClause extends ASTNode {
 }
 
 /**
- * Return statement: return expression;.
+ * Return statement: return value;. Uses canonical name value.
  */
 interface ReturnStatement extends Statement {
-  readonly kind: 'ReturnStatement';
-  readonly expression?: Expression;
+  readonly '@type': 'ReturnStatement';
+  readonly value?: Expression;
 }
 
 /**
  * Represents a break statement in the AST.
  */
 interface BreakStatement extends Statement {
-  readonly kind: 'BreakStatement';
+  readonly '@type': 'BreakStatement';
   readonly label?: string;
 }
 
@@ -168,7 +189,7 @@ interface BreakStatement extends Statement {
  * Represents a continue statement in the AST.
  */
 interface ContinueStatement extends Statement {
-  readonly kind: 'ContinueStatement';
+  readonly '@type': 'ContinueStatement';
   readonly label?: string;
 }
 
@@ -176,7 +197,7 @@ interface ContinueStatement extends Statement {
  * Throw statement: throw expression;.
  */
 interface ThrowStatement extends Statement {
-  readonly kind: 'ThrowStatement';
+  readonly '@type': 'ThrowStatement';
   readonly expression: Expression;
 }
 
@@ -184,7 +205,7 @@ interface ThrowStatement extends Statement {
  * Compound statement: { statements }.
  */
 interface CompoundStatement extends Statement {
-  readonly kind: 'CompoundStatement';
+  readonly '@type': 'CompoundStatement';
   readonly statements: readonly Statement[];
 }
 
@@ -192,29 +213,24 @@ interface CompoundStatement extends Statement {
  * Represents an expression statement in the AST.
  */
 interface ExpressionStatement extends Statement {
-  readonly kind: 'ExpressionStatement';
+  readonly '@type': 'ExpressionStatement';
   readonly expression: Expression;
 }
 
 /**
- * Variable declaration statement: Type variable = value;.
+ * Variable declaration statement. Uses canonical name group.
  */
 interface VariableDeclarationStatement extends Statement {
-  readonly kind: 'VariableDeclarationStatement';
-  readonly declaration: VariableDeclaration;
+  readonly '@type': 'VariableDeclarationStatement';
+  readonly group: VariableDeclarationGroup;
 }
 
 /**
- * DML statement: insert, update, delete, upsert, merge, undelete.
+ * DML statement. Uses canonical `@type` (Insert, Update, etc.) and value.
  */
 interface DmlStatement extends Statement {
-  readonly kind: 'DmlStatement';
-  readonly operation: 'delete' | 'insert' | 'merge' | 'undelete' | 'update' | 'upsert';
-
-  /**
-   * The sObject or list to operate on.
-   */
-  readonly target: Expression;
+  readonly '@type': 'Delete' | 'Insert' | 'Merge' | 'Undelete' | 'Update' | 'Upsert';
+  readonly value: Expression;
 }
 
 /**
@@ -223,6 +239,8 @@ interface DmlStatement extends Statement {
 
 export type {
   Statement,
+  VariableDeclarationInGroup,
+  VariableDeclarationGroup,
   IfStatement,
   ForLoopStatement,
   EnhancedForLoopStatement,

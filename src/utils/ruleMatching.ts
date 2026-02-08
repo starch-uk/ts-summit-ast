@@ -284,7 +284,7 @@ function wouldTriggerRule(
     const nodeType =
       normalizedXPath.substring(doubleSlashLength).split('[')[firstIndex]?.trim() ?? '';
 
-    if (node.kind === nodeType) {
+    if (node['@type'] === nodeType) {
       // Check for attribute filters like [@operator='+']
       const attributeMatch = /\[@(\w+)='([^']+)'\]/.exec(normalizedXPath);
       if (attributeMatch) {
@@ -341,7 +341,7 @@ function wouldTriggerRule(
       return {
         confidence: 'partial',
         matchDetails: {
-          matchedPattern: foundMatch.kind,
+          matchedPattern: foundMatch['@type'],
           xpathExpression,
         },
         matchedNode: foundMatch,
@@ -495,7 +495,9 @@ function findRuleMatches(
         // Build sibling nodes (children of parent, excluding self)
         const siblingNodes: ASTNode[] | undefined =
           includeContext && parentNode !== undefined
-            ? getNodeChildren(parentNode).filter((n) => n !== matchedNode && n.location != null)
+            ? getNodeChildren(parentNode).filter(
+                (n) => n !== matchedNode && n.sourceLocation != null
+              )
             : undefined;
 
         matches.push({
@@ -505,7 +507,7 @@ function findRuleMatches(
             matchReason,
             matchedAttributes,
 
-            matchedPattern: result.matchDetails?.matchedPattern ?? matchedNode.kind,
+            matchedPattern: result.matchDetails?.matchedPattern ?? matchedNode['@type'],
           },
           node: matchedNode,
           xpathExpression,

@@ -3,7 +3,8 @@
  * Deserializes declaration-related nodes from JSON.
  */
 
-import type { SourceRange } from '../ast/baseNode.js';
+import type { ASTNode, CanonicalSourceLocation, SourceRange } from '../ast/baseNode.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type {
   StringVal,
   IntegerVal,
@@ -23,11 +24,37 @@ import type {
   AnnotationElementValue,
   ArrayElementValue,
 } from '../ast/initializer.js';
-import type { AnnotationArgument, Modifier, VariableDeclaration } from '../ast/declaration.js';
+import type {
+  Annotation,
+  AnnotationArgument,
+  ClassDeclaration,
+  EnumDeclaration,
+  EnumValue,
+  InterfaceDeclaration,
+  MethodDeclaration,
+  Modifier,
+  Parameter,
+  PropertyDeclaration,
+  TypeParameter,
+  VariableDeclaration,
+} from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
 import type { Identifier } from '../ast/baseNode.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
-import { isAnnotation, isElementValue, isExpression, isModifier } from '../guard/index.js';
+import {
+  isAnnotation,
+  isClassDeclaration,
+  isCompoundStatement,
+  isElementValue,
+  isEnumDeclaration,
+  isExpression,
+  isInterfaceDeclaration,
+  isMethodDeclaration,
+  isModifier,
+  isPropertyDeclaration,
+  isTypeParameter,
+  isVariableDeclaration,
+} from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
 import {
@@ -35,13 +62,111 @@ import {
   getNumberProperty,
   getJsonASTNodeProperty,
   getJsonASTNodeArrayProperty,
+  getOptionalStringProperty,
   isJsonASTNode,
+  isRecord,
 } from './astDeserializer.js';
 import { deserializeTypeRefNode } from './expressionDeserializer.js';
 
 // ============================================================================
 // Deserialization Functions
 // ============================================================================
+
+/**
+ * Parses canonical sourceLocation from JSON (startLine, startColumn, endLine, endColumn or start/end).
+ * @param value - The JSON value.
+ * @param deserializer - The deserializer instance.
+ * @returns CanonicalSourceLocation or undefined.
+ */
+function parseCanonicalSourceLocation(
+  value: unknown,
+  deserializer: Readonly<JsonDeserializer>
+): CanonicalSourceLocation | undefined {
+  const range = deserializer.parseLocation(value);
+  return range ? toCanonicalSourceLocation(range) : undefined;
+}
+
+/**
+ * Filters AST nodes to valid EnumDeclaration members.
+ * @param nodes - Deserialized nodes.
+ * @returns Filtered array of valid enum member declaration types.
+ */
+function filterEnumMembers(nodes: readonly ASTNode[]): NonNullable<EnumDeclaration['members']> {
+  const result: (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[] = [];
+  for (const m of nodes) {
+    if (
+      isClassDeclaration(m) ||
+      isEnumDeclaration(m) ||
+      isInterfaceDeclaration(m) ||
+      isMethodDeclaration(m) ||
+      isPropertyDeclaration(m) ||
+      isVariableDeclaration(m)
+    ) {
+      result.push(m);
+    }
+  }
+  return result;
+}
+
+/**
+ * Filters AST nodes to valid InterfaceDeclaration members.
+ * @param nodes - Deserialized nodes.
+ * @returns Filtered array of valid interface member declaration types.
+ */
+function filterInterfaceMembers(nodes: readonly ASTNode[]): InterfaceDeclaration['members'] {
+  const result: (
+    | ClassDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+  )[] = [];
+  for (const m of nodes) {
+    if (
+      isClassDeclaration(m) ||
+      isInterfaceDeclaration(m) ||
+      isMethodDeclaration(m) ||
+      isPropertyDeclaration(m)
+    ) {
+      result.push(m);
+    }
+  }
+  return result;
+}
+
+/**
+ * Gets optional JsonASTNode property from JSON.
+ * @param json - The JSON node.
+ * @param property - The property name.
+ * @returns The property value if valid JsonASTNode, undefined otherwise.
+ */
+function getOptionalJsonASTNodeProperty(
+  json: Readonly<JsonASTNode>,
+  property: string
+): JsonASTNode | undefined {
+  const v = json[property];
+  return v != null && isJsonASTNode(v) ? v : undefined;
+}
+
+/**
+ * Gets optional JsonASTNode array property from JSON.
+ * @param json - The JSON node.
+ * @param property - The property name.
+ * @returns The property value if valid array of JsonASTNode, undefined otherwise.
+ */
+function getOptionalJsonASTNodeArrayProperty(
+  json: Readonly<JsonASTNode>,
+  property: string
+): JsonASTNode[] | undefined {
+  const v = json[property];
+  return Array.isArray(v) && v.every((x) => isJsonASTNode(x)) ? v : undefined;
+}
 
 /**
  * Deserializes a StringVal literal.
@@ -206,6 +331,63 @@ function deserializeExpressionArrayFromJson(
 }
 
 /**
+ * Normalize a value that may be a full JsonASTNode or literal-shaped/inline object to JsonASTNode.
+ * Used when deserializing MapInitializer pairs (canonical first/second) that may have lost `@type`.
+ * @param raw - The raw value (string, number, or object).
+ * @param context - Description for error messages.
+ * @returns The normalized JsonASTNode.
+ * @throws {Error} If the value cannot be normalized.
+ */
+function toExpressionLikeJsonNode(raw: unknown, context: string): JsonASTNode {
+  if (raw === undefined || raw === null) {
+    throw new Error(`Invalid ${context}: missing value`);
+  }
+  if (typeof raw === 'string') {
+    const result: JsonASTNode = { '@type': 'StringVal', raw: `"${raw}"`, value: raw };
+    return result;
+  }
+  if (typeof raw === 'number') {
+    const result: JsonASTNode = { '@type': 'IntegerVal', raw: String(raw), value: raw };
+    return result;
+  }
+  if (typeof raw === 'object' && isJsonASTNode(raw)) {
+    return raw;
+  }
+  if (typeof raw === 'object' && isRecord(raw)) {
+    const o = raw;
+    const hasType = '@type' in o || 'kind' in o;
+    if (hasType) {
+      const typeStr =
+        typeof o['@type'] === 'string'
+          ? o['@type']
+          : typeof o.kind === 'string'
+            ? o.kind
+            : 'Unknown';
+      const result: JsonASTNode = { ...o, '@type': typeStr };
+      return result;
+    }
+    if ('value' in o) {
+      const v = o.value;
+      const kind =
+        typeof v === 'string'
+          ? 'StringVal'
+          : typeof v === 'number'
+            ? 'IntegerVal'
+            : typeof v === 'boolean'
+              ? 'BooleanVal'
+              : 'StringVal';
+      const resultVal: JsonASTNode = { ...o, '@type': kind };
+      return resultVal;
+    }
+    if ('string' in o) {
+      const resultId: JsonASTNode = { ...o, '@type': 'Identifier' };
+      return resultId;
+    }
+  }
+  throw new Error(`Invalid ${context}: expected expression-like JSON node (got ${typeof raw})`);
+}
+
+/**
  * Deserializes a ConstructorInitializer from JSON.
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
@@ -323,15 +505,15 @@ function deserializeMapInitializer(
       ? pairsProperty
       : [];
   const pairs: { key: Expression; value: Expression }[] = pairsArray.map(
-    (pair: Readonly<{ key?: unknown; value?: unknown }>) => {
-      const rawKey = pair.key;
-      const rawValue = pair.value;
-      if (!isJsonASTNode(rawKey) || !isJsonASTNode(rawValue)) {
-        throw new Error('Invalid MapInitializer: pair key/value is not a JsonASTNode');
-      }
-      const key = deserializeExpressionFromJsonNode(rawKey, deserializer, 'MapInitializer.key');
+    (pair: Readonly<{ key?: unknown; value?: unknown; first?: unknown; second?: unknown }>) => {
+      // Canonical format uses first/second; internal uses key/value
+      const rawKey = pair.key ?? pair.first;
+      const rawValue = pair.value ?? pair.second;
+      const keyNode = toExpressionLikeJsonNode(rawKey, 'MapInitializer.key');
+      const valueNode = toExpressionLikeJsonNode(rawValue, 'MapInitializer.value');
+      const key = deserializeExpressionFromJsonNode(keyNode, deserializer, 'MapInitializer.key');
       const value = deserializeExpressionFromJsonNode(
-        rawValue,
+        valueNode,
         deserializer,
         'MapInitializer.value'
       );
@@ -452,11 +634,13 @@ function deserializeAnnotationArgument(
   const isNameImplicit = (isNameImplicitValue ?? name === undefined) || name === '';
 
   return {
+    '@type': 'AnnotationArgument',
     isNameImplicit,
-    kind: 'AnnotationArgument',
-    location: locationOption?.location,
     name,
     value,
+    ...(locationOption?.location && {
+      sourceLocation: toCanonicalSourceLocation(locationOption.location),
+    }),
   };
 }
 
@@ -477,7 +661,19 @@ function deserializeVariableDeclaration(
   if (!deserializer) {
     throw new Error('Deserializer instance required');
   }
-  const name = getStringProperty(json, 'name');
+  // Summit-AST canonical JSON encodes the variable name as an Identifier node under `id`.
+  // Older/legacy JSON may use a plain string `name`. Support both for compatibility.
+  const idNode =
+    json.id !== null && json.id !== undefined ? getJsonASTNodeProperty(json, 'id') : undefined;
+  const name: string =
+    idNode !== undefined
+      ? (getOptionalStringProperty(idNode, 'string') ??
+        getOptionalStringProperty(idNode, 'name') ??
+        '')
+      : getStringProperty(json, 'name');
+  if (name === '') {
+    throw new Error('Invalid VariableDeclaration: id missing name or string');
+  }
 
   const typeNode = getJsonASTNodeProperty(json, 'type');
   const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
@@ -549,7 +745,7 @@ const VALID_MODIFIER_KEYWORDS: readonly Modifier['keyword'][] = [
  * @throws {Error} If the keyword is invalid.
  */
 function parseModifierKeyword(value: unknown): Modifier['keyword'] {
-  const s = typeof value === 'string' ? value : '';
+  const s = typeof value === 'string' ? value.toLowerCase() : '';
   const found = VALID_MODIFIER_KEYWORDS.find((k) => k === s);
   if (found !== undefined) {
     return found;
@@ -570,25 +766,541 @@ function deserializeModifier(
 ): Modifier {
   const keyword = parseModifierKeyword(getStringProperty(json, 'keyword'));
   return {
+    '@type': 'Modifier',
     keyword,
-    kind: 'Modifier',
-    location: locationOption?.location,
+    ...(locationOption?.location && {
+      sourceLocation: toCanonicalSourceLocation(locationOption.location),
+    }),
   };
 }
 
 /**
  * Deserializes an Identifier node.
+ * Accepts internal (name) or canonical (string).
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
  * @returns The deserialized Identifier node.
+ * @throws {Error} If JSON is invalid.
  */
 function deserializeIdentifier(
   json: Readonly<JsonASTNode>,
   locationOption?: Readonly<{ location: SourceRange }>
 ): Identifier {
-  const name = getStringProperty(json, 'name');
-
+  const name = getOptionalStringProperty(json, 'name') ?? getOptionalStringProperty(json, 'string');
+  if (name === undefined) {
+    throw new Error('Invalid Identifier: missing name or string');
+  }
   return NodeFactory.createIdentifier(name, locationOption);
+}
+
+// ============================================================================
+// Declaration deserialization (Class/Enum/Interface/Method/Property/etc.)
+// ============================================================================
+
+/**
+ * Deserializes type parameters from JSON.
+ * @param json - The JSON node.
+ * @param deserializer - The deserializer instance.
+ * @returns Array of TypeParameter or undefined.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeTypeParameters(
+  json: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+): TypeParameter[] | undefined {
+  const arr =
+    getOptionalJsonASTNodeArrayProperty(json, 'typeParameters') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'typeParameterDeclarations');
+  if (!arr) return undefined;
+  const result: TypeParameter[] = [];
+  for (const tp of arr) {
+    const node = deserializer.deserializeNode(tp);
+    if (!isTypeParameter(node)) {
+      throw new Error('Invalid typeParameters: expected TypeParameter');
+    }
+    result.push(node);
+  }
+  return result;
+}
+
+/**
+ * Deserializes a single Parameter from JSON.
+ * @param json - The parameter JSON node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized Parameter.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeParameter(
+  json: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+): Parameter {
+  const EMPTY_LENGTH = 0;
+  const idNode = getOptionalJsonASTNodeProperty(json, 'id');
+  const typeNode = getOptionalJsonASTNodeProperty(json, 'type');
+  if (!typeNode) throw new Error('Invalid Parameter: missing type');
+  const name = idNode
+    ? deserializeIdentifier(idNode).string
+    : (getOptionalStringProperty(json, 'name') ?? '');
+  const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
+  const modifiersJson = getOptionalJsonASTNodeArrayProperty(json, 'modifiers') ?? [];
+  const modifiers = modifiersJson.map((m: Readonly<JsonASTNode>) => {
+    const mod = deserializer.deserializeNode(m);
+    if (!isModifier(mod)) throw new Error('Invalid Parameter: modifier is not Modifier');
+    return mod;
+  });
+  const param: Parameter = {
+    '@type': 'Parameter',
+    name,
+    type,
+    ...(modifiers.length > EMPTY_LENGTH && { modifiers }),
+    ...(typeof json.sourceLocation === 'object' && json.sourceLocation != null
+      ? ((): Record<string, never> | { sourceLocation?: CanonicalSourceLocation } => {
+          const loc = parseCanonicalSourceLocation(json.sourceLocation, deserializer);
+          return loc != null ? { sourceLocation: loc } : {};
+        })()
+      : {}),
+  };
+  return param;
+}
+
+/**
+ * Extracts name string from JSON value (handles Identifier object without `@type`).
+ * @param nameVal - The name value (string or object with string/name).
+ * @param json - Fallback json for getOptionalStringProperty.
+ * @returns The name string.
+ */
+function extractNameFromJsonValue(
+  nameVal: unknown,
+  json: Readonly<Record<string, unknown>>
+): string {
+  if (
+    nameVal != null &&
+    typeof nameVal === 'object' &&
+    !Array.isArray(nameVal) &&
+    isRecord(nameVal)
+  ) {
+    return (
+      getOptionalStringProperty(nameVal, 'string') ??
+      getOptionalStringProperty(nameVal, 'name') ??
+      ''
+    );
+  }
+  return typeof nameVal === 'string' ? nameVal : (getOptionalStringProperty(json, 'name') ?? '');
+}
+
+/**
+ * Deserializes AnnotationModifier (upstream shape) to Annotation.
+ * Summit-ast uses name as object with `string` property and args array.
+ * @param json - The AnnotationModifier JSON node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized Annotation.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeAnnotationModifier(
+  json: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+): Annotation {
+  const name = extractNameFromJsonValue(json.name, json);
+  const argsJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'arguments') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'args') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'values') ??
+    [];
+  const EMPTY_LENGTH = 0;
+  const args = argsJson.map((a: Readonly<JsonASTNode>) =>
+    deserializeAnnotationArgument(a, undefined, deserializer)
+  );
+  const ann: Annotation = {
+    '@type': 'Annotation',
+    name,
+    ...(args.length > EMPTY_LENGTH && { arguments: args }),
+  };
+  return ann;
+}
+
+/**
+ * Deserializes a single Annotation from JSON.
+ * @param json - The annotation JSON node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized Annotation.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeAnnotation(
+  json: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+): Annotation {
+  const name = extractNameFromJsonValue(json.name, json);
+  const argsJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'arguments') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'args') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'values') ??
+    [];
+  const EMPTY_LENGTH = 0;
+  const args = argsJson.map((a: Readonly<JsonASTNode>) =>
+    deserializeAnnotationArgument(a, undefined, deserializer)
+  );
+  const ann: Annotation = {
+    '@type': 'Annotation',
+    name,
+    ...(args.length > EMPTY_LENGTH && { arguments: args }),
+  };
+  return ann;
+}
+
+/**
+ * Deserializes parameters from JSON.
+ * @param json - The JSON node.
+ * @param deserializer - The deserializer instance.
+ * @returns Array of Parameter.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeParameters(
+  json: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+): Parameter[] {
+  const arr =
+    getOptionalJsonASTNodeArrayProperty(json, 'parameters') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'parameterDeclarations') ??
+    [];
+  const result: Parameter[] = [];
+  for (const p of arr) {
+    result.push(deserializeParameter(p, deserializer));
+  }
+  return result;
+}
+
+/**
+ * Deserializes annotations from JSON.
+ * @param json - The JSON node.
+ * @param deserializer - The deserializer instance.
+ * @returns Array of Annotation or undefined.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeAnnotations(
+  json: Readonly<JsonASTNode>,
+  deserializer: Readonly<JsonDeserializer>
+): Annotation[] | undefined {
+  const arr = getOptionalJsonASTNodeArrayProperty(json, 'annotations');
+  if (!arr) return undefined;
+  const result: Annotation[] = [];
+  for (const a of arr) {
+    const node = deserializer.deserializeNode(a);
+    if (!isAnnotation(node)) throw new Error('Invalid annotations: expected Annotation');
+    result.push(node);
+  }
+  return result;
+}
+
+/**
+ * Deserializes an EnumValue from JSON.
+ * @param json - The JSON object to deserialize.
+ * @returns The deserialized EnumValue node.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeEnumValue(json: Readonly<JsonASTNode>): EnumValue {
+  const idNode = getOptionalJsonASTNodeProperty(json, 'id');
+  if (!idNode) throw new Error('Invalid EnumValue: missing id');
+  const id = deserializeIdentifier(idNode);
+  return NodeFactory.createEnumValue(id);
+}
+
+/**
+ * Deserializes an EnumDeclaration from JSON.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized EnumDeclaration node.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeEnumDeclaration(
+  json: Readonly<JsonASTNode>,
+  locationOption: Readonly<{ location: SourceRange }> | undefined,
+  deserializer: Readonly<JsonDeserializer>
+): EnumDeclaration {
+  const idNode = getOptionalJsonASTNodeProperty(json, 'id');
+  const name = idNode
+    ? deserializeIdentifier(idNode).string
+    : (getOptionalStringProperty(json, 'name') ?? '');
+  const modifiers = (getOptionalJsonASTNodeArrayProperty(json, 'modifiers') ?? []).map(
+    (m: Readonly<JsonASTNode>) => {
+      const mod = deserializer.deserializeNode(m);
+      if (!isModifier(mod)) throw new Error('Invalid EnumDeclaration: modifier is not Modifier');
+      return mod;
+    }
+  );
+  const valuesJson = getOptionalJsonASTNodeArrayProperty(json, 'values') ?? [];
+  const values = valuesJson.map((v: Readonly<JsonASTNode>) => deserializeEnumValue(v));
+  const membersJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'members') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'innerTypeDeclarations');
+  const members = membersJson
+    ? filterEnumMembers(
+        membersJson.map((m: Readonly<JsonASTNode>) => deserializer.deserializeNode(m))
+      )
+    : undefined;
+  return NodeFactory.createEnumDeclaration({
+    members,
+    modifiers,
+    name,
+    options: locationOption,
+    values,
+  });
+}
+
+/**
+ * Deserializes an InterfaceDeclaration from JSON.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized InterfaceDeclaration node.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeInterfaceDeclaration(
+  json: Readonly<JsonASTNode>,
+  locationOption: Readonly<{ location: SourceRange }> | undefined,
+  deserializer: Readonly<JsonDeserializer>
+): InterfaceDeclaration {
+  const idNode = getOptionalJsonASTNodeProperty(json, 'id');
+  const name = idNode
+    ? deserializeIdentifier(idNode).string
+    : (getOptionalStringProperty(json, 'name') ?? '');
+  const modifiers = (getOptionalJsonASTNodeArrayProperty(json, 'modifiers') ?? []).map(
+    (m: Readonly<JsonASTNode>) => {
+      const mod = deserializer.deserializeNode(m);
+      if (!isModifier(mod))
+        throw new Error('Invalid InterfaceDeclaration: modifier is not Modifier');
+      return mod;
+    }
+  );
+  const extendsTypesJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'extendsTypes') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'extendsClause');
+  const extendsClause = extendsTypesJson
+    ? extendsTypesJson.map((t: Readonly<JsonASTNode>) =>
+        deserializeTypeRefNode(t, undefined, deserializer)
+      )
+    : undefined;
+  const membersJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'members') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'methodDeclarations') ??
+    [];
+  const members = filterInterfaceMembers(
+    membersJson.map((m: Readonly<JsonASTNode>) => deserializer.deserializeNode(m))
+  );
+  return NodeFactory.createInterfaceDeclaration({
+    extendsClause,
+    members,
+    modifiers,
+    name,
+    options: locationOption,
+    typeParameters: deserializeTypeParameters(json, deserializer),
+  });
+}
+
+/**
+ * Deserializes a MethodDeclaration from JSON.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized MethodDeclaration node.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeMethodDeclaration(
+  json: Readonly<JsonASTNode>,
+  locationOption: Readonly<{ location: SourceRange }> | undefined,
+  deserializer: Readonly<JsonDeserializer>
+): MethodDeclaration {
+  const EMPTY_LENGTH = 0;
+  const idNode = getOptionalJsonASTNodeProperty(json, 'id');
+  const name = idNode
+    ? deserializeIdentifier(idNode).string
+    : (getOptionalStringProperty(json, 'name') ?? '');
+  const returnTypeNode = getOptionalJsonASTNodeProperty(json, 'returnType');
+  if (!returnTypeNode) throw new Error('Invalid MethodDeclaration: missing returnType');
+  const returnType = deserializeTypeRefNode(returnTypeNode, undefined, deserializer);
+  const modifiers = (getOptionalJsonASTNodeArrayProperty(json, 'modifiers') ?? []).map(
+    (m: Readonly<JsonASTNode>) => {
+      const mod = deserializer.deserializeNode(m);
+      if (!isModifier(mod)) throw new Error('Invalid MethodDeclaration: modifier is not Modifier');
+      return mod;
+    }
+  );
+  const bodyNode = getOptionalJsonASTNodeProperty(json, 'body');
+  const bodyDeserialized = bodyNode ? deserializer.deserializeNode(bodyNode) : undefined;
+  const body =
+    bodyDeserialized != null && isCompoundStatement(bodyDeserialized)
+      ? bodyDeserialized
+      : undefined;
+  const annotations = deserializeAnnotations(json, deserializer);
+  const isConstructor = typeof json.isConstructor === 'boolean' ? json.isConstructor : undefined;
+  return NodeFactory.createMethodDeclaration({
+    modifiers,
+    name,
+    parameters: deserializeParameters(json, deserializer),
+    returnType,
+    ...(annotations != null && annotations.length > EMPTY_LENGTH && { annotations }),
+    ...(body != null && { body }),
+    ...(isConstructor !== undefined && { isConstructor }),
+    options: locationOption,
+    typeParameters: deserializeTypeParameters(json, deserializer),
+  });
+}
+
+/**
+ * Deserializes a PropertyDeclaration from JSON.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized PropertyDeclaration node.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializePropertyDeclaration(
+  json: Readonly<JsonASTNode>,
+  locationOption: Readonly<{ location: SourceRange }> | undefined,
+  deserializer: Readonly<JsonDeserializer>
+): PropertyDeclaration {
+  const idNode = getOptionalJsonASTNodeProperty(json, 'id');
+  const name = idNode
+    ? deserializeIdentifier(idNode).string
+    : (getOptionalStringProperty(json, 'name') ?? '');
+  const typeNode = getOptionalJsonASTNodeProperty(json, 'type');
+  if (!typeNode) throw new Error('Invalid PropertyDeclaration: missing type');
+  const type = deserializeTypeRefNode(typeNode, undefined, deserializer);
+  const modifiers = (getOptionalJsonASTNodeArrayProperty(json, 'modifiers') ?? []).map(
+    (m: Readonly<JsonASTNode>) => {
+      const mod = deserializer.deserializeNode(m);
+      if (!isModifier(mod))
+        throw new Error('Invalid PropertyDeclaration: modifier is not Modifier');
+      return mod;
+    }
+  );
+  const getterNode = getOptionalJsonASTNodeProperty(json, 'getter');
+  const setterNode = getOptionalJsonASTNodeProperty(json, 'setter');
+  const getterDeserialized = getterNode ? deserializer.deserializeNode(getterNode) : undefined;
+  const setterDeserialized = setterNode ? deserializer.deserializeNode(setterNode) : undefined;
+  const getter =
+    getterDeserialized != null && isCompoundStatement(getterDeserialized)
+      ? getterDeserialized
+      : undefined;
+  const setter =
+    setterDeserialized != null && isCompoundStatement(setterDeserialized)
+      ? setterDeserialized
+      : undefined;
+  const annotations = deserializeAnnotations(json, deserializer);
+  return NodeFactory.createPropertyDeclaration({
+    modifiers,
+    name,
+    type,
+    ...(getter != null && { getter }),
+    ...(setter != null && { setter }),
+    ...(annotations && { annotations }),
+    options: locationOption,
+  });
+}
+
+/**
+ * Deserializes a ClassDeclaration from JSON.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized ClassDeclaration node.
+ * @throws {Error} If JSON is invalid.
+ */
+function deserializeClassDeclaration(
+  json: Readonly<JsonASTNode>,
+  locationOption: Readonly<{ location: SourceRange }> | undefined,
+  deserializer: Readonly<JsonDeserializer>
+): ClassDeclaration {
+  const idNode = getOptionalJsonASTNodeProperty(json, 'id');
+  const name = idNode
+    ? deserializeIdentifier(idNode).string
+    : (getOptionalStringProperty(json, 'name') ?? '');
+  const modifiersJson = getOptionalJsonASTNodeArrayProperty(json, 'modifiers') ?? [];
+  const modifiers: Modifier[] = [];
+  const annotationModifiers: Annotation[] = [];
+  for (const m of modifiersJson) {
+    const rec = m as Record<string, unknown>;
+    const typeStr = rec['@type'] ?? rec.kind;
+    if (typeStr === 'AnnotationModifier') {
+      annotationModifiers.push(deserializeAnnotationModifier(m, deserializer));
+    } else {
+      const mod = deserializer.deserializeNode(m);
+      if (!isModifier(mod)) throw new Error('Invalid ClassDeclaration: modifier is not Modifier');
+      modifiers.push(mod);
+    }
+  }
+  const extendsTypeNode =
+    getOptionalJsonASTNodeProperty(json, 'extendsType') ??
+    getOptionalJsonASTNodeProperty(json, 'extendsClause');
+  const extendsClause = extendsTypeNode
+    ? deserializeTypeRefNode(extendsTypeNode, undefined, deserializer)
+    : undefined;
+  const implementsTypesJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'implementsTypes') ??
+    getOptionalJsonASTNodeArrayProperty(json, 'implementsClause');
+  const implementsClause = implementsTypesJson
+    ? implementsTypesJson.map((t: Readonly<JsonASTNode>) =>
+        deserializeTypeRefNode(t, undefined, deserializer)
+      )
+    : undefined;
+
+  // Upstream splits members into fieldDeclarations/propertyDeclarations/methodDeclarations + innerTypeDeclarations.
+  const members: (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | MethodDeclaration
+    | PropertyDeclaration
+    | VariableDeclaration
+  )[] = [];
+  const innerTypes = getOptionalJsonASTNodeArrayProperty(json, 'innerTypeDeclarations') ?? [];
+  for (const it of innerTypes) {
+    const node = deserializer.deserializeNode(it);
+    if (
+      isClassDeclaration(node) ||
+      isEnumDeclaration(node) ||
+      isInterfaceDeclaration(node) ||
+      isMethodDeclaration(node) ||
+      isPropertyDeclaration(node) ||
+      isVariableDeclaration(node)
+    ) {
+      members.push(node);
+    }
+  }
+  const fields = getOptionalJsonASTNodeArrayProperty(json, 'fieldDeclarations') ?? [];
+  for (const f of fields) {
+    const node = deserializer.deserializeNode(f);
+    if (isVariableDeclaration(node)) members.push(node);
+  }
+  const props = getOptionalJsonASTNodeArrayProperty(json, 'propertyDeclarations') ?? [];
+  for (const p of props) {
+    const node = deserializer.deserializeNode(p);
+    if (isPropertyDeclaration(node)) members.push(node);
+  }
+  const methods = getOptionalJsonASTNodeArrayProperty(json, 'methodDeclarations') ?? [];
+  for (const m of methods) {
+    const node = deserializer.deserializeNode(m);
+    if (isMethodDeclaration(node)) members.push(node);
+  }
+
+  const EMPTY_LENGTH = 0;
+  const directAnnotations = deserializeAnnotations(json, deserializer);
+  const annotations =
+    annotationModifiers.length > EMPTY_LENGTH
+      ? [...annotationModifiers, ...(directAnnotations ?? [])]
+      : directAnnotations;
+  const typeParameters = deserializeTypeParameters(json, deserializer);
+
+  return NodeFactory.createClassDeclaration({
+    modifiers,
+    name,
+    ...(extendsClause != null && { extendsClause }),
+    ...(implementsClause != null && { implementsClause }),
+    members,
+    ...(annotations && annotations.length > EMPTY_LENGTH && { annotations }),
+    ...(typeParameters && { typeParameters }),
+    options: locationOption,
+  });
 }
 
 export {
@@ -609,4 +1321,13 @@ export {
   deserializeVariableDeclaration,
   deserializeModifier,
   deserializeIdentifier,
+  deserializeParameter,
+  deserializeAnnotation,
+  deserializeAnnotationModifier,
+  deserializeClassDeclaration,
+  deserializeEnumDeclaration,
+  deserializeEnumValue,
+  deserializeInterfaceDeclaration,
+  deserializeMethodDeclaration,
+  deserializePropertyDeclaration,
 };

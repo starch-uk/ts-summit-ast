@@ -31,8 +31,8 @@ import type {
  */
 function isExpression(node: ASTNode): node is Expression {
   return (
-    'kind' in node &&
-    typeof node.kind === 'string' &&
+    '@type' in node &&
+    typeof node['@type'] === 'string' &&
     [
       'BinaryExpression',
       'UnaryExpression',
@@ -60,7 +60,7 @@ function isExpression(node: ASTNode): node is Expression {
       'SoqlExpression',
       'SoslExpression',
       'TriggerContextVariableExpression',
-    ].includes(node.kind)
+    ].includes(node['@type'])
   );
 }
 
@@ -70,7 +70,7 @@ function isExpression(node: ASTNode): node is Expression {
  * @returns True if the node is a BinaryExpression.
  */
 function isAssignExpression(node: ASTNode): node is AssignExpression {
-  return 'kind' in node && node.kind === 'AssignExpression';
+  return '@type' in node && node['@type'] === 'AssignExpression';
 }
 
 /**
@@ -79,7 +79,7 @@ function isAssignExpression(node: ASTNode): node is AssignExpression {
  * @returns True if the node is a BinaryExpression.
  */
 function isBinaryExpression(node: ASTNode): node is BinaryExpression {
-  return 'kind' in node && node.kind === 'BinaryExpression';
+  return '@type' in node && node['@type'] === 'BinaryExpression';
 }
 
 /**
@@ -88,7 +88,7 @@ function isBinaryExpression(node: ASTNode): node is BinaryExpression {
  * @returns True if the node is a UnaryExpression.
  */
 function isUnaryExpression(node: ASTNode): node is UnaryExpression {
-  return 'kind' in node && node.kind === 'UnaryExpression';
+  return '@type' in node && node['@type'] === 'UnaryExpression';
 }
 
 /**
@@ -97,7 +97,7 @@ function isUnaryExpression(node: ASTNode): node is UnaryExpression {
  * @returns True if the node is a CallExpression.
  */
 function isCallExpression(node: ASTNode): node is CallExpression {
-  return 'kind' in node && node.kind === 'CallExpression';
+  return '@type' in node && node['@type'] === 'CallExpression';
 }
 
 /**
@@ -116,7 +116,7 @@ function isMethodCallExpression(node: ASTNode): node is CallExpression {
  * @returns True if the node is a VariableExpression.
  */
 function isVariableExpression(node: ASTNode): node is VariableExpression {
-  return 'kind' in node && node.kind === 'VariableExpression';
+  return '@type' in node && node['@type'] === 'VariableExpression';
 }
 
 /**
@@ -125,7 +125,7 @@ function isVariableExpression(node: ASTNode): node is VariableExpression {
  * @returns True if the node is a FieldExpression.
  */
 function isFieldExpression(node: ASTNode): node is FieldExpression {
-  return 'kind' in node && node.kind === 'FieldExpression';
+  return '@type' in node && node['@type'] === 'FieldExpression';
 }
 
 /**
@@ -144,7 +144,7 @@ function isFieldAccessExpression(node: ASTNode): node is FieldExpression {
  * @returns True if the node is an ArrayExpression.
  */
 function isArrayExpression(node: ASTNode): node is ArrayExpression {
-  return 'kind' in node && node.kind === 'ArrayExpression';
+  return '@type' in node && node['@type'] === 'ArrayExpression';
 }
 
 /**
@@ -163,7 +163,7 @@ function isArrayAccessExpression(node: ASTNode): node is ArrayExpression {
  * @returns True if the node is a NewExpression.
  */
 function isNewExpression(node: ASTNode): node is NewExpression {
-  return 'kind' in node && node.kind === 'NewExpression';
+  return '@type' in node && node['@type'] === 'NewExpression';
 }
 
 /**
@@ -172,7 +172,7 @@ function isNewExpression(node: ASTNode): node is NewExpression {
  * @returns True if the node is a CastExpression.
  */
 function isCastExpression(node: ASTNode): node is CastExpression {
-  return 'kind' in node && node.kind === 'CastExpression';
+  return '@type' in node && node['@type'] === 'CastExpression';
 }
 
 /**
@@ -181,7 +181,7 @@ function isCastExpression(node: ASTNode): node is CastExpression {
  * @returns True if the node is a TernaryExpression.
  */
 function isTernaryExpression(node: ASTNode): node is TernaryExpression {
-  return 'kind' in node && node.kind === 'TernaryExpression';
+  return '@type' in node && node['@type'] === 'TernaryExpression';
 }
 
 /**
@@ -190,7 +190,7 @@ function isTernaryExpression(node: ASTNode): node is TernaryExpression {
  * @returns True if the node is a ParenthesizedExpression.
  */
 function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpression {
-  return 'kind' in node && node.kind === 'ParenthesizedExpression';
+  return '@type' in node && node['@type'] === 'ParenthesizedExpression';
 }
 
 /**
@@ -199,7 +199,7 @@ function isParenthesizedExpression(node: ASTNode): node is ParenthesizedExpressi
  * @returns True if the node is a SoqlExpression.
  */
 function isSoqlExpression(node: ASTNode): node is SoqlExpression {
-  return 'kind' in node && node.kind === 'SoqlExpression';
+  return '@type' in node && node['@type'] === 'SoqlExpression';
 }
 
 /**
@@ -218,7 +218,7 @@ function isSoqlQueryExpression(node: ASTNode): node is SoqlExpression {
  * @returns True if the node is a SoslExpression.
  */
 function isSoslExpression(node: ASTNode): node is SoslExpression {
-  return 'kind' in node && node.kind === 'SoslExpression';
+  return '@type' in node && node['@type'] === 'SoslExpression';
 }
 
 /**
@@ -239,7 +239,7 @@ function isSoslQueryExpression(node: ASTNode): node is SoslExpression {
 function isTriggerContextVariableExpression(
   node: ASTNode
 ): node is TriggerContextVariableExpression {
-  return 'kind' in node && node.kind === 'TriggerContextVariableExpression';
+  return '@type' in node && node['@type'] === 'TriggerContextVariableExpression';
 }
 
 /**
@@ -248,7 +248,7 @@ function isTriggerContextVariableExpression(
  * @returns True if the node is a ThisExpression.
  */
 function isThisExpression(node: ASTNode): node is ThisExpression {
-  return 'kind' in node && node.kind === 'ThisExpression';
+  return '@type' in node && node['@type'] === 'ThisExpression';
 }
 
 /**
@@ -257,7 +257,7 @@ function isThisExpression(node: ASTNode): node is ThisExpression {
  * @returns True if the node is a SuperExpression.
  */
 function isSuperExpression(node: ASTNode): node is SuperExpression {
-  return 'kind' in node && node.kind === 'SuperExpression';
+  return '@type' in node && node['@type'] === 'SuperExpression';
 }
 
 export {

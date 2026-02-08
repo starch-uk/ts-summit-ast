@@ -26,11 +26,11 @@ function isInitializer(
   node: ASTNode
 ): node is ConstructorInitializer | MapInitializer | SizedArrayInitializer | ValuesInitializer {
   return (
-    'kind' in node &&
-    (node.kind === 'ConstructorInitializer' ||
-      node.kind === 'ValuesInitializer' ||
-      node.kind === 'SizedArrayInitializer' ||
-      node.kind === 'MapInitializer')
+    '@type' in node &&
+    (node['@type'] === 'ConstructorInitializer' ||
+      node['@type'] === 'ValuesInitializer' ||
+      node['@type'] === 'SizedArrayInitializer' ||
+      node['@type'] === 'MapInitializer')
   );
 }
 
@@ -40,7 +40,7 @@ function isInitializer(
  * @returns True if the node is a ConstructorInitializer.
  */
 function isConstructorInitializer(node: ASTNode): node is ConstructorInitializer {
-  return 'kind' in node && node.kind === 'ConstructorInitializer';
+  return '@type' in node && node['@type'] === 'ConstructorInitializer';
 }
 
 /**
@@ -49,7 +49,7 @@ function isConstructorInitializer(node: ASTNode): node is ConstructorInitializer
  * @returns True if the node is a ValuesInitializer.
  */
 function isValuesInitializer(node: ASTNode): node is ValuesInitializer {
-  return 'kind' in node && node.kind === 'ValuesInitializer';
+  return '@type' in node && node['@type'] === 'ValuesInitializer';
 }
 
 /**
@@ -58,7 +58,7 @@ function isValuesInitializer(node: ASTNode): node is ValuesInitializer {
  * @returns True if the node is a SizedArrayInitializer.
  */
 function isSizedArrayInitializer(node: ASTNode): node is SizedArrayInitializer {
-  return 'kind' in node && node.kind === 'SizedArrayInitializer';
+  return '@type' in node && node['@type'] === 'SizedArrayInitializer';
 }
 
 /**
@@ -67,7 +67,7 @@ function isSizedArrayInitializer(node: ASTNode): node is SizedArrayInitializer {
  * @returns True if the node is a MapInitializer.
  */
 function isMapInitializer(node: ASTNode): node is MapInitializer {
-  return 'kind' in node && node.kind === 'MapInitializer';
+  return '@type' in node && node['@type'] === 'MapInitializer';
 }
 
 /**
@@ -79,10 +79,10 @@ function isElementValue(
   node: ASTNode
 ): node is AnnotationElementValue | ArrayElementValue | ExpressionElementValue {
   return (
-    'kind' in node &&
-    (node.kind === 'ExpressionElementValue' ||
-      node.kind === 'AnnotationElementValue' ||
-      node.kind === 'ArrayElementValue')
+    '@type' in node &&
+    (node['@type'] === 'ExpressionElementValue' ||
+      node['@type'] === 'AnnotationElementValue' ||
+      node['@type'] === 'ArrayElementValue')
   );
 }
 
@@ -92,7 +92,7 @@ function isElementValue(
  * @returns True if the node is an ExpressionElementValue.
  */
 function isExpressionElementValue(node: ASTNode): node is ExpressionElementValue {
-  return 'kind' in node && node.kind === 'ExpressionElementValue';
+  return '@type' in node && node['@type'] === 'ExpressionElementValue';
 }
 
 /**
@@ -101,7 +101,7 @@ function isExpressionElementValue(node: ASTNode): node is ExpressionElementValue
  * @returns True if the node is an AnnotationElementValue.
  */
 function isAnnotationElementValue(node: ASTNode): node is AnnotationElementValue {
-  return 'kind' in node && node.kind === 'AnnotationElementValue';
+  return '@type' in node && node['@type'] === 'AnnotationElementValue';
 }
 
 /**
@@ -110,7 +110,7 @@ function isAnnotationElementValue(node: ASTNode): node is AnnotationElementValue
  * @returns True if the node is an ArrayElementValue.
  */
 function isArrayElementValue(node: ASTNode): node is ArrayElementValue {
-  return 'kind' in node && node.kind === 'ArrayElementValue';
+  return '@type' in node && node['@type'] === 'ArrayElementValue';
 }
 
 /**
@@ -119,7 +119,7 @@ function isArrayElementValue(node: ASTNode): node is ArrayElementValue {
  * @returns True if the node is a SoqlOrSoslBinding.
  */
 function isSoqlOrSoslBinding(node: ASTNode): node is SoqlOrSoslBinding {
-  return 'kind' in node && node.kind === 'SoqlOrSoslBinding';
+  return '@type' in node && node['@type'] === 'SoqlOrSoslBinding';
 }
 
 export {

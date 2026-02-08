@@ -110,7 +110,7 @@ describe('Source Extraction Utilities', () => {
       const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
 
       expect(classDecl).not.toBeNull();
-      if (classDecl?.location) {
+      if (classDecl?.location != null) {
         // The location should span from "class" to the end
         const classIndex = input.indexOf('class');
         expect(classDecl.location.start.line).toBe(1);
@@ -136,7 +136,7 @@ describe('Source Extraction Utilities', () => {
       `;
       const classDecl = findFirstNodeOfType(parseAndTranslate(input), isClassDeclaration);
       expect(classDecl).not.toBeNull();
-      if (classDecl?.location) {
+      if (classDecl?.location != null) {
         const extracted = getSourceText(classDecl, input);
         expect(extracted).toContain('Test');
       }
@@ -152,7 +152,7 @@ describe('Source Extraction Utilities', () => {
       const cu = parseAndTranslate(input);
       const fieldDecl = findFirstNodeOfType(cu, isVariableDeclaration);
       expect(fieldDecl).not.toBeNull();
-      if (fieldDecl?.location) {
+      if (fieldDecl?.location != null) {
         const extracted = getSourceText(fieldDecl, input);
         expect(extracted).toContain('String field');
         expect(extracted).toContain("= 'Hello'");
@@ -167,7 +167,7 @@ describe('Source Extraction Utilities', () => {
         }
       `.trim();
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         const extracted = getSourceText(cu, input);
         expect(extracted).toContain('class Test');
       }
@@ -194,7 +194,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(0);
         const extracted = getSourceText(cu, input);
@@ -206,7 +206,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n ';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(1);
         const extracted = getSourceText(cu, input);
@@ -218,7 +218,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\npublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         // The source location starts from the first regular token
         expect(cu.location.start.line).toBe(2);
         expect(cu.location.start.column).toBeGreaterThanOrEqual(0);
@@ -229,7 +229,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\t\tpublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.start.column).toBeGreaterThanOrEqual(2);
       }
     });
@@ -602,7 +602,7 @@ describe('Source Extraction Utilities', () => {
       const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
 
       expect(classDecl).not.toBeNull();
-      if (classDecl?.location) {
+      if (classDecl?.location != null) {
         // The location should span from "class" to the end
         const classIndex = input.indexOf('class');
         expect(classDecl.location.start.line).toBe(1);
@@ -628,7 +628,7 @@ describe('Source Extraction Utilities', () => {
       `;
       const classDecl = findFirstNodeOfType(parseAndTranslate(input), isClassDeclaration);
       expect(classDecl).not.toBeNull();
-      if (classDecl?.location) {
+      if (classDecl?.location != null) {
         const extracted = getSourceText(classDecl, input);
         expect(extracted).toContain('Test');
       }
@@ -644,7 +644,7 @@ describe('Source Extraction Utilities', () => {
       const cu = parseAndTranslate(input);
       const fieldDecl = findFirstNodeOfType(cu, isVariableDeclaration);
       expect(fieldDecl).not.toBeNull();
-      if (fieldDecl?.location) {
+      if (fieldDecl?.location != null) {
         const extracted = getSourceText(fieldDecl, input);
         expect(extracted).toContain('String field');
         expect(extracted).toContain("= 'Hello'");
@@ -659,7 +659,7 @@ describe('Source Extraction Utilities', () => {
         }
       `.trim();
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         const extracted = getSourceText(cu, input);
         expect(extracted).toContain('class Test');
       }
@@ -685,7 +685,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(0);
         const extracted = getSourceText(cu, input);
@@ -697,7 +697,7 @@ describe('Source Extraction Utilities', () => {
       const input = 'public class Test { }\n ';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.end.line).toBe(2);
         expect(cu.location.end.column).toBeGreaterThanOrEqual(1);
         const extracted = getSourceText(cu, input);
@@ -709,7 +709,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\npublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         // The source location starts from the first regular token
         expect(cu.location.start.line).toBe(2);
         expect(cu.location.start.column).toBeGreaterThanOrEqual(0);
@@ -720,7 +720,7 @@ describe('Source Extraction Utilities', () => {
       const input = '\t\tpublic class Test { }';
 
       const cu = parseAndTranslate(input);
-      if (cu.location) {
+      if (cu.location != null) {
         expect(cu.location.start.column).toBeGreaterThanOrEqual(2);
       }
     });

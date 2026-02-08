@@ -48,6 +48,7 @@ import type {
   ArrayElementValue,
 } from '../ast/initializer.js';
 import type { Annotation } from '../ast/declaration.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 
 /** Options for createCallExpression. */
@@ -86,10 +87,9 @@ const SoqlOrSoslBindingFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): SoqlOrSoslBinding {
     return {
+      '@type': 'SoqlOrSoslBinding',
       expr,
-      kind: 'SoqlOrSoslBinding',
-      // Use the expression's location if available
-      location: options?.location ?? expr.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 };
@@ -108,10 +108,10 @@ const InitializerFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ConstructorInitializer {
     return {
+      '@type': 'ConstructorInitializer',
       args: [...args],
-      kind: 'ConstructorInitializer',
-      location: options?.location,
       type,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -121,10 +121,10 @@ const InitializerFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): MapInitializer {
     return {
-      kind: 'MapInitializer',
-      location: options?.location,
-      pairs: [...pairs],
+      '@type': 'MapInitializer',
+      pairs: [...pairs].map(({ key, value }) => ({ first: key, second: value })),
       type,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -134,10 +134,10 @@ const InitializerFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): SizedArrayInitializer {
     return {
-      kind: 'SizedArrayInitializer',
-      location: options?.location,
+      '@type': 'SizedArrayInitializer',
       size,
       type,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -147,10 +147,10 @@ const InitializerFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ValuesInitializer {
     return {
-      kind: 'ValuesInitializer',
-      location: options?.location,
+      '@type': 'ValuesInitializer',
       type,
       values: [...values],
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 };
@@ -192,10 +192,10 @@ const ExpressionFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ArrayExpression {
     return {
+      '@type': 'ArrayExpression',
       array,
       index,
-      kind: 'ArrayExpression',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -211,11 +211,11 @@ const ExpressionFactory = {
       Readonly<Partial<NodeFactoryOptions>>
   ): AssignExpression {
     return {
-      kind: 'AssignExpression',
-      left: options.left,
-      location: options.location,
+      '@type': 'AssignExpression',
       operator,
-      right: options.right,
+      source: options.right,
+      target: options.left,
+      ...(options.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -236,21 +236,21 @@ const ExpressionFactory = {
 
   /**
    * Creates a binary expression.
-   * @param operator - The binary operator to apply (e.g., '+', '-', '==', '!=').
+   * @param op - The binary operator to apply (e.g., '+', '-', '==', '!=').
    * @param options - Object with left, right, and optional factory options.
    * @returns The created binary expression.
    */
   createBinaryExpression(
-    operator: BinaryExpression['operator'],
+    op: BinaryExpression['op'],
     options: Readonly<{ left: Readonly<Expression>; right: Readonly<Expression> }> &
       Readonly<Partial<NodeFactoryOptions>>
   ): BinaryExpression {
     return {
-      kind: 'BinaryExpression',
+      '@type': 'BinaryExpression',
       left: options.left,
-      location: options.location,
-      operator,
+      op,
       right: options.right,
+      ...(options.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -261,35 +261,39 @@ const ExpressionFactory = {
    */
   createCallExpression(options: Readonly<CreateCallExpressionOptions>): CallExpression {
     const { args = [], methodName, options: opts, target, typeArguments } = options;
+    const EMPTY_LENGTH = 0;
     return {
-      arguments: [...args],
-      kind: 'CallExpression',
-      location: opts?.location,
-      methodName,
-      target,
-      typeArguments: typeArguments ? [...typeArguments] : undefined,
+      '@type': 'CallExpression',
+      args: [...args],
+      id: {
+        '@type': 'Identifier',
+        string: methodName,
+        ...(opts?.location && { sourceLocation: toCanonicalSourceLocation(opts.location) }),
+      },
+      receiver: target,
+      ...(typeArguments != null &&
+        typeArguments.length > EMPTY_LENGTH && { typeArguments: [...typeArguments] }),
+      ...(opts?.location && { sourceLocation: toCanonicalSourceLocation(opts.location) }),
     };
   },
 
   /**
    * Creates a cast expression.
    * @param type - The type to cast to.
-   * @param expression - The expression to cast.
+   * @param value - The expression to cast.
    * @param options - Optional factory options.
    * @returns The created cast expression.
    */
   createCastExpression(
     type: Readonly<TypeRef>,
-
-    expression: Readonly<Expression>,
-
+    value: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
   ): CastExpression {
     return {
-      expression,
-      kind: 'CastExpression',
-      location: options?.location,
+      '@type': 'CastExpression',
       type,
+      value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -312,21 +316,24 @@ const ExpressionFactory = {
   /**
    * Creates a field access expression.
    * @param fieldName - The name of the field to access.
-   * @param target - The target expression to access the field on.
+   * @param obj - The target expression to access the field on.
    * @param options - Optional factory options.
    * @returns The created field expression.
    */
   createFieldExpression(
     fieldName: string,
-    target?: Expression,
+    obj?: Expression,
     options?: Readonly<NodeFactoryOptions>
   ): FieldExpression {
     return {
-      field: { kind: 'Identifier', location: options?.location, name: fieldName },
-      fieldName,
-      kind: 'FieldExpression',
-      location: options?.location,
-      target,
+      '@type': 'FieldExpression',
+      field: {
+        '@type': 'Identifier',
+        string: fieldName,
+        ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+      },
+      obj,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -340,14 +347,13 @@ const ExpressionFactory = {
   createInstanceOfExpression(
     expression: Readonly<Expression>,
     type: Readonly<TypeRef>,
-
     options?: Readonly<NodeFactoryOptions>
   ): InstanceOfExpression {
     return {
+      '@type': 'InstanceOfExpression',
       expression,
-      kind: 'InstanceOfExpression',
-      location: options?.location,
       type,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -360,16 +366,14 @@ const ExpressionFactory = {
    */
   createLambdaExpression(
     parameters: readonly LambdaParameter[],
-
     body: Readonly<Expression | Statement>,
-
     options?: Readonly<NodeFactoryOptions>
   ): LambdaExpression {
     return {
+      '@type': 'LambdaExpression',
       body,
-      kind: 'LambdaExpression',
-      location: options?.location,
       parameters: [...parameters],
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -410,16 +414,15 @@ const ExpressionFactory = {
    */
   createNewExpression(
     initializer: Readonly<
-      Readonly<ConstructorInitializer | MapInitializer | SizedArrayInitializer | ValuesInitializer>
+      ConstructorInitializer | MapInitializer | SizedArrayInitializer | ValuesInitializer
     >,
-
     options?: Readonly<NodeFactoryOptions>
   ): NewExpression {
     return {
+      '@type': 'NewExpression',
       initializer,
-      kind: 'NewExpression',
-      location: options?.location,
       type: initializer.type,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -431,13 +434,12 @@ const ExpressionFactory = {
    */
   createParenthesizedExpression(
     expression: Readonly<Expression>,
-
     options?: Readonly<NodeFactoryOptions>
   ): ParenthesizedExpression {
     return {
+      '@type': 'ParenthesizedExpression',
       expression,
-      kind: 'ParenthesizedExpression',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -450,16 +452,14 @@ const ExpressionFactory = {
    */
   createSoqlExpression(
     query: string,
-
     bindings: readonly SoqlOrSoslBinding[] = [],
-
     options?: Readonly<NodeFactoryOptions>
   ): SoqlExpression {
     return {
+      '@type': 'SoqlExpression',
       bindings: [...bindings],
-      kind: 'SoqlExpression',
-      location: options?.location,
       query,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -494,16 +494,14 @@ const ExpressionFactory = {
    */
   createSoslExpression(
     query: string,
-
     bindings: readonly SoqlOrSoslBinding[] = [],
-
     options?: Readonly<NodeFactoryOptions>
   ): SoslExpression {
     return {
+      '@type': 'SoslExpression',
       bindings: [...bindings],
-      kind: 'SoslExpression',
-      location: options?.location,
       query,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -536,8 +534,8 @@ const ExpressionFactory = {
    */
   createSuperExpression(options?: Readonly<NodeFactoryOptions>): SuperExpression {
     return {
-      kind: 'SuperExpression',
-      location: options?.location,
+      '@type': 'SuperExpression',
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -549,11 +547,11 @@ const ExpressionFactory = {
   createTernaryExpression(options: Readonly<CreateTernaryExpressionOptions>): TernaryExpression {
     const { condition, elseExpression, options: opts, thenExpression } = options;
     return {
+      '@type': 'TernaryExpression',
       condition,
-      elseExpression,
-      kind: 'TernaryExpression',
-      location: opts?.location,
-      thenExpression,
+      elseValue: elseExpression,
+      thenValue: thenExpression,
+      ...(opts?.location && { sourceLocation: toCanonicalSourceLocation(opts.location) }),
     };
   },
 
@@ -564,8 +562,8 @@ const ExpressionFactory = {
    */
   createThisExpression(options?: Readonly<NodeFactoryOptions>): ThisExpression {
     return {
-      kind: 'ThisExpression',
-      location: options?.location,
+      '@type': 'ThisExpression',
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -580,29 +578,29 @@ const ExpressionFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): TriggerContextVariableExpression {
     return {
-      kind: 'TriggerContextVariableExpression',
-      location: options?.location,
+      '@type': 'TriggerContextVariableExpression',
       variableName,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
   /**
    * Creates a unary expression.
-   * @param operator - The unary operator to apply (e.g., '!', '++', '--').
+   * @param op - The unary operator to apply (e.g., '!', '++', '--').
    * @param options - Object with operand, prefix (boolean), and optional factory options.
    * @returns The created unary expression.
    */
   createUnaryExpression(
-    operator: UnaryExpression['operator'],
+    op: UnaryExpression['op'],
     options: Readonly<{ operand: Readonly<Expression>; prefix: boolean }> &
       Readonly<Partial<NodeFactoryOptions>>
   ): UnaryExpression {
     return {
-      kind: 'UnaryExpression',
-      location: options.location,
-      operand: options.operand,
-      operator,
+      '@type': 'UnaryExpression',
+      op,
       prefix: options.prefix,
+      value: options.operand,
+      ...(options.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -617,9 +615,9 @@ const ExpressionFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): VariableExpression {
     return {
+      '@type': 'VariableExpression',
       id,
-      kind: 'VariableExpression',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 };
@@ -645,9 +643,9 @@ const LiteralFactory = {
 
   createBooleanVal(value: boolean, options?: Readonly<NodeFactoryOptions>): BooleanVal {
     return {
-      kind: 'BooleanVal',
-      location: options?.location,
+      '@type': 'BooleanVal',
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -657,19 +655,19 @@ const LiteralFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): DecimalVal {
     return {
-      kind: 'DecimalVal',
-      location: options?.location,
+      '@type': 'DecimalVal',
       raw: raw ?? String(value),
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
   createDoubleVal(value: number, raw?: string, options?: Readonly<NodeFactoryOptions>): DoubleVal {
     return {
-      kind: 'DoubleVal',
-      location: options?.location,
+      '@type': 'DoubleVal',
       raw: raw ?? String(value),
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -679,19 +677,19 @@ const LiteralFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): IntegerVal {
     return {
-      kind: 'IntegerVal',
-      location: options?.location,
+      '@type': 'IntegerVal',
       raw: raw ?? String(value),
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
   createLongVal(value: number, raw?: string, options?: Readonly<NodeFactoryOptions>): LongVal {
     return {
-      kind: 'LongVal',
-      location: options?.location,
+      '@type': 'LongVal',
       raw: raw ?? String(value),
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -707,8 +705,8 @@ const LiteralFactory = {
   },
   createNullVal(options?: Readonly<NodeFactoryOptions>): NullVal {
     return {
-      kind: 'NullVal',
-      location: options?.location,
+      '@type': 'NullVal',
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -745,10 +743,10 @@ const LiteralFactory = {
   },
   createStringVal(value: string, raw?: string, options?: Readonly<NodeFactoryOptions>): StringVal {
     return {
-      kind: 'StringVal',
-      location: options?.location,
+      '@type': 'StringVal',
       raw: raw ?? `"${value}"`,
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 };
@@ -766,9 +764,9 @@ const ElementValueFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): AnnotationElementValue {
     return {
-      kind: 'AnnotationElementValue',
-      location: options?.location,
+      '@type': 'AnnotationElementValue',
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -777,9 +775,9 @@ const ElementValueFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ArrayElementValue {
     return {
-      kind: 'ArrayElementValue',
-      location: options?.location,
+      '@type': 'ArrayElementValue',
       values: [...values],
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -788,9 +786,9 @@ const ElementValueFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ExpressionElementValue {
     return {
-      kind: 'ExpressionElementValue',
-      location: options?.location,
+      '@type': 'ExpressionElementValue',
       value,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 };

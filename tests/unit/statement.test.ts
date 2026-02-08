@@ -66,7 +66,7 @@ describe('Statement Translation', () => {
     const base = typeRef.components
       .map((c) => {
         const args = c.args.length > 0 ? `<${c.args.map(typeRefToCodeString).join(', ')}>` : '';
-        return `${c.id.name}${args}`;
+        return `${c.id.string}${args}`;
       })
       .join('.');
     return base + '[]'.repeat(typeRef.arrayNesting || 0);
@@ -104,7 +104,7 @@ describe('Statement Translation', () => {
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
     if (isVariableExpression(node.condition)) {
       const conditionVariable = node.condition;
-      expect(conditionVariable.id.name).toBe('x');
+      expect(conditionVariable.id.string).toBe('x');
     }
     // Original: assertWithMessage("Without `else`, the statement should be null")
     //           .that(node.elseStatement).isNull()
@@ -134,7 +134,7 @@ describe('Statement Translation', () => {
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
     if (isVariableExpression(node.expression)) {
       const conditionVariable = node.expression;
-      expect(conditionVariable.id.name).toBe('x');
+      expect(conditionVariable.id.string).toBe('x');
     }
     // Original: val whenClause = node.whenClauses.first()
     // Original: assertThat(whenClause).isInstanceOf(SwitchStatement.WhenElse::class.java)
@@ -211,7 +211,7 @@ describe('Statement Translation', () => {
       expect(whenTypeCase.downcastDeclarations).toHaveLength(1);
       const [varDecl] = whenTypeCase.downcastDeclarations;
       expect(typeRefToCodeString(varDecl.type)).toBe('Type');
-      expect(varDecl.name).toBe('variable');
+      expect(varDecl.id.string).toBe('variable');
       expect(varDecl.initializer).toBeUndefined();
     }
   });
@@ -229,7 +229,8 @@ describe('Statement Translation', () => {
     expect(node.init).toBeDefined();
     if (isVariableDeclarationStatement(node.init)) {
       // Verify it contains declarations (structure may vary)
-      expect(node.init.declaration).toBeDefined();
+      expect(node.init.group).toBeDefined();
+      expect(node.init.group.declarations.length).toBeGreaterThanOrEqual(1);
     }
     // Original: assertThat(node.initializations).isEmpty()
     // Original: assertThat(node.condition).isNotNull()
@@ -266,7 +267,7 @@ describe('Statement Translation', () => {
     // Original: assertThat(varDecl.type.asCodeString()).isEqualTo("String")
     expect(node.variable.type).toBeDefined();
     // Original: assertThat(varDecl.id.asCodeString()).isEqualTo("s")
-    expect(node.variable.name).toBe('s');
+    expect(node.variable.id.string).toBe('s');
     // Original: assertThat(varDecl.initializer).isNull()
     expect(node.variable.initializer).toBeUndefined();
   });
@@ -284,7 +285,7 @@ describe('Statement Translation', () => {
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
     if (isVariableExpression(node.condition)) {
       const conditionVariable = node.condition;
-      expect(conditionVariable.id.name).toBe('x');
+      expect(conditionVariable.id.string).toBe('x');
     }
   });
 
@@ -301,7 +302,7 @@ describe('Statement Translation', () => {
     // Original: assertThat(conditionVariable.id.asCodeString()).isEqualTo("x")
     if (isVariableExpression(node.condition)) {
       const conditionVariable = node.condition;
-      expect(conditionVariable.id.name).toBe('x');
+      expect(conditionVariable.id.string).toBe('x');
     }
   });
 
@@ -344,7 +345,7 @@ describe('Statement Translation', () => {
     // Original: assertThat(exceptionDecl.id.asCodeString()).isEqualTo("e")
     const [catchBlock] = node.catchClauses;
     expect(catchBlock.variable).toBeDefined();
-    expect(catchBlock.variable.name).toBe('e');
+    expect(catchBlock.variable.id.string).toBe('e');
     expect(catchBlock.variable.type).toBeDefined();
     // Original: assertThat(node.finallyBlock).isNull()
     expect(node.finallyBlock).toBeUndefined();
@@ -408,8 +409,9 @@ describe('Statement Translation', () => {
     expect(children.length).toBe(1);
     // Original: assertWithMessage("Node should have default/unspecified access")
     //           .that(node.access).isNull()
-    // Note: TypeScript DmlStatement may not have access property, or it may be optional
-    expect(node.operation).toBe('insert');
+    // In the canonical AST, the DML operation is encoded in '@type'
+    // as Insert/Update/Delete/Undelete/Upsert/Merge instead of an operation enum.
+    expect(node['@type']).toBe('Insert');
   });
 
   it('update DML statement translation has one child', () => {
@@ -495,11 +497,15 @@ describe('Statement Translation', () => {
     // Original: assertThat(firstDecl.type.asCodeString()).isEqualTo("String")
     // Original: assertWithMessage("Variable 's' should be initialized to null")
     //           .that(firstDecl.initializer).isInstanceOf(LiteralExpression.NullVal::class.java)
-    // Note: TypeScript VariableDeclarationStatement has a single declaration, multiple declarators may be in separate statements
-    expect(node.declaration).toBeDefined();
-    expect(node.declaration.name).toBe('s');
-    expect(node.declaration.type).toBeDefined();
-    expect(isNullLiteral(node.declaration.initializer)).toBe(true);
+    expect(node?.group).toBeDefined();
+    if (!node?.group) {
+      throw new Error('Expected VariableDeclarationStatement.group to be defined');
+    }
+    const [firstDecl] = node.group.declarations;
+    expect(firstDecl).toBeDefined();
+    expect(firstDecl.id.string).toBe('s');
+    expect(typeRefToCodeString(node.group.type)).toBe('String');
+    expect(isNullLiteral(firstDecl.initializer)).toBe(true);
   });
 
   it('expression statement translation has one child', () => {
@@ -523,7 +529,7 @@ describe('Statement Translation', () => {
     // Original: assertWithMessage("Node should have system access")
     //           .that(node.access).isEqualTo(DmlStatement.AccessLevel.SYSTEM_MODE)
     // Note: TypeScript DmlStatement may not have access property, or it may be represented differently
-    expect(node.operation).toBe('upsert');
+    expect(node?.['@type']).toBe('Upsert');
   });
 
   it('dml statement translation with user mode', () => {
@@ -535,6 +541,6 @@ describe('Statement Translation', () => {
     // Original: assertWithMessage("Node should have user access")
     //           .that(node.access).isEqualTo(DmlStatement.AccessLevel.USER_MODE)
     // Note: TypeScript DmlStatement may not have access property, or it may be represented differently
-    expect(node.operation).toBe('insert');
+    expect(node?.['@type']).toBe('Insert');
   });
 });

@@ -11,7 +11,7 @@ describe('Visitor Pattern', () => {
     it('should visit nodes', () => {
       const visitor = new DefaultVisitor();
       const node: ASTNode = {
-        kind: 'Identifier',
+        '@type': 'Identifier',
         name: 'test',
       };
 
@@ -24,7 +24,7 @@ describe('Visitor Pattern', () => {
     it('should visit children', () => {
       const visitor = new DefaultVisitor();
       const node: ASTNode = {
-        kind: 'Block',
+        '@type': 'Block',
         statements: [NodeFactory.createReturnStatement(), NodeFactory.createReturnStatement()],
       };
 
@@ -35,7 +35,7 @@ describe('Visitor Pattern', () => {
     it('should handle nodes without children', () => {
       const visitor = new DefaultVisitor();
       const node: ASTNode = {
-        kind: 'Identifier',
+        '@type': 'Identifier',
         name: 'test',
       };
 
@@ -50,7 +50,8 @@ describe('Visitor Pattern', () => {
 
       class CustomVisitor extends DefaultVisitor {
         public override visit(node: ASTNode): void {
-          visitedKinds.push(node.kind);
+          const kind = typeof node['@type'] === 'string' ? node['@type'] : 'Unknown';
+          visitedKinds.push(kind);
           super.visit(node);
         }
       }
@@ -70,7 +71,8 @@ describe('Visitor Pattern', () => {
 
       class CountingVisitor extends DefaultVisitor {
         public override visit(node: ASTNode): void {
-          visitedKinds.push(node.kind);
+          const kind = typeof node['@type'] === 'string' ? node['@type'] : 'Unknown';
+          visitedKinds.push(kind);
           // Visit children after recording this node
           this.visitChildren(node);
         }
@@ -111,7 +113,7 @@ describe('Visitor Pattern', () => {
   describe('Visitor Interface', () => {
     it('should implement ASTVisitor interface', () => {
       const visitor: ASTVisitor<string> = {
-        visit: (node: ASTNode) => node.kind,
+        visit: (node: ASTNode) => (typeof node['@type'] === 'string' ? node['@type'] : 'Unknown'),
         visitChildren: (_node: ASTNode) => {
           return [];
         },
@@ -192,7 +194,7 @@ describe('Type Guards', () => {
   describe('isStatement', () => {
     it('should identify statement nodes', () => {
       const node: ASTNode = {
-        kind: 'IfStatement',
+        '@type': 'IfStatement',
       };
 
       expect(isStatement(node)).toBe(true);
@@ -200,7 +202,7 @@ describe('Type Guards', () => {
 
     it('should reject non-statement nodes', () => {
       const node: ASTNode = {
-        kind: 'Identifier',
+        '@type': 'Identifier',
       };
 
       expect(isStatement(node)).toBe(false);
@@ -210,7 +212,7 @@ describe('Type Guards', () => {
   describe('isExpression', () => {
     it('should identify expression nodes', () => {
       const node: ASTNode = {
-        kind: 'VariableExpression',
+        '@type': 'VariableExpression',
       };
 
       expect(isExpression(node)).toBe(true);
@@ -218,7 +220,7 @@ describe('Type Guards', () => {
 
     it('should identify literal nodes as expressions', () => {
       const node: ASTNode = {
-        kind: 'StringVal',
+        '@type': 'StringVal',
       };
 
       expect(isExpression(node)).toBe(true);
@@ -228,7 +230,7 @@ describe('Type Guards', () => {
   describe('isLiteral', () => {
     it('should identify literal nodes', () => {
       const node: ASTNode = {
-        kind: 'StringVal',
+        '@type': 'StringVal',
       };
 
       expect(isLiteral(node)).toBe(true);
@@ -238,9 +240,9 @@ describe('Type Guards', () => {
   describe('isType', () => {
     it('should identify type nodes', () => {
       const node: ASTNode = {
+        '@type': 'TypeRef',
         arrayNesting: 0,
         components: [],
-        kind: 'TypeRef',
       };
 
       expect(isType(node)).toBe(true);
@@ -250,7 +252,7 @@ describe('Type Guards', () => {
   describe('isDeclaration', () => {
     it('should identify declaration nodes', () => {
       const node: ASTNode = {
-        kind: 'ClassDeclaration',
+        '@type': 'ClassDeclaration',
       };
 
       expect(isDeclaration(node)).toBe(true);
@@ -260,7 +262,7 @@ describe('Type Guards', () => {
   describe('Specific type guards', () => {
     it('isIfStatement should identify if statements', () => {
       const node: ASTNode = {
-        kind: 'IfStatement',
+        '@type': 'IfStatement',
       };
 
       expect(isIfStatement(node)).toBe(true);
@@ -268,7 +270,7 @@ describe('Type Guards', () => {
 
     it('isIdentifier should identify identifiers', () => {
       const node: ASTNode = {
-        kind: 'Identifier',
+        '@type': 'Identifier',
       };
 
       expect(isIdentifier(node)).toBe(true);
@@ -276,7 +278,7 @@ describe('Type Guards', () => {
 
     it('isStringLiteral should identify string literals', () => {
       const node: ASTNode = {
-        kind: 'StringVal',
+        '@type': 'StringVal',
       };
 
       expect(isStringLiteral(node)).toBe(true);
@@ -284,7 +286,7 @@ describe('Type Guards', () => {
 
     it('isClassDeclaration should identify class declarations', () => {
       const node: ASTNode = {
-        kind: 'ClassDeclaration',
+        '@type': 'ClassDeclaration',
       };
 
       expect(isClassDeclaration(node)).toBe(true);
@@ -294,8 +296,8 @@ describe('Type Guards', () => {
   describe('ApexDoc Type Guards', () => {
     it('isApexDocComment should identify ApexDoc comments', () => {
       const node: ASTNode = {
+        '@type': 'ApexDocComment',
         blockTags: [],
-        kind: 'ApexDocComment',
         mainDescription: 'Test',
       };
 
@@ -304,16 +306,16 @@ describe('Type Guards', () => {
 
     it('isApexDocBlockTag should identify block tags', () => {
       const paramTag: ASTNode = {
+        '@type': 'ApexDocParam',
         description: [],
-        kind: 'ApexDocParam',
         paramName: 'x',
       };
 
       expect(isApexDocBlockTag(paramTag)).toBe(true);
 
       const returnTag: ASTNode = {
+        '@type': 'ApexDocReturn',
         description: [],
-        kind: 'ApexDocReturn',
       };
 
       expect(isApexDocBlockTag(returnTag)).toBe(true);
@@ -321,7 +323,7 @@ describe('Type Guards', () => {
 
     it('isApexDocInlineTag should identify inline tags', () => {
       const codeTag: ASTNode = {
-        kind: 'ApexDocCode',
+        '@type': 'ApexDocCode',
         text: 'Integer x',
       };
 
@@ -330,8 +332,8 @@ describe('Type Guards', () => {
 
     it('isApexDocParam should identify param tags', () => {
       const node: ASTNode = {
+        '@type': 'ApexDocParam',
         description: [],
-        kind: 'ApexDocParam',
         paramName: 'x',
       };
 
@@ -340,8 +342,8 @@ describe('Type Guards', () => {
 
     it('isApexDocReturn should identify return tags', () => {
       const node: ASTNode = {
+        '@type': 'ApexDocReturn',
         description: [],
-        kind: 'ApexDocReturn',
       };
 
       expect(isApexDocReturn(node)).toBe(true);
@@ -349,9 +351,9 @@ describe('Type Guards', () => {
 
     it('isApexDocGroup should identify group tags', () => {
       const node: ASTNode = {
+        '@type': 'ApexDocGroup',
         description: [],
         groupName: 'Utilities',
-        kind: 'ApexDocGroup',
       };
 
       expect(isApexDocGroup(node)).toBe(true);
@@ -359,7 +361,7 @@ describe('Type Guards', () => {
 
     it('isApexDocCode should identify code tags', () => {
       const node: ASTNode = {
-        kind: 'ApexDocCode',
+        '@type': 'ApexDocCode',
         text: 'Integer x = 42;',
       };
 
@@ -368,7 +370,7 @@ describe('Type Guards', () => {
 
     it('should reject non-ApexDoc nodes', () => {
       const node: ASTNode = {
-        kind: 'Identifier',
+        '@type': 'Identifier',
       };
 
       expect(isApexDocComment(node)).toBe(false);
@@ -402,14 +404,14 @@ describe('Comprehensive Type Guards', () => {
     ];
 
     it.each(statementKinds)('should identify %s as statement', (kind) => {
-      const node: ASTNode = { kind };
+      const node: ASTNode = { '@type': kind };
       expect(isStatement(node)).toBe(true);
     });
 
     it('should reject non-statement nodes', () => {
       const nonStatements = ['Identifier', 'StringVal', 'Modifier'];
       for (const kind of nonStatements) {
-        const node: ASTNode = { kind };
+        const node: ASTNode = { '@type': kind };
         expect(isStatement(node)).toBe(false);
       }
     });
@@ -442,7 +444,7 @@ describe('Comprehensive Type Guards', () => {
     ];
 
     it.each(expressionKinds)('should identify %s as expression', (kind) => {
-      const node: ASTNode = { kind };
+      const node: ASTNode = { '@type': kind };
       expect(isExpression(node)).toBe(true);
     });
   });
@@ -459,7 +461,7 @@ describe('Comprehensive Type Guards', () => {
     ];
 
     it.each(literalKinds)('should identify %s as literal', (kind) => {
-      const node: ASTNode = { kind };
+      const node: ASTNode = { '@type': kind };
       expect(isLiteral(node)).toBe(true);
     });
   });
@@ -482,84 +484,84 @@ describe('Comprehensive Type Guards', () => {
     ];
 
     it.each(declarationKinds)('should identify %s as declaration', (kind) => {
-      const node: ASTNode = { kind };
+      const node: ASTNode = { '@type': kind };
       expect(isDeclaration(node)).toBe(true);
     });
   });
 
   describe('Specific Statement Type Guards', () => {
     it('should identify IfStatement', () => {
-      const node: ASTNode = { kind: 'IfStatement' };
+      const node: ASTNode = { '@type': 'IfStatement' };
       expect(isIfStatement(node)).toBe(true);
-      expect(isIfStatement({ kind: 'ReturnStatement' })).toBe(false);
+      expect(isIfStatement({ '@type': 'ReturnStatement' })).toBe(false);
     });
 
     it('should identify ForStatement (ForLoopStatement)', () => {
-      const node: ASTNode = { kind: 'ForLoopStatement' };
+      const node: ASTNode = { '@type': 'ForLoopStatement' };
       expect(isForStatement(node)).toBe(true);
     });
 
     it('should identify WhileStatement (WhileLoopStatement)', () => {
-      const node: ASTNode = { kind: 'WhileLoopStatement' };
+      const node: ASTNode = { '@type': 'WhileLoopStatement' };
       expect(isWhileStatement(node)).toBe(true);
     });
 
     it('should identify ReturnStatement', () => {
-      const node: ASTNode = { kind: 'ReturnStatement' };
+      const node: ASTNode = { '@type': 'ReturnStatement' };
       expect(isReturnStatement(node)).toBe(true);
     });
 
     it('should identify Block (CompoundStatement)', () => {
-      const node: ASTNode = { kind: 'CompoundStatement' };
+      const node: ASTNode = { '@type': 'CompoundStatement' };
       expect(isBlock(node)).toBe(true);
     });
 
     it('should identify ExpressionStatement', () => {
-      const node: ASTNode = { kind: 'ExpressionStatement' };
+      const node: ASTNode = { '@type': 'ExpressionStatement' };
       expect(isExpressionStatement(node)).toBe(true);
     });
 
     it('should identify VariableDeclarationStatement', () => {
-      const node: ASTNode = { kind: 'VariableDeclarationStatement' };
+      const node: ASTNode = { '@type': 'VariableDeclarationStatement' };
       expect(isVariableDeclarationStatement(node)).toBe(true);
     });
   });
 
   describe('Specific Expression Type Guards', () => {
     it('should identify BinaryExpression', () => {
-      const node: ASTNode = { kind: 'BinaryExpression' };
+      const node: ASTNode = { '@type': 'BinaryExpression' };
       expect(isBinaryExpression(node)).toBe(true);
     });
 
     it('should identify MethodCallExpression (CallExpression)', () => {
-      const node: ASTNode = { kind: 'CallExpression' };
+      const node: ASTNode = { '@type': 'CallExpression' };
       expect(isMethodCallExpression(node)).toBe(true);
     });
 
     it('should identify VariableExpression', () => {
-      const node: ASTNode = { kind: 'VariableExpression' };
+      const node: ASTNode = { '@type': 'VariableExpression' };
       expect(isVariableExpression(node)).toBe(true);
     });
   });
 
   describe('Specific Literal Type Guards', () => {
     it('should identify StringLiteral (StringVal)', () => {
-      const node: ASTNode = { kind: 'StringVal' };
+      const node: ASTNode = { '@type': 'StringVal' };
       expect(isStringLiteral(node)).toBe(true);
     });
 
     it('should identify NumberLiteral (IntegerVal)', () => {
-      const node: ASTNode = { kind: 'IntegerVal' };
+      const node: ASTNode = { '@type': 'IntegerVal' };
       expect(isNumberLiteral(node)).toBe(true);
     });
 
     it('should identify BooleanLiteral (BooleanVal)', () => {
-      const node: ASTNode = { kind: 'BooleanVal' };
+      const node: ASTNode = { '@type': 'BooleanVal' };
       expect(isBooleanLiteral(node)).toBe(true);
     });
 
     it('should identify NullLiteral (NullVal)', () => {
-      const node: ASTNode = { kind: 'NullVal' };
+      const node: ASTNode = { '@type': 'NullVal' };
       expect(isNullLiteral(node)).toBe(true);
     });
   });
@@ -573,31 +575,31 @@ describe('Comprehensive Type Guards', () => {
 
   describe('Specific Declaration Type Guards', () => {
     it('should identify ClassDeclaration', () => {
-      const node: ASTNode = { kind: 'ClassDeclaration' };
+      const node: ASTNode = { '@type': 'ClassDeclaration' };
       expect(isClassDeclaration(node)).toBe(true);
     });
 
     it('should identify MethodDeclaration', () => {
-      const node: ASTNode = { kind: 'MethodDeclaration' };
+      const node: ASTNode = { '@type': 'MethodDeclaration' };
       expect(isMethodDeclaration(node)).toBe(true);
     });
 
     it('should identify VariableDeclaration', () => {
-      const node: ASTNode = { kind: 'VariableDeclaration' };
+      const node: ASTNode = { '@type': 'VariableDeclaration' };
       expect(isVariableDeclaration(node)).toBe(true);
     });
   });
 
   describe('Modifier Type Guard', () => {
     it('should identify Modifier', () => {
-      const node: ASTNode = { kind: 'Modifier' };
+      const node: ASTNode = { '@type': 'Modifier' };
       expect(isModifier(node)).toBe(true);
     });
   });
 
   describe('TriggerContextVariableExpression Type Guard', () => {
     it('should identify TriggerContextVariableExpression', () => {
-      const node: ASTNode = { kind: 'TriggerContextVariableExpression' };
+      const node: ASTNode = { '@type': 'TriggerContextVariableExpression' };
       expect(isTriggerContextVariableExpression(node)).toBe(true);
     });
   });
@@ -621,17 +623,16 @@ describe('AST Validation', () => {
     });
 
     it('should detect missing kind property', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing invalid node structure
-      const node: any = {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- invalid node for validation test
+      const node = {
         name: 'test',
-        // Missing kind property
-      };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing invalid node structure
+        // Missing @type property - deliberately invalid for validation test
+      } as unknown as ASTNode;
       const result = validateAST(node);
 
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0]).toContain('kind');
+      expect(result.errors[0]).toMatch(/@type|kind|property/);
     });
 
     it('should validate location information', () => {

@@ -15,6 +15,7 @@ import type {
   MethodDeclaration,
   Modifier,
   PropertyDeclaration,
+  TypeParameter,
   VariableDeclaration,
 } from '../ast/declaration.js';
 
@@ -25,8 +26,8 @@ import type {
  */
 function isDeclaration(node: ASTNode): node is Declaration {
   return (
-    'kind' in node &&
-    typeof node.kind === 'string' &&
+    '@type' in node &&
+    typeof node['@type'] === 'string' &&
     [
       'ClassDeclaration',
       'EnumDeclaration',
@@ -34,7 +35,7 @@ function isDeclaration(node: ASTNode): node is Declaration {
       'MethodDeclaration',
       'PropertyDeclaration',
       'VariableDeclaration',
-    ].includes(node.kind)
+    ].includes(node['@type'])
   );
 }
 
@@ -44,7 +45,7 @@ function isDeclaration(node: ASTNode): node is Declaration {
  * @returns True if the node is a Modifier.
  */
 function isModifier(node: ASTNode): node is Modifier {
-  return 'kind' in node && node.kind === 'Modifier';
+  return '@type' in node && node['@type'] === 'Modifier';
 }
 
 /**
@@ -53,7 +54,7 @@ function isModifier(node: ASTNode): node is Modifier {
  * @returns True if the node is an Identifier.
  */
 function isIdentifier(node: ASTNode): node is Identifier {
-  return 'kind' in node && node.kind === 'Identifier';
+  return '@type' in node && node['@type'] === 'Identifier';
 }
 
 /**
@@ -63,7 +64,7 @@ function isIdentifier(node: ASTNode): node is Identifier {
  * @returns True if the node is a TypeRef.
  */
 function isTypeRef(node: ASTNode): node is TypeRef {
-  return 'kind' in node && node.kind === 'TypeRef';
+  return '@type' in node && node['@type'] === 'TypeRef';
 }
 
 /**
@@ -81,7 +82,7 @@ function isType(node: ASTNode): node is TypeRef {
  * @returns True if the node is a ClassDeclaration.
  */
 function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
-  return 'kind' in node && node.kind === 'ClassDeclaration';
+  return '@type' in node && node['@type'] === 'ClassDeclaration';
 }
 
 /**
@@ -90,7 +91,7 @@ function isClassDeclaration(node: ASTNode): node is ClassDeclaration {
  * @returns True if the node is a MethodDeclaration.
  */
 function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
-  return 'kind' in node && node.kind === 'MethodDeclaration';
+  return '@type' in node && node['@type'] === 'MethodDeclaration';
 }
 
 /**
@@ -99,7 +100,7 @@ function isMethodDeclaration(node: ASTNode): node is MethodDeclaration {
  * @returns True if the node is a VariableDeclaration.
  */
 function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
-  return 'kind' in node && node.kind === 'VariableDeclaration';
+  return '@type' in node && node['@type'] === 'VariableDeclaration';
 }
 
 /**
@@ -108,7 +109,7 @@ function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
  * @returns True if the node is an EnumDeclaration.
  */
 function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
-  return 'kind' in node && node.kind === 'EnumDeclaration';
+  return '@type' in node && node['@type'] === 'EnumDeclaration';
 }
 
 /**
@@ -117,7 +118,7 @@ function isEnumDeclaration(node: ASTNode): node is EnumDeclaration {
  * @returns True if the node is an InterfaceDeclaration.
  */
 function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
-  return 'kind' in node && node.kind === 'InterfaceDeclaration';
+  return '@type' in node && node['@type'] === 'InterfaceDeclaration';
 }
 
 /**
@@ -126,7 +127,7 @@ function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
  * @returns True if the node is a PropertyDeclaration.
  */
 function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaration {
-  return 'kind' in node && node.kind === 'PropertyDeclaration';
+  return '@type' in node && node['@type'] === 'PropertyDeclaration';
 }
 
 /**
@@ -135,7 +136,7 @@ function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaration {
  * @returns True if the node is an EnumValue.
  */
 function isEnumValue(node: ASTNode): node is EnumValue {
-  return 'kind' in node && node.kind === 'EnumValue';
+  return '@type' in node && node['@type'] === 'EnumValue';
 }
 
 /**
@@ -144,7 +145,7 @@ function isEnumValue(node: ASTNode): node is EnumValue {
  * @returns True if the node is an Annotation.
  */
 function isAnnotation(node: ASTNode): node is Annotation {
-  return 'kind' in node && node.kind === 'Annotation';
+  return '@type' in node && node['@type'] === 'Annotation';
 }
 
 /**
@@ -153,7 +154,16 @@ function isAnnotation(node: ASTNode): node is Annotation {
  * @returns True if the node is an AnnotationArgument.
  */
 function isAnnotationArgument(node: ASTNode): node is AnnotationArgument {
-  return 'kind' in node && node.kind === 'AnnotationArgument';
+  return '@type' in node && node['@type'] === 'AnnotationArgument';
+}
+
+/**
+ * Type guard for TypeParameter nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is a TypeParameter.
+ */
+function isTypeParameter(node: ASTNode): node is TypeParameter {
+  return '@type' in node && node['@type'] === 'TypeParameter';
 }
 
 export {
@@ -171,4 +181,5 @@ export {
   isPropertyDeclaration,
   isEnumValue,
   isAnnotationArgument,
+  isTypeParameter,
 };

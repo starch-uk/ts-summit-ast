@@ -5,6 +5,7 @@
  * conforming to the ParseTreeNode interface.
  */
 import type { ParseTreeNode } from '../parser/parseTree.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { ASTNode } from '../ast/baseNode.js';
 import type { Statement } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
@@ -187,13 +188,13 @@ class ASTTranslator implements TranslateContext {
         }
       }
 
-      // Create CompilationUnit manually
-      // Use node.location directly (not getLocationOption which returns { location: ... })
-      const location = this.options.includeLocation && node.location ? node.location : undefined;
+      const loc = this.options.includeLocation && node.location ? node.location : undefined;
+      const [decl] = declarations;
       return {
-        declarations,
-        kind: 'CompilationUnit',
-        location,
+        '@type': 'CompilationUnit',
+        file: '<cls input>',
+        typeDeclaration: decl,
+        ...(loc && { sourceLocation: toCanonicalSourceLocation(loc) }),
       } as ASTNode;
     }
 

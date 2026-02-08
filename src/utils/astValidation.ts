@@ -52,46 +52,40 @@ function validateAST(ast: ASTNode): ASTValidationResult {
   const warnings: string[] = [];
 
   // Check for required properties
-  if (!ast.kind) {
-    errors.push('AST node is missing required "kind" property');
+  if (!ast['@type']) {
+    errors.push('AST node is missing required "@type" property');
   }
 
   // Validate location information if present
   walkAST(ast, {
     enterNode: (node): undefined => {
-      if (node.location) {
-        const { location } = node;
-        const { start, end } = location;
+      const sl = node.sourceLocation;
+      if (sl) {
+        const { startLine, startColumn, endLine, endColumn } = sl;
 
         // Validate location ranges
-        if (start.line > end.line) {
-          const startLineStr = String(start.line);
-          const endLineStr = String(end.line);
+        if (startLine > endLine) {
           errors.push(
-            `Invalid location: start line (${startLineStr}) > end line (${endLineStr}) for node ${node.kind}`
+            `Invalid location: start line (${String(startLine)}) > end line (${String(endLine)}) for node ${node['@type']}`
           );
         }
 
-        if (start.line === end.line && start.column > end.column) {
-          const startColumnStr = String(start.column);
-          const endColumnStr = String(end.column);
-          const lineStr = String(start.line);
+        if (startLine === endLine && startColumn > endColumn) {
           errors.push(
-            `Invalid location: start column (${startColumnStr}) > end column (${endColumnStr}) for node ${node.kind} at line ${lineStr}`
+            `Invalid location: start column (${String(startColumn)}) > end column (${String(endColumn)}) for node ${node['@type']} at line ${String(startLine)}`
           );
         }
 
         // Check for zero-based locations (should be 1-based)
-
         const zeroBase = 0;
         if (
-          start.line === zeroBase ||
-          start.column === zeroBase ||
-          end.line === zeroBase ||
-          end.column === zeroBase
+          startLine === zeroBase ||
+          startColumn === zeroBase ||
+          endLine === zeroBase ||
+          endColumn === zeroBase
         ) {
           warnings.push(
-            `Node ${node.kind} has zero-based location (line/column should be 1-based)`
+            `Node ${node['@type']} has zero-based location (line/column should be 1-based)`
           );
         }
       }
@@ -153,10 +147,10 @@ function compareASTs(ast1: ASTNode, ast2: ASTNode): ASTComparisonResult {
   const differences: string[] = [];
   let typesMatch = true;
 
-  // Compare node kinds
-  if (ast1.kind !== ast2.kind) {
+  // Compare node types
+  if (ast1['@type'] !== ast2['@type']) {
     typesMatch = false;
-    differences.push(`Node type mismatch: ${ast1.kind} vs ${ast2.kind}`);
+    differences.push(`Node type mismatch: ${ast1['@type']} vs ${ast2['@type']}`);
   }
 
   // Recursively compare structure (simplified)
@@ -265,9 +259,9 @@ function getASTStatistics(ast: ASTNode): ASTStatistics {
 
       const initialCount = 0;
       const increment = 1;
-      nodeTypeCounts[node.kind] = (nodeTypeCounts[node.kind] ?? initialCount) + increment;
+      nodeTypeCounts[node['@type']] = (nodeTypeCounts[node['@type']] ?? initialCount) + increment;
 
-      if (node.location) {
+      if (node.sourceLocation) {
         nodesWithLocation++;
       }
 

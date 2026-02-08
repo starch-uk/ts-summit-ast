@@ -126,9 +126,9 @@ function assertFullyTranslated(root: ASTNode): void {
   const untranslatedCount = countNodesOfType(
     root,
     (node) =>
-      node.kind === 'Untranslated' ||
-      node.kind === 'UntranslatedStatement' ||
-      node.kind === 'UntranslatedExpression'
+      node['@type'] === 'Untranslated' ||
+      node['@type'] === 'UntranslatedStatement' ||
+      node['@type'] === 'UntranslatedExpression'
   );
 
   if (untranslatedCount > 0) {

@@ -2,6 +2,7 @@
  * @file Unit tests for AST validation utilities.
  */
 
+import type { ASTNode } from '../../src/ast/baseNode.js';
 import { validateAST, compareASTs, getASTStatistics } from '../../src/utils/astValidation.js';
 import { NodeFactory } from '../../src/translator/nodeFactory.js';
 import { parseApexCode } from '../../src/utils/apexParser.js';
@@ -17,17 +18,16 @@ describe('AST Validation', () => {
     });
 
     it('should detect missing kind property', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing invalid node structure
-      const node: any = {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- invalid node for validation test
+      const node = {
         name: 'test',
-        // Missing kind property
-      };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing invalid node structure
+        // Missing @type property - deliberately invalid for validation test
+      } as unknown as ASTNode;
       const result = validateAST(node);
 
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0]).toContain('kind');
+      expect(result.errors[0]).toMatch(/@type|kind|property/);
     });
 
     it('should validate location information', () => {

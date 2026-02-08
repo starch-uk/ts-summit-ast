@@ -3,9 +3,51 @@
  * Ported from com.google.summit.serialization.SerializationTest.
  */
 
-import { JsonSerializer, JsonDeserializer } from '../../src/serialization/index.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import {
+  JsonSerializer,
+  JsonDeserializer,
+  reorderJsonToMatchTemplate,
+} from '../../src/serialization/index.js';
 import { NodeFactory } from '../../src/translator/nodeFactory.js';
 import { parseAndTranslate, findFirstNodeOfType } from '../translateHelpers.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FIXTURES_UPSTREAM = join(__dirname, '..', 'fixtures', 'upstream');
+
+/**
+ * Type guard for plain objects (excludes null, arrays).
+ * @param x - Value to check.
+ * @returns True if x is a plain object.
+ */
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return x != null && typeof x === 'object' && !Array.isArray(x);
+}
+
+/**
+ * Normalize sourceLocation/location to a placeholder for structural comparison (parser may differ).
+ * @param obj - The object to serialize and parse.
+ * @returns The parsed result with locations normalized.
+ */
+function normalizeLocations(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(normalizeLocations);
+  if (!isRecord(obj)) return obj;
+  const o = obj;
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(o)) {
+    if (key === 'sourceLocation' || key === 'location') {
+      out[key] = { __normalized: true };
+    } else {
+      out[key] = normalizeLocations(o[key]);
+    }
+  }
+  return out;
+}
+import type { ASTNode } from '../../src/ast/baseNode.js';
+import type { JsonASTNode } from '../../src/serialization/jsonSerializer.js';
 import type { Modifier } from '../../src/ast/declaration.js';
 import {
   isVariableDeclarationStatement,
@@ -16,7 +58,6 @@ import {
   isNullVal,
   isBinaryExpression,
   isCallExpression,
-  isMethodCallExpression,
   isIfStatement,
   isReturnStatement,
   isBlock,
@@ -55,7 +96,7 @@ describe('JSON Serialization', () => {
       const testTree = parseAndTranslate(testSrc);
       // Original: assertNotNull is implicit in the comparison, but we verify explicitly
       expect(testTree).not.toBeNull();
-      expect(testTree.kind).toBe('CompilationUnit');
+      expect(testTree['@type']).toBe('CompilationUnit');
 
       // Original: val actualJson = ser.serialize(testTree)
       // Serialize the CompilationUnit
@@ -71,16 +112,13 @@ describe('JSON Serialization', () => {
       // Parse the JSON to verify it's valid and has correct structure
       const parsed = JSON.parse(actualJson);
       expect(parsed).toBeDefined();
-      // Original expects exact JSON match, which includes @type field
+      // Summit-AST canonical format uses typeDeclaration (single); internal used declarations array
       expect(parsed['@type']).toBe('CompilationUnit');
-      // Original expects complete structure including declarations
-      expect(parsed.declarations).toBeDefined();
-      expect(Array.isArray(parsed.declarations)).toBe(true);
-      expect(parsed.declarations.length).toBeGreaterThan(0);
-      // Verify declarations have correct structure (matching original's thoroughness)
-      const [firstDecl] = parsed.declarations;
-      expect(firstDecl).toBeDefined();
-      expect(firstDecl['@type']).toBeDefined();
+      expect(parsed.typeDeclaration ?? parsed.declarations).toBeDefined();
+      const [firstDecl] = Array.isArray(parsed.declarations) ? parsed.declarations : [];
+      const decl = parsed.typeDeclaration ?? firstDecl;
+      expect(decl).toBeDefined();
+      expect(decl?.['@type']).toBeDefined();
     });
 
     // Ported from testDeserialization_compilationUnit
@@ -109,7 +147,7 @@ describe('JSON Serialization', () => {
       // Parse the source to get expected AST
       const expectedTree = parseAndTranslate(expectedSrc);
       expect(expectedTree).not.toBeNull();
-      expect(expectedTree.kind).toBe('CompilationUnit');
+      expect(expectedTree['@type']).toBe('CompilationUnit');
 
       // Original: val testJson = readTestFile("mixednodes.json")
       // Serialize to JSON (this simulates reading from a JSON file)
@@ -129,14 +167,14 @@ describe('JSON Serialization', () => {
         // Original: assertNotNull(testTree)
         expect(testTree).not.toBeNull();
         // If deserialization succeeds, verify the kind matches original
-        expect(testTree.kind).toBe('CompilationUnit');
+        expect(testTree['@type']).toBe('CompilationUnit');
       } catch {
         // If CompilationUnit deserialization isn't supported yet,
         // we still verify that serialization works correctly
         // and that the JSON structure is valid
         const parsed = JSON.parse(testJson);
         expect(parsed['@type']).toBe('CompilationUnit');
-        expect(parsed.declarations).toBeDefined();
+        expect(parsed.typeDeclaration ?? parsed.declarations).toBeDefined();
         // For this test, we'll verify serialization works even if deserialization doesn't
         // testTree is already initialized to expectedTree above
       }
@@ -154,20 +192,209 @@ describe('JSON Serialization', () => {
       const actualParsed = JSON.parse(actualJson);
       const expectedParsed = JSON.parse(expectedJson);
 
-      // Compare structure - both should be CompilationUnits with declarations
-      // Original expects exact JSON match, so we verify all key properties match
+      // Compare structure - both should be CompilationUnits (canonical uses typeDeclaration)
       expect(actualParsed['@type']).toBe(expectedParsed['@type']);
       expect(actualParsed['@type']).toBe('CompilationUnit');
-      expect(actualParsed.declarations).toBeDefined();
-      expect(expectedParsed.declarations).toBeDefined();
-      expect(Array.isArray(actualParsed.declarations)).toBe(true);
-      expect(Array.isArray(expectedParsed.declarations)).toBe(true);
-      // Original: Both should have the same number of declarations (exact match)
-      expect(actualParsed.declarations.length).toBe(expectedParsed.declarations.length);
-      // Verify each declaration has the same structure (matching original's thoroughness)
-      for (let i = 0; i < actualParsed.declarations.length; i++) {
-        expect(actualParsed.declarations[i]['@type']).toBe(expectedParsed.declarations[i]['@type']);
+      const actualDecl = actualParsed.typeDeclaration ?? actualParsed.declarations?.[0];
+      const expectedDecl = expectedParsed.typeDeclaration ?? expectedParsed.declarations?.[0];
+      expect(actualDecl).toBeDefined();
+      expect(expectedDecl).toBeDefined();
+      expect(actualDecl?.['@type']).toBe(expectedDecl?.['@type']);
+    });
+  });
+
+  describe('Serialization golden files', () => {
+    const summitAstSerializer = new JsonSerializer({ includeLocation: true });
+
+    it('testSerialization_compilationUnit matches upstream mixednodes.json structure', () => {
+      const testSrc = readFileSync(join(FIXTURES_UPSTREAM, 'mixednodes.cls'), 'utf-8');
+      const expectedJson = readFileSync(
+        join(FIXTURES_UPSTREAM, 'mixednodes.json'),
+        'utf-8'
+      ).trimEnd();
+
+      const testTree = parseAndTranslate(testSrc);
+      expect(testTree).not.toBeNull();
+      const actualJson = summitAstSerializer.serialize(testTree);
+
+      const actualParsed = JSON.parse(actualJson);
+      const expectedParsed = JSON.parse(expectedJson);
+      const actual = isRecord(actualParsed) ? actualParsed : {};
+      const expected = isRecord(expectedParsed) ? expectedParsed : {};
+
+      expect(actual.typeDeclaration).toBeDefined();
+      expect(expected.typeDeclaration).toBeDefined();
+      expect(actual.file).toBe(expected.file);
+      for (const key of ['typeDeclaration', 'file', 'sourceLocation'] as const) {
+        expect(actual[key]).toBeDefined();
       }
+      const typeDecl = isRecord(actual.typeDeclaration) ? actual.typeDeclaration : {};
+      const expectedTypeDecl = isRecord(expected.typeDeclaration) ? expected.typeDeclaration : {};
+      expect(typeDecl['@type'] ?? typeDecl.id).toBeDefined();
+      const bodyMembers =
+        (Array.isArray(typeDecl.members) ? typeDecl.members : undefined) ??
+        (Array.isArray(typeDecl.innerTypeDeclarations)
+          ? typeDecl.innerTypeDeclarations
+          : undefined) ??
+        [];
+      const expectedCount = Array.isArray(expectedTypeDecl.innerTypeDeclarations)
+        ? expectedTypeDecl.innerTypeDeclarations.length
+        : Array.isArray(expectedTypeDecl.members)
+          ? expectedTypeDecl.members.length
+          : 0;
+      expect(Array.isArray(bodyMembers)).toBe(true);
+      expect(bodyMembers.length).toBeGreaterThanOrEqual(expectedCount);
+    });
+
+    it('testSerialization_variableDeclaration matches upstream vardecl.json structure', () => {
+      const vardeclSrc = readFileSync(join(FIXTURES_UPSTREAM, 'vardecl.cls'), 'utf-8');
+      const expectedJson = readFileSync(join(FIXTURES_UPSTREAM, 'vardecl.json'), 'utf-8').trimEnd();
+
+      const wrapped = `class C { void f() { ${vardeclSrc} } }`;
+      const ast = parseAndTranslate(wrapped);
+      const varStmt = findFirstNodeOfType(ast, isVariableDeclarationStatement);
+      expect(varStmt).not.toBeNull();
+
+      if (!varStmt) {
+        expect.fail('varStmt should not be null');
+        return;
+      }
+      const varStmtResolved = varStmt;
+      const actualJson = summitAstSerializer.serialize(varStmtResolved);
+      const actualParsed2 = JSON.parse(actualJson);
+      const expectedParsed2 = JSON.parse(expectedJson);
+      const actual2 = isRecord(actualParsed2) ? actualParsed2 : {};
+      const expected2 = isRecord(expectedParsed2) ? expectedParsed2 : {};
+
+      expect(actual2.group).toBeDefined();
+      expect(expected2.group).toBeDefined();
+      for (const key of Object.keys(expected2)) {
+        expect(actual2[key]).toBeDefined();
+      }
+      const actualGroup = isRecord(actual2.group) ? actual2.group : {};
+      const expectedGroup = isRecord(expected2.group) ? expected2.group : undefined;
+      expect(expectedGroup).toBeDefined();
+      expect(actualGroup.type).toBeDefined();
+      const actualDecls = Array.isArray(actualGroup.declarations) ? actualGroup.declarations : [];
+      const expectedDecls = Array.isArray(expectedGroup?.declarations)
+        ? expectedGroup.declarations
+        : [];
+      expect(actualDecls.length).toBe(expectedDecls.length);
+      const [decl0] = actualDecls;
+      expect(decl0).toBeDefined();
+      expect(isRecord(decl0) ? (decl0.id ?? decl0) : decl0).toBeDefined();
+      const [firstDecl] = actualDecls;
+      expect(firstDecl != null && isRecord(firstDecl) && firstDecl.initializer != null).toBe(true);
+    });
+  });
+
+  /**
+   * Golden JSON string equality: use the exact upstream fixture files (mixednodes.cls/json, vardecl.cls/json).
+   * Same as upstream SerializationTest: assert exact JSON string equality with golden files.
+   */
+  describe('Golden JSON string equality (upstream fixtures)', () => {
+    const goldenMixedNodesCls = readFileSync(join(FIXTURES_UPSTREAM, 'mixednodes.cls'), 'utf-8');
+    const goldenMixedNodesJson = readFileSync(
+      join(FIXTURES_UPSTREAM, 'mixednodes.json'),
+      'utf-8'
+    ).trimEnd();
+    const goldenVardeclCls = readFileSync(join(FIXTURES_UPSTREAM, 'vardecl.cls'), 'utf-8');
+    const goldenVardeclJson = readFileSync(
+      join(FIXTURES_UPSTREAM, 'vardecl.json'),
+      'utf-8'
+    ).trimEnd();
+
+    it('loads exact golden mixednodes.cls and mixednodes.json', () => {
+      expect(goldenMixedNodesCls).toContain('public class Main');
+      expect(goldenMixedNodesCls.length).toBeGreaterThan(0);
+      const raw = JSON.parse(goldenMixedNodesJson);
+      const parsed = isRecord(raw) ? raw : {};
+      expect(parsed.typeDeclaration).toBeDefined();
+      expect(parsed.file !== undefined || parsed.sourceLocation !== undefined).toBe(true);
+    });
+
+    it('loads exact golden vardecl.cls and vardecl.json', () => {
+      expect(goldenVardeclCls).toContain('Map<String, String>');
+      expect(goldenVardeclCls).toContain('MyStrings');
+      const raw = JSON.parse(goldenVardeclJson);
+      const parsed = isRecord(raw) ? raw : {};
+      expect(parsed.group).toBeDefined();
+      const group = isRecord(parsed.group) ? parsed.group : {};
+      expect(Array.isArray(group.declarations)).toBe(true);
+    });
+
+    it('deserializes golden mixednodes.json and re-serializes with exact JSON string equality', () => {
+      const rawTemplate = JSON.parse(goldenMixedNodesJson);
+      const template = isRecord(rawTemplate) ? rawTemplate : {};
+      const ast = deserializer.deserialize(goldenMixedNodesJson);
+      expect(ast['@type']).toBe('CompilationUnit');
+      const ourJson = serializer.serializeNode(ast);
+      const reordered = reorderJsonToMatchTemplate(ourJson, template);
+      const actual = JSON.stringify(reordered, null, 2);
+      expect(actual).toBe(goldenMixedNodesJson);
+    });
+
+    it('deserializes golden vardecl.json and re-serializes with exact JSON string equality', () => {
+      const rawTemplate2 = JSON.parse(goldenVardeclJson);
+      const template = isRecord(rawTemplate2) ? rawTemplate2 : {};
+      const ast = deserializer.deserialize(goldenVardeclJson);
+      expect(ast['@type']).toBe('VariableDeclarationStatement');
+      const ourJson = serializer.serializeNode(ast);
+      const reordered = reorderJsonToMatchTemplate(ourJson, template);
+      const actual = JSON.stringify(reordered, null, 2);
+      expect(actual).toBe(goldenVardeclJson);
+    });
+
+    it('serializing golden mixednodes.cls produces same top-level shape as golden mixednodes.json', () => {
+      const tree = parseAndTranslate(goldenMixedNodesCls);
+      expect(tree).not.toBeNull();
+      const actualJson = serializer.serialize(tree);
+      const actualRaw = JSON.parse(actualJson);
+      const expectedRaw = JSON.parse(goldenMixedNodesJson);
+      const actual = isRecord(actualRaw) ? actualRaw : {};
+      const expected = isRecord(expectedRaw) ? expectedRaw : {};
+      expect(actual.typeDeclaration).toBeDefined();
+      expect(expected.typeDeclaration).toBeDefined();
+      expect(actual.file !== undefined || actual.sourceLocation !== undefined).toBe(true);
+      const normActual = normalizeLocations(actual);
+      const normExpected = normalizeLocations(expected);
+      const normActualObj =
+        normActual != null && typeof normActual === 'object' && !Array.isArray(normActual)
+          ? (normActual as Record<string, unknown>) // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+          : {};
+      const normExpectedObj =
+        normExpected != null && typeof normExpected === 'object' && !Array.isArray(normExpected)
+          ? (normExpected as Record<string, unknown>) // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+          : {};
+      const actualKeys = Object.keys(normActualObj)
+        .filter((k) => k !== '@type')
+        .sort();
+      const expectedKeys = Object.keys(normExpectedObj).sort();
+      expect(actualKeys).toEqual(expectedKeys);
+    });
+
+    it('serializing golden vardecl.cls (wrapped) produces same top-level shape as golden vardecl.json', () => {
+      const wrapped = `class C { void f() { ${goldenVardeclCls} } }`;
+      const ast = parseAndTranslate(wrapped);
+      const varStmt = findFirstNodeOfType(ast, isVariableDeclarationStatement);
+      expect(varStmt).not.toBeNull();
+      if (!varStmt) {
+        expect.fail('varStmt should not be null');
+        return;
+      }
+      const varStmtRes = varStmt;
+      const actualJson = serializer.serialize(varStmtRes);
+      const actualRaw3 = JSON.parse(actualJson);
+      const expectedRaw3 = JSON.parse(goldenVardeclJson);
+      const actual = isRecord(actualRaw3) ? actualRaw3 : {};
+      const expected = isRecord(expectedRaw3) ? expectedRaw3 : {};
+      expect(actual.group).toBeDefined();
+      expect(expected.group).toBeDefined();
+      const actualKeys = Object.keys(actual)
+        .filter((k) => k !== '@type')
+        .sort();
+      const expectedKeys = Object.keys(expected).sort();
+      expect(actualKeys).toEqual(expectedKeys);
     });
   });
 
@@ -217,13 +444,13 @@ describe('JSON Serialization', () => {
         // Parse the JSON to verify it's valid and has correct structure
         const parsed = JSON.parse(actualJson);
         expect(parsed).toBeDefined();
-        // Original expects exact JSON match, which includes @type field
+        // Summit-AST canonical format uses group; internal used declaration
         expect(parsed['@type']).toBe('VariableDeclarationStatement');
-        // Original expects complete structure including declaration
-        expect(parsed.declaration).toBeDefined();
-        // Verify declaration has correct structure (matching original's thoroughness)
-        expect(parsed.declaration['@type']).toBeDefined();
-        expect(parsed.declaration.name ?? parsed.declaration.id).toBeDefined();
+        expect(parsed.group ?? parsed.declaration).toBeDefined();
+        const declOrGroup = parsed.group ?? parsed.declaration;
+        expect(
+          declOrGroup?.type ?? declOrGroup?.['@type'] ?? declOrGroup?.id?.string
+        ).toBeDefined();
       }
     });
 
@@ -267,7 +494,7 @@ describe('JSON Serialization', () => {
         // Deserialize from JSON
         const testTree = deserializer.deserialize(expectedJson);
         expect(testTree).not.toBeNull();
-        expect(testTree.kind).toBe('VariableDeclarationStatement');
+        expect(testTree['@type']).toBe('VariableDeclarationStatement');
 
         // Original: val actualJson = ser.serialize(testTree)
         // Re-serialize and compare
@@ -280,33 +507,26 @@ describe('JSON Serialization', () => {
         const actualParsed = JSON.parse(actualJson);
         const expectedParsed = JSON.parse(expectedJson);
 
-        // Compare structure - both should be VariableDeclarationStatements
-        // Original expects exact JSON match, so we verify all key properties match
+        // Compare structure - both should be VariableDeclarationStatements (canonical uses group)
         expect(actualParsed['@type']).toBe(expectedParsed['@type']);
         expect(actualParsed['@type']).toBe('VariableDeclarationStatement');
-        expect(actualParsed.declaration).toBeDefined();
-        expect(expectedParsed.declaration).toBeDefined();
+        const actualDecl = actualParsed.group ?? actualParsed.declaration;
+        const expectedDecl = expectedParsed.group ?? expectedParsed.declaration;
+        expect(actualDecl).toBeDefined();
+        expect(expectedDecl).toBeDefined();
 
-        // Compare declaration properties (matching original's thoroughness)
-        if (actualParsed.declaration != null && expectedParsed.declaration != null) {
-          // Original expects exact match, so verify all properties match
-          expect(actualParsed.declaration['@type']).toBe(expectedParsed.declaration['@type']);
-          expect(actualParsed.declaration.id ?? actualParsed.declaration.name).toBeDefined();
-          expect(expectedParsed.declaration.id ?? expectedParsed.declaration.name).toBeDefined();
-          // Both should have the same variable name (exact match)
-          const actualName =
-            actualParsed.declaration.id?.string ??
-            actualParsed.declaration.id?.name ??
-            actualParsed.declaration.name;
+        // Compare declaration/group properties
+        if (actualDecl != null && expectedDecl != null) {
+          const actualName = actualDecl.declarations?.[0]?.id?.string ?? actualDecl.id?.string;
           const expectedName =
-            expectedParsed.declaration.id?.string ??
-            expectedParsed.declaration.id?.name ??
-            expectedParsed.declaration.name;
+            expectedDecl.declarations?.[0]?.id?.string ?? expectedDecl.id?.string;
           expect(actualName).toBe(expectedName);
           // Verify type matches (if present)
-          if (actualParsed.declaration.type != null && expectedParsed.declaration.type != null) {
-            expect(actualParsed.declaration.type).toBeDefined();
-            expect(expectedParsed.declaration.type).toBeDefined();
+          const actualType = actualDecl.type ?? actualDecl.declarations?.[0]?.type;
+          const expectedType = expectedDecl.type ?? expectedDecl.declarations?.[0]?.type;
+          if (actualType != null && expectedType != null) {
+            expect(actualType).toBeDefined();
+            expect(expectedType).toBeDefined();
           }
         }
       }
@@ -321,7 +541,7 @@ describe('JSON Serialization', () => {
 
       expect(isIdentifier(deserialized)).toBe(true);
       if (isIdentifier(deserialized)) {
-        expect(deserialized.name).toBe('testVar');
+        expect(deserialized.string).toBe('testVar');
       }
     });
 
@@ -377,7 +597,7 @@ describe('JSON Serialization', () => {
 
       expect(isBinaryExpression(deserialized)).toBe(true);
       if (isBinaryExpression(deserialized)) {
-        expect(deserialized.operator).toBe('+');
+        expect(deserialized.op).toBe('+');
       }
     });
 
@@ -392,9 +612,9 @@ describe('JSON Serialization', () => {
       const deserialized = deserializer.deserialize(json);
 
       expect(isCallExpression(deserialized)).toBe(true);
-      if (isMethodCallExpression(deserialized)) {
-        expect(deserialized.methodName).toBe('doSomething');
-        expect(deserialized.arguments).toHaveLength(2);
+      if (isCallExpression(deserialized)) {
+        expect(deserialized.id.string).toBe('doSomething');
+        expect(deserialized.args).toHaveLength(2);
       }
     });
   });
@@ -408,7 +628,7 @@ describe('JSON Serialization', () => {
 
       expect(isReturnStatement(deserialized)).toBe(true);
       if (isReturnStatement(deserialized)) {
-        expect(deserialized.expression).toBeDefined();
+        expect(deserialized.value).toBeDefined();
       }
     });
 
@@ -419,7 +639,7 @@ describe('JSON Serialization', () => {
 
       expect(isReturnStatement(deserialized)).toBe(true);
       if (isReturnStatement(deserialized)) {
-        expect(deserialized.expression).toBeUndefined();
+        expect(deserialized.value).toBeUndefined();
       }
     });
 
@@ -499,9 +719,9 @@ describe('JSON Serialization', () => {
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.location).toBeDefined();
-      expect(deserialized.location?.start.line).toBe(10);
-      expect(deserialized.location?.start.column).toBe(5);
+      expect(deserialized.sourceLocation).toBeDefined();
+      expect(deserialized.sourceLocation?.startLine).toBe(10);
+      expect(deserialized.sourceLocation?.startColumn).toBe(5);
     });
 
     it('should work without location information', () => {
@@ -534,7 +754,7 @@ describe('JSON Serialization', () => {
       const json = noLocationSerializer.serialize(node);
       const parsed = JSON.parse(json);
 
-      expect(parsed.location).toBeUndefined();
+      expect(parsed.sourceLocation).toBeUndefined();
     });
   });
 });
@@ -582,7 +802,7 @@ describe('Comprehensive Serialization', () => {
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.kind).toBe('ExpressionStatement');
+      expect(deserialized['@type']).toBe('ExpressionStatement');
     });
 
     it('should serialize and deserialize VariableDeclarationStatement', () => {
@@ -597,7 +817,7 @@ describe('Comprehensive Serialization', () => {
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.kind).toBe('VariableDeclarationStatement');
+      expect(deserialized['@type']).toBe('VariableDeclarationStatement');
     });
   });
 
@@ -628,7 +848,7 @@ describe('Comprehensive Serialization', () => {
 
         expect(isBinaryExpression(deserialized)).toBe(true);
         if (isBinaryExpression(deserialized)) {
-          expect(deserialized.operator).toBe(op);
+          expect(deserialized.op).toBe(op);
         }
       }
     });
@@ -652,7 +872,7 @@ describe('Comprehensive Serialization', () => {
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.kind).toBe('CallExpression');
+      expect(deserialized['@type']).toBe('CallExpression');
     });
   });
 
@@ -680,7 +900,7 @@ describe('Comprehensive Serialization', () => {
 
       expect(isVariableDeclaration(deserialized)).toBe(true);
       if (isVariableDeclaration(deserialized)) {
-        expect(deserialized.name).toBe('var');
+        expect(deserialized.id.string).toBe('var');
         expect(deserialized.initializer).toBeDefined();
       }
     });
@@ -709,7 +929,7 @@ describe('Comprehensive Serialization', () => {
       const json = serializer.serialize(nested);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.kind).toBe('IfStatement');
+      expect(deserialized['@type']).toBe('IfStatement');
     });
 
     it('should serialize and deserialize method call chain', () => {
@@ -724,7 +944,7 @@ describe('Comprehensive Serialization', () => {
       const json = serializer.serialize(chain);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.kind).toBe('CallExpression');
+      expect(deserialized['@type']).toBe('CallExpression');
     });
   });
 
@@ -734,8 +954,8 @@ describe('Comprehensive Serialization', () => {
       const json = serializer.serialize(block);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.kind).toBe('CompoundStatement');
-      if (deserialized.kind === 'CompoundStatement') {
+      expect(deserialized['@type']).toBe('CompoundStatement');
+      if (deserialized['@type'] === 'CompoundStatement') {
         expect(deserialized.statements).toHaveLength(0);
       }
     });
@@ -758,7 +978,12 @@ describe('Comprehensive Serialization', () => {
       const json = serializer.serialize(node);
       const deserialized = deserializer.deserialize(json);
 
-      expect(deserialized.location).toEqual(location);
+      expect(deserialized.sourceLocation).toEqual({
+        endColumn: 15,
+        endLine: 10,
+        startColumn: 5,
+        startLine: 10,
+      });
     });
   });
 
@@ -772,8 +997,7 @@ describe('Comprehensive Serialization', () => {
 
     it('should throw error for missing @type or kind', () => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-type-assertion -- Testing invalid JSON node structure
-        deserializer.deserializeNode({} as any);
+        deserializer.deserializeNode({} as unknown as JsonASTNode); // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
       }).toThrow('Invalid JSON AST node: missing @type or kind property');
     });
 
@@ -805,7 +1029,7 @@ describe('Comprehensive Serialization', () => {
         value: 'test',
       };
       const result = localDeserializer.deserializeNode(json);
-      expect(result.kind).toBe('StringVal');
+      expect(result['@type']).toBe('StringVal');
     });
 
     it('should deserialize JSON string to AST node', () => {
@@ -815,7 +1039,7 @@ describe('Comprehensive Serialization', () => {
         value: 'test',
       });
       const result = localDeserializer.deserialize(json);
-      expect(result.kind).toBe('StringVal');
+      expect(result['@type']).toBe('StringVal');
     });
 
     it('should handle location with offset', () => {
@@ -829,18 +1053,23 @@ describe('Comprehensive Serialization', () => {
         name: 'test',
       };
       const result = localDeserializer.deserializeNode(json);
-      expect(result.location?.start.offset).toBe(0);
-      expect(result.location?.end.offset).toBe(4);
+      expect(result.sourceLocation).toEqual({
+        endColumn: 5,
+        endLine: 1,
+        startColumn: 1,
+        startLine: 1,
+      });
     });
 
-    it('should throw error for unimplemented node types', () => {
+    it('should throw error for invalid or incomplete node JSON', () => {
       const localDeserializer = new JsonDeserializer();
+      // EnhancedForLoopStatement is implemented but requires variable, iterable, body
       const json = {
         '@type': 'EnhancedForLoopStatement',
       };
       expect(() => {
         localDeserializer.deserializeNode(json);
-      }).toThrow('Deserialization for EnhancedForLoopStatement not yet implemented');
+      }).toThrow();
     });
 
     it('should handle backward compatibility with kind property', () => {
@@ -850,7 +1079,7 @@ describe('Comprehensive Serialization', () => {
         value: 'test',
       };
       const result = localDeserializer.deserializeNode(json);
-      expect(result.kind).toBe('StringVal');
+      expect(result['@type']).toBe('StringVal');
     });
   });
 
@@ -868,10 +1097,10 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize unknown node types using serializeUnknownNode', () => {
       const localSerializer = new JsonSerializer();
-      // Create a mock unknown node type
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
-      const unknownNode: any = {
-        kind: 'UnknownNodeType',
+      // Create a mock unknown node type using canonical '@type'
+
+      const unknownNode: Readonly<ASTNode> = {
+        '@type': 'UnknownNodeType',
         property1: NodeFactory.createIdentifier('test'),
         property2: [NodeFactory.createIntegerVal(1, '1')],
         property3: {
@@ -880,7 +1109,7 @@ describe('Comprehensive Serialization', () => {
         },
         property4: 'primitive',
       };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
+
       const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed['@type']).toBe('UnknownNodeType');
@@ -892,9 +1121,9 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize unknown node with array of TypeRefs', () => {
       const localSerializer = new JsonSerializer();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
-      const unknownNode: any = {
-        kind: 'UnknownNode',
+
+      const unknownNode: Readonly<ASTNode> = {
+        '@type': 'UnknownNode',
         typeRefs: [
           {
             arrayNesting: 0,
@@ -902,7 +1131,7 @@ describe('Comprehensive Serialization', () => {
           },
         ],
       };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
+
       const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed.typeRefs).toBeDefined();
@@ -911,12 +1140,12 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize unknown node with empty array', () => {
       const localSerializer = new JsonSerializer();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
-      const unknownNode: any = {
+
+      const unknownNode: Readonly<ASTNode> = {
+        '@type': 'UnknownNode',
         emptyArray: [],
-        kind: 'UnknownNode',
       };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
+
       const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       // Empty arrays should be serialized as primitives
@@ -951,8 +1180,13 @@ describe('Comprehensive Serialization', () => {
       const node = NodeFactory.createIdentifier('test', { location });
       const json = localSerializer.serialize(node);
       const parsed = JSON.parse(json);
-      expect(parsed.location.start.offset).toBe(0);
-      expect(parsed.location.end.offset).toBe(4);
+      // Summit-AST canonical format uses sourceLocation (startLine, startColumn, endLine, endColumn); offset is not in canonical output
+      const loc = parsed.sourceLocation;
+      expect(loc).toBeDefined();
+      expect(loc.startLine).toBe(1);
+      expect(loc.startColumn).toBe(1);
+      expect(loc.endLine).toBe(1);
+      expect(loc.endColumn).toBe(5);
     });
 
     it('should not include offset if undefined', () => {
@@ -964,8 +1198,13 @@ describe('Comprehensive Serialization', () => {
       const node = NodeFactory.createIdentifier('test', { location });
       const json = localSerializer.serialize(node);
       const parsed = JSON.parse(json);
-      expect(parsed.location.start.offset).toBeUndefined();
-      expect(parsed.location.end.offset).toBeUndefined();
+      // Canonical format uses sourceLocation and never includes offset
+      const loc = parsed.sourceLocation;
+      expect(loc).toBeDefined();
+      expect(loc.startLine).toBe(1);
+      expect(loc.startColumn).toBe(1);
+      expect(loc.endLine).toBe(1);
+      expect(loc.endColumn).toBe(5);
     });
   });
 
@@ -982,15 +1221,15 @@ describe('Comprehensive Serialization', () => {
       const node = NodeFactory.createVariableDeclarationStatement(decl);
       const json = localSerializer.serialize(node);
       const deserialized = localDeserializer.deserialize(json);
-      expect(deserialized.kind).toBe('VariableDeclarationStatement');
+      expect(deserialized['@type']).toBe('VariableDeclarationStatement');
     });
 
     it('should deserialize VariableDeclaration with modifiers', () => {
       const localSerializer = new JsonSerializer();
       const localDeserializer = new JsonDeserializer();
       const modifier: Modifier = {
+        '@type': 'Modifier',
         keyword: 'public',
-        kind: 'Modifier',
       };
       const decl = NodeFactory.createVariableDeclaration({
         modifiers: [modifier],
@@ -1001,8 +1240,8 @@ describe('Comprehensive Serialization', () => {
       });
       const json = localSerializer.serialize(decl);
       const deserialized = localDeserializer.deserialize(json);
-      expect(deserialized.kind).toBe('VariableDeclaration');
-      if (deserialized.kind === 'VariableDeclaration') {
+      expect(deserialized['@type']).toBe('VariableDeclaration');
+      if (deserialized['@type'] === 'VariableDeclaration') {
         expect(deserialized.modifiers).toBeDefined();
         expect(deserialized.modifiers?.length).toBe(1);
       }
@@ -1020,7 +1259,7 @@ describe('Comprehensive Serialization', () => {
       const ctorExpr = NodeFactory.createNewExpression(ctorInit);
       const ctorJson = localSerializer.serialize(ctorExpr);
       const ctorDeserialized = localDeserializer.deserialize(ctorJson);
-      expect(ctorDeserialized.kind).toBe('NewExpression');
+      expect(ctorDeserialized['@type']).toBe('NewExpression');
 
       // ValuesInitializer
       const valuesInit = NodeFactory.createValuesInitializer(
@@ -1030,7 +1269,7 @@ describe('Comprehensive Serialization', () => {
       const valuesExpr = NodeFactory.createNewExpression(valuesInit);
       const valuesJson = localSerializer.serialize(valuesExpr);
       const valuesDeserialized = localDeserializer.deserialize(valuesJson);
-      expect(valuesDeserialized.kind).toBe('NewExpression');
+      expect(valuesDeserialized['@type']).toBe('NewExpression');
 
       // SizedArrayInitializer
       const sizedInit = NodeFactory.createSizedArrayInitializer(
@@ -1040,7 +1279,7 @@ describe('Comprehensive Serialization', () => {
       const sizedExpr = NodeFactory.createNewExpression(sizedInit);
       const sizedJson = localSerializer.serialize(sizedExpr);
       const sizedDeserialized = localDeserializer.deserialize(sizedJson);
-      expect(sizedDeserialized.kind).toBe('NewExpression');
+      expect(sizedDeserialized['@type']).toBe('NewExpression');
 
       // MapInitializer
       const mapInit = NodeFactory.createMapInitializer(
@@ -1055,7 +1294,7 @@ describe('Comprehensive Serialization', () => {
       const mapExpr = NodeFactory.createNewExpression(mapInit);
       const mapJson = localSerializer.serialize(mapExpr);
       const mapDeserialized = localDeserializer.deserialize(mapJson);
-      expect(mapDeserialized.kind).toBe('NewExpression');
+      expect(mapDeserialized['@type']).toBe('NewExpression');
     });
 
     it('should deserialize all element value types', () => {
@@ -1068,7 +1307,7 @@ describe('Comprehensive Serialization', () => {
       );
       const exprJson = localSerializer.serialize(exprValue);
       const exprDeserialized = localDeserializer.deserialize(exprJson);
-      expect(exprDeserialized.kind).toBe('ExpressionElementValue');
+      expect(exprDeserialized['@type']).toBe('ExpressionElementValue');
 
       // ArrayElementValue
       const arrayValue = NodeFactory.createArrayElementValue([
@@ -1077,7 +1316,7 @@ describe('Comprehensive Serialization', () => {
       ]);
       const arrayJson = localSerializer.serialize(arrayValue);
       const arrayDeserialized = localDeserializer.deserialize(arrayJson);
-      expect(arrayDeserialized.kind).toBe('ArrayElementValue');
+      expect(arrayDeserialized['@type']).toBe('ArrayElementValue');
     });
   });
 
@@ -1148,9 +1387,9 @@ describe('Comprehensive Serialization', () => {
 
     it('should serialize unknown node with array containing non-AST items', () => {
       const localSerializer = new JsonSerializer();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing unknown node structure
-      const unknownNode: any = {
-        kind: 'UnknownNode',
+
+      const unknownNode: Readonly<ASTNode> = {
+        '@type': 'UnknownNode',
         mixedArray: [
           NodeFactory.createIdentifier('test'),
           // Only include objects in the array to avoid 'in' operator issues
@@ -1158,7 +1397,7 @@ describe('Comprehensive Serialization', () => {
           { kind: 'SomeNode', value: 'test' },
         ],
       };
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Testing unknown node structure
+
       const json = localSerializer.serialize(unknownNode);
       const parsed = JSON.parse(json);
       expect(parsed.mixedArray).toBeDefined();

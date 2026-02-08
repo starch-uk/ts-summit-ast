@@ -43,7 +43,7 @@ function typeRefToCodeString(typeRef: TypeRef): string {
   }
   const typeString: string = typeRef.components
     .map((comp) => {
-      let result: string = comp.id.name;
+      let result: string = comp.id.string;
       if (comp.args != null && comp.args.length > 0) {
         const argsString = String(comp.args.map(typeRefToCodeString).join(', '));
         result = result + '<' + argsString + '>';
@@ -52,8 +52,8 @@ function typeRefToCodeString(typeRef: TypeRef): string {
     })
     .join('.');
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type validated by arrayNesting property
-  return typeString + '[]'.repeat((typeRef.arrayNesting ?? 0) as number);
+  const nesting = typeRef.arrayNesting ?? 0;
+  return typeString + '[]'.repeat(typeof nesting === 'number' ? nesting : 0);
 }
 
 /**
@@ -76,11 +76,15 @@ function isVoidType(typeRef: TypeRef | undefined): boolean {
  * @returns A fully-qualified member name string.
  */
 function getQualifiedName(decl: ClassMember, enclosingClassName?: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- isVariableDeclaration accepts ASTNode
+  const name: string = isVariableDeclaration(decl)
+    ? decl.id.string
+    : // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ClassMember has name or id
+      (decl as { name: string }).name;
   if (enclosingClassName != null && enclosingClassName !== '') {
-    return enclosingClassName + '.' + String(decl.name);
+    return `${enclosingClassName}.${name}`;
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- ClassMember type may be unresolved in test context
-  return decl.name;
+  return name;
 }
 
 /**
@@ -191,11 +195,10 @@ describe('Class Declaration Translation', () => {
       expect(enclosingClassDecl.name).toBe('EnclosingClass');
 
       // Find inner class
-      /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isClassDeclaration guard */
+
       const innerClassDecl = innerTypes.find(
-        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
-          isClassDeclaration(m) && m.name === 'InnerClass'
-      ) as ClassDeclaration | undefined;
+        (m): m is ClassDeclaration => isClassDeclaration(m) && m.name === 'InnerClass'
+      );
       expect(innerClassDecl).toBeDefined();
       if (innerClassDecl) {
         // Original: getEnclosingType() == enclosingClassDecl
@@ -208,11 +211,10 @@ describe('Class Declaration Translation', () => {
       }
 
       // Find inner interface
-      /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isInterfaceDeclaration guard */
+
       const innerInterfaceDecl = innerTypes.find(
-        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
-          isInterfaceDeclaration(m) && m.name === 'InnerInterface'
-      ) as InterfaceDeclaration | undefined;
+        (m): m is InterfaceDeclaration => isInterfaceDeclaration(m) && m.name === 'InnerInterface'
+      );
       expect(innerInterfaceDecl).toBeDefined();
       if (innerInterfaceDecl) {
         // Original: getEnclosingType() == enclosingClassDecl
@@ -224,12 +226,10 @@ describe('Class Declaration Translation', () => {
       }
 
       // Find inner enum
-      /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by isEnumDeclaration guard */
+
       const innerEnumDecl = innerTypes.find(
-        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
-          isEnumDeclaration(m) && m.name === 'InnerEnum'
-        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- EnumDeclaration may be unresolved in test context
-      ) as EnumDeclaration | undefined;
+        (m): m is EnumDeclaration => isEnumDeclaration(m) && m.name === 'InnerEnum'
+      );
       expect(innerEnumDecl).toBeDefined();
       if (innerEnumDecl != null) {
         // Original: getEnclosingType() == enclosingClassDecl
@@ -269,7 +269,7 @@ describe('Class Declaration Translation', () => {
       const fieldDecls = classDecl.members.filter(isVariableDeclaration);
       expect(fieldDecls.length).toBeGreaterThanOrEqual(1);
 
-      const fieldDecl = fieldDecls.find((f) => f.name === 'field');
+      const fieldDecl = fieldDecls.find((f) => f.id.string === 'field');
       expect(fieldDecl).toBeDefined();
       if (fieldDecl) {
         // Original: qualifiedName == "Test.field"
@@ -326,9 +326,9 @@ describe('Class Declaration Translation', () => {
 
     // Original expects all 3 fields to exist
     // Find the three fields
-    const field1 = fieldDecls.find((f) => f.name === 'field1');
-    const field2 = fieldDecls.find((f) => f.name === 'field2');
-    const field3 = fieldDecls.find((f) => f.name === 'field3');
+    const field1 = fieldDecls.find((f) => f.id.string === 'field1');
+    const field2 = fieldDecls.find((f) => f.id.string === 'field2');
+    const field3 = fieldDecls.find((f) => f.id.string === 'field3');
 
     // Original: All fields must exist (the test will fail if parsing doesn't work correctly)
     expect(field1).toBeDefined();
@@ -360,7 +360,7 @@ describe('Class Declaration Translation', () => {
           .sort()
           .join(',');
         const sameModifiers = currentModifiers === prevModifiers;
-        const sameLine = current.location?.start.line === prev.location?.start.line;
+        const sameLine = current.sourceLocation?.startLine === prev.sourceLocation?.startLine;
 
         if (sameType && sameModifiers && sameLine) {
           // Same group - fields from the same statement (same line)
@@ -388,14 +388,14 @@ describe('Class Declaration Translation', () => {
     //           assertThat(group1.declarations).hasSize(2)
     const [group1] = groups;
     expect(group1).toHaveLength(2);
-    expect(group1.find((f) => f.name === 'field1')).toBeDefined();
-    expect(group1.find((f) => f.name === 'field2')).toBeDefined();
+    expect(group1.find((f) => f.id.string === 'field1')).toBeDefined();
+    expect(group1.find((f) => f.id.string === 'field2')).toBeDefined();
 
     // Original: val group2 = classDecl.fieldDeclarations.last()
     //           assertThat(group2.declarations).hasSize(1)
     const [, group2] = groups;
     expect(group2).toHaveLength(1);
-    expect(group2.find((f) => f.name === 'field3')).toBeDefined();
+    expect(group2.find((f) => f.id.string === 'field3')).toBeDefined();
   });
 
   // Ported from anonymousInitialization_translates_asMethodNamedInit
@@ -495,7 +495,7 @@ describe('Class Declaration Translation', () => {
       // Original: propertyDeclarations.singleOrNull() is not null
       const propDecls = classDecl.members.filter(
         (m: Readonly<Readonly<ClassDeclaration['members'][number]>>): m is PropertyDeclaration =>
-          m.kind === 'PropertyDeclaration'
+          m['@type'] === 'PropertyDeclaration'
       );
       // Properties may not be fully implemented yet, so we check if they exist
       if (propDecls.length > 0) {
@@ -551,12 +551,11 @@ describe('Class Declaration Translation', () => {
     const cu = parseAndTranslate(input);
     // Try to find property declaration - may not be implemented yet
     // Original: parseAndFindFirstNodeOfType<PropertyDeclaration>
-    const propDecl = findFirstNodeOfType(cu, (n) => n.kind === 'PropertyDeclaration');
+    const propDecl = findFirstNodeOfType(cu, (n) => n['@type'] === 'PropertyDeclaration');
 
-    if (propDecl) {
+    if (propDecl && isPropertyDeclaration(propDecl)) {
       // Original: "Read-only property should have a null setter" - setter is null
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Type narrowed by propDecl check
-      expect((propDecl as PropertyDeclaration).setter).toBeUndefined();
+      expect(propDecl.setter).toBeUndefined();
     } else {
       // If properties aren't implemented yet, at least verify the class parses
       const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
@@ -582,7 +581,7 @@ describe('Class Declaration Translation', () => {
     `;
     const cu = parseAndTranslate(input);
     // Original: parseAndFindFirstNodeOfType<PropertyDeclaration>
-    const propDecl = findFirstNodeOfType(cu, (n) => n.kind === 'PropertyDeclaration');
+    const propDecl = findFirstNodeOfType(cu, (n) => n['@type'] === 'PropertyDeclaration');
 
     if (propDecl) {
       // Original: getter is not null
@@ -631,7 +630,7 @@ describe('Class Declaration Translation', () => {
     `;
     const cu = parseAndTranslate(input);
     // Original: parseAndFindFirstNodeOfType<PropertyDeclaration>
-    const propDecl = findFirstNodeOfType(cu, (n) => n.kind === 'PropertyDeclaration');
+    const propDecl = findFirstNodeOfType(cu, (n) => n['@type'] === 'PropertyDeclaration');
 
     if (propDecl) {
       // Original: setter is not null
@@ -723,7 +722,7 @@ describe('Class Declaration Translation', () => {
       // Original: values.map { it.id.asCodeString() }.containsExactly("RED", "GREEN", "BLUE")
       expect(enumDecl.values).toBeDefined();
       expect(enumDecl.values.length).toBe(3);
-      const valueNames = enumDecl.values.map((v) => v.id.name);
+      const valueNames = enumDecl.values.map((v) => v.id.string);
       // Original uses containsExactly which requires exact order and count
       expect(valueNames).toEqual(['RED', 'GREEN', 'BLUE']);
       expect(valueNames.length).toBe(3);
@@ -759,14 +758,14 @@ describe('Class Declaration Translation', () => {
       // Original: getChildren() returns body declarations in order: inner types < fields < properties < methods
       const children = getNodeChildren(testClassDecl);
       const memberNames = children
-        .map((child) => {
+        .map((child): string | null => {
           // Original maps: Declaration -> id.asCodeString(), FieldDeclarationGroup -> declarations.single().id.asCodeString()
           if (isClassDeclaration(child)) return child.name;
           if (isInterfaceDeclaration(child)) return child.name;
           if (isEnumDeclaration(child)) return child.name;
           if (isMethodDeclaration(child)) return child.name;
           if (isPropertyDeclaration(child)) return child.name;
-          if (isVariableDeclaration(child)) return child.name;
+          if (isVariableDeclaration(child)) return child.id.string;
           return null;
         })
         .filter((name): name is string => name !== null);
@@ -1124,7 +1123,7 @@ describe('Modifier Translation', () => {
     // Original: assertThat(DfsWalker(cu).stream().filter { it is Modifier }.count()).isEqualTo(2)
     const modifierCount = countNodesOfType(
       cu,
-      (n) => n.kind === 'Modifier' || n.kind === 'Annotation'
+      (n) => n['@type'] === 'Modifier' || n['@type'] === 'Annotation'
     );
     expect(modifierCount).toBe(2);
   });
@@ -1243,13 +1242,13 @@ describe('Modifier Translation', () => {
     const annotationD = findAnnotationOnClass(cu, 'D');
     expect(annotationD).not.toBeNull();
     // Original: assertThat(annotationD.args).isEmpty()
-    expect(annotationD?.arguments).toHaveLength(0);
+    expect(annotationD?.arguments ?? []).toHaveLength(0);
 
     // Original: val annotationE = findAnnotationOnClass(cu, "E")!!
     const annotationE = findAnnotationOnClass(cu, 'E');
     expect(annotationE).not.toBeNull();
     // Original: assertThat(annotationE.args).isEmpty()
-    expect(annotationE?.arguments).toHaveLength(0);
+    expect(annotationE?.arguments ?? []).toHaveLength(0);
   });
 
   it('anonymous initialization has correct modifiers', () => {

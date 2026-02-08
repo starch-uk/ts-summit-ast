@@ -31,8 +31,8 @@ import type {
  */
 function isStatement(node: ASTNode): node is Statement {
   return (
-    'kind' in node &&
-    typeof node.kind === 'string' &&
+    '@type' in node &&
+    typeof node['@type'] === 'string' &&
     [
       'IfStatement',
       'ForLoopStatement',
@@ -48,8 +48,13 @@ function isStatement(node: ASTNode): node is Statement {
       'CompoundStatement',
       'ExpressionStatement',
       'VariableDeclarationStatement',
-      'DmlStatement',
-    ].includes(node.kind)
+      'Insert',
+      'Update',
+      'Delete',
+      'Upsert',
+      'Merge',
+      'Undelete',
+    ].includes(node['@type'])
   );
 }
 
@@ -59,7 +64,7 @@ function isStatement(node: ASTNode): node is Statement {
  * @returns True if the node is an IfStatement.
  */
 function isIfStatement(node: ASTNode): node is IfStatement {
-  return 'kind' in node && node.kind === 'IfStatement';
+  return '@type' in node && node['@type'] === 'IfStatement';
 }
 
 /**
@@ -68,7 +73,7 @@ function isIfStatement(node: ASTNode): node is IfStatement {
  * @returns True if the node is a ForLoopStatement.
  */
 function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
-  return 'kind' in node && node.kind === 'ForLoopStatement';
+  return '@type' in node && node['@type'] === 'ForLoopStatement';
 }
 
 /**
@@ -77,7 +82,7 @@ function isForLoopStatement(node: ASTNode): node is ForLoopStatement {
  * @returns True if the node is a WhileLoopStatement.
  */
 function isWhileLoopStatement(node: ASTNode): node is WhileLoopStatement {
-  return 'kind' in node && node.kind === 'WhileLoopStatement';
+  return '@type' in node && node['@type'] === 'WhileLoopStatement';
 }
 
 /**
@@ -106,7 +111,7 @@ function isWhileStatement(node: ASTNode): node is WhileLoopStatement {
  * @returns True if the node is a SwitchStatement.
  */
 function isSwitchStatement(node: ASTNode): node is SwitchStatement {
-  return 'kind' in node && node.kind === 'SwitchStatement';
+  return '@type' in node && node['@type'] === 'SwitchStatement';
 }
 
 /**
@@ -115,7 +120,7 @@ function isSwitchStatement(node: ASTNode): node is SwitchStatement {
  * @returns True if the node is a SwitchCase.
  */
 function isSwitchCase(node: ASTNode): node is SwitchCase {
-  return 'kind' in node && node.kind === 'SwitchCase';
+  return '@type' in node && node['@type'] === 'SwitchCase';
 }
 
 /**
@@ -124,7 +129,7 @@ function isSwitchCase(node: ASTNode): node is SwitchCase {
  * @returns True if the node is a ReturnStatement.
  */
 function isReturnStatement(node: ASTNode): node is ReturnStatement {
-  return 'kind' in node && node.kind === 'ReturnStatement';
+  return '@type' in node && node['@type'] === 'ReturnStatement';
 }
 
 /**
@@ -133,7 +138,7 @@ function isReturnStatement(node: ASTNode): node is ReturnStatement {
  * @returns True if the node is a CompoundStatement.
  */
 function isCompoundStatement(node: ASTNode): node is CompoundStatement {
-  return 'kind' in node && node.kind === 'CompoundStatement';
+  return '@type' in node && node['@type'] === 'CompoundStatement';
 }
 
 /**
@@ -152,7 +157,7 @@ function isBlock(node: ASTNode): node is CompoundStatement {
  * @returns True if the node is an ExpressionStatement.
  */
 function isExpressionStatement(node: ASTNode): node is ExpressionStatement {
-  return 'kind' in node && node.kind === 'ExpressionStatement';
+  return '@type' in node && node['@type'] === 'ExpressionStatement';
 }
 
 /**
@@ -161,7 +166,7 @@ function isExpressionStatement(node: ASTNode): node is ExpressionStatement {
  * @returns True if the node is a VariableDeclarationStatement.
  */
 function isVariableDeclarationStatement(node: ASTNode): node is VariableDeclarationStatement {
-  return 'kind' in node && node.kind === 'VariableDeclarationStatement';
+  return '@type' in node && node['@type'] === 'VariableDeclarationStatement';
 }
 
 /**
@@ -170,7 +175,11 @@ function isVariableDeclarationStatement(node: ASTNode): node is VariableDeclarat
  * @returns True if the node is a DmlStatement.
  */
 function isDmlStatement(node: ASTNode): node is DmlStatement {
-  return 'kind' in node && node.kind === 'DmlStatement';
+  return (
+    '@type' in node &&
+    typeof node['@type'] === 'string' &&
+    ['Insert', 'Update', 'Delete', 'Upsert', 'Merge', 'Undelete'].includes(node['@type'])
+  );
 }
 
 /**
@@ -179,7 +188,7 @@ function isDmlStatement(node: ASTNode): node is DmlStatement {
  * @returns True if the node is a BreakStatement.
  */
 function isBreakStatement(node: ASTNode): node is BreakStatement {
-  return 'kind' in node && node.kind === 'BreakStatement';
+  return '@type' in node && node['@type'] === 'BreakStatement';
 }
 
 /**
@@ -188,7 +197,7 @@ function isBreakStatement(node: ASTNode): node is BreakStatement {
  * @returns True if the node is a ContinueStatement.
  */
 function isContinueStatement(node: ASTNode): node is ContinueStatement {
-  return 'kind' in node && node.kind === 'ContinueStatement';
+  return '@type' in node && node['@type'] === 'ContinueStatement';
 }
 
 /**
@@ -197,7 +206,7 @@ function isContinueStatement(node: ASTNode): node is ContinueStatement {
  * @returns True if the node is a ThrowStatement.
  */
 function isThrowStatement(node: ASTNode): node is ThrowStatement {
-  return 'kind' in node && node.kind === 'ThrowStatement';
+  return '@type' in node && node['@type'] === 'ThrowStatement';
 }
 
 /**
@@ -206,7 +215,7 @@ function isThrowStatement(node: ASTNode): node is ThrowStatement {
  * @returns True if the node is a TryStatement.
  */
 function isTryStatement(node: ASTNode): node is TryStatement {
-  return 'kind' in node && node.kind === 'TryStatement';
+  return '@type' in node && node['@type'] === 'TryStatement';
 }
 
 /**
@@ -215,7 +224,7 @@ function isTryStatement(node: ASTNode): node is TryStatement {
  * @returns True if the node is an EnhancedForLoopStatement.
  */
 function isEnhancedForLoopStatement(node: ASTNode): node is EnhancedForLoopStatement {
-  return 'kind' in node && node.kind === 'EnhancedForLoopStatement';
+  return '@type' in node && node['@type'] === 'EnhancedForLoopStatement';
 }
 
 /**
@@ -234,7 +243,7 @@ function isForEachStatement(node: ASTNode): node is EnhancedForLoopStatement {
  * @returns True if the node is a DoWhileLoopStatement.
  */
 function isDoWhileLoopStatement(node: ASTNode): node is DoWhileLoopStatement {
-  return 'kind' in node && node.kind === 'DoWhileLoopStatement';
+  return '@type' in node && node['@type'] === 'DoWhileLoopStatement';
 }
 
 /**

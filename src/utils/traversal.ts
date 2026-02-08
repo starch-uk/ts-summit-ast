@@ -70,12 +70,12 @@ interface ASTWalkVisitor {
 }
 
 /**
- * Type guard for values that look like AST nodes (have 'kind' property).
+ * Type guard for values that look like AST nodes (have '@type' property).
  * @param obj - Value to check.
  * @returns True if obj has shape of AST node.
  */
 function looksLikeASTNode(obj: unknown): obj is ASTNode {
-  return obj !== null && typeof obj === 'object' && 'kind' in obj;
+  return obj !== null && typeof obj === 'object' && '@type' in obj;
 }
 
 /**
@@ -88,7 +88,7 @@ function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
   const record: Record<string, unknown> = { ...node };
 
   for (const key in record) {
-    if (key === 'kind' || key === 'location') {
+    if (key === '@type' || key === 'sourceLocation') {
       continue;
     }
 
@@ -137,17 +137,22 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
     children.push(node.condition);
     children.push(node.body);
   } else if (isReturnStatement(node)) {
-    if (node.expression) children.push(node.expression);
+    if (node.value) children.push(node.value);
   } else if (isCompoundStatement(node)) {
     children.push(...node.statements);
   } else if (isExpressionStatement(node)) {
     children.push(node.expression);
   } else if (isVariableDeclarationStatement(node)) {
-    children.push(node.declaration);
-  } else if (node.kind === 'BreakStatement' || node.kind === 'ContinueStatement') {
+    children.push(node.group.type);
+    for (const d of node.group.declarations) {
+      children.push(d.id);
+      if (d.initializer) children.push(d.initializer);
+    }
+    children.push(...node.group.modifiers);
+  } else if (node['@type'] === 'BreakStatement' || node['@type'] === 'ContinueStatement') {
     // No children
   } else if (isDmlStatement(node)) {
-    children.push(node.target);
+    children.push(node.value);
   } else if (isThrowStatement(node)) {
     children.push(node.expression);
   } else if (isSwitchStatement(node)) {
@@ -161,10 +166,10 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
     children.push(node.left);
     children.push(node.right);
   } else if (isCallExpression(node)) {
-    if (node.target) children.push(node.target);
-    children.push(...node.arguments);
+    if (node.receiver) children.push(node.receiver);
+    children.push(...node.args);
   } else if (isFieldExpression(node)) {
-    if (node.target) children.push(node.target);
+    if (node.obj) children.push(node.obj);
     children.push(node.field);
   } else if (isArrayExpression(node)) {
     children.push(node.array);
@@ -173,13 +178,13 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
     children.push(node.initializer);
   } else if (isCastExpression(node)) {
     children.push(node.type);
-    children.push(node.expression);
+    children.push(node.value);
   } else if (isParenthesizedExpression(node)) {
     children.push(node.expression);
   } else if (isTernaryExpression(node)) {
     children.push(node.condition);
-    children.push(node.thenExpression);
-    children.push(node.elseExpression);
+    children.push(node.thenValue);
+    children.push(node.elseValue);
   } else if (isVariableDeclaration(node)) {
     if (node.modifiers) children.push(...node.modifiers);
     if (node.annotations) children.push(...node.annotations);
@@ -212,8 +217,8 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
   } else if (isMapInitializer(node)) {
     children.push(node.type);
     for (const pair of node.pairs) {
-      children.push(pair.key);
-      children.push(pair.value);
+      children.push(pair.first);
+      children.push(pair.second);
     }
   } else if (isExpressionElementValue(node)) {
     children.push(node.value);
@@ -324,7 +329,7 @@ function findNodesByType(ast: Readonly<ASTNode>, nodeType: string): ASTNode[] {
 
   walkAST(ast, {
     enterNode: (node): undefined => {
-      if (node.kind === nodeType) {
+      if (node['@type'] === nodeType) {
         results.push(node);
       }
       return undefined;
@@ -357,7 +362,7 @@ function getParentNode(root: Readonly<ASTNode>, node: Readonly<ASTNode>): ASTNod
  */
 function getChildNodesByType(node: Readonly<ASTNode>, nodeType: string): ASTNode[] {
   const children = getNodeChildren(node);
-  return children.filter((child) => child.kind === nodeType);
+  return children.filter((child) => child['@type'] === nodeType);
 }
 
 export type { ASTWalkVisitor };

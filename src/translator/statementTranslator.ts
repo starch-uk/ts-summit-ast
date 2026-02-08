@@ -14,6 +14,7 @@ import type {
 import type { Expression } from '../ast/expression.js';
 import type { VariableDeclaration } from '../ast/declaration.js';
 import type { TypeRef } from '../ast/baseNode.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import {
   EMPTY_ARRAY_LENGTH,
   LAST_ELEMENT_OFFSET,
@@ -639,14 +640,16 @@ function translateSwitchStatement(
             })
             .filter((stmt): stmt is Statement => stmt !== null)
         : [];
+      const EMPTY_LENGTH = 0;
       cases.push({
-        downcastDeclarations,
-        kind: 'SwitchCase',
-        location: caseNode.location,
-        matchType,
+        '@type': 'SwitchCase',
         statements,
-        value,
-        values,
+        ...(value !== undefined && { value }),
+        ...(values !== undefined && values.length > EMPTY_LENGTH && { values }),
+        ...(matchType !== undefined && { matchType }),
+        ...(downcastDeclarations !== undefined &&
+          downcastDeclarations.length > EMPTY_LENGTH && { downcastDeclarations }),
+        ...(caseNode.location && { sourceLocation: toCanonicalSourceLocation(caseNode.location) }),
       });
     }
   }
@@ -694,10 +697,11 @@ function translateSwitchStatement(
           .filter((stmt): stmt is Statement => stmt !== null)
       : [];
     defaultCase = {
-      kind: 'SwitchCase',
-      location: defaultNode.location,
+      '@type': 'SwitchCase',
       statements,
-      value: undefined,
+      ...(defaultNode.location && {
+        sourceLocation: toCanonicalSourceLocation(defaultNode.location),
+      }),
     };
   }
 
@@ -868,11 +872,13 @@ function translateTryStatement(
         );
       }
       catchClauses.push({
+        '@type': 'CatchClause',
         block: blockStmt,
-        exceptionType: exceptionTypeExpr,
-        kind: 'CatchClause',
-        location: catchNodeReadonly.location,
-        variable: varDecl,
+        ...(exceptionTypeExpr !== undefined && { exceptionType: exceptionTypeExpr }),
+        ...(varDecl !== undefined && { variable: varDecl }),
+        ...(catchNodeReadonly.location && {
+          sourceLocation: toCanonicalSourceLocation(catchNodeReadonly.location),
+        }),
       });
     }
   }

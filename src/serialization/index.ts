@@ -5,3 +5,4 @@
 
 export * from './jsonSerializer.js';
 export * from './jsonDeserializer.js';
+export { transformToCanonicalShape, reorderJsonToMatchTemplate } from './jsonSerializer.js';

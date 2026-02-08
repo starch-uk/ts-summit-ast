@@ -4,6 +4,7 @@
  */
 
 import type { ASTNode, SourceRange } from '../ast/baseNode.js';
+import { toSourceRange } from '../ast/baseNode.js';
 
 /**
  * Constants for array indexing and offsets.
@@ -19,7 +20,8 @@ const LINES_PER_COLUMN_MULTIPLIER = 100;
  * @returns The source range, or null if not available.
  */
 function getSourceRange(node: ASTNode): SourceRange | null {
-  return node.location ?? null;
+  const range = node.sourceLocation ? toSourceRange(node.sourceLocation) : null;
+  return range ?? null;
 }
 
 /**

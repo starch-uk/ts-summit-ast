@@ -22,8 +22,8 @@ import type {
  */
 function isLiteral(node: ASTNode): node is Literal {
   return (
-    'kind' in node &&
-    typeof node.kind === 'string' &&
+    '@type' in node &&
+    typeof node['@type'] === 'string' &&
     [
       'StringVal',
       'IntegerVal',
@@ -33,7 +33,7 @@ function isLiteral(node: ASTNode): node is Literal {
       'BooleanVal',
       'NullVal',
       'CharacterLiteral',
-    ].includes(node.kind)
+    ].includes(node['@type'])
   );
 }
 
@@ -43,7 +43,7 @@ function isLiteral(node: ASTNode): node is Literal {
  * @returns True if the node is a StringVal.
  */
 function isStringVal(node: ASTNode): node is StringVal {
-  return 'kind' in node && node.kind === 'StringVal';
+  return '@type' in node && node['@type'] === 'StringVal';
 }
 
 /**
@@ -62,7 +62,7 @@ function isStringLiteral(node: ASTNode): node is StringVal {
  * @returns True if the node is an IntegerVal.
  */
 function isIntegerVal(node: ASTNode): node is IntegerVal {
-  return 'kind' in node && node.kind === 'IntegerVal';
+  return '@type' in node && node['@type'] === 'IntegerVal';
 }
 
 /**
@@ -81,7 +81,7 @@ function isIntegerLiteral(node: ASTNode): node is IntegerVal {
  * @returns True if the node is a DoubleVal.
  */
 function isDoubleVal(node: ASTNode): node is DoubleVal {
-  return 'kind' in node && node.kind === 'DoubleVal';
+  return '@type' in node && node['@type'] === 'DoubleVal';
 }
 
 /**
@@ -90,7 +90,7 @@ function isDoubleVal(node: ASTNode): node is DoubleVal {
  * @returns True if the node is a LongVal.
  */
 function isLongVal(node: ASTNode): node is LongVal {
-  return 'kind' in node && node.kind === 'LongVal';
+  return '@type' in node && node['@type'] === 'LongVal';
 }
 
 /**
@@ -109,7 +109,7 @@ function isLongLiteral(node: ASTNode): node is LongVal {
  * @returns True if the node is a DecimalVal.
  */
 function isDecimalVal(node: ASTNode): node is DecimalVal {
-  return 'kind' in node && node.kind === 'DecimalVal';
+  return '@type' in node && node['@type'] === 'DecimalVal';
 }
 
 /**
@@ -120,11 +120,11 @@ function isDecimalVal(node: ASTNode): node is DecimalVal {
  */
 function isNumberLiteral(node: ASTNode): node is DecimalVal | DoubleVal | IntegerVal | LongVal {
   return (
-    'kind' in node &&
-    (node.kind === 'IntegerVal' ||
-      node.kind === 'DoubleVal' ||
-      node.kind === 'LongVal' ||
-      node.kind === 'DecimalVal')
+    '@type' in node &&
+    (node['@type'] === 'IntegerVal' ||
+      node['@type'] === 'DoubleVal' ||
+      node['@type'] === 'LongVal' ||
+      node['@type'] === 'DecimalVal')
   );
 }
 
@@ -134,7 +134,7 @@ function isNumberLiteral(node: ASTNode): node is DecimalVal | DoubleVal | Intege
  * @returns True if the node is a BooleanVal.
  */
 function isBooleanVal(node: ASTNode): node is BooleanVal {
-  return 'kind' in node && node.kind === 'BooleanVal';
+  return '@type' in node && node['@type'] === 'BooleanVal';
 }
 
 /**
@@ -153,7 +153,7 @@ function isBooleanLiteral(node: ASTNode): node is BooleanVal {
  * @returns True if the node is a NullVal.
  */
 function isNullVal(node: ASTNode): node is NullVal {
-  return 'kind' in node && node.kind === 'NullVal';
+  return '@type' in node && node['@type'] === 'NullVal';
 }
 
 /**

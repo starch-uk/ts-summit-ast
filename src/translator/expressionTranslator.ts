@@ -14,6 +14,7 @@ import type {
   VariableExpression,
 } from '../ast/expression.js';
 import type { TypeRef } from '../ast/baseNode.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type {
   ConstructorInitializer,
   MapInitializer,
@@ -36,7 +37,7 @@ import { NodeFactory } from './nodeFactory.js';
  * @param raw - Raw operator string.
  * @returns Validated binary operator.
  */
-function parseBinaryOperator(raw: string): BinaryExpression['operator'] {
+function parseBinaryOperator(raw: string): BinaryExpression['op'] {
   switch (raw) {
     case '-':
     case '!=':
@@ -71,7 +72,7 @@ function parseBinaryOperator(raw: string): BinaryExpression['operator'] {
  * @param raw - Raw operator string.
  * @returns Validated unary operator.
  */
-function parseUnaryOperator(raw: string): UnaryExpression['operator'] {
+function parseUnaryOperator(raw: string): UnaryExpression['op'] {
   switch (raw) {
     case '--':
     case '-':
@@ -116,7 +117,7 @@ function parseAssignOperator(raw: string): AssignExpression['operator'] {
  * @returns True if e is a FieldExpression.
  */
 function isFieldExpression(e: Expression): e is FieldExpression {
-  return e.kind === 'FieldExpression';
+  return e['@type'] === 'FieldExpression';
 }
 
 /**
@@ -125,7 +126,7 @@ function isFieldExpression(e: Expression): e is FieldExpression {
  * @returns True if e is a VariableExpression.
  */
 function isVariableExpression(e: Expression): e is VariableExpression {
-  return e.kind === 'VariableExpression';
+  return e['@type'] === 'VariableExpression';
 }
 
 /**
@@ -274,10 +275,9 @@ function translateMethodCall(
       const fieldAsField = fieldAccessResult != null && isFieldExpression(fieldAccessResult);
       if (fieldAsField) {
         const f = fieldAccessResult;
-        const { target: t, fieldName: fn, isSafe: is } = f;
-        target = t;
-        methodName = fn;
-        isSafeFromTarget = is;
+        target = f.obj;
+        methodName = f.field.string;
+        isSafeFromTarget = f.isSafe;
       }
     } else {
       // Try to translate as expression - might be a complex target
@@ -289,12 +289,11 @@ function translateMethodCall(
       const exprAsVar = firstExprResult != null && isVariableExpression(firstExprResult);
       if (exprAsField) {
         const f = firstExprResult;
-        const { target: t, fieldName: fn, isSafe: is } = f;
-        target = t;
-        methodName = fn;
-        isSafeFromTarget = is;
+        target = f.obj;
+        methodName = f.field.string;
+        isSafeFromTarget = f.isSafe;
       } else if (exprAsVar) {
-        methodName = firstExprResult.id.name;
+        methodName = firstExprResult.id.string;
       } else {
         // Fallback: extract from text (firstChild is not super/this/field here)
         methodName = ctx.getText(firstChild) ?? 'this';
@@ -836,7 +835,7 @@ function translateNewExpression(
   };
   exprWithProps.type = type; // Type is always available from the initializer
 
-  if (initializer.kind === 'ConstructorInitializer') {
+  if (initializer['@type'] === 'ConstructorInitializer') {
     exprWithProps.arguments = initializer.args;
   }
 
@@ -845,16 +844,19 @@ function translateNewExpression(
   if (arrayInitNode !== null) {
     // For ValuesInitializer, MapInitializer - use the parsed arrayInit
     exprWithProps.arrayInitializer = arrayInit;
-  } else if (initForArray.kind === 'ValuesInitializer' || initForArray.kind === 'MapInitializer') {
+  } else if (
+    initForArray['@type'] === 'ValuesInitializer' ||
+    initForArray['@type'] === 'MapInitializer'
+  ) {
     // If we created a ValuesInitializer or MapInitializer but arrayInitNode was null,
     // use the values from the initializer
-    if (initForArray.kind === 'ValuesInitializer') {
+    if (initForArray['@type'] === 'ValuesInitializer') {
       exprWithProps.arrayInitializer = initForArray.values;
     } else {
       // MapInitializer: flatten pairs into array
       const flattened: Expression[] = [];
       for (const pair of initForArray.pairs) {
-        flattened.push(pair.key, pair.value);
+        flattened.push(pair.first, pair.second);
       }
       exprWithProps.arrayInitializer = flattened;
     }
@@ -941,12 +943,15 @@ function translateLambdaExpression(
       const name = ctx.getText(paramNode) ?? ctx.getStringProperty(paramNode, 'name') ?? '';
       const typeNode = ctx.getChild(paramNode, 'type');
       const type = typeNode ? ctx.tryTranslateType(typeNode) : undefined;
-      parameters.push({
-        kind: 'LambdaParameter',
-        location: paramNode.location,
+      const param: LambdaParameter = {
+        '@type': 'LambdaParameter',
         name,
-        type: type ?? undefined,
-      });
+        ...(type !== undefined && type !== null && { type }),
+        ...(paramNode.location != null && {
+          sourceLocation: toCanonicalSourceLocation(paramNode.location),
+        }),
+      };
+      parameters.push(param);
     }
   }
   const bodyNode = ctx.getChild(node, 'body');

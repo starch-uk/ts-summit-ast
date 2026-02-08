@@ -56,7 +56,7 @@ describe('NodeFactory', () => {
       const exprStmt = NodeFactory.createExpressionStatement(
         NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'))
       );
-      expect(exprStmt.kind).toBe('ExpressionStatement');
+      expect(exprStmt['@type']).toBe('ExpressionStatement');
     });
   });
 
@@ -129,12 +129,17 @@ describe('NodeFactory', () => {
       };
 
       const node = NodeFactory.createIdentifier('test', { location });
-      expect(node.location).toEqual(location);
+      expect(node.sourceLocation).toEqual({
+        endColumn: 10,
+        endLine: 1,
+        startColumn: 1,
+        startLine: 1,
+      });
     });
 
     it('should work without location options', () => {
       const node = NodeFactory.createIdentifier('test');
-      expect(node.location).toBeUndefined();
+      expect(node.sourceLocation).toBeUndefined();
     });
   });
 
@@ -162,42 +167,42 @@ describe('NodeFactory', () => {
     it('should handle long method names', () => {
       const longName = 'a'.repeat(100);
       const node = NodeFactory.createMethodCallExpression({ methodName: longName });
-      expect(node.methodName).toBe(longName);
+      expect(node.id.string).toBe(longName);
     });
 
     it('should handle unicode identifiers', () => {
       const node = NodeFactory.createIdentifier('变量名');
-      expect(node.name).toBe('变量名');
+      expect(node.string).toBe('变量名');
     });
   });
 
   describe('Deprecated methods - ExpressionFactory', () => {
     it('should support createMethodCallExpression (deprecated)', () => {
       const node = NodeFactory.createMethodCallExpression({ methodName: 'test' });
-      expect(node.kind).toBe('CallExpression');
-      expect(node.methodName).toBe('test');
+      expect(node['@type']).toBe('CallExpression');
+      expect(node.id.string).toBe('test');
     });
 
     it('should support createAssignmentExpression (deprecated)', () => {
       const left = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const right = NodeFactory.createIntegerVal(5, '5');
       const node = NodeFactory.createAssignmentExpression('=', { left, right });
-      expect(node.kind).toBe('AssignExpression');
+      expect(node['@type']).toBe('AssignExpression');
       expect(node.operator).toBe('=');
     });
 
     it('should support createFieldAccessExpression (deprecated)', () => {
       const target = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('obj'));
       const node = NodeFactory.createFieldAccessExpression('field', target);
-      expect(node.kind).toBe('FieldExpression');
-      expect(node.fieldName).toBe('field');
+      expect(node['@type']).toBe('FieldExpression');
+      expect(node.field.string).toBe('field');
     });
 
     it('should support createArrayAccessExpression (deprecated)', () => {
       const array = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('arr'));
       const index = NodeFactory.createIntegerVal(0, '0');
       const node = NodeFactory.createArrayAccessExpression(array, index);
-      expect(node.kind).toBe('ArrayExpression');
+      expect(node['@type']).toBe('ArrayExpression');
       expect(node.array).toBe(array);
       expect(node.index).toBe(index);
     });
@@ -205,22 +210,22 @@ describe('NodeFactory', () => {
     it('should support createSoqlQueryExpression (deprecated)', () => {
       const expr = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const node = NodeFactory.createSoqlQueryExpression('SELECT Id FROM Contact', [expr]);
-      expect(node.kind).toBe('SoqlExpression');
+      expect(node['@type']).toBe('SoqlExpression');
       expect(node.query).toBe('SELECT Id FROM Contact');
     });
 
     it('should support createSoslQueryExpression (deprecated)', () => {
       const expr = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const node = NodeFactory.createSoslQueryExpression('FIND :x IN ALL FIELDS', [expr]);
-      expect(node.kind).toBe('SoslExpression');
+      expect(node['@type']).toBe('SoslExpression');
       expect(node.query).toBe('FIND :x IN ALL FIELDS');
     });
 
     it('should create UnaryExpression', () => {
       const operand = NodeFactory.createIntegerVal(5, '5');
       const node = NodeFactory.createUnaryExpression('!', { operand, prefix: true });
-      expect(node.kind).toBe('UnaryExpression');
-      expect(node.operator).toBe('!');
+      expect(node['@type']).toBe('UnaryExpression');
+      expect(node.op).toBe('!');
       expect(node.prefix).toBe(true);
     });
 
@@ -233,7 +238,7 @@ describe('NodeFactory', () => {
         elseExpression: elseExpr,
         thenExpression: thenExpr,
       });
-      expect(node.kind).toBe('TernaryExpression');
+      expect(node['@type']).toBe('TernaryExpression');
       expect(node.condition).toBe(condition);
     });
 
@@ -244,7 +249,7 @@ describe('NodeFactory', () => {
       };
       const expr = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const node = NodeFactory.createCastExpression(type, expr);
-      expect(node.kind).toBe('CastExpression');
+      expect(node['@type']).toBe('CastExpression');
       expect(node.type).toBe(type);
     });
 
@@ -255,7 +260,7 @@ describe('NodeFactory', () => {
       };
       const expr = NodeFactory.createVariableExpression(NodeFactory.createIdentifier('x'));
       const node = NodeFactory.createInstanceOfExpression(expr, type);
-      expect(node.kind).toBe('InstanceOfExpression');
+      expect(node['@type']).toBe('InstanceOfExpression');
       expect(node.type).toBe(type);
     });
 
@@ -266,7 +271,7 @@ describe('NodeFactory', () => {
       };
       const initializer = NodeFactory.createConstructorInitializer(type, []);
       const node = NodeFactory.createNewExpression(initializer);
-      expect(node.kind).toBe('NewExpression');
+      expect(node['@type']).toBe('NewExpression');
       expect(node.initializer).toBe(initializer);
     });
 
@@ -277,51 +282,51 @@ describe('NodeFactory', () => {
       };
       const size = NodeFactory.createIntegerVal(10, '10');
       const node = NodeFactory.createNewArrayExpression(type, size);
-      expect(node.kind).toBe('NewExpression');
-      expect(node.initializer.kind).toBe('SizedArrayInitializer');
+      expect(node['@type']).toBe('NewExpression');
+      expect(node.initializer['@type']).toBe('SizedArrayInitializer');
     });
 
     it('should create LambdaExpression', () => {
       const parameters = [NodeFactory.createIdentifier('x')];
       const body = NodeFactory.createIntegerVal(42, '42');
       const node = NodeFactory.createLambdaExpression(parameters, body);
-      expect(node.kind).toBe('LambdaExpression');
+      expect(node['@type']).toBe('LambdaExpression');
       expect(node.parameters).toStrictEqual(parameters);
       expect(node.body).toBe(body);
     });
 
     it('should create ThisExpression', () => {
       const node = NodeFactory.createThisExpression();
-      expect(node.kind).toBe('ThisExpression');
+      expect(node['@type']).toBe('ThisExpression');
     });
 
     it('should create SuperExpression', () => {
       const node = NodeFactory.createSuperExpression();
-      expect(node.kind).toBe('SuperExpression');
+      expect(node['@type']).toBe('SuperExpression');
     });
 
     it('should create ParenthesizedExpression', () => {
       const expr = NodeFactory.createIntegerVal(42, '42');
       const node = NodeFactory.createParenthesizedExpression(expr);
-      expect(node.kind).toBe('ParenthesizedExpression');
+      expect(node['@type']).toBe('ParenthesizedExpression');
       expect(node.expression).toBe(expr);
     });
 
     it('should create SoqlExpression', () => {
       const node = NodeFactory.createSoqlExpression('SELECT Id FROM Contact');
-      expect(node.kind).toBe('SoqlExpression');
+      expect(node['@type']).toBe('SoqlExpression');
       expect(node.query).toBe('SELECT Id FROM Contact');
     });
 
     it('should create SoslExpression', () => {
       const node = NodeFactory.createSoslExpression('FIND :x IN ALL FIELDS');
-      expect(node.kind).toBe('SoslExpression');
+      expect(node['@type']).toBe('SoslExpression');
       expect(node.query).toBe('FIND :x IN ALL FIELDS');
     });
 
     it('should create TriggerContextVariableExpression', () => {
       const node = NodeFactory.createTriggerContextVariableExpression('Trigger.new');
-      expect(node.kind).toBe('TriggerContextVariableExpression');
+      expect(node['@type']).toBe('TriggerContextVariableExpression');
       expect(node.variableName).toBe('Trigger.new');
     });
   });
@@ -329,25 +334,25 @@ describe('NodeFactory', () => {
   describe('Deprecated methods - LiteralFactory', () => {
     it('should support createStringLiteral (deprecated)', () => {
       const node = NodeFactory.createStringLiteral('test', '"test"');
-      expect(node.kind).toBe('StringVal');
+      expect(node['@type']).toBe('StringVal');
       expect(node.value).toBe('test');
     });
 
     it('should support createNumberLiteral (deprecated)', () => {
       const node = NodeFactory.createNumberLiteral(42, '42');
-      expect(node.kind).toBe('IntegerVal');
+      expect(node['@type']).toBe('IntegerVal');
       expect(node.value).toBe(42);
     });
 
     it('should support createBooleanLiteral (deprecated)', () => {
       const node = NodeFactory.createBooleanLiteral(true);
-      expect(node.kind).toBe('BooleanVal');
+      expect(node['@type']).toBe('BooleanVal');
       expect(node.value).toBe(true);
     });
 
     it('should support createNullLiteral (deprecated)', () => {
       const node = NodeFactory.createNullLiteral();
-      expect(node.kind).toBe('NullVal');
+      expect(node['@type']).toBe('NullVal');
     });
   });
 
@@ -363,7 +368,7 @@ describe('NodeFactory', () => {
         methodName: 'method',
         typeArguments: typeArgs,
       });
-      expect(node.kind).toBe('CallExpression');
+      expect(node['@type']).toBe('CallExpression');
       expect(node.typeArguments).toStrictEqual(typeArgs);
     });
 
@@ -373,15 +378,15 @@ describe('NodeFactory', () => {
         methodName: 'method',
         target,
       });
-      expect(node.kind).toBe('CallExpression');
-      expect(node.target).toBe(target);
+      expect(node['@type']).toBe('CallExpression');
+      expect(node.receiver).toBe(target);
     });
 
     it('should create FieldExpression without target', () => {
       const node = NodeFactory.createFieldExpression('field');
-      expect(node.kind).toBe('FieldExpression');
-      expect(node.fieldName).toBe('field');
-      expect(node.target).toBeUndefined();
+      expect(node['@type']).toBe('FieldExpression');
+      expect(node.field.string).toBe('field');
+      expect(node.obj).toBeUndefined();
     });
   });
 
@@ -393,7 +398,7 @@ describe('NodeFactory', () => {
 
       // BinaryExpression
       const binary = ExpressionFactory.createBinaryExpression('+', { left, right });
-      expect(binary.kind).toBe('BinaryExpression');
+      expect(binary['@type']).toBe('BinaryExpression');
 
       // CallExpression with all options
       const call = ExpressionFactory.createCallExpression({
@@ -407,23 +412,23 @@ describe('NodeFactory', () => {
           },
         ],
       });
-      expect(call.kind).toBe('CallExpression');
+      expect(call['@type']).toBe('CallExpression');
 
       // UnaryExpression
       const unary = ExpressionFactory.createUnaryExpression('!', { operand: left, prefix: true });
-      expect(unary.kind).toBe('UnaryExpression');
+      expect(unary['@type']).toBe('UnaryExpression');
 
       // AssignExpression
       const assign = ExpressionFactory.createAssignExpression('=', { left, right });
-      expect(assign.kind).toBe('AssignExpression');
+      expect(assign['@type']).toBe('AssignExpression');
 
       // FieldExpression
       const field = ExpressionFactory.createFieldExpression('field', left);
-      expect(field.kind).toBe('FieldExpression');
+      expect(field['@type']).toBe('FieldExpression');
 
       // ArrayExpression
       const arrayExpr = ExpressionFactory.createArrayExpression(left, right);
-      expect(arrayExpr.kind).toBe('ArrayExpression');
+      expect(arrayExpr['@type']).toBe('ArrayExpression');
 
       // TernaryExpression
       const ternary = ExpressionFactory.createTernaryExpression({
@@ -431,7 +436,7 @@ describe('NodeFactory', () => {
         elseExpression: left,
         thenExpression: right,
       });
-      expect(ternary.kind).toBe('TernaryExpression');
+      expect(ternary['@type']).toBe('TernaryExpression');
 
       // CastExpression
       const cast = ExpressionFactory.createCastExpression(
@@ -441,14 +446,14 @@ describe('NodeFactory', () => {
         },
         left
       );
-      expect(cast.kind).toBe('CastExpression');
+      expect(cast['@type']).toBe('CastExpression');
 
       // InstanceOfExpression
       const instanceofExpr = ExpressionFactory.createInstanceOfExpression(left, {
         arrayNesting: 0,
         components: [{ args: [], id: NodeFactory.createIdentifier('String') }],
       });
-      expect(instanceofExpr.kind).toBe('InstanceOfExpression');
+      expect(instanceofExpr['@type']).toBe('InstanceOfExpression');
 
       // NewExpression
       const newExpr = ExpressionFactory.createNewExpression(
@@ -460,7 +465,7 @@ describe('NodeFactory', () => {
           []
         )
       );
-      expect(newExpr.kind).toBe('NewExpression');
+      expect(newExpr['@type']).toBe('NewExpression');
 
       // NewArrayExpression
       const newArray = ExpressionFactory.createNewArrayExpression(
@@ -470,57 +475,57 @@ describe('NodeFactory', () => {
         },
         right
       );
-      expect(newArray.kind).toBe('NewExpression');
+      expect(newArray['@type']).toBe('NewExpression');
 
       // LambdaExpression
       const lambda = ExpressionFactory.createLambdaExpression(
         [NodeFactory.createIdentifier('x')],
         left
       );
-      expect(lambda.kind).toBe('LambdaExpression');
+      expect(lambda['@type']).toBe('LambdaExpression');
 
       // ThisExpression
       const thisExpr = ExpressionFactory.createThisExpression();
-      expect(thisExpr.kind).toBe('ThisExpression');
+      expect(thisExpr['@type']).toBe('ThisExpression');
 
       // SuperExpression
       const superExpr = ExpressionFactory.createSuperExpression();
-      expect(superExpr.kind).toBe('SuperExpression');
+      expect(superExpr['@type']).toBe('SuperExpression');
 
       // ParenthesizedExpression
       const paren = ExpressionFactory.createParenthesizedExpression(left);
-      expect(paren.kind).toBe('ParenthesizedExpression');
+      expect(paren['@type']).toBe('ParenthesizedExpression');
 
       // SoqlExpression
       const soql = ExpressionFactory.createSoqlExpression('SELECT Id FROM Contact');
-      expect(soql.kind).toBe('SoqlExpression');
+      expect(soql['@type']).toBe('SoqlExpression');
 
       // SoslExpression
       const sosl = ExpressionFactory.createSoslExpression('FIND :x IN ALL FIELDS');
-      expect(sosl.kind).toBe('SoslExpression');
+      expect(sosl['@type']).toBe('SoslExpression');
 
       // TriggerContextVariableExpression
       const triggerVar = ExpressionFactory.createTriggerContextVariableExpression('Trigger.new');
-      expect(triggerVar.kind).toBe('TriggerContextVariableExpression');
+      expect(triggerVar['@type']).toBe('TriggerContextVariableExpression');
 
       // Deprecated methods
       const methodCall = ExpressionFactory.createMethodCallExpression({ methodName: 'test' });
-      expect(methodCall.kind).toBe('CallExpression');
+      expect(methodCall['@type']).toBe('CallExpression');
 
       const assignment = ExpressionFactory.createAssignmentExpression('=', { left, right });
-      expect(assignment.kind).toBe('AssignExpression');
+      expect(assignment['@type']).toBe('AssignExpression');
 
       const fieldAccess = ExpressionFactory.createFieldAccessExpression('field', left);
-      expect(fieldAccess.kind).toBe('FieldExpression');
+      expect(fieldAccess['@type']).toBe('FieldExpression');
 
       const arrayAccess = ExpressionFactory.createArrayAccessExpression(left, right);
-      expect(arrayAccess.kind).toBe('ArrayExpression');
+      expect(arrayAccess['@type']).toBe('ArrayExpression');
 
       const soqlQuery = ExpressionFactory.createSoqlQueryExpression('SELECT Id', [left]);
-      expect(soqlQuery.kind).toBe('SoqlExpression');
+      expect(soqlQuery['@type']).toBe('SoqlExpression');
 
       const soslQuery = ExpressionFactory.createSoslQueryExpression('FIND :x', [left]);
-      expect(soslQuery.kind).toBe('SoslExpression');
+      expect(soslQuery['@type']).toBe('SoslExpression');
     });
   });
 
@@ -528,38 +533,38 @@ describe('NodeFactory', () => {
     it('should create all literal types directly', () => {
       // Test all methods directly to ensure coverage
       const stringVal = LiteralFactory.createStringVal('test', '"test"');
-      expect(stringVal.kind).toBe('StringVal');
+      expect(stringVal['@type']).toBe('StringVal');
 
       const intVal = LiteralFactory.createIntegerVal(42, '42');
-      expect(intVal.kind).toBe('IntegerVal');
+      expect(intVal['@type']).toBe('IntegerVal');
 
       const doubleVal = LiteralFactory.createDoubleVal(3.14, '3.14');
-      expect(doubleVal.kind).toBe('DoubleVal');
+      expect(doubleVal['@type']).toBe('DoubleVal');
 
       const longVal = LiteralFactory.createLongVal(123, '123L');
-      expect(longVal.kind).toBe('LongVal');
+      expect(longVal['@type']).toBe('LongVal');
 
       const decimalVal = LiteralFactory.createDecimalVal(1.5, '1.5');
-      expect(decimalVal.kind).toBe('DecimalVal');
+      expect(decimalVal['@type']).toBe('DecimalVal');
 
       const boolVal = LiteralFactory.createBooleanVal(true);
-      expect(boolVal.kind).toBe('BooleanVal');
+      expect(boolVal['@type']).toBe('BooleanVal');
 
       const nullVal = LiteralFactory.createNullVal();
-      expect(nullVal.kind).toBe('NullVal');
+      expect(nullVal['@type']).toBe('NullVal');
 
       // Deprecated methods
       const stringLit = LiteralFactory.createStringLiteral('test', '"test"');
-      expect(stringLit.kind).toBe('StringVal');
+      expect(stringLit['@type']).toBe('StringVal');
 
       const numLit = LiteralFactory.createNumberLiteral(42, '42');
-      expect(numLit.kind).toBe('IntegerVal');
+      expect(numLit['@type']).toBe('IntegerVal');
 
       const boolLit = LiteralFactory.createBooleanLiteral(true);
-      expect(boolLit.kind).toBe('BooleanVal');
+      expect(boolLit['@type']).toBe('BooleanVal');
 
       const nullLit = LiteralFactory.createNullLiteral();
-      expect(nullLit.kind).toBe('NullVal');
+      expect(nullLit['@type']).toBe('NullVal');
     });
   });
 });

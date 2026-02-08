@@ -5,7 +5,7 @@
 
 import type { ASTNode, SourceRange } from '../ast/baseNode.js';
 import type { Position } from './sourceExtraction.js';
-import { isPositionInRange } from './sourceExtraction.js';
+import { getSourceRange, isPositionInRange } from './sourceExtraction.js';
 import { walkAST, getAncestors, buildParentMap, getNodeChildren } from './traversal.js';
 
 /**
@@ -65,11 +65,12 @@ function findNodeAtPosition(
   // Walk AST and collect all nodes that contain the position
   walkAST(ast, {
     enterNode: (node: Readonly<ASTNode>): undefined => {
-      if (!node.location) {
+      const range = getSourceRange(node);
+      if (!range) {
         return;
       }
 
-      if (isPositionInRange(position, node.location)) {
+      if (isPositionInRange(position, range)) {
         // Calculate depth
         let depth = 0;
         let current: ASTNode | null | undefined = node;
@@ -109,7 +110,8 @@ function findNodeAtPosition(
       ? ancestors[ancestors.length - minAncestorsForParent]
       : undefined;
 
-  if (!node.location) {
+  const range = getSourceRange(node);
+  if (range == null) {
     return null;
   }
 
@@ -117,9 +119,9 @@ function findNodeAtPosition(
   const excludeLastElement = -1;
   return {
     ancestors: ancestors.slice(sliceStartIndex, excludeLastElement), // Exclude the node itself
-    location: node.location,
+    location: range,
     node,
-    nodeType: node.kind,
+    nodeType: node['@type'],
     parent,
   };
 }
@@ -213,16 +215,15 @@ function findNodesInRange(
 
   walkAST(ast, {
     enterNode: (node: Readonly<ASTNode>): undefined => {
-      if (!node.location) {
+      const nodeRange = getSourceRange(node);
+      if (!nodeRange) {
         return undefined;
       }
 
       // Filter by node type if specified
-      if (nodeTypes && !nodeTypes.includes(node.kind)) {
+      if (nodeTypes && !nodeTypes.includes(node['@type'])) {
         return undefined;
       }
-
-      const nodeRange = node.location;
 
       // Check if fully contained
       if (isRangeFullyContained(nodeRange, range)) {
@@ -251,8 +252,6 @@ function findNodesInRange(
  * AST node information utilities.
  */
 
-import { getSourceRange } from './sourceExtraction.js';
-
 /**
  * Node path information.
  */
@@ -280,7 +279,7 @@ function getNodePath(node: Readonly<ASTNode>, root: Readonly<ASTNode>): NodePath
     return null;
   }
 
-  const path = ancestors.map((n) => n.kind);
+  const path = ancestors.map((n) => n['@type']);
   const depthOffset = 1;
 
   return {
@@ -381,8 +380,8 @@ function getNodeMetadata(node: Readonly<ASTNode>, source?: string): NodeMetadata
     children,
     depth,
     isLeaf,
-    location: node.location ?? null,
-    nodeType: node.kind,
+    location: getSourceRange(node) ?? null,
+    nodeType: node['@type'],
     parent,
     siblings,
     sourceText,
@@ -396,7 +395,7 @@ function getNodeMetadata(node: Readonly<ASTNode>, source?: string): NodeMetadata
  * @returns True if the node is of the specified type.
  */
 function isNodeType(node: Readonly<ASTNode>, nodeType: string): boolean {
-  return node.kind === nodeType;
+  return node['@type'] === nodeType;
 }
 
 export type {

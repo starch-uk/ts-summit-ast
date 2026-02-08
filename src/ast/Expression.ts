@@ -3,7 +3,7 @@
  * AST node types for expressions (binary, unary, method calls, etc.) and SOQL/SOSL bindings.
  */
 
-import type { ASTNode, SourceRange } from './baseNode.js';
+import type { ASTNode, CanonicalSourceLocation } from './baseNode.js';
 import type { TypeRef } from './baseNode.js';
 import type { Statement } from './statement.js';
 import type { Identifier } from './baseNode.js';
@@ -18,7 +18,7 @@ import type {
  * Base interface for all expression nodes.
  */
 interface Expression extends ASTNode {
-  readonly kind:
+  readonly '@type':
     | 'ArrayExpression'
     | 'AssignExpression'
     | 'BinaryExpression'
@@ -48,44 +48,22 @@ interface Expression extends ASTNode {
 }
 
 /**
- * Binary expression: left operator right.
+ * Binary expression: left op right. Uses canonical op enum (ADDITION, etc.).
  */
 interface BinaryExpression extends Expression {
-  readonly kind: 'BinaryExpression';
-  readonly operator:
-    | '-'
-    | '!='
-    | '!=='
-    | '*'
-    | '/'
-    | '&'
-    | '&&'
-    | '%'
-    | '^'
-    | '+'
-    | '<'
-    | '<<'
-    | '<='
-    | '=='
-    | '==='
-    | '>'
-    | '>='
-    | '>>'
-    | '>>>'
-    | '|'
-    | '||'
-    | 'instanceof';
+  readonly '@type': 'BinaryExpression';
+  readonly op: string;
   readonly left: Expression;
   readonly right: Expression;
 }
 
 /**
- * Unary expression: operator operand or operand operator.
+ * Unary expression: op value. Uses canonical op enum (NEGATION, etc.).
  */
 interface UnaryExpression extends Expression {
-  readonly kind: 'UnaryExpression';
-  readonly operator: '--' | '-' | '!' | '+' | '++' | '~';
-  readonly operand: Expression;
+  readonly '@type': 'UnaryExpression';
+  readonly op: string;
+  readonly value: Expression;
 
   /**
    * True for prefix (++x), false for postfix (x++).
@@ -94,10 +72,10 @@ interface UnaryExpression extends Expression {
 }
 
 /**
- * Assignment expression: left = right.
+ * Assignment expression: target = source. Uses canonical names.
  */
 interface AssignExpression extends Expression {
-  readonly kind: 'AssignExpression';
+  readonly '@type': 'AssignExpression';
   readonly operator:
     | '-='
     | '*='
@@ -112,57 +90,32 @@ interface AssignExpression extends Expression {
     | '>>>='
     | '|=';
 
-  /**
-   * Usually VariableExpression, FieldExpression, or ArrayExpression.
-   */
-  readonly left: Expression;
-  readonly right: Expression;
+  readonly target: Expression;
+  readonly source: Expression;
 }
 
 /**
- * Call expression: target.method(args).
+ * Call expression: receiver.id(args). Uses canonical names.
  */
 interface CallExpression extends Expression {
-  readonly kind: 'CallExpression';
+  readonly '@type': 'CallExpression';
 
-  /**
-   * Undefined for static calls.
-   */
-  readonly target?: Expression;
-  readonly methodName: string;
-  readonly arguments: readonly Expression[];
+  readonly receiver?: Expression;
+  readonly id: Identifier;
+  readonly args: readonly Expression[];
 
-  /**
-   * Generic type arguments.
-   */
   readonly typeArguments?: readonly TypeRef[];
-
-  /**
-   * Whether this is a safe navigation call (x?.method()).
-   */
   readonly isSafe?: boolean;
 }
 
 /**
- * Field access expression: target.field.
+ * Field access expression: obj.field. Uses canonical names.
  */
 interface FieldExpression extends Expression {
-  readonly kind: 'FieldExpression';
+  readonly '@type': 'FieldExpression';
 
-  /**
-   * Undefined for static access.
-   */
-  readonly target?: Expression;
-  readonly fieldName: string;
-
-  /**
-   * The field identifier node.
-   */
+  readonly obj?: Expression;
   readonly field: Identifier;
-
-  /**
-   * Whether this is a safe navigation field access (x?.field).
-   */
   readonly isSafe?: boolean;
 }
 
@@ -170,7 +123,7 @@ interface FieldExpression extends Expression {
  * Array access expression: array[index].
  */
 interface ArrayExpression extends Expression {
-  readonly kind: 'ArrayExpression';
+  readonly '@type': 'ArrayExpression';
   readonly array: Expression;
   readonly index: Expression;
 }
@@ -179,7 +132,7 @@ interface ArrayExpression extends Expression {
  * New expression: new Type(args) or new Type[]{...}.
  */
 interface NewExpression extends Expression {
-  readonly kind: 'NewExpression';
+  readonly '@type': 'NewExpression';
   readonly initializer:
     | ConstructorInitializer
     | MapInitializer
@@ -203,38 +156,38 @@ interface NewExpression extends Expression {
 }
 
 /**
- * Cast expression: (Type) expression.
+ * Cast expression: (Type) value. Uses canonical name value.
  */
 interface CastExpression extends Expression {
-  readonly kind: 'CastExpression';
+  readonly '@type': 'CastExpression';
   readonly type: TypeRef;
-  readonly expression: Expression;
+  readonly value: Expression;
 }
 
 /**
  * Instance of expression: expression instanceof Type.
  */
 interface InstanceOfExpression extends Expression {
-  readonly kind: 'InstanceOfExpression';
+  readonly '@type': 'InstanceOfExpression';
   readonly expression: Expression;
   readonly type: TypeRef;
 }
 
 /**
- * Ternary expression: condition ? ThenExpr : elseExpr.
+ * Ternary expression: condition ? ThenValue : elseValue. Uses canonical names.
  */
 interface TernaryExpression extends Expression {
-  readonly kind: 'TernaryExpression';
+  readonly '@type': 'TernaryExpression';
   readonly condition: Expression;
-  readonly thenExpression: Expression;
-  readonly elseExpression: Expression;
+  readonly thenValue: Expression;
+  readonly elseValue: Expression;
 }
 
 /**
  * Lambda expression: (params) => body.
  */
 interface LambdaExpression extends Expression {
-  readonly kind: 'LambdaExpression';
+  readonly '@type': 'LambdaExpression';
   readonly parameters: readonly LambdaParameter[];
   readonly body: Expression | Statement;
 }
@@ -243,7 +196,7 @@ interface LambdaExpression extends Expression {
  * Represents a lambda parameter in the AST.
  */
 interface LambdaParameter extends ASTNode {
-  readonly kind: 'LambdaParameter';
+  readonly '@type': 'LambdaParameter';
   readonly name: string;
   readonly type?: TypeRef;
 }
@@ -252,7 +205,7 @@ interface LambdaParameter extends ASTNode {
  * Represents a variable expression that references a variable or parameter.
  */
 interface VariableExpression extends Expression {
-  readonly kind: 'VariableExpression';
+  readonly '@type': 'VariableExpression';
   readonly id: Identifier;
 }
 
@@ -260,21 +213,21 @@ interface VariableExpression extends Expression {
  * Represents the 'this' expression in the AST.
  */
 interface ThisExpression extends Expression {
-  readonly kind: 'ThisExpression';
+  readonly '@type': 'ThisExpression';
 }
 
 /**
  * Represents the 'super' expression in the AST.
  */
 interface SuperExpression extends Expression {
-  readonly kind: 'SuperExpression';
+  readonly '@type': 'SuperExpression';
 }
 
 /**
  * Represents a parenthesized expression in the AST.
  */
 interface ParenthesizedExpression extends Expression {
-  readonly kind: 'ParenthesizedExpression';
+  readonly '@type': 'ParenthesizedExpression';
   readonly expression: Expression;
 }
 
@@ -282,7 +235,7 @@ interface ParenthesizedExpression extends Expression {
  * SOQL query expression: [SELECT ... FROM ...].
  */
 interface SoqlExpression extends Expression {
-  readonly kind: 'SoqlExpression';
+  readonly '@type': 'SoqlExpression';
 
   /**
    * The raw query text within brackets.
@@ -300,7 +253,7 @@ interface SoqlExpression extends Expression {
  * SOSL query expression: [FIND ... IN ... RETURNING ...].
  */
 interface SoslExpression extends Expression {
-  readonly kind: 'SoslExpression';
+  readonly '@type': 'SoslExpression';
 
   /**
    * The raw query text within brackets.
@@ -318,7 +271,7 @@ interface SoslExpression extends Expression {
  * Trigger context variable expression: Trigger.new, Trigger.old, etc.
  */
 interface TriggerContextVariableExpression extends Expression {
-  readonly kind: 'TriggerContextVariableExpression';
+  readonly '@type': 'TriggerContextVariableExpression';
 
   /**
    * E.g., "new", "old", "newMap", "oldMap", etc.
@@ -332,17 +285,10 @@ interface TriggerContextVariableExpression extends Expression {
  * but the source location comes from the bound expression.
  */
 interface SoqlOrSoslBinding extends ASTNode {
-  readonly kind: 'SoqlOrSoslBinding';
+  readonly '@type': 'SoqlOrSoslBinding';
 
-  /**
-   * The bound expression (e.g., :variableName in SOQL).
-   */
   readonly expr: Expression;
-
-  /**
-   * Optional source location (typically from the bound expression).
-   */
-  readonly location?: SourceRange;
+  readonly sourceLocation?: CanonicalSourceLocation;
 }
 
 export type {

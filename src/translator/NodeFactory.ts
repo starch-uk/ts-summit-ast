@@ -76,6 +76,7 @@ import type { Identifier } from '../ast/baseNode.js';
 import type { Expression } from '../ast/expression.js';
 import type { Statement } from '../ast/statement.js';
 import type { SoqlOrSoslBinding } from '../ast/expression.js';
+import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { SourceRange } from '../ast/baseNode.js';
 import {
   StatementFactory,
@@ -269,7 +270,7 @@ const NodeFactory = {
    * @returns The created binary expression.
    */
   createBinaryExpression(
-    operator: BinaryExpression['operator'],
+    operator: BinaryExpression['op'],
     options: Readonly<{ left: Readonly<Expression>; right: Readonly<Expression> }> &
       Readonly<Partial<NodeFactoryOptions>>
   ): BinaryExpression {
@@ -568,9 +569,9 @@ const NodeFactory = {
   },
   createIdentifier(name: string, options?: Readonly<NodeFactoryOptions>): Identifier {
     return {
-      kind: 'Identifier',
-      location: options?.location,
-      name,
+      '@type': 'Identifier',
+      string: name,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -764,6 +765,7 @@ const NodeFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): TypeRef {
     return {
+      '@type': 'TypeRef',
       arrayNesting,
       components: [
         {
@@ -771,8 +773,7 @@ const NodeFactory = {
           id: this.createIdentifier(name, options),
         },
       ],
-      kind: 'TypeRef',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
   createSizedArrayInitializer(
@@ -948,13 +949,13 @@ const NodeFactory = {
     options?: NodeFactoryOptions
   ): TypeRef {
     return {
+      '@type': 'TypeRef',
       arrayNesting,
       components: components.map((c) => ({
         args: c.args ?? [],
         id: c.id,
       })),
-      kind: 'TypeRef',
-      location: options?.location,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
 
@@ -965,7 +966,7 @@ const NodeFactory = {
    * @returns The created unary expression.
    */
   createUnaryExpression(
-    operator: UnaryExpression['operator'],
+    operator: UnaryExpression['op'],
     options: Readonly<{ operand: Readonly<Expression>; prefix: boolean }> &
       Readonly<Partial<NodeFactoryOptions>>
   ): UnaryExpression {

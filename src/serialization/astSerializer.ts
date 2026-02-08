@@ -44,7 +44,17 @@ import type {
   AnnotationElementValue,
   ArrayElementValue,
 } from '../ast/initializer.js';
-import type { VariableDeclaration, AnnotationArgument, Modifier } from '../ast/declaration.js';
+import type {
+  Annotation,
+  ClassDeclaration,
+  EnumDeclaration,
+  InterfaceDeclaration,
+  MethodDeclaration,
+  PropertyDeclaration,
+  VariableDeclaration,
+  AnnotationArgument,
+  Modifier,
+} from '../ast/declaration.js';
 import {
   isIfStatement,
   isForLoopStatement,
@@ -69,6 +79,11 @@ import {
   isModifier,
   isTypeRef,
   isAnnotationArgument,
+  isClassDeclaration,
+  isEnumDeclaration,
+  isInterfaceDeclaration,
+  isMethodDeclaration,
+  isPropertyDeclaration,
 } from '../guard/declarationGuard.js';
 import {
   isConstructorInitializer,
@@ -108,7 +123,7 @@ function asMutableJson(json: Readonly<JsonASTNode>): JsonASTNode {
  * @returns True if x is an ASTNode.
  */
 function isASTNodeForSerialize(x: unknown): x is ASTNode {
-  return x !== null && typeof x === 'object' && 'kind' in x;
+  return x !== null && typeof x === 'object' && '@type' in x;
 }
 
 /**
@@ -195,8 +210,8 @@ function serializeReturnStatement(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  if (node.expression) {
-    out.expression = serializer.serializeNode(node.expression);
+  if (node.value) {
+    out.value = serializer.serializeNode(node.value);
   }
 }
 
@@ -233,6 +248,20 @@ function serializeExpressionStatement(
 }
 
 /**
+ * Serializes a TypeRef node to JSON (TypeRef is an AST node in summit-ast).
+ * @param typeRef - The type reference node to serialize.
+ * @param serializer - The serializer instance.
+ * @returns The serialized TypeRef JSON representation.
+ */
+function serializeTypeRef(
+  typeRef: Readonly<TypeRef>,
+  serializer: ReadonlyJsonSerializerLike
+): unknown {
+  // TypeRef is an AST node, so serialize it as a node
+  return serializer.serializeNode(typeRef);
+}
+
+/**
  * Serialize a variable declaration statement node to JSON.
  * @param node - The AST node to serialize.
  * @param json - The JSON object to populate.
@@ -244,7 +273,17 @@ function serializeVariableDeclarationStatement(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  out.declaration = serializer.serializeNode(node.declaration);
+  const g = node.group;
+  out.group = {
+    declarations: g.declarations.map((d) => ({
+      id: serializer.serializeNode(d.id),
+      ...(d.initializer && { initializer: serializer.serializeNode(d.initializer) }),
+      ...(d.sourceLocation && { sourceLocation: d.sourceLocation }),
+    })),
+    modifiers: g.modifiers.map((m) => serializer.serializeNode(m)),
+    type: serializeTypeRef(g.type, serializer),
+    ...(g.sourceLocation && { sourceLocation: g.sourceLocation }),
+  };
 }
 
 // ============================================================================
@@ -263,23 +302,9 @@ function serializeBinaryExpression(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  out.operator = node.operator;
+  out.op = node.op;
   out.left = serializer.serializeNode(node.left);
   out.right = serializer.serializeNode(node.right);
-}
-
-/**
- * Serializes a TypeRef node to JSON (TypeRef is an AST node in summit-ast).
- * @param typeRef - The type reference node to serialize.
- * @param serializer - The serializer instance.
- * @returns The serialized TypeRef JSON representation.
- */
-function serializeTypeRef(
-  typeRef: Readonly<TypeRef>,
-  serializer: ReadonlyJsonSerializerLike
-): unknown {
-  // TypeRef is an AST node, so serialize it as a node
-  return serializer.serializeNode(typeRef);
 }
 
 /**
@@ -313,11 +338,11 @@ function serializeCallExpression(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  out.methodName = node.methodName;
-  if (node.target) {
-    out.target = serializer.serializeNode(node.target);
+  out.id = serializer.serializeNode(node.id);
+  if (node.receiver) {
+    out.receiver = serializer.serializeNode(node.receiver);
   }
-  out.arguments = node.arguments.map((arg: Readonly<Expression>) => serializer.serializeNode(arg));
+  out.args = node.args.map((arg: Readonly<Expression>) => serializer.serializeNode(arg));
   if (node.typeArguments) {
     out.typeArguments = node.typeArguments.map((type: Readonly<TypeRef>) =>
       serializeTypeRef(type, serializer)
@@ -337,9 +362,9 @@ function serializeFieldExpression(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  out.fieldName = node.fieldName;
-  if (node.target) {
-    out.target = serializer.serializeNode(node.target);
+  out.field = serializer.serializeNode(node.field);
+  if (node.obj) {
+    out.obj = serializer.serializeNode(node.obj);
   }
 }
 
@@ -372,8 +397,8 @@ function serializeAssignExpression(
 ): void {
   const out = asMutableJson(json);
   out.operator = node.operator;
-  out.left = serializer.serializeNode(node.left);
-  out.right = serializer.serializeNode(node.right);
+  out.target = serializer.serializeNode(node.target);
+  out.source = serializer.serializeNode(node.source);
 }
 
 /**
@@ -510,12 +535,10 @@ function serializeMapInitializer(
 ): void {
   const out = asMutableJson(json as Readonly<JsonASTNode>);
   out.type = serializeTypeRef(node.type, serializer);
-  out.pairs = node.pairs.map(
-    (pair: Readonly<{ key: Readonly<Expression>; value: Readonly<Expression> }>) => ({
-      key: serializer.serializeNode(pair.key),
-      value: serializer.serializeNode(pair.value),
-    })
-  );
+  out.pairs = node.pairs.map((pair: Readonly<{ first: Expression; second: Expression }>) => ({
+    first: serializer.serializeNode(pair.first),
+    second: serializer.serializeNode(pair.second),
+  }));
 }
 
 // ============================================================================
@@ -607,7 +630,7 @@ function serializeVariableDeclaration(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  out.name = node.name;
+  out.id = serializer.serializeNode(node.id);
   out.type = serializeTypeRef(node.type, serializer);
   if (node.initializer) {
     out.initializer = serializer.serializeNode(node.initializer);
@@ -618,26 +641,115 @@ function serializeVariableDeclaration(
   }
 }
 
-// Modifier serialization
+// Modifier serialization (summit-ast format)
+
+/** Maps our modifier keyword to summit-ast KeywordModifier enum (uppercase, no spaces). */
+const MODIFIER_KEYWORD_TO_CANONICAL: Record<string, string> = {
+  abstract: 'ABSTRACT',
+  deprecated: 'DEPRECATED',
+  final: 'FINAL',
+  future: 'FUTURE',
+  global: 'GLOBAL',
+  'inherited sharing': 'INHERITEDSHARING',
+  native: 'NATIVE',
+  override: 'OVERRIDE',
+  private: 'PRIVATE',
+  protected: 'PROTECTED',
+  public: 'PUBLIC',
+  static: 'STATIC',
+  strictfp: 'STRICTFP',
+  synchronized: 'SYNCHRONIZED',
+  testMethod: 'TESTMETHOD',
+  transient: 'TRANSIENT',
+  virtual: 'VIRTUAL',
+  volatile: 'VOLATILE',
+  webservice: 'WEBSERVICE',
+  'with sharing': 'WITHSHARING',
+  'without sharing': 'WITHOUTSHARING',
+};
 
 /**
- * Serialize a modifier node to JSON.
- * @param node - The AST node to serialize.
- * @param json - The JSON object to populate.
+ * Serialize an Annotation to summit-ast AnnotationModifier format.
+ * @param node - The annotation AST node to serialize.
+ * @param serializer - The serializer instance.
+ * @returns JsonASTNode in AnnotationModifier format.
  */
-function serializeModifier(node: Readonly<Modifier>, json: Readonly<JsonASTNode>): void {
-  const out = asMutableJson(json);
-  out.keyword = node.keyword;
+function serializeAnnotationAsModifier(
+  node: Readonly<Annotation>,
+  serializer: Readonly<JsonSerializer>
+): JsonASTNode {
+  const nameStr = typeof node.name === 'string' ? node.name : '';
+  const nameObj: JsonASTNode = {
+    '@type': 'Identifier',
+    sourceLocation: node.sourceLocation ?? {},
+    string: nameStr,
+  };
+  const args = (node.arguments ?? []).map((a: Readonly<AnnotationArgument>) => {
+    const argJson: JsonASTNode = {
+      '@type': 'AnnotationArgument',
+      name: { sourceLocation: a.sourceLocation ?? {}, string: a.name ?? 'value' },
+      value: serializer.serializeNode(a.value),
+      ...(a.isNameImplicit !== undefined && { isNameImplicit: a.isNameImplicit }),
+      ...(a.sourceLocation && { sourceLocation: a.sourceLocation }),
+    };
+    return argJson;
+  });
+  return {
+    '@type': 'AnnotationModifier',
+    args,
+    name: nameObj,
+    ...(node.sourceLocation && { sourceLocation: node.sourceLocation }),
+  };
 }
 
-// ============================================================================
-// Dispatcher
-// ============================================================================
+/**
+ * Serialize a keyword Modifier to summit-ast KeywordModifier format (uppercase enum).
+ * @param node - The modifier AST node to serialize.
+ * @param json - The JSON object to populate.
+ */
+function serializeModifierAsKeywordModifier(
+  node: Readonly<Modifier>,
+  json: Readonly<JsonASTNode>
+): void {
+  const out = asMutableJson(json);
+  out['@type'] = 'KeywordModifier';
+  out.keyword =
+    MODIFIER_KEYWORD_TO_CANONICAL[node.keyword] ?? node.keyword.toUpperCase().replace(/\s+/g, '');
+}
+
+/**
+ * Build modifiers array in summit-ast format: annotations first (as AnnotationModifier), then keyword modifiers (as KeywordModifier).
+ * @param annotations - Annotations from the declaration.
+ * @param modifiers - Keyword modifiers from the declaration.
+ * @param serializer - The serializer instance.
+ * @returns Combined modifiers array.
+ */
+function buildModifiersArrayForSummitAst(
+  annotations: readonly Annotation[] | undefined,
+  modifiers: readonly Modifier[] | undefined,
+  serializer: Readonly<JsonSerializer>
+): JsonASTNode[] {
+  const result: JsonASTNode[] = [];
+  const emptyLength = 0;
+  if (annotations && annotations.length > emptyLength) {
+    for (const ann of annotations) {
+      result.push(serializeAnnotationAsModifier(ann, serializer));
+    }
+  }
+  if (modifiers && modifiers.length > emptyLength) {
+    for (const mod of modifiers) {
+      const json: JsonASTNode = { '@type': 'Modifier' };
+      serializeModifierAsKeywordModifier(mod, json);
+      result.push(json);
+    }
+  }
+  return result;
+}
 
 /**
  * Serialize an unknown AST node to JSON (fallback for node types without dedicated serializers).
  * @param node - The AST node to serialize.
- * @param json - The JSON object to populate.
+ * @param json - The output JSON object to populate.
  * @param serializer - The serializer instance.
  */
 function serializeUnknownNode(
@@ -646,9 +758,12 @@ function serializeUnknownNode(
   serializer: Readonly<JsonSerializer>
 ): void {
   const out = asMutableJson(json);
-  // Try to serialize all enumerable properties
   for (const key in node) {
-    if (key !== 'kind' && key !== 'location' && Object.prototype.hasOwnProperty.call(node, key)) {
+    if (
+      key !== '@type' &&
+      key !== 'sourceLocation' &&
+      Object.prototype.hasOwnProperty.call(node, key)
+    ) {
       const desc = Object.getOwnPropertyDescriptor(node, key);
       const value: unknown = desc && 'value' in desc ? desc.value : undefined;
 
@@ -658,13 +773,12 @@ function serializeUnknownNode(
         const emptyArrayLength = 0;
         const zeroIndex = 0;
         if (value.length > emptyArrayLength) {
-          // Non-empty array: check if it contains AST nodes or TypeRefs
           const first: unknown = value[zeroIndex];
           const isNodeOrRef =
             first !== null &&
             first !== undefined &&
             typeof first === 'object' &&
-            ('kind' in first || ('components' in first && 'arrayNesting' in first));
+            ('@type' in first || ('components' in first && 'arrayNesting' in first));
           if (isNodeOrRef) {
             out[key] = (value as unknown[]).map((item: unknown) => {
               if (isASTNodeForSerialize(item)) {
@@ -677,7 +791,6 @@ function serializeUnknownNode(
             });
           }
         } else {
-          // Empty array: serialize as empty array
           out[key] = [];
         }
       } else if (
@@ -693,12 +806,107 @@ function serializeUnknownNode(
           out[key] = value;
         }
       } else {
-        // Primitive value
         out[key] = value;
       }
     }
   }
 }
+
+/**
+ * Serialize a modifier node to JSON (legacy/fallback - outputs KeywordModifier for summit-ast compatibility).
+ * @param node - The AST node to serialize.
+ * @param json - The JSON object to populate.
+ */
+function serializeModifier(node: Readonly<Modifier>, json: Readonly<JsonASTNode>): void {
+  serializeModifierAsKeywordModifier(node, json);
+}
+
+/**
+ * Serialize ClassDeclaration with modifiers in summit-ast format (AnnotationModifier + KeywordModifier combined).
+ * @param node - The class declaration AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeClassDeclaration(
+  node: Readonly<ClassDeclaration>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  serializeUnknownNode(node, json, serializer);
+  const out = asMutableJson(json);
+  out.modifiers = buildModifiersArrayForSummitAst(node.annotations, node.modifiers, serializer);
+  delete out.annotations;
+}
+
+/**
+ * Serialize InterfaceDeclaration with modifiers in summit-ast format.
+ * @param node - The interface declaration AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeInterfaceDeclaration(
+  node: Readonly<InterfaceDeclaration>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  serializeUnknownNode(node, json, serializer);
+  const out = asMutableJson(json);
+  out.modifiers = buildModifiersArrayForSummitAst(undefined, node.modifiers, serializer);
+}
+
+/**
+ * Serialize MethodDeclaration with modifiers in summit-ast format.
+ * @param node - The method declaration AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeMethodDeclaration(
+  node: Readonly<MethodDeclaration>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  serializeUnknownNode(node, json, serializer);
+  const out = asMutableJson(json);
+  out.modifiers = buildModifiersArrayForSummitAst(node.annotations, node.modifiers, serializer);
+  delete out.annotations;
+}
+
+/**
+ * Serialize PropertyDeclaration with modifiers in summit-ast format.
+ * @param node - The property declaration AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializePropertyDeclaration(
+  node: Readonly<PropertyDeclaration>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  serializeUnknownNode(node, json, serializer);
+  const out = asMutableJson(json);
+  out.modifiers = buildModifiersArrayForSummitAst(node.annotations, node.modifiers, serializer);
+  delete out.annotations;
+}
+
+/**
+ * Serialize EnumDeclaration with modifiers in summit-ast format.
+ * @param node - The enum declaration AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeEnumDeclaration(
+  node: Readonly<EnumDeclaration>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  serializeUnknownNode(node, json, serializer);
+  const out = asMutableJson(json);
+  out.modifiers = buildModifiersArrayForSummitAst(undefined, node.modifiers, serializer);
+}
+
+// ============================================================================
+// Dispatcher
+// ============================================================================
 
 /**
  * Serialize node-specific properties to JSON.
@@ -767,6 +975,16 @@ function serializeNodeProperties(
     serializeArrayElementValue(node, json, serializer);
   } else if (isAnnotationArgument(node)) {
     serializeAnnotationArgument(node, json, serializer);
+  } else if (isClassDeclaration(node)) {
+    serializeClassDeclaration(node, json, serializer);
+  } else if (isInterfaceDeclaration(node)) {
+    serializeInterfaceDeclaration(node, json, serializer);
+  } else if (isMethodDeclaration(node)) {
+    serializeMethodDeclaration(node, json, serializer);
+  } else if (isPropertyDeclaration(node)) {
+    serializePropertyDeclaration(node, json, serializer);
+  } else if (isEnumDeclaration(node)) {
+    serializeEnumDeclaration(node, json, serializer);
   } else {
     serializeUnknownNode(node, json, serializer);
   }
