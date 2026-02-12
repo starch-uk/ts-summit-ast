@@ -9,7 +9,26 @@ import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { ASTNode } from '../ast/baseNode.js';
 import type { Statement } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
+import { TriggerCase } from '../ast/declaration.js';
 import type { Declaration, Annotation, TypeParameter } from '../ast/declaration.js';
+
+/**
+ * Maps trigger event text (e.g. "before update") to TriggerCase.
+ * @param text - The event text from the parse tree.
+ * @returns The TriggerCase enum value, or null if not recognized.
+ */
+function parseTriggerCase(text: string): TriggerCase | null {
+  const t = text.trim().toLowerCase();
+  if (t === 'before insert') return TriggerCase.TRIGGER_BEFORE_INSERT;
+  if (t === 'before update') return TriggerCase.TRIGGER_BEFORE_UPDATE;
+  if (t === 'before delete') return TriggerCase.TRIGGER_BEFORE_DELETE;
+  if (t === 'before undelete') return TriggerCase.TRIGGER_BEFORE_UNDELETE;
+  if (t === 'after insert') return TriggerCase.TRIGGER_AFTER_INSERT;
+  if (t === 'after update') return TriggerCase.TRIGGER_AFTER_UPDATE;
+  if (t === 'after delete') return TriggerCase.TRIGGER_AFTER_DELETE;
+  if (t === 'after undelete') return TriggerCase.TRIGGER_AFTER_UNDELETE;
+  return null;
+}
 import type { Modifier } from '../ast/declaration.js';
 import type { TypeRef } from '../ast/baseNode.js';
 import type {
@@ -18,6 +37,7 @@ import type {
   ExpressionElementValue,
 } from '../ast/initializer.js';
 import { isDeclaration } from '../guard/declarationGuard.js';
+import { isStatement } from '../guard/statementGuard.js';
 import { NodeFactory } from './nodeFactory.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 import type { TranslateContext } from './translateUtil.js';
@@ -397,7 +417,7 @@ class ASTTranslator implements TranslateContext {
   public tryTranslateDeclaration(
     node: Readonly<ParseTreeNode>,
     nodeType: string
-  ): Declaration | null {
+  ): Declaration | import('../ast/declaration.js').FieldDeclarationGroup | null {
     switch (nodeType) {
       case 'class_declaration':
       case 'class':
@@ -434,21 +454,7 @@ class ASTTranslator implements TranslateContext {
         return this.translateAnnotationDeclaration(node);
       case 'trigger_declaration':
       case 'trigger':
-        // For now, return a placeholder declaration so compilation unit is valid
-        // In a full implementation, we'd create a proper TriggerDeclaration AST node
-        const triggerNameNode = this.getChild(node, 'name');
-        const triggerName = triggerNameNode
-          ? (this.getText(triggerNameNode) ??
-            this.getStringProperty(triggerNameNode, 'name') ??
-            'Unknown')
-          : 'Unknown';
-        // Return a minimal class declaration as a placeholder
-        // This allows the compilation unit to be valid
-        return NodeFactory.createClassDeclaration({
-          members: [],
-          name: triggerName + '_trigger_placeholder',
-          options: this.getLocationOption(node),
-        });
+        return this.translateTriggerDeclaration(node);
       case 'instance_initializer':
       case 'static_initializer':
       case 'initializer_block':
@@ -781,7 +787,9 @@ class ASTTranslator implements TranslateContext {
     return memberTranslate.translateInitializerBlock(this, node);
   }
 
-  private translateFieldDeclaration(node: Readonly<ParseTreeNode>): Declaration {
+  private translateFieldDeclaration(
+    node: Readonly<ParseTreeNode>
+  ): Declaration | import('../ast/declaration.js').FieldDeclarationGroup {
     return memberTranslate.translateFieldDeclaration(this, node);
   }
 
@@ -791,6 +799,69 @@ class ASTTranslator implements TranslateContext {
 
   private translateEnumDeclaration(node: Readonly<ParseTreeNode>): Declaration {
     return classTranslate.translateEnumDeclaration(this, node);
+  }
+
+  private translateTriggerDeclaration(node: Readonly<ParseTreeNode>): Declaration {
+    const nameNode = this.getChild(node, 'name');
+    const objectNode = this.getChild(node, 'object_name');
+    const eventsNode = this.getChild(node, 'events');
+    const children = this.getChildren(node);
+
+    /**
+     * Name, object_name, events, body.
+     */
+    const triggerBodyChildIndex = 3;
+    const bodyNode = children[triggerBodyChildIndex];
+
+    const triggerName =
+      nameNode != null
+        ? (this.getText(nameNode) ?? this.getStringProperty(nameNode, 'name') ?? 'Unknown')
+        : 'Unknown';
+    const objectName =
+      objectNode != null
+        ? (this.getText(objectNode) ?? this.getStringProperty(objectNode, 'name') ?? 'Unknown')
+        : 'Unknown';
+
+    const id = NodeFactory.createIdentifier(triggerName, this.getLocationOption(nameNode ?? node));
+    const target = NodeFactory.createIdentifier(
+      objectName,
+      this.getLocationOption(objectNode ?? node)
+    );
+
+    const cases: TriggerCase[] = [];
+    if (eventsNode) {
+      const eventNodes = this.getChildren(eventsNode);
+      for (const ev of eventNodes) {
+        const text = (this.getText(ev) ?? this.getStringProperty(ev, 'text') ?? '').toLowerCase();
+        const tc = parseTriggerCase(text);
+        if (tc != null) cases.push(tc);
+      }
+    }
+
+    const body: (Declaration | Statement)[] = [];
+    if (bodyNode != null) {
+      const blockChildren = this.getChildren(bodyNode);
+      for (const child of blockChildren) {
+        try {
+          const ast = this.translateNode(child);
+          if (isDeclaration(ast)) {
+            body.push(ast);
+          } else if (isStatement(ast)) {
+            body.push(ast);
+          }
+        } catch {
+          body.push(NodeFactory.createUntranslatedStatement(this.getLocationOption(child)));
+        }
+      }
+    }
+
+    return NodeFactory.createTriggerDeclaration({
+      body,
+      cases,
+      id,
+      options: this.getLocationOption(node),
+      target,
+    });
   }
 
   /**

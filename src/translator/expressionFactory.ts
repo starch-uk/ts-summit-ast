@@ -23,6 +23,7 @@ import type {
   SoslExpression,
   TriggerContextVariableExpression,
   LambdaParameter,
+  UntranslatedExpression,
 } from '../ast/expression.js';
 import type { Expression, Statement } from '../ast/index.js';
 import type { TypeRef, Identifier } from '../ast/baseNode.js';
@@ -617,6 +618,18 @@ const ExpressionFactory = {
     return {
       '@type': 'VariableExpression',
       id,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+    };
+  },
+
+  /**
+   * Creates an untranslated expression placeholder (used when translation fails).
+   * @param options - Optional factory options.
+   * @returns The created untranslated expression.
+   */
+  createUntranslatedExpression(options?: Readonly<NodeFactoryOptions>): UntranslatedExpression {
+    return {
+      '@type': 'UntranslatedExpression',
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },

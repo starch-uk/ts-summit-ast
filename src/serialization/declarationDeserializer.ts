@@ -24,10 +24,12 @@ import type {
   AnnotationElementValue,
   ArrayElementValue,
 } from '../ast/initializer.js';
+import { TriggerCase } from '../ast/declaration.js';
 import type {
   Annotation,
   AnnotationArgument,
   ClassDeclaration,
+  Declaration,
   EnumDeclaration,
   EnumValue,
   InterfaceDeclaration,
@@ -35,10 +37,12 @@ import type {
   Modifier,
   Parameter,
   PropertyDeclaration,
+  TriggerDeclaration,
   TypeParameter,
   VariableDeclaration,
 } from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
+import type { Statement } from '../ast/statement.js';
 import type { Identifier } from '../ast/baseNode.js';
 import { NodeFactory } from '../translator/nodeFactory.js';
 import {
@@ -54,6 +58,8 @@ import {
   isPropertyDeclaration,
   isTypeParameter,
   isVariableDeclaration,
+  isDeclaration,
+  isStatement,
 } from '../guard/index.js';
 import type { JsonASTNode } from './jsonSerializer.js';
 import type { JsonDeserializer } from './jsonDeserializer.js';
@@ -91,7 +97,9 @@ function parseCanonicalSourceLocation(
  * @param nodes - Deserialized nodes.
  * @returns Filtered array of valid enum member declaration types.
  */
-function filterEnumMembers(nodes: readonly ASTNode[]): NonNullable<EnumDeclaration['members']> {
+function filterEnumMembers(
+  nodes: readonly ASTNode[]
+): NonNullable<EnumDeclaration['bodyDeclarations']> {
   const result: (
     | ClassDeclaration
     | EnumDeclaration
@@ -120,7 +128,9 @@ function filterEnumMembers(nodes: readonly ASTNode[]): NonNullable<EnumDeclarati
  * @param nodes - Deserialized nodes.
  * @returns Filtered array of valid interface member declaration types.
  */
-function filterInterfaceMembers(nodes: readonly ASTNode[]): InterfaceDeclaration['members'] {
+function filterInterfaceMembers(
+  nodes: readonly ASTNode[]
+): InterfaceDeclaration['bodyDeclarations'] {
   const result: (
     | ClassDeclaration
     | InterfaceDeclaration
@@ -1030,16 +1040,17 @@ function deserializeEnumDeclaration(
   );
   const valuesJson = getOptionalJsonASTNodeArrayProperty(json, 'values') ?? [];
   const values = valuesJson.map((v: Readonly<JsonASTNode>) => deserializeEnumValue(v));
-  const membersJson =
+  const bodyDeclarationsJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'bodyDeclarations') ??
     getOptionalJsonASTNodeArrayProperty(json, 'members') ??
     getOptionalJsonASTNodeArrayProperty(json, 'innerTypeDeclarations');
-  const members = membersJson
+  const bodyDeclarations = bodyDeclarationsJson
     ? filterEnumMembers(
-        membersJson.map((m: Readonly<JsonASTNode>) => deserializer.deserializeNode(m))
+        bodyDeclarationsJson.map((m: Readonly<JsonASTNode>) => deserializer.deserializeNode(m))
       )
     : undefined;
   return NodeFactory.createEnumDeclaration({
-    members,
+    bodyDeclarations,
     modifiers,
     name,
     options: locationOption,
@@ -1080,16 +1091,17 @@ function deserializeInterfaceDeclaration(
         deserializeTypeRefNode(t, undefined, deserializer)
       )
     : undefined;
-  const membersJson =
+  const bodyDeclarationsJson =
+    getOptionalJsonASTNodeArrayProperty(json, 'bodyDeclarations') ??
     getOptionalJsonASTNodeArrayProperty(json, 'members') ??
     getOptionalJsonASTNodeArrayProperty(json, 'methodDeclarations') ??
     [];
-  const members = filterInterfaceMembers(
-    membersJson.map((m: Readonly<JsonASTNode>) => deserializer.deserializeNode(m))
+  const bodyDeclarations = filterInterfaceMembers(
+    bodyDeclarationsJson.map((m: Readonly<JsonASTNode>) => deserializer.deserializeNode(m))
   );
   return NodeFactory.createInterfaceDeclaration({
-    extendsClause,
-    members,
+    extendsTypes: extendsClause,
+    bodyDeclarations,
     modifiers,
     name,
     options: locationOption,
@@ -1136,7 +1148,7 @@ function deserializeMethodDeclaration(
   return NodeFactory.createMethodDeclaration({
     modifiers,
     name,
-    parameters: deserializeParameters(json, deserializer),
+    parameterDeclarations: deserializeParameters(json, deserializer),
     returnType,
     ...(annotations != null && annotations.length > EMPTY_LENGTH && { annotations }),
     ...(body != null && { body }),
@@ -1244,8 +1256,8 @@ function deserializeClassDeclaration(
       )
     : undefined;
 
-  // Upstream splits members into fieldDeclarations/propertyDeclarations/methodDeclarations + innerTypeDeclarations.
-  const members: (
+  // Upstream splits bodyDeclarations into fieldDeclarations/propertyDeclarations/methodDeclarations + innerTypeDeclarations.
+  const bodyDeclarations: (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
@@ -1264,23 +1276,23 @@ function deserializeClassDeclaration(
       isPropertyDeclaration(node) ||
       isVariableDeclaration(node)
     ) {
-      members.push(node);
+      bodyDeclarations.push(node);
     }
   }
   const fields = getOptionalJsonASTNodeArrayProperty(json, 'fieldDeclarations') ?? [];
   for (const f of fields) {
     const node = deserializer.deserializeNode(f);
-    if (isVariableDeclaration(node)) members.push(node);
+    if (isVariableDeclaration(node)) bodyDeclarations.push(node);
   }
   const props = getOptionalJsonASTNodeArrayProperty(json, 'propertyDeclarations') ?? [];
   for (const p of props) {
     const node = deserializer.deserializeNode(p);
-    if (isPropertyDeclaration(node)) members.push(node);
+    if (isPropertyDeclaration(node)) bodyDeclarations.push(node);
   }
   const methods = getOptionalJsonASTNodeArrayProperty(json, 'methodDeclarations') ?? [];
   for (const m of methods) {
     const node = deserializer.deserializeNode(m);
-    if (isMethodDeclaration(node)) members.push(node);
+    if (isMethodDeclaration(node)) bodyDeclarations.push(node);
   }
 
   const EMPTY_LENGTH = 0;
@@ -1294,12 +1306,51 @@ function deserializeClassDeclaration(
   return NodeFactory.createClassDeclaration({
     modifiers,
     name,
-    ...(extendsClause != null && { extendsClause }),
-    ...(implementsClause != null && { implementsClause }),
-    members,
+    ...(extendsClause != null && { extendsType: extendsClause }),
+    ...(implementsClause != null && { implementsTypes: implementsClause }),
+    bodyDeclarations,
     ...(annotations && annotations.length > EMPTY_LENGTH && { annotations }),
     ...(typeParameters && { typeParameters }),
     options: locationOption,
+  });
+}
+
+/**
+ * Deserializes a TriggerDeclaration from JSON.
+ * @param json - The JSON object to deserialize.
+ * @param locationOption - Optional source location data for the deserialized node.
+ * @param deserializer - The deserializer instance.
+ * @returns The deserialized TriggerDeclaration node.
+ */
+function deserializeTriggerDeclaration(
+  json: Readonly<JsonASTNode>,
+  locationOption: Readonly<{ location: SourceRange }> | undefined,
+  deserializer: Readonly<JsonDeserializer>
+): TriggerDeclaration {
+  const idNode = getJsonASTNodeProperty(json, 'id');
+  const id = deserializeIdentifier(idNode);
+  const targetNode = getJsonASTNodeProperty(json, 'target');
+  const target = deserializeIdentifier(targetNode);
+  const casesJson = getOptionalJsonASTNodeArrayProperty(json, 'cases') ?? [];
+  const cases: TriggerCase[] = casesJson.map((c: unknown) => {
+    const s = typeof c === 'string' ? c : String(c);
+    if (Object.values(TriggerCase).includes(s as TriggerCase)) {
+      return s as TriggerCase;
+    }
+    return TriggerCase.TRIGGER_BEFORE_INSERT; // fallback for unknown
+  });
+  const bodyJson = getOptionalJsonASTNodeArrayProperty(json, 'body') ?? [];
+  const body: (Declaration | Statement)[] = [];
+  for (const b of bodyJson) {
+    const node = deserializer.deserializeNode(b);
+    if (isDeclaration(node) || isStatement(node)) body.push(node);
+  }
+  return NodeFactory.createTriggerDeclaration({
+    body,
+    cases,
+    id,
+    options: locationOption,
+    target,
   });
 }
 
@@ -1330,4 +1381,5 @@ export {
   deserializeInterfaceDeclaration,
   deserializeMethodDeclaration,
   deserializePropertyDeclaration,
+  deserializeTriggerDeclaration,
 };

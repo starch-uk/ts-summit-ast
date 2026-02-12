@@ -44,7 +44,16 @@ interface Expression extends ASTNode {
     | 'ThisExpression'
     | 'TriggerContextVariableExpression'
     | 'UnaryExpression'
+    | 'UntranslatedExpression'
     | 'VariableExpression';
+}
+
+/**
+ * Placeholder for expressions that could not be translated.
+ * Allows partial AST construction. Matches summit-ast UntranslatedExpression.
+ */
+interface UntranslatedExpression extends Expression {
+  readonly '@type': 'UntranslatedExpression';
 }
 
 /**
@@ -312,5 +321,6 @@ export type {
   SoqlExpression,
   SoslExpression,
   TriggerContextVariableExpression,
+  UntranslatedExpression,
   SoqlOrSoslBinding,
 };

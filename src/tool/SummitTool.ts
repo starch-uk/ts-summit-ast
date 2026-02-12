@@ -1,9 +1,8 @@
 /**
  * @file SummitTool - CLI tool for processing Apex files.
  *
- * Note: This tool requires parse trees from an external parser.
- * It demonstrates how to use the AST library but does not include
- * a parser runtime dependency.
+ * Uses the built-in parser by default. A custom parseTreeAdapter may be
+ * provided to use an external parser instead.
  */
 
 import { readFileSync, statSync, readdirSync } from 'fs';
@@ -11,6 +10,9 @@ import { join, extname } from 'path';
 import { ASTTranslator } from '../translator/astTranslator.js';
 import { JsonSerializer } from '../serialization/jsonSerializer.js';
 import type { ParseTreeNode } from '../parser/parseTree.js';
+import { parseApexSource } from '../parser/index.js';
+import { resolve } from '../symbols/index.js';
+import { attachDeclarationMetadata } from '../utils/declarationUtils.js';
 
 /**
  * Options for SummitTool.
@@ -32,8 +34,8 @@ interface SummitToolOptions {
   verbose?: boolean;
 
   /**
-   * Custom parse tree adapter function
-   * This allows users to adapt their parser's output to ParseTreeNode format.
+   * Custom parse tree adapter function.
+   * When not provided, the built-in parser is used.
    */
   parseTreeAdapter?: (source: string, filePath: string) => ParseTreeNode | null;
 }
@@ -88,6 +90,7 @@ class SummitTool {
 
   /**
    * Process a single file or directory.
+   * Runs symbol resolution after processing (matches upstream SummitTool behavior).
    * @param input - The file or directory path to process.
    * @returns Array of processing results.
    */
@@ -110,6 +113,22 @@ class SummitTool {
           file: input,
           success: false,
         });
+      }
+
+      // Run symbol resolution on successful compilation units (matches upstream SummitResolver)
+      const allAsts = results
+        .filter(
+          (r) =>
+            r.success &&
+            r.ast != null &&
+            (r.ast as { '@type': string })['@type'] === 'CompilationUnit'
+        )
+        .map((r) => r.ast as import('../ast/declaration.js').CompilationUnit);
+      if (allAsts.length > 0) {
+        for (const ast of allAsts) {
+          attachDeclarationMetadata(ast);
+        }
+        resolve(allAsts);
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -184,16 +203,10 @@ class SummitTool {
     try {
       const source = readFileSync(filePath, 'utf-8');
 
-      // Get parse tree using adapter or throw error
-      if (!this.options.parseTreeAdapter) {
-        return {
-          error: 'No parse tree adapter provided. Please provide a parseTreeAdapter function.',
-          file: filePath,
-          success: false,
-        };
-      }
-
-      const parseTree = this.options.parseTreeAdapter(source, filePath);
+      // Get parse tree using adapter or built-in parser
+      const parseTree = this.options.parseTreeAdapter
+        ? this.options.parseTreeAdapter(source, filePath)
+        : parseApexSource(source);
       if (!parseTree) {
         return {
           error: 'Failed to parse file',

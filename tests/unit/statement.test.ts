@@ -80,8 +80,9 @@ describe('Statement Translation', () => {
     expect(classDecl).not.toBeNull();
     // Original: val methodDecl = classDecl.methodDeclarations.first()
     if (!classDecl) throw new Error('Expected classDecl to be defined');
-    const methodDecl = classDecl.members.find(
-      (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) => isMethodDeclaration(m)
+    const methodDecl = classDecl.bodyDeclarations.find(
+      (m: Readonly<Readonly<ClassDeclaration['bodyDeclarations'][number]>>) =>
+        isMethodDeclaration(m)
     );
     // Original: assertNotNull(methodDecl.body)
     expect(methodDecl.body).toBeDefined();

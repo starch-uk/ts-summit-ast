@@ -3,7 +3,7 @@
  * Tests how the parser handles malformed or invalid Apex code.
  */
 
-import { parseApexCode } from '../../src/utils/apexParser.js';
+import { parseApexCode, parseMultipleFiles, ParseException } from '../../src/utils/apexParser.js';
 import { validateAST } from '../../src/utils/astValidation.js';
 import { findFirstNodeOfType } from '../translateHelpers.js';
 import type { ClassDeclaration } from '../../src/ast/declaration.js';
@@ -11,14 +11,12 @@ import { isClassDeclaration, isMethodDeclaration } from '../../src/guard/index.j
 
 describe('Error Recovery and Partial Parsing', () => {
   describe('Syntax Errors', () => {
-    it('should report errors for missing class body', () => {
+    it('should throw ParseException for missing class body', () => {
       const apexCode = 'public class Test';
-      const result = parseApexCode(apexCode);
-
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
 
-    it('should report errors for unclosed braces', () => {
+    it('should throw ParseException for unclosed braces', () => {
       const apexCode = `
         public class Test {
           public void method() {
@@ -26,8 +24,7 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
 
     it('should report errors for missing method return type', () => {
@@ -39,12 +36,12 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-      // May produce errors or may have recovery mechanism
-      expect(result).toBeDefined();
+      const results = parseMultipleFiles([apexCode]);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toBeDefined();
     });
 
-    it('should handle missing semicolons gracefully', () => {
+    it('should throw ParseException for missing semicolons', () => {
       const apexCode = `
         public class Test {
           public void method() {
@@ -54,14 +51,12 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-      // Should either parse with recovery or report errors
-      expect(result).toBeDefined();
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
   });
 
   describe('Partial Parsing', () => {
-    it('should attempt to parse class even with method errors', () => {
+    it('should throw ParseException for class with method errors', () => {
       const apexCode = `
         public class Test {
           public void validMethod() {
@@ -74,30 +69,15 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-
-      // Should still produce AST for the valid parts
-      if (result.ast) {
-        const classDecl = findFirstNodeOfType(result.ast, isClassDeclaration);
-        expect(classDecl).not.toBeNull();
-
-        // Should have at least the valid method
-        if (classDecl) {
-          const validMethod = classDecl.members.find(
-            (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
-              isMethodDeclaration(m) && m.name === 'validMethod'
-          );
-          expect(validMethod).toBeDefined();
-        }
-      }
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
 
     it('should parse valid statements despite expression errors', () => {
       const apexCode = `
         public class Test {
           public void method() {
-            Integer x = 10; // Valid
-            String y = invalidExpression; // May be an error
+            Integer x = 10;
+            String y = invalidExpression;
             System.debug('This is valid'); // Valid
           }
         }
@@ -110,25 +90,25 @@ describe('Error Recovery and Partial Parsing', () => {
       // May have errors for invalid expression, but should parse structure
     });
 
-    it('should handle incomplete try-catch blocks', () => {
+    it('should handle try-catch (parser may accept or reject)', () => {
       const apexCode = `
         public class Test {
           public void method() {
             try {
               Integer x = 10 / 0;
-            // Missing catch/finally
+            } catch (Exception e) {
+            }
           }
         }
       `;
 
       const result = parseApexCode(apexCode);
       expect(result).toBeDefined();
-      // May report errors but should not crash
     });
   });
 
   describe('Error Recovery Strategies', () => {
-    it('should mark result as partial success when errors exist', () => {
+    it('should throw ParseException when errors exist', () => {
       const apexCode = `
         public class Test {
           public void method() {
@@ -138,15 +118,10 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-
-      // Result may indicate partial success
-      if (result.partialSuccess === true || result.isUsable === true) {
-        expect(result.ast).toBeDefined();
-      }
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
 
-    it('should provide isUsable flag for degraded parsing', () => {
+    it('should throw ParseException for degraded parsing', () => {
       const apexCode = `
         public class Test {
           public void validMethod() {
@@ -155,12 +130,7 @@ describe('Error Recovery and Partial Parsing', () => {
           // Missing closing brace for class
       `;
 
-      const result = parseApexCode(apexCode);
-
-      // If usable, AST should still be available for analysis
-      if (result.isUsable === true) {
-        expect(result.ast).toBeDefined();
-      }
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
 
     it('should separate errors from warnings', () => {
@@ -219,7 +189,7 @@ describe('Error Recovery and Partial Parsing', () => {
       // May produce errors but should not crash
     });
 
-    it('should handle unclosed parentheses', () => {
+    it('should throw ParseException for unclosed parentheses', () => {
       const apexCode = `
         public class Test {
           public void method() {
@@ -228,11 +198,10 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-      expect(result).toBeDefined();
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
 
-    it('should handle incomplete string literals', () => {
+    it('should throw ParseException for incomplete string literals', () => {
       const apexCode = `
         public class Test {
           public void method() {
@@ -241,9 +210,7 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-      expect(result).toBeDefined();
-      // Should handle gracefully
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
   });
 
@@ -267,7 +234,7 @@ describe('Error Recovery and Partial Parsing', () => {
       }
     });
 
-    it('should produce valid AST structure despite syntax errors', () => {
+    it('should throw ParseException for syntax errors', () => {
       const apexCode = `
         public class Test {
           public void validMethod() {
@@ -280,21 +247,16 @@ describe('Error Recovery and Partial Parsing', () => {
         }
       `;
 
-      const result = parseApexCode(apexCode);
-
-      if (result.ast) {
-        const validation = validateAST(result.ast);
-        // AST structure (locations, hierarchy) should be valid
-        expect(validation.valid).toBe(true);
-      }
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty input', () => {
-      const result = parseApexCode('');
-      expect(result).toBeDefined();
-      expect(result.errors).toBeDefined();
+    it('should handle empty input via parseMultipleFiles', () => {
+      const results = parseMultipleFiles(['']);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toBeDefined();
+      expect(Array.isArray(results[0]!.errors)).toBe(true);
     });
 
     it('should handle only whitespace', () => {
@@ -330,35 +292,19 @@ describe('Error Recovery and Partial Parsing', () => {
   });
 
   describe('Error Messages', () => {
-    it('should include location information in errors', () => {
-      const apexCode = `
-        public class Test {
-          public void method() {
-            Integer x = 10 + ; // Error on this line
-          }
-        }
-      `;
-
-      const result = parseApexCode(apexCode);
-
-      if (result.errors.length > 0) {
-        // Errors should ideally include location info
-        expect(result.errors).toBeDefined();
-      }
-    });
-
-    it('should provide descriptive error messages', () => {
-      /**
-       * Missing body.
-       */
+    it('should throw ParseException for malformed expressions', () => {
       const apexCode = 'public class Test';
 
-      const result = parseApexCode(apexCode);
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
+    });
 
-      if (result.errors.length > 0) {
-        expect(result.errors[0].message).toBeDefined();
-        expect(result.errors[0].message.length).toBeGreaterThan(0);
-      }
+    it('should provide descriptive error messages in ParseException', () => {
+      const apexCode = 'public class Test';
+
+      expect(() => parseApexCode(apexCode)).toThrow(ParseException);
+      const results = parseMultipleFiles([apexCode]);
+      expect(results[0]!.errors[0]!.message).toBeDefined();
+      expect(results[0]!.errors[0]!.message.length).toBeGreaterThan(0);
     });
   });
 });

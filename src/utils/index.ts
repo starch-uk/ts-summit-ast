@@ -33,6 +33,7 @@ export type {
   XPathFeatureSupport,
 } from './ruleMatching.js';
 export type { ApexParseError, ApexParseOptions, ApexParseResult } from './apexParser.js';
+export { CompilationType, ParseException } from './apexParser.js';
 export type { ApexDocParseOptions } from './apexdocParser.js';
 export type { ASTValidationResult, ASTComparisonResult, ASTStatistics } from './astValidation.js';
 
@@ -45,3 +46,4 @@ export * from './ruleMatching.js';
 export * from './apexParser.js';
 export * from './apexdocParser.js';
 export * from './astValidation.js';
+export * from './declarationUtils.js';

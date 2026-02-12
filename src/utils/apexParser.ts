@@ -1,18 +1,45 @@
 /**
  * @file Apex code parsing utilities.
  *
- * Note: This is a placeholder that requires an external parser.
- * The actual parsing would be done by an external parser library,
- * and this module provides a convenient interface.
+ * Uses the built-in parser (parseApexSource) by default.
+ * Callers may provide a parseTreeAdapter to use an external parser instead.
  */
 
+import { readFileSync } from 'fs';
 import type { ASTNode } from '../ast/baseNode.js';
 import { MIN_NON_EMPTY_ARRAY_LENGTH } from '../constants.js';
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import { ASTTranslator } from '../translator/astTranslator.js';
 import { parseApexSource } from '../parser/index.js';
+import { ApexLexer } from '../parser/apexLexer.js';
+import { TokenType } from '../parser/tokenType.js';
 import type { ExtractedComment, ExtractCommentsOptions } from './commentUtils.js';
 import { extractComments } from './commentUtils.js';
+import { attachDeclarationMetadata } from './declarationUtils.js';
+
+/**
+ * Exception to propagate parse/syntax errors or AST translation problems.
+ * Matches summit-ast SummitAST.ParseException.
+ */
+export class ParseException extends Error {
+  public override readonly name = 'ParseException';
+  public readonly cause?: Error;
+
+  public constructor(message: string, cause?: Error) {
+    super(message);
+    this.cause = cause;
+    Object.setPrototypeOf(this, ParseException.prototype);
+  }
+}
+
+/**
+ * The type of top-level declaration in an input.
+ * Matches summit-ast SummitAST.CompilationType.
+ */
+export enum CompilationType {
+  CLASS = 'CLASS',
+  TRIGGER = 'TRIGGER',
+}
 
 /**
  * Apex parse error information
@@ -79,6 +106,13 @@ interface ApexParseOptions {
    * Only used when enableCache is true.
    */
   readonly cacheTTL?: number;
+
+  /**
+   * Explicit compilation type. When provided, the source must match this type.
+   * If the source starts with class/interface/enum but TRIGGER is specified
+   * (or starts with trigger but CLASS is specified), ParseException is thrown.
+   */
+  readonly compilationType?: CompilationType;
 }
 
 /**
@@ -121,6 +155,36 @@ interface ApexParseResultView {
 }
 
 /**
+ * Determines the CompilationType of the source by lexing until a declaration keyword.
+ * If class, interface, or enum is found before the body, returns CLASS.
+ * If trigger is found, returns TRIGGER.
+ * Otherwise defaults to CLASS.
+ * @param source
+ */
+function determineCompilationType(source: string): CompilationType {
+  const lexer = new ApexLexer(source);
+  const tokens = lexer.tokenize();
+
+  for (const token of tokens) {
+    if (token.type === TokenType.LEFT_BRACE || token.type === TokenType.EOF) {
+      break;
+    }
+    switch (token.type) {
+      case TokenType.CLASS:
+      case TokenType.INTERFACE:
+      case TokenType.ENUM:
+        return CompilationType.CLASS;
+      case TokenType.TRIGGER:
+        return CompilationType.TRIGGER;
+      default:
+        break;
+    }
+  }
+
+  return CompilationType.CLASS;
+}
+
+/**
  * Type guard for usable parse results.
  *
  * When `isUsable` is true, the AST is guaranteed to be defined.
@@ -155,7 +219,8 @@ function isUsableParseResult(
  * @param options.includeSource - Whether to include the original source in the result (default: false).
  * @param options.parseTreeAdapter - Optional function to convert source to ParseTreeNode (uses built-in parser if not provided).
  * @param options.onError - Optional callback for errors during parsing.
- * @returns Parse result containing AST, errors, warnings, and optionally comments.
+ * @returns Parse result containing AST, comments, etc. On parse/translation failure, throws ParseException.
+ * @throws {ParseException} On parse failure or translation errors (matches upstream).
  * @example
  * ```typescript
  * const result = parseApexCode('public class Test { }');
@@ -174,7 +239,18 @@ function parseApexCode(
     includeLocation = true,
     includeSource = false,
     parseTreeAdapter,
+    compilationType: explicitType,
   } = options;
+
+  // When explicit compilation type is provided, verify source matches.
+  if (explicitType !== undefined) {
+    const actualType = determineCompilationType(source);
+    if (actualType !== explicitType) {
+      throw new ParseException(
+        `Compilation type mismatch: expected ${explicitType} but source is ${actualType}`
+      );
+    }
+  }
 
   const errors: ApexParseError[] = [];
   const warnings: ApexParseError[] = [];
@@ -204,14 +280,10 @@ function parseApexCode(
         severity: 'error',
       });
     }
-
-    return {
-      errors,
-      isUsable: false,
-      partialSuccess: false,
-      source: includeSource ? source : undefined,
-      warnings: warnings.length > MIN_NON_EMPTY_ARRAY_LENGTH ? warnings : undefined,
-    };
+    throw new ParseException(
+      errors.map((e) => e.message).join('\n'),
+      errors[0]?.message ? new Error(errors[0].message) : undefined
+    );
   }
 
   // Translate parse tree to AST
@@ -248,22 +320,27 @@ function parseApexCode(
   // Determine if parsing was partially successful and if AST is usable
   const hasAST = translationResult.ast !== undefined;
 
+  // Populate Declaration.qualifiedName and parent (matches upstream)
+  if (translationResult.ast) {
+    attachDeclarationMetadata(translationResult.ast);
+  }
+
   const emptyArrayLength = 0;
   const hasErrors = errors.length > emptyArrayLength;
-  const hasWarnings = warnings.length > emptyArrayLength;
-  const partialSuccess = hasAST && (hasErrors || hasWarnings);
 
-  /**
-   * Usable if we have AST and no fatal errors.
-   */
-  const isUsable = hasAST && !hasErrors;
+  if (hasErrors || !hasAST) {
+    throw new ParseException(
+      errors.map((e) => e.message).join('\n'),
+      errors[0]?.message ? new Error(errors[0].message) : undefined
+    );
+  }
 
   return {
     ast: translationResult.ast,
     comments,
     errors,
-    isUsable,
-    partialSuccess,
+    isUsable: true,
+    partialSuccess: false,
     source: includeSource ? source : undefined,
     warnings: warnings.length > MIN_NON_EMPTY_ARRAY_LENGTH ? warnings : undefined,
   };
@@ -300,7 +377,20 @@ function parseMultipleFiles(
   sources: readonly string[],
   options: ApexParseOptions = {} as ApexParseOptions
 ): ApexParseResult[] {
-  return sources.map((source) => parseApexCode(source, options));
+  return sources.map((source) => {
+    try {
+      return parseApexCode(source, options);
+    } catch (err) {
+      return {
+        errors: [
+          { message: err instanceof Error ? err.message : 'Parse failed', severity: 'error' },
+        ],
+        isUsable: false,
+        partialSuccess: false,
+        source: options.includeSource ? source : undefined,
+      };
+    }
+  });
 }
 
 /**
@@ -363,5 +453,69 @@ function extractCommentsBatch(
   return asts.map((ast, index) => extractComments(ast, sources[index], options));
 }
 
+/**
+ * Parses and translates Apex from a file path. Type is determined from extension.
+ * Matches summit-ast SummitAST.parseAndTranslate(path: Path).
+ * @param path - File path (.cls or .trigger).
+ * @returns The CompilationUnit AST.
+ */
+function parseAndTranslate(path: Path): ASTNode;
+
+/**
+ * Parses and translates Apex source to a CompilationUnit.
+ * Throws ParseException on parse/translation errors or compilation type mismatch.
+ * Matches summit-ast SummitAST.parseAndTranslate(string, type?) API.
+ * @param source - Apex source code.
+ * @param type - Optional explicit compilation type. When provided, source must match.
+ * @returns The CompilationUnit AST.
+ * @throws {ParseException} On parse failure, translation failure, or type mismatch.
+ */
+function parseAndTranslate(source: string, type?: CompilationType | null): ASTNode;
+
+function parseAndTranslate(pathOrSource: Path | string, type?: CompilationType | null): ASTNode {
+  const s = pathOrSource as string;
+  if (type === undefined || type === null) {
+    if (s.toLowerCase().endsWith('.cls') || s.toLowerCase().endsWith('.trigger')) {
+      return parseAndTranslateFromPathInternal(s);
+    }
+  }
+  const result = parseApexCode(s, {
+    compilationType: type ?? undefined,
+    includeLocation: true,
+  });
+  return result.ast!;
+}
+
+/**
+ * File path type for parseAndTranslate. Use when parsing from file.
+ * Matches upstream SummitAST.parseAndTranslate(path: Path).
+ */
+export type Path = string;
+
+function parseAndTranslateFromPathInternal(path: string): ASTNode {
+  const ext = path.toLowerCase().endsWith('.cls')
+    ? '.cls'
+    : path.toLowerCase().endsWith('.trigger')
+      ? '.trigger'
+      : null;
+  if (!ext) {
+    throw new Error(`Unexpected file type: ${path}. Expected .cls or .trigger`);
+  }
+  const type = ext === '.cls' ? CompilationType.CLASS : CompilationType.TRIGGER;
+  const source = readFileSync(path, 'utf-8');
+  return parseAndTranslate(source, type);
+}
+
 export type { ApexParseError, ApexParseOptions, ApexParseResult };
-export { extractCommentsBatch, isUsableParseResult, parseApexCode, parseMultipleFiles };
+export {
+  extractCommentsBatch,
+  isUsableParseResult,
+  parseAndTranslate,
+  parseApexCode,
+  parseMultipleFiles,
+};
+
+/** @deprecated Use parseAndTranslate(path) instead. Kept for backward compatibility. */
+export function parseAndTranslateFromPath(path: string): ASTNode {
+  return parseAndTranslateFromPathInternal(path);
+}

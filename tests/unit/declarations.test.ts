@@ -7,6 +7,7 @@ import { parseAndTranslate, findFirstNodeOfType, countNodesOfType } from '../tra
 import {
   isClassDeclaration,
   isEnumDeclaration,
+  isFieldDeclarationGroup,
   isInterfaceDeclaration,
   isMethodDeclaration,
   isVariableDeclaration,
@@ -64,7 +65,8 @@ function typeRefToCodeString(typeRef: TypeRef): string {
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- TypeRef may be unresolved in test context
 function isVoidType(typeRef: TypeRef | undefined): boolean {
   if (typeRef == null) return false;
-  return typeRef.components == null || typeRef.components.length === 0;
+  if (typeRef.components == null || typeRef.components.length === 0) return true;
+  return typeRef.components.length === 1 && typeRef.components[0]?.id?.string === 'void';
 }
 
 /**
@@ -79,8 +81,10 @@ function getQualifiedName(decl: ClassMember, enclosingClassName?: string): strin
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- isVariableDeclaration accepts ASTNode
   const name: string = isVariableDeclaration(decl)
     ? decl.id.string
-    : // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ClassMember has name or id
-      (decl as { name: string }).name;
+    : 'id' in decl && decl.id && typeof (decl.id as { string?: string }).string === 'string'
+      ? (decl.id as { string: string }).string
+      : // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ClassMember has name or id
+        (decl as { name: string }).name;
   if (enclosingClassName != null && enclosingClassName !== '') {
     return `${enclosingClassName}.${name}`;
   }
@@ -94,7 +98,9 @@ function getQualifiedName(decl: ClassMember, enclosingClassName?: string): strin
  * @returns True if the method is an anonymous initialization block.
  */
 function isAnonymousInitializationCode(method: Readonly<MethodDeclaration>): boolean {
-  return method.name === '_init' && method.parameters.length === 0 && isVoidType(method.returnType);
+  const params =
+    method.parameterDeclarations ?? (method as { parameters?: unknown[] }).parameters ?? [];
+  return method.name === '_init' && params.length === 0 && isVoidType(method.returnType);
 }
 
 /**
@@ -122,9 +128,9 @@ describe('Class Declaration Translation', () => {
     expect(classDecl).not.toBeNull();
     if (classDecl) {
       // Original: "Class should have no super class" - extendsType is null
-      expect(classDecl.extendsClause).toBeUndefined();
+      expect(classDecl.extendsType).toBeUndefined();
       // Original: "Class should have no implemented interfaces" - implementsTypes isEmpty
-      expect(classDecl.implementsClause).toBeUndefined();
+      expect(classDecl.implementsTypes).toBeUndefined();
     }
   });
 
@@ -139,14 +145,14 @@ describe('Class Declaration Translation', () => {
     expect(classDecl).not.toBeNull();
     if (classDecl) {
       // Original: extendsType?.asCodeString() == "Base"
-      expect(classDecl.extendsClause).toBeDefined();
-      if (classDecl.extendsClause) {
-        expect(typeRefToCodeString(classDecl.extendsClause)).toBe('Base');
+      expect(classDecl.extendsType).toBeDefined();
+      if (classDecl.extendsType) {
+        expect(typeRefToCodeString(classDecl.extendsType)).toBe('Base');
       }
       // Original: implementsTypes.map { it.asCodeString() }.containsExactly("I1", "I2")
-      expect(classDecl.implementsClause).toBeDefined();
-      if (classDecl.implementsClause && Array.isArray(classDecl.implementsClause)) {
-        const implementedTypes = classDecl.implementsClause.map(typeRefToCodeString);
+      expect(classDecl.implementsTypes).toBeDefined();
+      if (classDecl.implementsTypes && Array.isArray(classDecl.implementsTypes)) {
+        const implementedTypes = classDecl.implementsTypes.map(typeRefToCodeString);
         // Original uses containsExactly which requires exact order and count
         expect(implementedTypes).toEqual(['I1', 'I2']);
         expect(implementedTypes.length).toBe(2);
@@ -178,8 +184,8 @@ describe('Class Declaration Translation', () => {
     expect(enclosingClassDecl).not.toBeNull();
     if (enclosingClassDecl) {
       // Filter inner types from members
-      const innerTypes = enclosingClassDecl.members.filter(
-        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) =>
+      const innerTypes = enclosingClassDecl.bodyDeclarations.filter(
+        (m: Readonly<Readonly<ClassDeclaration['bodyDeclarations'][number]>>) =>
           isClassDeclaration(m) || isInterfaceDeclaration(m) || isEnumDeclaration(m)
       );
       // Original: innerTypeDeclarations hasSize 3
@@ -264,33 +270,32 @@ describe('Class Declaration Translation', () => {
     expect(classDecl).not.toBeNull();
 
     if (classDecl) {
-      // Find field declarations in members
       // Original: fieldDeclGroup.declarations hasSize 1
-      const fieldDecls = classDecl.members.filter(isVariableDeclaration);
-      expect(fieldDecls.length).toBeGreaterThanOrEqual(1);
+      expect(classDecl.fieldDeclarations.length).toBeGreaterThanOrEqual(1);
+      const group = classDecl.fieldDeclarations.find(
+        (g) => isFieldDeclarationGroup(g) && g.declarations.some((d) => d.id.string === 'field')
+      );
+      expect(group).toBeDefined();
+      if (group && isFieldDeclarationGroup(group)) {
+        const fieldDecl = group.declarations.find((d) => d.id.string === 'field');
+        expect(fieldDecl).toBeDefined();
+        if (fieldDecl) {
+          // Original: qualifiedName == "Test.field"
+          expect(getQualifiedName(fieldDecl as unknown as ClassMember, classDecl.name)).toBe(
+            'Test.field'
+          );
 
-      const fieldDecl = fieldDecls.find((f) => f.id.string === 'field');
-      expect(fieldDecl).toBeDefined();
-      if (fieldDecl) {
-        // Original: qualifiedName == "Test.field"
-        expect(getQualifiedName(fieldDecl, classDecl.name)).toBe('Test.field');
+          // Original: modifiers hasSize 1 (on group)
+          expect(group.modifiers.length).toBeGreaterThanOrEqual(1);
+          expect(hasKeyword(group.modifiers, 'public')).toBe(true);
 
-        // Original: modifiers hasSize 1
-        expect(fieldDecl.modifiers).toBeDefined();
-        if (fieldDecl.modifiers) {
-          expect(fieldDecl.modifiers.length).toBeGreaterThanOrEqual(1);
-          // Original: hasKeyword(KeywordModifier.Keyword.PUBLIC) is true
-          expect(hasKeyword(fieldDecl.modifiers, 'public')).toBe(true);
+          // Original: initializer is not null
+          expect(fieldDecl.initializer).toBeDefined();
+
+          // Original: type.asCodeString() == "String" (on group)
+          const typeString = typeRefToCodeString(group.type);
+          expect(['String', 'Object']).toContain(typeString);
         }
-
-        // Original: initializer is not null
-        expect(fieldDecl.initializer).toBeDefined();
-
-        // Original: type.asCodeString() == "String"
-        expect(fieldDecl.type).toBeDefined();
-        const typeString = typeRefToCodeString(fieldDecl.type);
-        // Type should be either "String" (if fully parsed) or "Object" (if type inference is used)
-        expect(['String', 'Object']).toContain(typeString);
       }
     }
   });
@@ -320,82 +325,21 @@ describe('Class Declaration Translation', () => {
     if (!classDecl) return;
 
     // Original: assertThat(classDecl.fieldDeclarations).hasSize(2)
-    // In TypeScript, field declarations are stored as VariableDeclarations in members array
-    // We need to group them by their source statement to match the original's FieldDeclarationGroup concept
-    const fieldDecls = classDecl.members.filter(isVariableDeclaration);
-
-    // Original expects all 3 fields to exist
-    // Find the three fields
-    const field1 = fieldDecls.find((f) => f.id.string === 'field1');
-    const field2 = fieldDecls.find((f) => f.id.string === 'field2');
-    const field3 = fieldDecls.find((f) => f.id.string === 'field3');
-
-    // Original: All fields must exist (the test will fail if parsing doesn't work correctly)
-    expect(field1).toBeDefined();
-    expect(field2).toBeDefined();
-    expect(field3).toBeDefined();
-
-    // Group fields by checking if they come from the same statement
-    // Fields from the same statement should have the same type and modifiers
-    // and should be adjacent in the members array (or at least parseable as coming from same statement)
-    const groups: VariableDeclaration[][] = [];
-    let currentGroup: VariableDeclaration[] = [];
-
-    for (let i = 0; i < fieldDecls.length; i++) {
-      const current = fieldDecls[i];
-      const prev = i > 0 ? fieldDecls[i - 1] : null;
-
-      if (prev) {
-        // Check if current field should be in the same group as previous
-        // Fields from the same statement have the same type, modifiers, and are on the same line.
-        // This matches the original Kotlin behavior where FieldDeclarationGroup objects are
-        // created per statement (one parse tree node per statement with comma-separated declarators).
-        const sameType = typeRefToCodeString(current.type) === typeRefToCodeString(prev.type);
-        const currentModifiers = (current.modifiers ?? [])
-          .map((m) => m.keyword)
-          .sort()
-          .join(',');
-        const prevModifiers = (prev.modifiers ?? [])
-          .map((m) => m.keyword)
-          .sort()
-          .join(',');
-        const sameModifiers = currentModifiers === prevModifiers;
-        const sameLine = current.sourceLocation?.startLine === prev.sourceLocation?.startLine;
-
-        if (sameType && sameModifiers && sameLine) {
-          // Same group - fields from the same statement (same line)
-          currentGroup.push(current);
-        } else {
-          // New group - different statement
-          if (currentGroup.length > 0) {
-            groups.push([...currentGroup]);
-          }
-          currentGroup = [current];
-        }
-      } else {
-        // First field
-        currentGroup = [current];
-      }
-    }
-    if (currentGroup.length > 0) {
-      groups.push(currentGroup);
-    }
-
-    // Original: assertThat(classDecl.fieldDeclarations).hasSize(2)
-    expect(groups).toHaveLength(2);
+    const fieldDeclGroups = classDecl.fieldDeclarations.filter(isFieldDeclarationGroup);
+    expect(fieldDeclGroups).toHaveLength(2);
 
     // Original: val group1 = classDecl.fieldDeclarations.first()
     //           assertThat(group1.declarations).hasSize(2)
-    const [group1] = groups;
-    expect(group1).toHaveLength(2);
-    expect(group1.find((f) => f.id.string === 'field1')).toBeDefined();
-    expect(group1.find((f) => f.id.string === 'field2')).toBeDefined();
+    const [group1] = fieldDeclGroups;
+    expect(group1.declarations).toHaveLength(2);
+    expect(group1.declarations.some((d) => d.id.string === 'field1')).toBe(true);
+    expect(group1.declarations.some((d) => d.id.string === 'field2')).toBe(true);
 
     // Original: val group2 = classDecl.fieldDeclarations.last()
     //           assertThat(group2.declarations).hasSize(1)
-    const [, group2] = groups;
-    expect(group2).toHaveLength(1);
-    expect(group2.find((f) => f.id.string === 'field3')).toBeDefined();
+    const [, group2] = fieldDeclGroups;
+    expect(group2.declarations).toHaveLength(1);
+    expect(group2.declarations.some((d) => d.id.string === 'field3')).toBe(true);
   });
 
   // Ported from anonymousInitialization_translates_asMethodNamedInit
@@ -430,7 +374,7 @@ describe('Class Declaration Translation', () => {
 
     if (classDecl) {
       // Find method declarations (initialization blocks are translated as methods)
-      const methodDecls = classDecl.members.filter(isMethodDeclaration);
+      const methodDecls = classDecl.bodyDeclarations.filter(isMethodDeclaration);
 
       // Original: methodDeclarations hasSize 3 (2 anonymous blocks + 1 static block)
       // In TypeScript port, initialization blocks may be implemented differently
@@ -452,7 +396,8 @@ describe('Class Declaration Translation', () => {
           // - isAnonymousInitializationCode() is true
           // - id.asCodeString() == "_init"
           for (const methodDecl of initMethods) {
-            expect(methodDecl.parameters.length).toBe(0);
+            const params = methodDecl.parameterDeclarations ?? methodDecl.parameters ?? [];
+            expect(params.length).toBe(0);
             expect(isVoidType(methodDecl.returnType)).toBe(true);
             expect(isAnonymousInitializationCode(methodDecl)).toBe(true);
             expect(methodDecl.name).toBe('_init');
@@ -493,9 +438,10 @@ describe('Class Declaration Translation', () => {
     if (classDecl) {
       // Find property declarations
       // Original: propertyDeclarations.singleOrNull() is not null
-      const propDecls = classDecl.members.filter(
-        (m: Readonly<Readonly<ClassDeclaration['members'][number]>>): m is PropertyDeclaration =>
-          m['@type'] === 'PropertyDeclaration'
+      const propDecls = classDecl.bodyDeclarations.filter(
+        (
+          m: Readonly<Readonly<ClassDeclaration['bodyDeclarations'][number]>>
+        ): m is PropertyDeclaration => m['@type'] === 'PropertyDeclaration'
       );
       // Properties may not be fully implemented yet, so we check if they exist
       if (propDecls.length > 0) {
@@ -758,17 +704,18 @@ describe('Class Declaration Translation', () => {
       // Original: getChildren() returns body declarations in order: inner types < fields < properties < methods
       const children = getNodeChildren(testClassDecl);
       const memberNames = children
-        .map((child): string | null => {
-          // Original maps: Declaration -> id.asCodeString(), FieldDeclarationGroup -> declarations.single().id.asCodeString()
-          if (isClassDeclaration(child)) return child.name;
-          if (isInterfaceDeclaration(child)) return child.name;
-          if (isEnumDeclaration(child)) return child.name;
-          if (isMethodDeclaration(child)) return child.name;
-          if (isPropertyDeclaration(child)) return child.name;
-          if (isVariableDeclaration(child)) return child.id.string;
-          return null;
+        .flatMap((child): string[] => {
+          // Original maps: Declaration -> id.asCodeString(), FieldDeclarationGroup -> declarations[*].id.asCodeString()
+          if (isClassDeclaration(child)) return [child.name];
+          if (isInterfaceDeclaration(child)) return [child.name];
+          if (isEnumDeclaration(child)) return [child.name];
+          if (isMethodDeclaration(child)) return [child.name];
+          if (isPropertyDeclaration(child)) return [child.name];
+          if (isVariableDeclaration(child)) return [child.id.string];
+          if (isFieldDeclarationGroup(child)) return child.declarations.map((d) => d.id.string);
+          return [];
         })
-        .filter((name): name is string => name !== null);
+        .filter((name): name is string => name !== null && name !== undefined);
 
       // Original: containsExactly("InnerClass", "InnerEnum", "positiveField", "negativeField",
       //                            "upProperty", "downProperty", "aMethod", "otherMethod")
@@ -874,7 +821,7 @@ describe('Interface Declaration Translation', () => {
     expect(isInterfaceDeclaration(interfaceDecl)).toBe(true);
     // Original: assertWithMessage("Interface should have no super interfaces")
     //           .that(interfaceDecl.extendsTypes).isEmpty()
-    expect(interfaceDecl.extendsClause).toBeUndefined();
+    expect(interfaceDecl.extendsTypes).toBeUndefined();
   });
 
   it('interface translation includes inheritance', () => {
@@ -883,9 +830,9 @@ describe('Interface Declaration Translation', () => {
     // Original: assertNotNull(interfaceDecl)
     expect(interfaceDecl).not.toBeNull();
     // Original: assertThat(interfaceDecl.extendsTypes.map { it.asCodeString() }).containsExactly("I1", "I2")
-    expect(interfaceDecl.extendsClause).toBeDefined();
-    expect(Array.isArray(interfaceDecl.extendsClause)).toBe(true);
-    const extendedTypes = interfaceDecl.extendsClause.map(typeRefToCodeString);
+    expect(interfaceDecl.extendsTypes).toBeDefined();
+    expect(Array.isArray(interfaceDecl.extendsTypes)).toBe(true);
+    const extendedTypes = interfaceDecl.extendsTypes.map(typeRefToCodeString);
     expect(extendedTypes).toEqual(['I1', 'I2']);
   });
 
@@ -1014,7 +961,7 @@ describe('Method Declaration Translation', () => {
     // Original: assertNotNull(classDecl)
     expect(classDecl).not.toBeNull();
     // Original: assertThat(classDecl.methodDeclarations).hasSize(2)
-    const methodDecls = classDecl.members.filter(isMethodDeclaration);
+    const methodDecls = classDecl.bodyDeclarations.filter(isMethodDeclaration);
     expect(methodDecls).toHaveLength(2);
 
     // Original: val methodDecl = classDecl.methodDeclarations.first()
@@ -1267,7 +1214,7 @@ describe('Modifier Translation', () => {
     // Original: assertNotNull(classDecl)
     expect(classDecl).not.toBeNull();
     // Original: assertThat(classDecl.methodDeclarations).hasSize(2)
-    const methodDecls = classDecl.members.filter(isMethodDeclaration);
+    const methodDecls = classDecl.bodyDeclarations.filter(isMethodDeclaration);
     expect(methodDecls).toHaveLength(2);
 
     // Original: val normalInitializer = classDecl.methodDeclarations.first()

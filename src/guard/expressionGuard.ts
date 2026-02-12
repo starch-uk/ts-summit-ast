@@ -22,6 +22,7 @@ import type {
   CastExpression,
   TernaryExpression,
   ParenthesizedExpression,
+  UntranslatedExpression,
 } from '../ast/expression.js';
 
 /**
@@ -60,6 +61,7 @@ function isExpression(node: ASTNode): node is Expression {
       'SoqlExpression',
       'SoslExpression',
       'TriggerContextVariableExpression',
+      'UntranslatedExpression',
     ].includes(node['@type'])
   );
 }
@@ -69,6 +71,10 @@ function isExpression(node: ASTNode): node is Expression {
  * @param node - The AST node to check.
  * @returns True if the node is a BinaryExpression.
  */
+function isUntranslatedExpression(node: ASTNode): node is UntranslatedExpression {
+  return '@type' in node && node['@type'] === 'UntranslatedExpression';
+}
+
 function isAssignExpression(node: ASTNode): node is AssignExpression {
   return '@type' in node && node['@type'] === 'AssignExpression';
 }
@@ -283,4 +289,5 @@ export {
   isTriggerContextVariableExpression,
   isThisExpression,
   isSuperExpression,
+  isUntranslatedExpression,
 };

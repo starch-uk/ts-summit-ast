@@ -11,11 +11,13 @@ import type {
   Declaration,
   EnumDeclaration,
   EnumValue,
+  FieldDeclarationGroup,
   InterfaceDeclaration,
   MethodDeclaration,
   Modifier,
   PropertyDeclaration,
   TypeParameter,
+  TriggerDeclaration,
   VariableDeclaration,
 } from '../ast/declaration.js';
 
@@ -34,6 +36,7 @@ function isDeclaration(node: ASTNode): node is Declaration {
       'InterfaceDeclaration',
       'MethodDeclaration',
       'PropertyDeclaration',
+      'TriggerDeclaration',
       'VariableDeclaration',
     ].includes(node['@type'])
   );
@@ -104,6 +107,15 @@ function isVariableDeclaration(node: ASTNode): node is VariableDeclaration {
 }
 
 /**
+ * Type guard for FieldDeclarationGroup nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is a FieldDeclarationGroup.
+ */
+function isFieldDeclarationGroup(node: ASTNode): node is FieldDeclarationGroup {
+  return '@type' in node && node['@type'] === 'FieldDeclarationGroup';
+}
+
+/**
  * Type guard for EnumDeclaration nodes.
  * @param node - The AST node to check.
  * @returns True if the node is an EnumDeclaration.
@@ -128,6 +140,15 @@ function isInterfaceDeclaration(node: ASTNode): node is InterfaceDeclaration {
  */
 function isPropertyDeclaration(node: ASTNode): node is PropertyDeclaration {
   return '@type' in node && node['@type'] === 'PropertyDeclaration';
+}
+
+/**
+ * Type guard for TriggerDeclaration nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is a TriggerDeclaration.
+ */
+function isTriggerDeclaration(node: ASTNode): node is TriggerDeclaration {
+  return '@type' in node && node['@type'] === 'TriggerDeclaration';
 }
 
 /**
@@ -169,6 +190,7 @@ function isTypeParameter(node: ASTNode): node is TypeParameter {
 export {
   isAnnotation,
   isDeclaration,
+  isFieldDeclarationGroup,
   isModifier,
   isIdentifier,
   isTypeRef,
@@ -179,6 +201,7 @@ export {
   isEnumDeclaration,
   isInterfaceDeclaration,
   isPropertyDeclaration,
+  isTriggerDeclaration,
   isEnumValue,
   isAnnotationArgument,
   isTypeParameter,

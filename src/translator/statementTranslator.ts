@@ -198,8 +198,8 @@ function translateCompoundStatement(
         if (expr) {
           return NodeFactory.createExpressionStatement(expr, ctx.getLocationOption(child));
         }
-        // Skip nodes that can't be translated
-        return null;
+        // Use placeholder when translation fails (matches upstream UntranslatedStatement)
+        return NodeFactory.createUntranslatedStatement(ctx.getLocationOption(childReadonly));
       }
     })
     .filter((stmt): stmt is Statement => stmt !== null);

@@ -14,6 +14,7 @@ import type {
   ReturnStatement,
   CompoundStatement,
   ExpressionStatement,
+  UntranslatedStatement,
   VariableDeclarationStatement,
   DmlStatement,
   BreakStatement,
@@ -54,6 +55,7 @@ function isStatement(node: ASTNode): node is Statement {
       'Upsert',
       'Merge',
       'Undelete',
+      'UntranslatedStatement',
     ].includes(node['@type'])
   );
 }
@@ -63,6 +65,10 @@ function isStatement(node: ASTNode): node is Statement {
  * @param node - The AST node to check.
  * @returns True if the node is an IfStatement.
  */
+function isUntranslatedStatement(node: ASTNode): node is UntranslatedStatement {
+  return '@type' in node && node['@type'] === 'UntranslatedStatement';
+}
+
 function isIfStatement(node: ASTNode): node is IfStatement {
   return '@type' in node && node['@type'] === 'IfStatement';
 }
@@ -279,4 +285,5 @@ export {
   isForEachStatement,
   isDoWhileLoopStatement,
   isDoWhileStatement,
+  isUntranslatedStatement,
 };

@@ -66,7 +66,10 @@ export interface TranslateContext {
   /**
    * Try to translate node as a declaration.
    */
-  tryTranslateDeclaration: (node: Readonly<ParseTreeNode>, nodeType: string) => Declaration | null;
+  tryTranslateDeclaration: (
+    node: Readonly<ParseTreeNode>,
+    nodeType: string
+  ) => Declaration | import('../ast/declaration.js').FieldDeclarationGroup | null;
 
   /**
    * Try to translate node as a type reference.

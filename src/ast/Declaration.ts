@@ -6,7 +6,7 @@
 import type { ASTNode, CanonicalSourceLocation } from './baseNode.js';
 import type { TypeRef } from './baseNode.js';
 import type { Expression } from './expression.js';
-import type { CompoundStatement } from './statement.js';
+import type { CompoundStatement, Statement } from './statement.js';
 import type { Identifier } from './baseNode.js';
 import type {
   AnnotationElementValue,
@@ -58,7 +58,26 @@ interface CompilationUnit extends ASTNode {
 }
 
 /**
+ * Trigger case - when the trigger fires.
+ * Matches summit-ast TriggerDeclaration.TriggerCase.
+ */
+export enum TriggerCase {
+  TRIGGER_AFTER_DELETE = 'TRIGGER_AFTER_DELETE',
+  TRIGGER_AFTER_INSERT = 'TRIGGER_AFTER_INSERT',
+  TRIGGER_AFTER_UNDELETE = 'TRIGGER_AFTER_UNDELETE',
+  TRIGGER_AFTER_UPDATE = 'TRIGGER_AFTER_UPDATE',
+  TRIGGER_BEFORE_DELETE = 'TRIGGER_BEFORE_DELETE',
+  TRIGGER_BEFORE_INSERT = 'TRIGGER_BEFORE_INSERT',
+  TRIGGER_BEFORE_UNDELETE = 'TRIGGER_BEFORE_UNDELETE',
+  TRIGGER_BEFORE_UPDATE = 'TRIGGER_BEFORE_UPDATE',
+}
+
+/** Enclosing type for qualified name resolution (ClassDeclaration, InterfaceDeclaration, or EnumDeclaration). */
+export type TypeDeclaration = ClassDeclaration | InterfaceDeclaration | EnumDeclaration;
+
+/**
  * Base interface for all declaration nodes.
+ * qualifiedName and parent are populated by attachDeclarationMetadata().
  */
 interface Declaration extends ASTNode {
   readonly '@type':
@@ -67,7 +86,51 @@ interface Declaration extends ASTNode {
     | 'InterfaceDeclaration'
     | 'MethodDeclaration'
     | 'PropertyDeclaration'
+    | 'TriggerDeclaration'
     | 'VariableDeclaration';
+
+  /**
+   * Enclosing type declaration (for nested types/methods).
+   * Populated by attachDeclarationMetadata().
+   */
+  parent?: TypeDeclaration | null;
+
+  /**
+   * Fully qualified name (e.g. "Outer.Inner.method").
+   * Populated by attachDeclarationMetadata().
+   */
+  qualifiedName?: string;
+}
+
+/**
+ * Represents a trigger declaration in the AST.
+ * Matches summit-ast TriggerDeclaration.
+ */
+interface TriggerDeclaration extends Declaration {
+  readonly '@type': 'TriggerDeclaration';
+  readonly id: Identifier;
+  readonly target: Identifier;
+  readonly cases: readonly TriggerCase[];
+  readonly body: readonly (Declaration | Statement)[];
+}
+
+/**
+ * Field declaration within a FieldDeclarationGroup (shares type/modifiers with group).
+ */
+interface FieldDeclaration extends ASTNode {
+  readonly '@type': 'FieldDeclaration';
+  readonly id: Identifier;
+  readonly initializer?: Expression;
+}
+
+/**
+ * Group of comma-separated field declarations sharing type and modifiers.
+ */
+interface FieldDeclarationGroup extends ASTNode {
+  readonly '@type': 'FieldDeclarationGroup';
+  readonly type: TypeRef;
+  readonly modifiers: readonly Modifier[];
+  readonly declarations: readonly FieldDeclaration[];
 }
 
 /**
@@ -80,21 +143,40 @@ interface ClassDeclaration extends Declaration {
   readonly typeParameters?: readonly TypeParameter[];
 
   /**
-   * Superclass.
+   * Superclass (upstream: extendsType).
    */
-  readonly extendsClause?: TypeRef;
+  readonly extendsType?: TypeRef;
 
   /**
-   * Interfaces.
+   * Implemented interfaces (upstream: implementsTypes).
    */
-  readonly implementsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly implementsTypes?: readonly TypeRef[];
+
+  /** Inner types (class, interface, enum). */
+  readonly innerTypeDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
+  )[];
+  /** Field declaration groups (or VariableDeclaration for backward compat). */
+  readonly fieldDeclarations: readonly (FieldDeclarationGroup | VariableDeclaration)[];
+  /** Property declarations. */
+  readonly propertyDeclarations: readonly PropertyDeclaration[];
+  /** Method declarations. */
+  readonly methodDeclarations: readonly MethodDeclaration[];
+
+  /**
+   * All body declarations in declaration order (derived: innerTypes + fields + properties + methods).
+   * Matches upstream bodyDeclarations.
+   */
+  readonly bodyDeclarations: readonly (
+    | ClassDeclaration
+    | EnumDeclaration
+    | InterfaceDeclaration
+    | FieldDeclarationGroup
+    | VariableDeclaration
     | MethodDeclaration
     | PropertyDeclaration
-    | VariableDeclaration
   )[];
   readonly annotations?: readonly Annotation[];
 }
@@ -109,10 +191,22 @@ interface InterfaceDeclaration extends Declaration {
   readonly typeParameters?: readonly TypeParameter[];
 
   /**
-   * Extended interfaces.
+   * Extended interfaces (upstream: extendsTypes).
    */
-  readonly extendsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly extendsTypes?: readonly TypeRef[];
+
+  /** Inner types. */
+  readonly innerTypeDeclarations: readonly (ClassDeclaration | InterfaceDeclaration)[];
+  /** Property declarations. */
+  readonly propertyDeclarations: readonly PropertyDeclaration[];
+  /** Method declarations. */
+  readonly methodDeclarations: readonly MethodDeclaration[];
+
+  /**
+   * All body declarations (derived: innerTypes + properties + methods).
+   * Matches upstream bodyDeclarations.
+   */
+  readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | InterfaceDeclaration
     | MethodDeclaration
@@ -129,7 +223,13 @@ interface MethodDeclaration extends Declaration {
   readonly modifiers: readonly Modifier[];
   readonly returnType: TypeRef;
   readonly typeParameters?: readonly TypeParameter[];
-  readonly parameters: readonly Parameter[];
+  /** Upstream: parameterDeclarations. */
+  readonly parameterDeclarations: readonly Parameter[];
+
+  /**
+   * @deprecated Use parameterDeclarations. Kept for backward compatibility.
+   */
+  readonly parameters?: readonly Parameter[];
 
   /**
    * Undefined for abstract/interface methods.
@@ -192,11 +292,12 @@ interface EnumDeclaration extends Declaration {
   readonly values: readonly EnumValue[];
 
   /**
-   * Enum body members.
+   * Enum body declarations. Matches upstream bodyDeclarations.
    */
-  readonly members?: readonly (
+  readonly bodyDeclarations?: readonly (
     | ClassDeclaration
     | EnumDeclaration
+    | FieldDeclarationGroup
     | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
@@ -278,6 +379,8 @@ export type {
   Modifier,
   Declaration,
   ClassDeclaration,
+  FieldDeclaration,
+  FieldDeclarationGroup,
   InterfaceDeclaration,
   MethodDeclaration,
   ConstructorDeclaration,
@@ -290,4 +393,5 @@ export type {
   Annotation,
   AnnotationArgument,
   AnnotationMember,
+  TriggerDeclaration,
 };

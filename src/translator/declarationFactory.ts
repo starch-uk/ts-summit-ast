@@ -4,6 +4,7 @@
  */
 
 import type {
+  Declaration,
   VariableDeclaration,
   ClassDeclaration,
   InterfaceDeclaration,
@@ -15,11 +16,15 @@ import type {
   Modifier,
   Annotation,
   Parameter,
+  TriggerDeclaration,
+  TriggerCase,
+  FieldDeclaration,
+  FieldDeclarationGroup,
 } from '../ast/declaration.js';
 import type { Expression } from '../ast/expression.js';
 import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { TypeRef, Identifier, TypeRefComponent } from '../ast/baseNode.js';
-import type { CompoundStatement } from '../ast/statement.js';
+import type { CompoundStatement, Statement } from '../ast/statement.js';
 import {
   DEFAULT_ARRAY_DIMENSIONS_TO_ADD,
   LAST_ELEMENT_OFFSET,
@@ -34,12 +39,13 @@ const EMPTY_MODIFIERS: readonly Modifier[] = [];
 /** Options for createClassDeclaration (all properties readonly). */
 interface CreateClassDeclarationOptions {
   readonly annotations?: readonly Annotation[];
-  readonly extendsClause?: TypeRef;
-  readonly implementsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly extendsType?: TypeRef;
+  readonly implementsTypes?: readonly TypeRef[];
+  readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
+    | FieldDeclarationGroup
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -57,12 +63,13 @@ interface CreateClassDeclarationOptions {
  */
 interface CreateClassDeclarationOptionsView {
   readonly annotations?: readonly Annotation[];
-  readonly extendsClause?: TypeRef;
-  readonly implementsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly extendsType?: TypeRef;
+  readonly implementsTypes?: readonly TypeRef[];
+  readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
+    | FieldDeclarationGroup
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -75,10 +82,11 @@ interface CreateClassDeclarationOptionsView {
 
 /** Options for createEnumDeclaration (all properties readonly). */
 interface CreateEnumDeclarationOptions {
-  readonly members?: readonly (
+  readonly bodyDeclarations?: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
+    | FieldDeclarationGroup
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -91,10 +99,11 @@ interface CreateEnumDeclarationOptions {
 
 /** Readonly view options for createEnumDeclaration used at API boundaries. */
 interface CreateEnumDeclarationOptionsView {
-  readonly members?: readonly (
+  readonly bodyDeclarations?: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
+    | FieldDeclarationGroup
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -107,8 +116,8 @@ interface CreateEnumDeclarationOptionsView {
 
 /** Options for createInterfaceDeclaration (all properties readonly). */
 interface CreateInterfaceDeclarationOptions {
-  readonly extendsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly extendsTypes?: readonly TypeRef[];
+  readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | InterfaceDeclaration
     | MethodDeclaration
@@ -122,8 +131,8 @@ interface CreateInterfaceDeclarationOptions {
 
 /** Readonly view options for createInterfaceDeclaration used at API boundaries. */
 interface CreateInterfaceDeclarationOptionsView {
-  readonly extendsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly extendsTypes?: readonly TypeRef[];
+  readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | InterfaceDeclaration
     | MethodDeclaration
@@ -135,6 +144,15 @@ interface CreateInterfaceDeclarationOptionsView {
   readonly typeParameters?: readonly TypeParameter[];
 }
 
+/** Options for createTriggerDeclaration (all properties readonly). */
+interface CreateTriggerDeclarationOptions {
+  readonly body: readonly (Declaration | Statement)[];
+  readonly cases: readonly TriggerCase[];
+  readonly id: Identifier;
+  readonly options?: NodeFactoryOptions;
+  readonly target: Identifier;
+}
+
 /** Options for createMethodDeclaration (all properties readonly). */
 interface CreateMethodDeclarationOptions {
   readonly annotations?: readonly Annotation[];
@@ -143,7 +161,7 @@ interface CreateMethodDeclarationOptions {
   readonly modifiers?: readonly Modifier[];
   readonly name: string;
   readonly options?: NodeFactoryOptions;
-  readonly parameters?: readonly Parameter[];
+  readonly parameterDeclarations?: readonly Parameter[];
   readonly returnType: TypeRef;
   readonly typeParameters?: readonly TypeParameter[];
 }
@@ -154,15 +172,36 @@ interface CreateMethodDeclarationOptions {
 const DeclarationFactory = {
   createClassDeclaration(opts: CreateClassDeclarationOptionsView): ClassDeclaration {
     const emptyArrayLength = 0;
+    const bodyDeclarations = [...opts.bodyDeclarations];
+    const innerTypeDeclarations = bodyDeclarations.filter(
+      (m): m is ClassDeclaration | EnumDeclaration | InterfaceDeclaration =>
+        m['@type'] === 'ClassDeclaration' ||
+        m['@type'] === 'EnumDeclaration' ||
+        m['@type'] === 'InterfaceDeclaration'
+    );
+    const fieldDeclarations = bodyDeclarations.filter(
+      (m): m is FieldDeclarationGroup | VariableDeclaration =>
+        m['@type'] === 'FieldDeclarationGroup' || m['@type'] === 'VariableDeclaration'
+    );
+    const propertyDeclarations = bodyDeclarations.filter(
+      (m): m is PropertyDeclaration => m['@type'] === 'PropertyDeclaration'
+    );
+    const methodDeclarations = bodyDeclarations.filter(
+      (m): m is MethodDeclaration => m['@type'] === 'MethodDeclaration'
+    );
     return {
       '@type': 'ClassDeclaration',
       annotations:
         opts.annotations && opts.annotations.length > emptyArrayLength
           ? [...opts.annotations]
           : undefined,
-      extendsClause: opts.extendsClause,
-      implementsClause: opts.implementsClause ? [...opts.implementsClause] : undefined,
-      members: [...opts.members],
+      extendsType: opts.extendsType,
+      implementsTypes: opts.implementsTypes ? [...opts.implementsTypes] : undefined,
+      innerTypeDeclarations,
+      fieldDeclarations,
+      propertyDeclarations,
+      methodDeclarations,
+      bodyDeclarations,
       modifiers:
         (opts.modifiers ?? EMPTY_MODIFIERS).length > emptyArrayLength
           ? [...(opts.modifiers ?? EMPTY_MODIFIERS)]
@@ -176,11 +215,11 @@ const DeclarationFactory = {
   },
 
   createEnumDeclaration(opts: CreateEnumDeclarationOptionsView): EnumDeclaration {
-    const { members, modifiers = EMPTY_MODIFIERS, name, options, values } = opts;
+    const { bodyDeclarations, modifiers = EMPTY_MODIFIERS, name, options, values } = opts;
     const emptyArrayLength = 0;
     return {
       '@type': 'EnumDeclaration',
-      members: members ? [...members] : undefined,
+      bodyDeclarations: bodyDeclarations ? [...bodyDeclarations] : undefined,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
       values: [...values],
@@ -197,18 +236,32 @@ const DeclarationFactory = {
 
   createInterfaceDeclaration(opts: CreateInterfaceDeclarationOptionsView): InterfaceDeclaration {
     const {
-      extendsClause,
-      members,
+      extendsTypes,
+      bodyDeclarations: bodyDecls,
       modifiers = EMPTY_MODIFIERS,
       name,
       options,
       typeParameters,
     } = opts;
     const emptyArrayLength = 0;
+    const bodyDeclarationsArr = [...bodyDecls];
+    const innerTypeDeclarations = bodyDeclarationsArr.filter(
+      (m): m is ClassDeclaration | InterfaceDeclaration =>
+        m['@type'] === 'ClassDeclaration' || m['@type'] === 'InterfaceDeclaration'
+    );
+    const propertyDeclarations = bodyDeclarationsArr.filter(
+      (m): m is PropertyDeclaration => m['@type'] === 'PropertyDeclaration'
+    );
+    const methodDeclarations = bodyDeclarationsArr.filter(
+      (m): m is MethodDeclaration => m['@type'] === 'MethodDeclaration'
+    );
     return {
       '@type': 'InterfaceDeclaration',
-      extendsClause: extendsClause ? [...extendsClause] : undefined,
-      members: [...members],
+      extendsTypes: extendsTypes ? [...extendsTypes] : undefined,
+      innerTypeDeclarations,
+      propertyDeclarations,
+      methodDeclarations,
+      bodyDeclarations: bodyDeclarationsArr,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
@@ -224,7 +277,7 @@ const DeclarationFactory = {
       modifiers = [],
       name,
       options,
-      parameters = [],
+      parameterDeclarations = [],
       returnType,
       typeParameters,
     } = opts;
@@ -236,7 +289,9 @@ const DeclarationFactory = {
       isConstructor,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
-      parameters: parameters.length > emptyArrayLength ? [...parameters] : [],
+      parameterDeclarations:
+        parameterDeclarations.length > emptyArrayLength ? [...parameterDeclarations] : [],
+      parameters: parameterDeclarations.length > emptyArrayLength ? [...parameterDeclarations] : [],
       returnType,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
@@ -272,6 +327,18 @@ const DeclarationFactory = {
     };
   },
 
+  createTriggerDeclaration(opts: CreateTriggerDeclarationOptions): TriggerDeclaration {
+    const { body, cases, id, options, target } = opts;
+    return {
+      '@type': 'TriggerDeclaration',
+      body: [...body],
+      cases: [...cases],
+      id,
+      target,
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+    };
+  },
+
   createTypeParameter(
     name: string,
     extendsBound?: Readonly<TypeRef>,
@@ -283,6 +350,30 @@ const DeclarationFactory = {
       extendsBound,
       name,
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+    };
+  },
+
+  createFieldDeclarationGroup(
+    opts: Readonly<{
+      type: TypeRef;
+      modifiers: readonly Modifier[];
+      declarations: readonly { id: Identifier; initializer?: Expression }[];
+      options?: NodeFactoryOptions;
+    }>
+  ): FieldDeclarationGroup {
+    const declarations: FieldDeclaration[] = opts.declarations.map((d) => ({
+      '@type': 'FieldDeclaration',
+      id: d.id,
+      ...(d.initializer && { initializer: d.initializer }),
+    }));
+    return {
+      '@type': 'FieldDeclarationGroup',
+      type: opts.type,
+      modifiers: [...opts.modifiers],
+      declarations,
+      ...(opts.options?.location && {
+        sourceLocation: toCanonicalSourceLocation(opts.options.location),
+      }),
     };
   },
 

@@ -51,6 +51,7 @@ import type {
   InterfaceDeclaration,
   MethodDeclaration,
   PropertyDeclaration,
+  TriggerDeclaration,
   VariableDeclaration,
   AnnotationArgument,
   Modifier,
@@ -84,6 +85,7 @@ import {
   isInterfaceDeclaration,
   isMethodDeclaration,
   isPropertyDeclaration,
+  isTriggerDeclaration,
 } from '../guard/declarationGuard.js';
 import {
   isConstructorInitializer,
@@ -762,6 +764,8 @@ function serializeUnknownNode(
     if (
       key !== '@type' &&
       key !== 'sourceLocation' &&
+      key !== 'parent' &&
+      key !== 'qualifiedName' &&
       Object.prototype.hasOwnProperty.call(node, key)
     ) {
       const desc = Object.getOwnPropertyDescriptor(node, key);
@@ -904,6 +908,20 @@ function serializeEnumDeclaration(
   out.modifiers = buildModifiersArrayForSummitAst(undefined, node.modifiers, serializer);
 }
 
+/**
+ * Serialize TriggerDeclaration to JSON.
+ * @param node - The trigger declaration AST node to serialize.
+ * @param json - The JSON object to populate.
+ * @param serializer - The serializer instance.
+ */
+function serializeTriggerDeclaration(
+  node: Readonly<TriggerDeclaration>,
+  json: Readonly<JsonASTNode>,
+  serializer: Readonly<JsonSerializer>
+): void {
+  serializeUnknownNode(node, json, serializer);
+}
+
 // ============================================================================
 // Dispatcher
 // ============================================================================
@@ -985,6 +1003,8 @@ function serializeNodeProperties(
     serializePropertyDeclaration(node, json, serializer);
   } else if (isEnumDeclaration(node)) {
     serializeEnumDeclaration(node, json, serializer);
+  } else if (isTriggerDeclaration(node)) {
+    serializeTriggerDeclaration(node, json, serializer);
   } else {
     serializeUnknownNode(node, json, serializer);
   }

@@ -9,7 +9,11 @@ import {
 } from '../../src/utils/apexdocParser.js';
 import type { ApexDocBlockTag } from '../../src/ast/apexDoc.js';
 import type { CommentInfo } from '../../src/utils/commentUtils.js';
-import { isClassDeclaration, isVariableDeclaration } from '../../src/guard/index.js';
+import {
+  isClassDeclaration,
+  isFieldDeclarationGroup,
+  isVariableDeclaration,
+} from '../../src/guard/index.js';
 import {
   getSourceText,
   getSourceRange,
@@ -59,6 +63,7 @@ import {
   parseMultipleFiles,
   extractCommentsBatch,
   isUsableParseResult,
+  ParseException,
 } from '../../src/utils/apexParser.js';
 
 describe('ApexDoc Parser', () => {
@@ -1740,7 +1745,7 @@ describe('Rule Matching Utilities', () => {
       }
     });
 
-    it('should include sibling nodes when parent has members property', () => {
+    it('should include sibling nodes when parent has bodyDeclarations property', () => {
       const member1 = NodeFactory.createMethodDeclaration({
         body: NodeFactory.createCompoundStatement([]),
         modifiers: [],
@@ -1756,7 +1761,7 @@ describe('Rule Matching Utilities', () => {
         returnType: NodeFactory.createSimpleTypeRef('void'),
       });
       const classDecl = NodeFactory.createClassDeclaration({
-        members: [member1, member2],
+        bodyDeclarations: [member1, member2],
         modifiers: [],
         name: 'Test',
       });
@@ -2080,10 +2085,12 @@ describe('Source Extraction Utilities', () => {
         }
       `;
       const cu = parseAndTranslate(input);
-      const fieldDecl = findFirstNodeOfType(cu, isVariableDeclaration);
-      expect(fieldDecl).not.toBeNull();
-      if (fieldDecl?.location != null) {
-        const extracted = getSourceText(fieldDecl, input);
+      const fieldNode =
+        findFirstNodeOfType(cu, isFieldDeclarationGroup) ??
+        findFirstNodeOfType(cu, isVariableDeclaration);
+      expect(fieldNode).not.toBeNull();
+      if (fieldNode?.sourceLocation != null) {
+        const extracted = getSourceText(fieldNode, input);
         expect(extracted).toContain('String field');
         expect(extracted).toContain("= 'Hello'");
       }
@@ -2575,82 +2582,20 @@ describe('apex-parser batch functions', () => {
   });
 
   describe('parseApexCode error cases', () => {
-    it('should handle parseTreeAdapter returning null', () => {
-      const result = parseApexCode('test', {
-        parseTreeAdapter: () => null,
-      });
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.ast).toBeUndefined();
+    it('should throw ParseException when parseTreeAdapter returns null', () => {
+      expect(() =>
+        parseApexCode('test', {
+          parseTreeAdapter: () => null,
+        })
+      ).toThrow(ParseException);
     });
 
-    it('should handle parseTreeAdapter throwing error', () => {
-      // parseTreeAdapter errors are caught in the adapter itself
-      // but the code doesn't catch errors from parseTreeAdapter
-      // So we test the path where parseTreeAdapter returns null
-      const result = parseApexCode('test', {
-        parseTreeAdapter: () => null,
-      });
-      // Should handle null result
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.ast).toBeUndefined();
+    it('should throw ParseException on invalid syntax', () => {
+      expect(() => parseApexCode('public class Test')).toThrow(ParseException);
     });
 
-    it('should handle parseApexSource throwing error (line 179)', () => {
-      // This tests the catch block when parseApexSource throws (line 179)
-      // The catch block converts the error to an ApexParseError
-      // We can't directly mock parseApexSource, but we can test error handling
-      // by providing input that might cause parser errors
-      const result = parseApexCode('invalid syntax that might cause errors');
-      // Should handle errors gracefully - either parse succeeds with errors
-      // or parser throws and is caught
-      expect(result).toBeDefined();
-      // Result should have errors array (even if empty)
-      expect(Array.isArray(result.errors)).toBe(true);
-    });
-
-    it('should call onError callback when provided', () => {
-      const errors: ApexParseError[] = [];
-      const result = parseApexCode('invalid syntax {', {
-        onError: (error) => {
-          errors.push(error);
-        },
-      });
-      // onError is called if there are errors, but some parsers may handle errors differently
-      // Just verify the function works
-      expect(result).toBeDefined();
-      if (result.errors.length > 0) {
-        // If errors exist, onError should have been called
-        // Note: onError may only be called for certain error types
-        expect(errors.length >= 0).toBe(true);
-      }
-    });
-
-    it('should separate warnings from errors (lines 212-221)', () => {
-      // Test translation error processing loop
-      // We need a case where translation produces warnings
-      // The code checks if error.message.toLowerCase().includes('warning')
-      // Let me test with a parseTreeAdapter that produces a translation result with warnings
-      const result = parseApexCode('public class Test { }', {
-        parseTreeAdapter: (source: string) => {
-          // Create a parse tree that will be translated
-          // The translator should handle this normally
-          return {
-            children: [
-              {
-                children: [],
-                text: 'public class Test { }',
-                type: 'class_declaration',
-              },
-            ],
-            text: source,
-            type: 'compilation_unit',
-          } as ParseTreeNode;
-        },
-      });
-      // Result should be processed
-      expect(result).toBeDefined();
-      // Note: The warning path is tested when the translator actually produces warnings
-      // This is harder to test directly without mocking the translator
+    it('should throw for @interface (not supported, matches upstream)', () => {
+      expect(() => parseApexCode('@interface MyAnnotation { }')).toThrow();
     });
 
     it('should include source when requested', () => {
@@ -2668,21 +2613,8 @@ describe('apex-parser batch functions', () => {
 
     it('should set isUsable when AST is available and no errors', () => {
       const result = parseApexCode('public class Test { }');
-      if (result.ast && result.errors.length === 0) {
-        expect(result.isUsable).toBe(true);
-      }
-    });
-
-    it('should set partialSuccess when AST is available but has errors', () => {
-      const result = parseApexCode('invalid syntax {');
-      // When there's a parsing error, partialSuccess may not be set
-      // It's only set when there's an AST AND errors/warnings
-      if (result.ast && (result.errors.length > 0 || result.warnings)) {
-        expect(result.partialSuccess).toBe(true);
-      } else {
-        // If no AST or no errors, partialSuccess should be false or undefined
-        expect(result.partialSuccess !== true).toBe(true);
-      }
+      expect(result.isUsable).toBe(true);
+      expect(result.ast).toBeDefined();
     });
   });
 
@@ -2694,15 +2626,10 @@ describe('apex-parser batch functions', () => {
       }
     });
 
-    it('should return false when isUsable is false', () => {
-      const result = parseApexCode('invalid syntax {');
-      // If there's no AST or errors, isUsable should be false
-      if (!result.ast || result.errors.length > 0) {
-        expect(isUsableParseResult(result)).toBe(false);
-      } else {
-        // If AST exists and no errors, might be usable
-        expect(isUsableParseResult(result)).toBe(result.isUsable === true);
-      }
+    it('should return false when parse fails (parseMultipleFiles catches)', () => {
+      const results = parseMultipleFiles(['public class Test']);
+      expect(results).toHaveLength(1);
+      expect(isUsableParseResult(results[0]!)).toBe(false);
     });
 
     it('should type-narrow correctly', () => {

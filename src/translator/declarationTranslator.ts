@@ -13,12 +13,13 @@ import type {
   PropertyDeclaration,
   EnumValue,
   Parameter,
+  FieldDeclarationGroup,
 } from '../ast/declaration.js';
+import type { Identifier } from '../ast/baseNode.js';
 import type { TypeRef, TypeRefComponent } from '../ast/baseNode.js';
 import { toCanonicalSourceLocation } from '../ast/baseNode.js';
 import type { Expression } from '../ast/expression.js';
 import {
-  INITIAL_STATEMENT_COUNTER,
   MEMBER_CATEGORY_FIELDS,
   MEMBER_CATEGORY_INNER_TYPES,
   MEMBER_CATEGORY_METHODS,
@@ -30,6 +31,7 @@ import {
 import {
   isClassDeclaration,
   isEnumDeclaration,
+  isFieldDeclarationGroup,
   isInterfaceDeclaration,
   isMethodDeclaration,
   isPropertyDeclaration,
@@ -41,7 +43,7 @@ import { NodeFactory } from './nodeFactory.js';
 
 /** Member with index (readonly, for filter callback). */
 interface MemberWithIndex {
-  readonly decl: Declaration;
+  readonly decl: Declaration | FieldDeclarationGroup;
   readonly sourceIndex: number;
   readonly statementId?: number;
 }
@@ -54,6 +56,7 @@ interface SortedMemberWithIndex {
     | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
+    | FieldDeclarationGroup
     | VariableDeclaration;
   readonly sourceIndex: number;
   readonly statementId?: number;
@@ -84,6 +87,7 @@ function translateClassDeclaration(
     | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
+    | FieldDeclarationGroup
     | VariableDeclaration
   )[] = [];
   const extendsClause = ctx.getChild(node, 'extends_clause', 'extendsClause');
@@ -95,28 +99,30 @@ function translateClassDeclaration(
     children.find((c) => c.type === 'block' || c.type === 'body' || c.type === 'members') ?? null;
   if (membersNode) {
     /**
-     * Recursively collect all member nodes from blocks (handle nested blocks).
-     * @param memberNode - The parse tree node to collect members from.
-     * @returns An array of all member nodes found recursively.
+     * Recursively collect member nodes. Blocks containing only field_declarations
+     * are kept as single units (for FieldDeclarationGroup); other blocks are flattened.
      */
     const collectMemberNodes = (memberNode: ParseTreeNode): ParseTreeNode[] => {
       const memberChildrenNodes = ctx.getChildren(memberNode);
       const collectedMembers: ParseTreeNode[] = [];
       for (const child of memberChildrenNodes) {
         if (child.type === 'block') {
-          // Recursively process nested blocks
-          collectedMembers.push(...collectMemberNodes(child));
+          const blockChildren = ctx.getChildren(child);
+          const allFieldDecls =
+            blockChildren.length > 0 &&
+            blockChildren.every((c: ParseTreeNode) => c.type === 'field_declaration');
+          if (allFieldDecls) {
+            collectedMembers.push(child);
+          } else {
+            collectedMembers.push(...collectMemberNodes(child));
+          }
         } else {
-          // This is a member node (field_declaration, method_declaration, etc.)
           collectedMembers.push(child);
         }
       }
       return collectedMembers;
     };
     const memberChildren = collectMemberNodes(membersNode);
-    // Collect members with their source order index to preserve order within categories
-    // Also track statement boundaries: fields from adjacent field_declaration nodes with same type/modifiers
-    // should be grouped if they come from the same source statement (detected by location proximity)
     const membersWithIndex: {
       decl:
         | ClassDeclaration
@@ -124,56 +130,31 @@ function translateClassDeclaration(
         | InterfaceDeclaration
         | MethodDeclaration
         | PropertyDeclaration
+        | FieldDeclarationGroup
         | VariableDeclaration;
       sourceIndex: number;
-      statementId?: number;
-      parseNode?: ParseTreeNode;
     }[] = [];
-    let statementCounter = 0;
-    let lastFieldDeclarationNode: ParseTreeNode | null = null;
     for (let i = 0; i < memberChildren.length; i++) {
       const memberNode = memberChildren[i];
-      // Track statement boundaries: field_declaration nodes that are adjacent and have the same
-      // type/modifiers likely come from the same source statement (comma-separated declarators)
-      if (memberNode.type === 'field_declaration') {
-        // Check if this field_declaration is from the same statement as the previous one
-        // by comparing their locations (same line = same statement)
-        if (lastFieldDeclarationNode) {
-          const lastLocation = lastFieldDeclarationNode.location;
-          const currentLocation = memberNode.location;
-          const sameLine =
-            !!lastLocation &&
-            !!currentLocation &&
-            lastLocation.start.line === currentLocation.start.line;
-          if (!sameLine) {
-            // Different line = different statement
-            statementCounter++;
-          }
-          // If same line, keep the same statementId (fields from same statement)
-        } else {
-          // First field_declaration
-          statementCounter = INITIAL_STATEMENT_COUNTER;
-        }
-        lastFieldDeclarationNode = memberNode;
+      let decl: Declaration | FieldDeclarationGroup | null = null;
+      if (memberNode.type === 'block') {
+        decl = translateFieldDeclarationBlock(ctx, memberNode);
+      } else if (memberNode.type === 'field_declaration') {
+        decl = translateFieldDeclarationToGroup(ctx, memberNode);
+      } else {
+        decl = ctx.tryTranslateDeclaration(memberNode, memberNode.type.toLowerCase());
       }
-      const decl = ctx.tryTranslateDeclaration(memberNode, memberNode.type.toLowerCase());
       if (decl) {
-        // For field declarations, use statementId to preserve grouping.
-        // The statementId is based on line numbers - fields on the same line share a statementId.
-        const statementId = memberNode.type === 'field_declaration' ? statementCounter : undefined;
-        // Store the parse node so we can check if fields come from the same parse tree node.
-        // Fields from the same statement come from the same parse tree node (same parent).
-        const parseNode = memberNode;
-
         if (
           isClassDeclaration(decl) ||
           isEnumDeclaration(decl) ||
           isInterfaceDeclaration(decl) ||
           isMethodDeclaration(decl) ||
           isPropertyDeclaration(decl) ||
+          isFieldDeclarationGroup(decl) ||
           isVariableDeclaration(decl)
         ) {
-          membersWithIndex.push({ decl, parseNode, sourceIndex: i, statementId });
+          membersWithIndex.push({ decl, sourceIndex: i });
         }
       }
     }
@@ -185,7 +166,7 @@ function translateClassDeclaration(
      * @param decl - The declaration to get the category order for.
      * @returns The category order number (0 = inner types, 1 = fields, 2 = properties, 3 = methods).
      */
-    const getCategoryOrder = (decl: Declaration): number => {
+    const getCategoryOrder = (decl: Declaration | FieldDeclarationGroup): number => {
       if (
         decl['@type'] === 'ClassDeclaration' ||
         decl['@type'] === 'InterfaceDeclaration' ||
@@ -193,7 +174,7 @@ function translateClassDeclaration(
       ) {
         return MEMBER_CATEGORY_INNER_TYPES;
       }
-      if (decl['@type'] === 'VariableDeclaration') {
+      if (decl['@type'] === 'VariableDeclaration' || decl['@type'] === 'FieldDeclarationGroup') {
         return MEMBER_CATEGORY_FIELDS;
       }
       if (decl['@type'] === 'PropertyDeclaration') {
@@ -554,39 +535,14 @@ function translateClassDeclaration(
     // by sorting by statementId within the category.
     membersWithIndex.sort(
       (
-        a: Readonly<{ decl: Declaration; sourceIndex: number; statementId?: number }>,
-        b: Readonly<{ decl: Declaration; sourceIndex: number; statementId?: number }>
+        a: Readonly<{ decl: Declaration | FieldDeclarationGroup; sourceIndex: number }>,
+        b: Readonly<{ decl: Declaration | FieldDeclarationGroup; sourceIndex: number }>
       ) => {
         const categoryA = getCategoryOrder(a.decl);
         const categoryB = getCategoryOrder(b.decl);
         if (categoryA !== categoryB) {
           return categoryA - categoryB;
         }
-        // Within same category, preserve source order (syntactic order as in original).
-        // The original Kotlin preserves syntactic order within each category.
-        // For fields specifically, we need to ensure fields from different statements
-        // (different statementId) are not adjacent, matching the original Kotlin behavior
-        // where FieldDeclarationGroup objects from different statements are already separated.
-        // We do this by sorting by statementId first for fields, then by source order within each statement.
-        // This ensures fields from the same statement are grouped together, and fields from
-        // different statements are separated and not adjacent.
-        if (
-          a.decl['@type'] === 'VariableDeclaration' &&
-          b.decl['@type'] === 'VariableDeclaration'
-        ) {
-          if (a.statementId !== undefined && b.statementId !== undefined) {
-            if (a.statementId !== b.statementId) {
-              // Different statements - sort by statementId to separate them
-              // This ensures fields from different statements are not adjacent in the final array
-              return a.statementId - b.statementId;
-            }
-            // Same statement - preserve source order within the statement
-            return a.sourceIndex - b.sourceIndex;
-          }
-          // If one has statementId and the other doesn't, preserve source order
-          return a.sourceIndex - b.sourceIndex;
-        }
-        // For non-field declarations, preserve source order
         return a.sourceIndex - b.sourceIndex;
       }
     );
@@ -627,19 +583,21 @@ function translateClassDeclaration(
      * @returns True if d is a valid class member type.
      */
     const classMemberDecl = (
-      d: Readonly<Declaration>
+      d: Readonly<Declaration | FieldDeclarationGroup>
     ): d is
       | ClassDeclaration
       | EnumDeclaration
       | InterfaceDeclaration
       | MethodDeclaration
       | PropertyDeclaration
+      | FieldDeclarationGroup
       | VariableDeclaration =>
       isClassDeclaration(d) ||
       isEnumDeclaration(d) ||
       isInterfaceDeclaration(d) ||
       isMethodDeclaration(d) ||
       isPropertyDeclaration(d) ||
+      isFieldDeclarationGroup(d) ||
       isVariableDeclaration(d);
     const sortedDecls = membersWithIndex
       .filter((m: MemberWithIndex): m is SortedMemberWithIndex => classMemberDecl(m.decl))
@@ -674,9 +632,9 @@ function translateClassDeclaration(
   ctx.setCurrentClassName(prevClassName);
   return NodeFactory.createClassDeclaration({
     annotations: annotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? annotations : undefined,
-    extendsClause: extendsType,
-    implementsClause: implementsTypes,
-    members,
+    extendsType,
+    implementsTypes,
+    bodyDeclarations: members,
     modifiers,
     name,
     options: ctx.getLocationOption(node),
@@ -703,6 +661,7 @@ function translateEnumDeclaration(
   const members: (
     | ClassDeclaration
     | EnumDeclaration
+    | FieldDeclarationGroup
     | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
@@ -734,6 +693,7 @@ function translateEnumDeclaration(
           (isClassDeclaration(decl) ||
             isEnumDeclaration(decl) ||
             isInterfaceDeclaration(decl) ||
+            isFieldDeclarationGroup(decl) ||
             isMethodDeclaration(decl) ||
             isPropertyDeclaration(decl) ||
             isVariableDeclaration(decl))
@@ -745,7 +705,7 @@ function translateEnumDeclaration(
   }
 
   return NodeFactory.createEnumDeclaration({
-    members: members.length > MIN_NON_EMPTY_ARRAY_LENGTH ? members : undefined,
+    bodyDeclarations: members.length > MIN_NON_EMPTY_ARRAY_LENGTH ? members : undefined,
     modifiers,
     name,
     options: ctx.getLocationOption(node),
@@ -796,13 +756,13 @@ function translateInterfaceDeclaration(
   }
 
   return NodeFactory.createInterfaceDeclaration({
-    extendsClause: extendsClause
+    extendsTypes: extendsClause
       ? ctx
           .getChildren(extendsClause)
           .map((c) => ctx.tryTranslateType(c))
           .filter((type): type is TypeRef => type !== null)
       : undefined,
-    members,
+    bodyDeclarations: members,
     modifiers,
     name,
     options: ctx.getLocationOption(node),
@@ -907,7 +867,7 @@ function translateMethodDeclaration(
     modifiers,
     name,
     options: ctx.getLocationOption(node),
-    parameters,
+    parameterDeclarations: parameters,
     returnType,
     typeParameters: typeParameters.length > MIN_NON_EMPTY_ARRAY_LENGTH ? typeParameters : undefined,
   });
@@ -932,9 +892,9 @@ function translateInitializerBlock(
     body,
     isConstructor: false,
     modifiers,
-    name: '<initializer>',
+    name: '_init',
     options: ctx.getLocationOption(node),
-    parameters: [],
+    parameterDeclarations: [],
     returnType: NodeFactory.createSimpleTypeRef('void'),
   });
 }
@@ -945,162 +905,17 @@ function translateInitializerBlock(
  * @param node - The parse tree node to translate.
  * @returns The translated field declaration.
  */
-function translateFieldDeclaration(
+/** Extracts id and initializer from a field_declaration parse node. */
+function parseFieldDeclarator(
   ctx: Readonly<TranslateContext>,
   node: Readonly<ParseTreeNode>
-): Declaration {
+): { id: Identifier; initializer?: Expression } {
   const nameNode = ctx.getChild(node, 'name');
   const name = nameNode
     ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'unknown')
     : 'unknown';
-  const modifiers = ctx.extractModifiers(node);
-  // Type might be a direct child with type 'type' or 'primitive_type'
-  const fieldChildren = ctx.getChildren(node);
-  const typeChild = fieldChildren.find(
-    (c: ParseTreeNode) => c.type === 'type' || c.type === 'primitive_type' || c.type === 'base_type'
-  );
-  const type = typeChild
-    ? (ctx.tryTranslateType(typeChild) ?? NodeFactory.createSimpleTypeRef('Object'))
-    : NodeFactory.createSimpleTypeRef('Object');
-  // To ensure fields from different statements are not grouped together, we need to
-  // make them have different type/modifier string representations OR ensure they're
-  // not adjacent. Since we can't make them not adjacent (they're both fields), we
-  // need to use location information to create a distinguishing marker.
-  //
-  // Actually, wait - the test compares type strings using typeRefToCodeString, which
-  // only uses the type components, not location. So we can't use location to make
-  // them different.
-  //
-  // The ONLY solution is to ensure fields from different statements are not adjacent.
-  // But they're both fields, so they'll be sorted together. The sorting by statementId
-  // should work, but they're still adjacent in the array.
-  //
-  // Actually, I think the real solution is that we need to match the original Kotlin
-  // behavior exactly. The original creates FieldDeclarationGroup objects that are
-  // already grouped. We need to do something similar.
-  //
-  // Since we can't create FieldDeclarationGroup, we need to ensure the test's grouping
-  // logic works. But it's flawed - it only checks type/modifiers/adjacency.
-  //
-  // FINAL SOLUTION: We need to ensure that when the test checks `fieldDecls[i]` and
-  // `fieldDecls[i-1]`, fields from different statements are not consecutive. Since
-  // we can't insert nodes, we need to ensure they're separated by something else.
-  // But they're all fields, so they'll be sorted together.
-  //
-  // I think the solution is that we need to NOT sort by category for fields from
-  // different statements. Instead, we should preserve source order exactly. But that
-  // would break the category ordering requirement.
-  //
-  // Actually, wait - let me check if maybe the original preserves source order WITHOUT
-  // category sorting for fields? But that seems unlikely.
-  //
-  // I think I need to accept that this is a fundamental limitation, and we need to
-  // either change the test or create a FieldDeclarationGroup-like structure.
-  //
-  // But the user says the test passes in the original, so there must be a way.
-  // Let me try one more thing: What if we ensure that fields from different statements
-  // have different type or modifier object references? But the test compares strings,
-  // not references.
-  //
-  // Actually, I think the solution is simpler: The test's grouping logic needs to
-  // be updated to check statement boundaries, not just type/modifiers/adjacency.
-  // But we can't change the test.
-  //
-  // So the solution must be to ensure fields from different statements are not
-  // adjacent. Since we can't insert nodes, we need to ensure they're separated by
-  // something else. But they're all fields, so they'll be sorted together.
-  //
-  // I think the real solution is that we need to match the original Kotlin behavior
-  // more closely. The original creates FieldDeclarationGroup objects. We should do
-  // the same, or ensure the test's grouping logic works.
-  //
-  // Since we can't create FieldDeclarationGroup, we need to ensure the test's grouping
-  // logic works. But it's flawed.
-  //
-  // FINAL ATTEMPT: What if we ensure that fields from different statements are NOT
-  // sorted together? But they're both fields, so they'll be in the same category.
-  //
-  // I think I need to accept that this is impossible with the current test logic,
-  // and we need to either change the test or create a FieldDeclarationGroup-like
-  // structure.
-  //
-  // But wait - let me check if maybe the original preserves source order exactly,
-  // WITHOUT any sorting? That way, fields from different statements would maintain
-  // their source order, and if there's something between them in the source (like
-  // a comment or blank line), they won't be adjacent. But in our test case, field2
-  // and field3 are on consecutive lines, so they would be adjacent even in source order.
-  //
-  // Actually, they're on DIFFERENT lines! Line 3 vs line 4. So in source order, they're
-  // NOT adjacent if we consider the line break. But the test checks array adjacency,
-  // not source adjacency.
-  //
-  // I think the solution is that we need to ensure the test's grouping logic can
-  // distinguish between fields from different statements. But it only checks
-  // type/modifiers/adjacency.
-  //
-  // Let me try one final approach: What if we ensure that when we sort by statementId,
-  // we also add a large gap between different statement groups? But that won't help
-  // because the test iterates by array index, not by sourceIndex.
-  //
-  // Actually, I think the real solution is that we need to NOT sort by category at all.
-  // Instead, preserve exact source order. That way, fields from different statements
-  // will maintain their source order, and if they're not adjacent in the source,
-  // they won't be adjacent in the array. But in our test case, field2 and field3
-  // are on consecutive lines, so they would be adjacent even in source order.
-  //
-  // Wait - but they're on DIFFERENT lines! So they're NOT adjacent in the source
-  // if we consider line numbers. But the test checks array adjacency, not source
-  // adjacency.
-  //
-  // I think I've exhausted all options. The test's grouping logic is fundamentally
-  // flawed for this implementation. But the user says it passes in the original,
-  // so there must be a way.
-  //
-  // Let me try one more thing: What if we ensure that fields from different statements
-  // have slightly different type or modifier representations by using location
-  // information? But the test compares strings, not locations.
-  //
-  // Actually, I think the solution is that we need to match the original Kotlin
-  // implementation exactly. The original creates FieldDeclarationGroup objects.
-  // We should do the same, or ensure the test's grouping logic works.
-  //
-  // Since we can't create FieldDeclarationGroup, we need to ensure the test's grouping
-  // logic works. But it's flawed.
-  //
-  // I think the final solution is to preserve source order exactly, without any
-  // category sorting. But that would break other tests.
-  //
-  // Actually, let me check if maybe the original does preserve source order for fields,
-  // and only sorts by category for other member types? That way, fields would maintain
-  // their source order, and fields from different statements wouldn't be adjacent
-  // if they're not adjacent in the source.
-  //
-  // But in our test case, field2 and field3 are on consecutive lines, so they would
-  // be adjacent even in source order.
-  //
-  // Wait - but they're on DIFFERENT lines! Line 3 vs line 4. So in source order,
-  // they're NOT adjacent if we consider the line break as a separator. But the test
-  // checks array adjacency, not source adjacency.
-  //
-  // I think the solution is that we need to ensure the test's grouping logic can
-  // distinguish between fields from different statements. But it only checks
-  // type/modifiers/adjacency.
-  //
-  // Let me try one final approach: What if we ensure that fields from different
-  // statements are NOT sorted together by using a different sorting key? But they're
-  // both fields, so they'll be in the same category.
-  //
-  // I think I need to accept that this is impossible with the current test logic,
-  // and we need to either change the test or create a FieldDeclarationGroup-like
-  // structure.
-  //
-  // But the user says the test passes in the original, so there must be a way.
-  // Let me try preserving source order without category sorting, just to see if
-  // that helps.
-
-  // Look for initializer - it could be a direct child expression or in an 'initializer' property
-  let initializer: Expression | undefined = undefined;
-  // Try to find an expression child that's not type, name, modifiers, or annotations
+  const id = NodeFactory.createIdentifier(name, ctx.getLocationOption(node));
+  let initializer: Expression | undefined;
   const children = ctx.getChildren(node);
   for (const child of children) {
     const childType = child.type.toLowerCase();
@@ -1122,14 +937,66 @@ function translateFieldDeclaration(
       }
     }
   }
+  return { id, initializer };
+}
 
-  return NodeFactory.createVariableDeclaration({
-    ...ctx.getLocationOption(node),
-    initializer,
-    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : undefined,
-    name,
+function translateFieldDeclarationBlock(
+  ctx: Readonly<TranslateContext>,
+  blockNode: Readonly<ParseTreeNode>
+): FieldDeclarationGroup {
+  const fieldDeclNodes = ctx.getChildren(blockNode);
+  if (fieldDeclNodes.length === 0) {
+    return NodeFactory.createFieldDeclarationGroup({
+      type: NodeFactory.createSimpleTypeRef('Object'),
+      modifiers: [],
+      declarations: [],
+      options: ctx.getLocationOption(blockNode),
+    });
+  }
+  const first = fieldDeclNodes[0];
+  const modifiers = ctx.extractModifiers(first);
+  const fieldChildren = ctx.getChildren(first);
+  const typeChild = fieldChildren.find(
+    (c: ParseTreeNode) => c.type === 'type' || c.type === 'primitive_type' || c.type === 'base_type'
+  );
+  const type = typeChild
+    ? (ctx.tryTranslateType(typeChild) ?? NodeFactory.createSimpleTypeRef('Object'))
+    : NodeFactory.createSimpleTypeRef('Object');
+  const declarations = fieldDeclNodes.map((n) => parseFieldDeclarator(ctx, n));
+  return NodeFactory.createFieldDeclarationGroup({
     type,
+    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : [],
+    declarations,
+    options: ctx.getLocationOption(blockNode),
   });
+}
+
+function translateFieldDeclarationToGroup(
+  ctx: Readonly<TranslateContext>,
+  node: Readonly<ParseTreeNode>
+): FieldDeclarationGroup {
+  const modifiers = ctx.extractModifiers(node);
+  const fieldChildren = ctx.getChildren(node);
+  const typeChild = fieldChildren.find(
+    (c: ParseTreeNode) => c.type === 'type' || c.type === 'primitive_type' || c.type === 'base_type'
+  );
+  const type = typeChild
+    ? (ctx.tryTranslateType(typeChild) ?? NodeFactory.createSimpleTypeRef('Object'))
+    : NodeFactory.createSimpleTypeRef('Object');
+  const { id, initializer } = parseFieldDeclarator(ctx, node);
+  return NodeFactory.createFieldDeclarationGroup({
+    type,
+    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : [],
+    declarations: [{ id, initializer }],
+    options: ctx.getLocationOption(node),
+  });
+}
+
+function translateFieldDeclaration(
+  ctx: Readonly<TranslateContext>,
+  node: Readonly<ParseTreeNode>
+): FieldDeclarationGroup {
+  return translateFieldDeclarationToGroup(ctx, node);
 }
 
 /**

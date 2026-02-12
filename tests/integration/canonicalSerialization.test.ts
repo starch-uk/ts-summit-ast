@@ -126,7 +126,7 @@ describe('Summit-AST canonical format', () => {
       expect(ifaceDecl).not.toBeNull();
       if (ifaceDecl) {
         expect(ifaceDecl.name).toBe('I');
-        const method = ifaceDecl.members.find(
+        const method = ifaceDecl.bodyDeclarations.find(
           (m): m is MethodDeclaration => isMethodDeclaration(m) && m.name === 'foo'
         );
         expect(method).toBeDefined();

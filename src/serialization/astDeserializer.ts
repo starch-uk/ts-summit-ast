@@ -71,6 +71,7 @@ import {
   deserializeEnumDeclaration,
   deserializeEnumValue,
   deserializeInterfaceDeclaration,
+  deserializeTriggerDeclaration,
   deserializeMethodDeclaration,
   deserializePropertyDeclaration,
 } from './declarationDeserializer.js';
@@ -799,6 +800,8 @@ function deserializeNodeByKind(
       return deserializeExpressionStatement(json, locationOption, deserializer);
     case 'VariableDeclarationStatement':
       return deserializeVariableDeclarationStatement(json, locationOption, deserializer);
+    case 'UntranslatedStatement':
+      return NodeFactory.createUntranslatedStatement(locationOption);
     case 'DmlStatement':
       return deserializeDmlStatement(json, locationOption, deserializer);
     case 'Insert':
@@ -842,6 +845,8 @@ function deserializeNodeByKind(
       return deserializeSoslExpression(json, locationOption, deserializer);
     case 'SoqlOrSoslBinding':
       return deserializeSoqlOrSoslBinding(json, locationOption, deserializer);
+    case 'UntranslatedExpression':
+      return NodeFactory.createUntranslatedExpression(locationOption);
 
     // Literal nodes
     case 'StringVal':
@@ -864,6 +869,8 @@ function deserializeNodeByKind(
       return deserializeClassDeclaration(json, locationOption, deserializer);
     case 'InterfaceDeclaration':
       return deserializeInterfaceDeclaration(json, locationOption, deserializer);
+    case 'TriggerDeclaration':
+      return deserializeTriggerDeclaration(json, locationOption, deserializer);
     case 'EnumDeclaration':
       return deserializeEnumDeclaration(json, locationOption, deserializer);
     case 'EnumValue':

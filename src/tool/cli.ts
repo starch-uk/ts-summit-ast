@@ -6,7 +6,6 @@
  */
 
 import { CLI_ARGS_START_INDEX } from '../constants.js';
-import type { ParseTreeNode } from '../parser/parseTree.js';
 import { SummitTool } from './summitTool.js';
 
 /**
@@ -71,9 +70,8 @@ Examples:
   summit-tool --verbose classes/
 
 Note:
-  This tool requires a parse tree adapter function to work.
-  You need to provide a parser that converts Apex source code
-  to ParseTreeNode format. See the documentation for details.
+  Uses the built-in parser by default. Pass a parseTreeAdapter
+  to SummitTool to use an external parser instead.
 `);
 }
 
@@ -108,20 +106,10 @@ function main(): void {
     process.exit(exitCodeError);
   }
 
-  // Create tool instance
-  // Note: In a real implementation, users would provide their parse tree adapter
+  // Create tool instance (uses built-in parser)
   const tool = new SummitTool({
     includeLocation: true,
     json,
-    parseTreeAdapter: (_source: string, filePath: string): ParseTreeNode | null => {
-      // This is a placeholder - users need to provide their own parser
-      console.error(
-        `Error: No parse tree adapter provided. Please provide a parser to convert source code to parse trees.\n` +
-          `File: ${filePath}\n` +
-          `See documentation for how to integrate with a parser.`
-      );
-      return null;
-    },
     verbose,
   });
 

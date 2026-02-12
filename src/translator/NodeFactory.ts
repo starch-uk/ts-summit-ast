@@ -19,6 +19,7 @@ import type {
   ExpressionStatement,
   VariableDeclarationStatement,
   DmlStatement,
+  UntranslatedStatement,
 } from '../ast/statement.js';
 import type {
   BinaryExpression,
@@ -40,6 +41,7 @@ import type {
   SoqlExpression,
   SoslExpression,
   TriggerContextVariableExpression,
+  UntranslatedExpression,
 } from '../ast/expression.js';
 import type {
   StringVal,
@@ -52,6 +54,7 @@ import type {
 } from '../ast/literal.js';
 import type { TypeRef } from '../ast/baseNode.js';
 import type {
+  Declaration,
   VariableDeclaration,
   ClassDeclaration,
   InterfaceDeclaration,
@@ -62,6 +65,9 @@ import type {
   TypeParameter,
   Modifier,
   Annotation,
+  TriggerDeclaration,
+  TriggerCase,
+  FieldDeclarationGroup,
 } from '../ast/declaration.js';
 import type {
   ConstructorInitializer,
@@ -136,12 +142,13 @@ interface CreatePropertyDeclarationOptions {
  */
 interface CreateClassDeclarationOptionsView {
   readonly annotations?: readonly Annotation[];
-  readonly extendsClause?: TypeRef;
-  readonly implementsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly extendsType?: TypeRef;
+  readonly implementsTypes?: readonly TypeRef[];
+  readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
     | InterfaceDeclaration
+    | FieldDeclarationGroup
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -154,9 +161,10 @@ interface CreateClassDeclarationOptionsView {
 
 /** Readonly view options for createEnumDeclaration at NodeFactory boundary. */
 interface CreateEnumDeclarationOptionsView {
-  readonly members?: readonly (
+  readonly bodyDeclarations?: readonly (
     | ClassDeclaration
     | EnumDeclaration
+    | FieldDeclarationGroup
     | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
@@ -168,10 +176,19 @@ interface CreateEnumDeclarationOptionsView {
   readonly values: readonly EnumValue[];
 }
 
+/** Readonly view options for createTriggerDeclaration at NodeFactory boundary. */
+interface CreateTriggerDeclarationOptionsView {
+  readonly body: readonly (Declaration | Statement)[];
+  readonly cases: readonly TriggerCase[];
+  readonly id: Identifier;
+  readonly options?: NodeFactoryOptions;
+  readonly target: Identifier;
+}
+
 /** Readonly view options for createInterfaceDeclaration at NodeFactory boundary. */
 interface CreateInterfaceDeclarationOptionsView {
-  readonly extendsClause?: readonly TypeRef[];
-  readonly members: readonly (
+  readonly extendsTypes?: readonly TypeRef[];
+  readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | InterfaceDeclaration
     | MethodDeclaration
@@ -491,6 +508,7 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created expression element value.
    */
+
   createExpressionElementValue(
     value: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
@@ -553,7 +571,6 @@ const NodeFactory = {
   ): EnhancedForLoopStatement {
     return NodeFactory.createEnhancedForLoopStatement(opts);
   },
-
   createForLoopStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
     return StatementFactory.createForLoopStatement(opts);
   },
@@ -564,6 +581,7 @@ const NodeFactory = {
    * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
+
   createForStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
     return NodeFactory.createForLoopStatement(opts);
   },
@@ -583,7 +601,6 @@ const NodeFactory = {
   createIfStatement(opts: Readonly<CreateIfStatementOptions>): IfStatement {
     return StatementFactory.createIfStatement(opts);
   },
-
   createInstanceOfExpression(
     expression: Readonly<Expression>,
     type: Readonly<TypeRef>,
@@ -649,6 +666,7 @@ const NodeFactory = {
    * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
+
   createMethodCallExpression(opts: Readonly<CreateCallExpressionOptions>): CallExpression {
     return this.createCallExpression(opts);
   },
@@ -661,7 +679,6 @@ const NodeFactory = {
   createMethodDeclaration(opts: Readonly<CreateMethodDeclarationOptions>): MethodDeclaration {
     return DeclarationFactory.createMethodDeclaration(opts);
   },
-
   createNewArrayExpression(
     type: Readonly<TypeRef>,
 
@@ -734,6 +751,7 @@ const NodeFactory = {
    * @param opts - Options (name, type, modifiers, getter, setter, annotations, options).
    * @returns The created property declaration.
    */
+
   createPropertyDeclaration(opts: Readonly<CreatePropertyDeclarationOptions>): PropertyDeclaration {
     return DeclarationFactory.createPropertyDeclaration(opts.name, opts.type, {
       annotations: opts.annotations,
@@ -750,7 +768,6 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created return statement.
    */
-
   createReturnStatement(
     expression?: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
@@ -776,6 +793,7 @@ const NodeFactory = {
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
+
   createSizedArrayInitializer(
     type: Readonly<TypeRef>,
     size: Readonly<Expression>,
@@ -792,7 +810,6 @@ const NodeFactory = {
   ): SoqlExpression {
     return ExpressionFactory.createSoqlExpression(query, [...bindings], options);
   },
-
   createSoqlOrSoslBinding(
     expr: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
@@ -808,6 +825,7 @@ const NodeFactory = {
    * @returns The created SOQL expression.
    * @deprecated Use createSoqlExpression instead.
    */
+
   createSoqlQueryExpression(
     query: string,
 
@@ -890,10 +908,10 @@ const NodeFactory = {
   createSwitchStatement(opts: Readonly<CreateSwitchStatementOptions>): SwitchStatement {
     return StatementFactory.createSwitchStatement(opts);
   },
-
   createTernaryExpression(opts: Readonly<CreateTernaryExpressionOptions>): TernaryExpression {
     return ExpressionFactory.createTernaryExpression(opts);
   },
+
   createThisExpression(options?: Readonly<NodeFactoryOptions>): ThisExpression {
     return ExpressionFactory.createThisExpression(options);
   },
@@ -915,6 +933,9 @@ const NodeFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): TriggerContextVariableExpression {
     return ExpressionFactory.createTriggerContextVariableExpression(variableName, options);
+  },
+  createTriggerDeclaration(opts: CreateTriggerDeclarationOptionsView): TriggerDeclaration {
+    return DeclarationFactory.createTriggerDeclaration(opts);
   },
 
   /**
@@ -983,6 +1004,22 @@ const NodeFactory = {
   },
 
   /**
+   * Creates a field declaration group (grouped field declarators sharing type/modifiers).
+   * @param opts - Options (type, modifiers, declarations with id/initializer, options).
+   * @returns The created field declaration group.
+   */
+  createFieldDeclarationGroup(
+    opts: Readonly<{
+      type: Readonly<TypeRef>;
+      modifiers: readonly Modifier[];
+      declarations: readonly { id: Identifier; initializer?: Expression }[];
+      options?: NodeFactoryOptions;
+    }>
+  ): FieldDeclarationGroup {
+    return DeclarationFactory.createFieldDeclarationGroup(opts);
+  },
+
+  /**
    * Creates a variable declaration.
    * @param opts - Options (name, type, initializer, modifiers, options).
    * @returns The created variable declaration.
@@ -1041,6 +1078,14 @@ const NodeFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): WhileLoopStatement {
     return NodeFactory.createWhileLoopStatement(condition, body, options);
+  },
+
+  createUntranslatedStatement(options?: Readonly<NodeFactoryOptions>): UntranslatedStatement {
+    return StatementFactory.createUntranslatedStatement(options);
+  },
+
+  createUntranslatedExpression(options?: Readonly<NodeFactoryOptions>): UntranslatedExpression {
+    return ExpressionFactory.createUntranslatedExpression(options);
   },
 };
 

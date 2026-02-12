@@ -20,6 +20,7 @@ import type {
   VariableDeclarationStatement,
   DmlStatement,
   CatchClause,
+  UntranslatedStatement,
 } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import type { VariableDeclaration } from '../ast/declaration.js';
@@ -420,6 +421,18 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): WhileLoopStatement {
     return StatementFactory.createWhileLoopStatement(condition, body, options);
+  },
+
+  /**
+   * Creates an untranslated statement placeholder (used when translation fails).
+   * @param options - Optional factory options.
+   * @returns The created untranslated statement.
+   */
+  createUntranslatedStatement(options?: Readonly<NodeFactoryOptions>): UntranslatedStatement {
+    return {
+      '@type': 'UntranslatedStatement',
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+    };
   },
 };
 

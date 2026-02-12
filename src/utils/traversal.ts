@@ -35,6 +35,7 @@ import {
   isMethodDeclaration,
   isTypeRef,
   isAnnotationArgument,
+  isFieldDeclarationGroup,
 } from '../guard/declarationGuard.js';
 import {
   isConstructorInitializer,
@@ -88,7 +89,12 @@ function findGenericChildren(node: Readonly<ASTNode>): ASTNode[] {
   const record: Record<string, unknown> = { ...node };
 
   for (const key in record) {
-    if (key === '@type' || key === 'sourceLocation') {
+    if (
+      key === '@type' ||
+      key === 'sourceLocation' ||
+      key === 'parent' ||
+      key === 'qualifiedName'
+    ) {
       continue;
     }
 
@@ -189,14 +195,23 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
     if (node.modifiers) children.push(...node.modifiers);
     if (node.annotations) children.push(...node.annotations);
     if (node.initializer) children.push(node.initializer);
+  } else if (isFieldDeclarationGroup(node)) {
+    children.push(node.type);
+    children.push(...node.modifiers);
+    for (const d of node.declarations) {
+      children.push(d.id);
+      if (d.initializer) children.push(d.initializer);
+    }
   } else if (isClassDeclaration(node)) {
     children.push(...node.modifiers);
     if (node.annotations) children.push(...node.annotations);
-    children.push(...node.members);
+    children.push(...node.bodyDeclarations);
   } else if (isMethodDeclaration(node)) {
     children.push(...node.modifiers);
     if (node.annotations) children.push(...node.annotations);
-    children.push(...node.parameters);
+    const params =
+      node.parameterDeclarations ?? (node as { parameters?: readonly unknown[] }).parameters ?? [];
+    children.push(...params);
     if (node.body) children.push(node.body);
   } else if (isTypeRef(node)) {
     for (const comp of node.components) {

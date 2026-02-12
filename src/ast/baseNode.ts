@@ -32,10 +32,17 @@ interface CanonicalSourceLocation {
 
 /**
  * Base interface for all AST nodes. Uses canonical names: `@type`, sourceLocation.
+ * parent is populated by attachParentLinks(root) for all nodes; matches upstream ASTNode.parent.
  */
 interface ASTNode {
   readonly '@type': string;
   readonly sourceLocation?: CanonicalSourceLocation;
+
+  /**
+   * Parent node in the AST tree. Populated by attachParentLinks(root).
+   * Matches upstream ASTNode.parent.
+   */
+  parent?: ASTNode | null;
 }
 
 /**

@@ -12,6 +12,7 @@ import { parseApexCode } from '../../src/utils/apexParser.js';
 import {
   isEnumDeclaration,
   isClassDeclaration,
+  isTriggerDeclaration,
   isSoqlQueryExpression,
   isSoslQueryExpression,
   isMethodCallExpression,
@@ -38,7 +39,7 @@ import {
   isSizedArrayInitializer,
   isMapInitializer,
 } from '../../src/guard/index.js';
-import type { ASTNode } from '../../src/ast/baseNode.js';
+import type { ASTNode, Identifier } from '../../src/ast/baseNode.js';
 import { typeRefToCodeString, type TypeRef } from '../../src/ast/baseNode.js';
 import { getNodeChildren, getParentNode } from '../../src/utils/traversal.js';
 
@@ -54,6 +55,24 @@ function typeRefToTypeErasedString(typeRef: TypeRef): string {
   }
   const typeString = typeRef.components.map((comp) => comp.id.string).join('.');
   return typeString + '[]'.repeat(typeRef.arrayNesting || 0);
+}
+
+/**
+ * Matches Kotlin's String.trimIndent() - removes common minimum indentation from each line.
+ * Used for exact output alignment with upstream SoqlAndSoslTest.
+ * @param str - The string to trim indentation from.
+ * @returns The string with common leading indentation removed.
+ */
+function trimIndent(str: string): string {
+  const lines = str.split('\n');
+  const nonEmpty = lines.filter((l) => l.trim().length > 0);
+  if (nonEmpty.length === 0) return str.trim();
+  const indentRegex = /^\s*/;
+  const minIndent = Math.min(...nonEmpty.map((l) => (indentRegex.exec(l) ?? [''])[0].length));
+  return lines
+    .map((l) => (l.length >= minIndent ? l.slice(minIndent) : l))
+    .join('\n')
+    .trim();
 }
 
 describe('CompilationUnit Translation', () => {
@@ -88,12 +107,13 @@ describe('CompilationUnit Translation', () => {
   it('trigger translates to expected tree', () => {
     const cu = parseAndTranslate('trigger MyTrigger on MyObject(before update, after delete) { }');
     // Original: val triggerDecl = cu.typeDeclaration as TriggerDeclaration
-    // Our TypeScript port does not yet model TriggerDeclaration; the translator currently
-    // emits a placeholder ClassDeclaration named `MyTrigger_trigger_placeholder`.
-    const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
-    expect(classDecl).not.toBeNull();
-    if (classDecl) {
-      expect(classDecl.name).toBe('MyTrigger_trigger_placeholder');
+    const triggerDecl = findFirstNodeOfType(cu, isTriggerDeclaration);
+    expect(triggerDecl).not.toBeNull();
+    if (triggerDecl) {
+      expect(triggerDecl.id.string).toBe('MyTrigger');
+      expect(triggerDecl.target.string).toBe('MyObject');
+      expect(triggerDecl.cases).toContain('TRIGGER_BEFORE_UPDATE');
+      expect(triggerDecl.cases).toContain('TRIGGER_AFTER_DELETE');
     }
   });
 
@@ -104,9 +124,9 @@ describe('CompilationUnit Translation', () => {
     // Original: val triggerDecl = cu.typeDeclaration as TriggerDeclaration
     //           val statement = triggerDecl.body.first() as Statement
     //           assertThat(triggerDecl.body).containsExactly(statement)
-    // In our placeholder implementation, we at least assert we still create a single top-level class.
-    const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
-    expect(classDecl).not.toBeNull();
+    const triggerDecl = findFirstNodeOfType(cu, isTriggerDeclaration);
+    expect(triggerDecl).not.toBeNull();
+    expect(triggerDecl?.body.length).toBeGreaterThan(0);
   });
 
   it('trigger with declaration translates to expected tree', () => {
@@ -116,9 +136,9 @@ describe('CompilationUnit Translation', () => {
     // Original: val triggerDecl = cu.typeDeclaration as TriggerDeclaration
     //           val methodDeclaration = triggerDecl.body.first() as MethodDeclaration
     //           assertThat(triggerDecl.body).containsExactly(methodDeclaration)
-    // Our placeholder trigger translation still exposes a single top-level class declaration.
-    const classDecl = findFirstNodeOfType(cu, isClassDeclaration);
-    expect(classDecl).not.toBeNull();
+    const triggerDecl = findFirstNodeOfType(cu, isTriggerDeclaration);
+    expect(triggerDecl).not.toBeNull();
+    expect(triggerDecl?.body.length).toBeGreaterThan(0);
   });
 });
 
@@ -136,7 +156,7 @@ describe('TypeRef Translation', () => {
     const classDecl = findFirstNodeOfType(root, isClassDeclaration);
     expect(classDecl).not.toBeNull();
     // Original: assertNotNull(typeRefNode)
-    const typeRefNode = classDecl.extendsClause;
+    const typeRefNode = classDecl.extendsType;
     expect(typeRefNode).toBeDefined();
     // Original: assertThat(typeRefNode.components).hasSize(4)
     expect(typeRefNode.components).toHaveLength(4);
@@ -149,7 +169,7 @@ describe('TypeRef Translation', () => {
     // Original: val outerTypeRefNode = TranslateHelpers.parseAndFindFirstNodeOfType<TypeRef>(input)
     const classDecl = findFirstNodeOfType(root, isClassDeclaration);
     expect(classDecl).not.toBeNull();
-    const outerTypeRefNode = classDecl.extendsClause;
+    const outerTypeRefNode = classDecl.extendsType;
     // Original: assertNotNull(outerTypeRefNode)
     expect(outerTypeRefNode).toBeDefined();
     // Original: assertThat(outerTypeRefNode.components).hasSize(2) // A, B
@@ -171,7 +191,7 @@ describe('TypeRef Translation', () => {
     // Original: val typeRefNode = TranslateHelpers.parseAndFindFirstNodeOfType<TypeRef>(input)
     const classDecl = findFirstNodeOfType(root, isClassDeclaration);
     expect(classDecl).not.toBeNull();
-    const typeRefNode = classDecl.extendsClause;
+    const typeRefNode = classDecl.extendsType;
     // Original: assertNotNull(typeRefNode)
     expect(typeRefNode).toBeDefined();
     // Original: assertThat(typeRefNode.arrayNesting).isEqualTo(2)
@@ -190,7 +210,7 @@ describe('TypeRef Translation', () => {
     // Original: val typeRefNode = TranslateHelpers.parseAndFindFirstNodeOfType<TypeRef>(input)
     const classDecl = findFirstNodeOfType(root, isClassDeclaration);
     expect(classDecl).not.toBeNull();
-    const typeRefNode = classDecl.extendsClause;
+    const typeRefNode = classDecl.extendsType;
     // Original: assertNotNull(typeRefNode)
     expect(typeRefNode).toBeDefined();
     // Original: assertThat(typeRefNode.asCodeString()).isEqualTo("Map<String>")
@@ -256,7 +276,10 @@ describe('Expression Translation', () => {
 
   it('id primary translation has correct identifier', () => {
     const root = parseApexExpressionInCode('id');
-    const node = findFirstNodeOfType(root, isIdentifier);
+    const node = findFirstNodeOfType(
+      root,
+      (n): n is Identifier => isIdentifier(n) && n.string === 'id'
+    );
 
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
@@ -572,7 +595,10 @@ describe('Expression Translation', () => {
 
   it('sub expression is transparent', () => {
     const root = parseApexExpressionInCode('(sub)');
-    const expression = findFirstNodeOfType(root, isIdentifier);
+    const expression = findFirstNodeOfType(
+      root,
+      (n): n is Identifier => isIdentifier(n) && n.string === 'sub'
+    );
 
     // Original: TranslateHelpers.assertFullyTranslated(root)
     assertFullyTranslated(root);
@@ -580,7 +606,7 @@ describe('Expression Translation', () => {
     //           .that(expression).isInstanceOf(VariableExpression::class.java)
     // The expression should be a VariableExpression (identifier), not a ParenthesizedExpression
     expect(expression).not.toBeNull();
-    expect(expression.string).toBe('sub');
+    expect(expression?.string).toBe('sub');
   });
 
   it('null coalescing translates to binary expression', () => {
@@ -645,9 +671,9 @@ describe('SOQL and SOSL Translation', () => {
   });
 
   it('sosl primary contains query with all bindings', () => {
-    // Original uses trimIndent() which removes common leading indentation
-    // The original query has a commented line: //WITH DIVISION =:myString4 // that's not supported by apex-parser yet
-    const query = `
+    // Original: assertThat(node!!.query).isEqualTo(query)
+    // Use trimIndent to match Kotlin's String.trimIndent() - removes common leading indentation
+    const rawQuery = `
       FIND :myString1 IN ALL FIELDS
       RETURNING
          Account (Id, Name WHERE Name LIKE :myString2
@@ -658,7 +684,8 @@ describe('SOQL and SOSL Translation', () => {
       //WITH DIVISION =:myString4 // that's not supported by apex-parser yet
       WITH DIVISION = 'ccc'
       LIMIT :myInt5
-    `.trim();
+    `;
+    const query = trimIndent(rawQuery);
 
     const root = parseSoqlOrSoslInCode(query);
 
@@ -666,9 +693,7 @@ describe('SOQL and SOSL Translation', () => {
     // Original: assertThat(node).isNotNull()
     expect(node).not.toBeNull();
     // Original: assertThat(node!!.query).isEqualTo(query)
-    // Note: The query string format may differ slightly due to trimIndent() vs trim(),
-    // but the content should match
-    expect(node.query).toBeDefined();
+    expect(node.query).toBe(query);
     // Original: assertThat(node.bindings).hasSize(4)
     expect(node.bindings).toHaveLength(4);
     // Original: Extract variable expressions from bindings and verify names

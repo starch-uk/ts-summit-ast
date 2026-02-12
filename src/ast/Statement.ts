@@ -45,10 +45,19 @@ interface Statement extends ASTNode {
     | 'ThrowStatement'
     | 'TryStatement'
     | 'Undelete'
+    | 'UntranslatedStatement'
     | 'Update'
     | 'Upsert'
     | 'VariableDeclarationStatement'
     | 'WhileLoopStatement';
+}
+
+/**
+ * Placeholder for statements that could not be translated.
+ * Allows partial AST construction. Matches summit-ast UntranslatedStatement.
+ */
+interface UntranslatedStatement extends Statement {
+  readonly '@type': 'UntranslatedStatement';
 }
 
 /**
@@ -256,6 +265,7 @@ export type {
   ThrowStatement,
   CompoundStatement,
   ExpressionStatement,
+  UntranslatedStatement,
   VariableDeclarationStatement,
   DmlStatement,
 };

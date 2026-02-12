@@ -64,8 +64,8 @@ describe('Complex Apex Code Parsing', () => {
         const classDecl = findFirstNodeOfType(result.ast, isClassDeclaration);
         expect(classDecl).not.toBeNull();
         if (classDecl) {
-          expect(classDecl.extendsClause).toBeDefined();
-          expect(classDecl.implementsClause).toBeDefined();
+          expect(classDecl.extendsType).toBeDefined();
+          expect(classDecl.implementsTypes).toBeDefined();
         }
       }
     });
@@ -373,8 +373,9 @@ describe('Complex Apex Code Parsing', () => {
         const classDecl = findFirstNodeOfType(result.ast, isClassDeclaration);
         expect(classDecl).not.toBeNull();
         if (classDecl) {
-          const methods = classDecl.members.filter(
-            (m: Readonly<Readonly<ClassDeclaration['members'][number]>>) => isMethodDeclaration(m)
+          const methods = classDecl.bodyDeclarations.filter(
+            (m: Readonly<Readonly<ClassDeclaration['bodyDeclarations'][number]>>) =>
+              isMethodDeclaration(m)
           );
           expect(methods.length).toBeGreaterThanOrEqual(2);
         }

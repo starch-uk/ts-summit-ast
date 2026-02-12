@@ -18,7 +18,11 @@ import {
 import type { Position } from '../../src/utils/sourceExtraction.js';
 import { NodeFactory } from '../../src/translator/nodeFactory.js';
 import { parseAndTranslate, findFirstNodeOfType } from '../translateHelpers.js';
-import { isClassDeclaration, isVariableDeclaration } from '../../src/guard/index.js';
+import {
+  isClassDeclaration,
+  isFieldDeclarationGroup,
+  isVariableDeclaration,
+} from '../../src/guard/index.js';
 import type { SourceRange } from '../../src/ast/baseNode.js';
 
 describe('Source Extraction Utilities', () => {
@@ -150,10 +154,12 @@ describe('Source Extraction Utilities', () => {
         }
       `;
       const cu = parseAndTranslate(input);
-      const fieldDecl = findFirstNodeOfType(cu, isVariableDeclaration);
-      expect(fieldDecl).not.toBeNull();
-      if (fieldDecl?.location != null) {
-        const extracted = getSourceText(fieldDecl, input);
+      const fieldNode =
+        findFirstNodeOfType(cu, isFieldDeclarationGroup) ??
+        findFirstNodeOfType(cu, isVariableDeclaration);
+      expect(fieldNode).not.toBeNull();
+      if (fieldNode?.sourceLocation != null) {
+        const extracted = getSourceText(fieldNode, input);
         expect(extracted).toContain('String field');
         expect(extracted).toContain("= 'Hello'");
       }
@@ -642,10 +648,12 @@ describe('Source Extraction Utilities', () => {
         }
       `;
       const cu = parseAndTranslate(input);
-      const fieldDecl = findFirstNodeOfType(cu, isVariableDeclaration);
-      expect(fieldDecl).not.toBeNull();
-      if (fieldDecl?.location != null) {
-        const extracted = getSourceText(fieldDecl, input);
+      const fieldNode =
+        findFirstNodeOfType(cu, isFieldDeclarationGroup) ??
+        findFirstNodeOfType(cu, isVariableDeclaration);
+      expect(fieldNode).not.toBeNull();
+      if (fieldNode?.sourceLocation != null) {
+        const extracted = getSourceText(fieldNode, input);
         expect(extracted).toContain('String field');
         expect(extracted).toContain("= 'Hello'");
       }

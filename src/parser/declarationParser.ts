@@ -1538,15 +1538,13 @@ function parseDeclaration(ctx: Readonly<ParserContext>): ParseTreeNode | null {
   ctx.skipWhitespaceAndComments();
   const singleIndexOffset = 1;
 
-  // Check for annotation type declaration: @interface
+  // Reject annotation type declaration: @interface (not in upstream summit-ast grammar)
   if (ctx.match(TokenType.AT)) {
     if (ctx.check(TokenType.INTERFACE)) {
-      ctx.advance(); // Consume INTERFACE
-      return parseAnnotationDeclaration(ctx);
-    } else {
-      // Not @interface, might be an annotation on a declaration, reset
-      ctx.setCurrent(ctx.getCurrent() - singleIndexOffset);
+      throw new Error('Annotation type declarations (@interface) are not supported');
     }
+    // Not @interface, might be an annotation on a declaration, reset
+    ctx.setCurrent(ctx.getCurrent() - singleIndexOffset);
   }
 
   // Collect annotations before the declaration (for class, interface, enum, etc.)

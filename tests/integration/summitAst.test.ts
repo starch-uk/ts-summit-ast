@@ -3,7 +3,12 @@
  * Ported from com.google.summit.SummitASTTest.
  */
 
-import { parseApexCode } from '../../src/utils/apexParser.js';
+import {
+  parseApexCode,
+  parseAndTranslate,
+  ParseException,
+  CompilationType,
+} from '../../src/utils/apexParser.js';
 
 describe('SummitAST Parsing', () => {
   const classString = 'global with sharing interface Test { }';
@@ -117,29 +122,10 @@ describe('SummitAST Parsing', () => {
   //             SummitAST.parseAndTranslate(string, type = CompilationType.TRIGGER)
   //           }
   //           assertThat(exception).isNotNull()
-  // Since our parser auto-detects, we can't force a class to be parsed as a trigger.
-  // However, we can verify that attempting to parse a class-like string that doesn't
-  // match trigger syntax will either fail or be parsed as a class (not a trigger).
-  // The original test expects a ParseException when forcing a class to be parsed as a trigger.
-  // With auto-detection, this mismatch is prevented, so parsing succeeds as a class/interface.
-  it('parse string invalid class as trigger (auto-detection prevents mismatch)', () => {
+  it('parse string invalid class as trigger throws ParseException', () => {
     const string = classString;
-    const result = parseApexCode(string);
 
-    // Original test expects an exception when forcing class as trigger.
-    // With auto-detection, the parser correctly identifies it as a class/interface,
-    // so parsing succeeds (which is actually better behavior than throwing an error).
-    expect(result.ast).not.toBeNull();
-
-    // Verify it was parsed as a class/interface, not a trigger
-    if (result.ast?.['@type'] === 'CompilationUnit' && result.ast.typeDeclaration !== undefined) {
-      const typeDecl = result.ast.typeDeclaration;
-      expect(['InterfaceDeclaration', 'ClassDeclaration']).toContain(typeDecl['@type']);
-      expect(typeDecl['@type']).not.toBe('TriggerDeclaration');
-    }
-
-    // Verify no errors occurred (auto-detection prevents the type mismatch error)
-    expect(result.errors.length).toBe(0);
+    expect(() => parseAndTranslate(string, CompilationType.TRIGGER)).toThrow(ParseException);
   });
 
   // Ported from parsePath_valid
@@ -211,32 +197,8 @@ public class Main implements I, J {
   // Since our parser auto-detects, that test doesn't apply directly.
   // However, we can verify that invalid trigger syntax produces errors.
   // This test complements the original tests by verifying error handling for invalid syntax
-  it('parse invalid trigger syntax produces errors', () => {
-    /**
-     * Missing object name - this should produce a parse error.
-     * Original: The parseString_invalid_classAsTrigger test verifies error handling
-     * This test verifies error handling for syntax errors (complementary to the original).
-     */
+  it('parse invalid trigger syntax throws ParseException', () => {
     const invalidTrigger = 'trigger MyTrigger on { }';
-    const result = parseApexCode(invalidTrigger);
-
-    // Invalid syntax should produce errors
-    // Original: The parseString_invalid_classAsTrigger test expects an exception
-    // This test verifies that errors are reported (matching the original's intent of error detection)
-    expect(result.errors.length).toBeGreaterThan(0);
-
-    // The AST may be null or partial if parsing failed
-    // (depending on error recovery behavior)
-    // The important thing is that errors were reported
-    if (result.errors.length > 0) {
-      // Verify error messages are meaningful
-      // Original: assertThat(exception).isNotNull() - we verify error is reported
-      expect(result.errors[0].message).toBeDefined();
-      expect(result.errors[0].message.length).toBeGreaterThan(0);
-      // Verify error has location information (if available)
-      if (result.errors[0].location) {
-        expect(result.errors[0].location.start).toBeDefined();
-      }
-    }
+    expect(() => parseApexCode(invalidTrigger)).toThrow(ParseException);
   });
 });

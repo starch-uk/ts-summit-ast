@@ -9,6 +9,7 @@ export * from './translator/index.js';
 export * from './serialization/index.js';
 export * from './tool/index.js';
 export * from './utils/index.js';
+export * from './symbols/index.js';
 
 // Apex parser exports (re-exported with specific names to avoid conflicts)
 export {

@@ -232,15 +232,15 @@ describe('JSON Serialization', () => {
       const expectedTypeDecl = isRecord(expected.typeDeclaration) ? expected.typeDeclaration : {};
       expect(typeDecl['@type'] ?? typeDecl.id).toBeDefined();
       const bodyMembers =
-        (Array.isArray(typeDecl.members) ? typeDecl.members : undefined) ??
+        (Array.isArray(typeDecl.bodyDeclarations) ? typeDecl.bodyDeclarations : undefined) ??
         (Array.isArray(typeDecl.innerTypeDeclarations)
           ? typeDecl.innerTypeDeclarations
           : undefined) ??
         [];
       const expectedCount = Array.isArray(expectedTypeDecl.innerTypeDeclarations)
         ? expectedTypeDecl.innerTypeDeclarations.length
-        : Array.isArray(expectedTypeDecl.members)
-          ? expectedTypeDecl.members.length
+        : Array.isArray(expectedTypeDecl.bodyDeclarations)
+          ? expectedTypeDecl.bodyDeclarations.length
           : 0;
       expect(Array.isArray(bodyMembers)).toBe(true);
       expect(bodyMembers.length).toBeGreaterThanOrEqual(expectedCount);
