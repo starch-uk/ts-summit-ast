@@ -18,7 +18,6 @@ import type {
   ClassDeclaration,
   MethodDeclaration,
   InterfaceDeclaration,
-  VariableDeclaration,
   PropertyDeclaration,
   ClassMember,
   TypeRef,
@@ -78,13 +77,15 @@ function isVoidType(typeRef: TypeRef | undefined): boolean {
  * @returns A fully-qualified member name string.
  */
 function getQualifiedName(decl: ClassMember, enclosingClassName?: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- isVariableDeclaration accepts ASTNode
+  /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-type-assertion -- ClassMember union; safe narrowing by shape. */
   const name: string = isVariableDeclaration(decl)
     ? decl.id.string
-    : 'id' in decl && decl.id && typeof (decl.id as { string?: string }).string === 'string'
-      ? (decl.id as { string: string }).string
-      : // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ClassMember has name or id
-        (decl as { name: string }).name;
+    : 'id' in decl &&
+        decl.id != null &&
+        typeof (decl.id as Record<string, unknown>).string === 'string'
+      ? String((decl.id as Record<string, unknown>).string)
+      : (decl as { name: string }).name;
+  /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-type-assertion */
   if (enclosingClassName != null && enclosingClassName !== '') {
     return `${enclosingClassName}.${name}`;
   }
@@ -98,8 +99,8 @@ function getQualifiedName(decl: ClassMember, enclosingClassName?: string): strin
  * @returns True if the method is an anonymous initialization block.
  */
 function isAnonymousInitializationCode(method: Readonly<MethodDeclaration>): boolean {
-  const params =
-    method.parameterDeclarations ?? (method as { parameters?: unknown[] }).parameters ?? [];
+  /* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- parameterDeclarations may be omitted in test AST. */
+  const params = method.parameterDeclarations ?? [];
   return method.name === '_init' && params.length === 0 && isVoidType(method.returnType);
 }
 
@@ -281,7 +282,8 @@ describe('Class Declaration Translation', () => {
         expect(fieldDecl).toBeDefined();
         if (fieldDecl) {
           // Original: qualifiedName == "Test.field"
-          expect(getQualifiedName(fieldDecl as unknown as ClassMember, classDecl.name)).toBe(
+          /* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-condition -- fieldDecl is FieldDeclaration (ClassMember); name may be optional. */
+          expect(getQualifiedName(fieldDecl as ClassMember, classDecl.name ?? '')).toBe(
             'Test.field'
           );
 
@@ -396,7 +398,8 @@ describe('Class Declaration Translation', () => {
           // - isAnonymousInitializationCode() is true
           // - id.asCodeString() == "_init"
           for (const methodDecl of initMethods) {
-            const params = methodDecl.parameterDeclarations ?? methodDecl.parameters ?? [];
+            /* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- parameterDeclarations may be omitted. */
+            const params = methodDecl.parameterDeclarations ?? [];
             expect(params.length).toBe(0);
             expect(isVoidType(methodDecl.returnType)).toBe(true);
             expect(isAnonymousInitializationCode(methodDecl)).toBe(true);
@@ -715,7 +718,7 @@ describe('Class Declaration Translation', () => {
           if (isFieldDeclarationGroup(child)) return child.declarations.map((d) => d.id.string);
           return [];
         })
-        .filter((name): name is string => name !== null && name !== undefined);
+        .filter((name): name is string => typeof name === 'string');
 
       // Original: containsExactly("InnerClass", "InnerEnum", "positiveField", "negativeField",
       //                            "upProperty", "downProperty", "aMethod", "otherMethod")
@@ -941,7 +944,10 @@ describe('Method Declaration Translation', () => {
 
     // Original: val parameterDecl = methodDecl.parameterDeclarations.first()
     // Original: assertWithMessage("Parameter should have 1 modifier").that(parameterDecl.modifiers).hasSize(1)
-    const [parameterDecl] = methodDecl.parameters;
+    const parameterDecl = methodDecl.parameters[0];
+    expect(parameterDecl).toBeDefined();
+    /* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- narrows after expect for type safety. */
+    if (parameterDecl == null) return;
     expect(parameterDecl.modifiers).toHaveLength(1);
     // Original: assertWithMessage("Parameter should have 'final' modifier")
     //           .that(parameterDecl.hasKeyword(KeywordModifier.Keyword.FINAL)).isTrue()

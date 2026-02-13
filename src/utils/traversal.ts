@@ -209,8 +209,7 @@ function getNodeChildren(node: Readonly<ASTNode>): ASTNode[] {
   } else if (isMethodDeclaration(node)) {
     children.push(...node.modifiers);
     if (node.annotations) children.push(...node.annotations);
-    const params =
-      node.parameterDeclarations ?? (node as { parameters?: readonly unknown[] }).parameters ?? [];
+    const params = node.parameterDeclarations;
     children.push(...params);
     if (node.body) children.push(node.body);
   } else if (isTypeRef(node)) {

@@ -1100,8 +1100,8 @@ function deserializeInterfaceDeclaration(
     bodyDeclarationsJson.map((m: Readonly<JsonASTNode>) => deserializer.deserializeNode(m))
   );
   return NodeFactory.createInterfaceDeclaration({
-    extendsTypes: extendsClause,
     bodyDeclarations,
+    extendsTypes: extendsClause,
     modifiers,
     name,
     options: locationOption,
@@ -1316,6 +1316,34 @@ function deserializeClassDeclaration(
 }
 
 /**
+ * Maps a string to a TriggerCase enum value. If no match, returns TRIGGER_BEFORE_INSERT.
+ * @param s - The string to match (e.g. From JSON).
+ * @returns The matching TriggerCase or TRIGGER_BEFORE_INSERT.
+ */
+function parseTriggerCaseFromString(s: string): TriggerCase {
+  switch (s) {
+    case 'TRIGGER_AFTER_DELETE':
+      return TriggerCase.TRIGGER_AFTER_DELETE;
+    case 'TRIGGER_AFTER_INSERT':
+      return TriggerCase.TRIGGER_AFTER_INSERT;
+    case 'TRIGGER_AFTER_UNDELETE':
+      return TriggerCase.TRIGGER_AFTER_UNDELETE;
+    case 'TRIGGER_AFTER_UPDATE':
+      return TriggerCase.TRIGGER_AFTER_UPDATE;
+    case 'TRIGGER_BEFORE_DELETE':
+      return TriggerCase.TRIGGER_BEFORE_DELETE;
+    case 'TRIGGER_BEFORE_INSERT':
+      return TriggerCase.TRIGGER_BEFORE_INSERT;
+    case 'TRIGGER_BEFORE_UNDELETE':
+      return TriggerCase.TRIGGER_BEFORE_UNDELETE;
+    case 'TRIGGER_BEFORE_UPDATE':
+      return TriggerCase.TRIGGER_BEFORE_UPDATE;
+    default:
+      return TriggerCase.TRIGGER_BEFORE_INSERT;
+  }
+}
+
+/**
  * Deserializes a TriggerDeclaration from JSON.
  * @param json - The JSON object to deserialize.
  * @param locationOption - Optional source location data for the deserialized node.
@@ -1332,13 +1360,9 @@ function deserializeTriggerDeclaration(
   const targetNode = getJsonASTNodeProperty(json, 'target');
   const target = deserializeIdentifier(targetNode);
   const casesJson = getOptionalJsonASTNodeArrayProperty(json, 'cases') ?? [];
-  const cases: TriggerCase[] = casesJson.map((c: unknown) => {
-    const s = typeof c === 'string' ? c : String(c);
-    if (Object.values(TriggerCase).includes(s as TriggerCase)) {
-      return s as TriggerCase;
-    }
-    return TriggerCase.TRIGGER_BEFORE_INSERT; // fallback for unknown
-  });
+  const cases: TriggerCase[] = casesJson.map((c: unknown) =>
+    parseTriggerCaseFromString(typeof c === 'string' ? c : String(c))
+  );
   const bodyJson = getOptionalJsonASTNodeArrayProperty(json, 'body') ?? [];
   const body: (Declaration | Statement)[] = [];
   for (const b of bodyJson) {

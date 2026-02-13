@@ -21,11 +21,11 @@ import { attachDeclarationMetadata } from './declarationUtils.js';
  * Exception to propagate parse/syntax errors or AST translation problems.
  * Matches summit-ast SummitAST.ParseException.
  */
-export class ParseException extends Error {
+class ParseException extends Error {
   public override readonly name = 'ParseException';
   public readonly cause?: Error;
 
-  public constructor(message: string, cause?: Error) {
+  public constructor(message: string, cause?: Readonly<Error>) {
     super(message);
     this.cause = cause;
     Object.setPrototypeOf(this, ParseException.prototype);
@@ -36,7 +36,7 @@ export class ParseException extends Error {
  * The type of top-level declaration in an input.
  * Matches summit-ast SummitAST.CompilationType.
  */
-export enum CompilationType {
+enum CompilationType {
   CLASS = 'CLASS',
   TRIGGER = 'TRIGGER',
 }
@@ -154,12 +154,15 @@ interface ApexParseResultView {
   readonly isUsable?: boolean;
 }
 
+const INDEX_FIRST = 0;
+
 /**
  * Determines the CompilationType of the source by lexing until a declaration keyword.
  * If class, interface, or enum is found before the body, returns CLASS.
  * If trigger is found, returns TRIGGER.
  * Otherwise defaults to CLASS.
- * @param source
+ * @param source - The Apex source code to inspect.
+ * @returns CompilationType.CLASS or CompilationType.TRIGGER.
  */
 function determineCompilationType(source: string): CompilationType {
   const lexer = new ApexLexer(source);
@@ -169,6 +172,7 @@ function determineCompilationType(source: string): CompilationType {
     if (token.type === TokenType.LEFT_BRACE || token.type === TokenType.EOF) {
       break;
     }
+    /* eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check -- only CLASS/INTERFACE/ENUM/TRIGGER affect result; others fall through. */
     switch (token.type) {
       case TokenType.CLASS:
       case TokenType.INTERFACE:
@@ -232,7 +236,7 @@ function isUsableParseResult(
  */
 function parseApexCode(
   source: string,
-  options: ApexParseOptions = {} as ApexParseOptions
+  options: Readonly<ApexParseOptions> = {} as ApexParseOptions
 ): ApexParseResult {
   const {
     includeComments = false,
@@ -273,8 +277,7 @@ function parseApexCode(
   }
 
   if (!parseTree) {
-    const emptyArrayLength = 0;
-    if (errors.length === emptyArrayLength) {
+    if (errors.length === INDEX_FIRST) {
       errors.push({
         message: 'Failed to parse source code',
         severity: 'error',
@@ -282,7 +285,7 @@ function parseApexCode(
     }
     throw new ParseException(
       errors.map((e) => e.message).join('\n'),
-      errors[0]?.message ? new Error(errors[0].message) : undefined
+      errors[INDEX_FIRST]?.message ? new Error(errors[INDEX_FIRST].message) : undefined
     );
   }
 
@@ -325,13 +328,12 @@ function parseApexCode(
     attachDeclarationMetadata(translationResult.ast);
   }
 
-  const emptyArrayLength = 0;
-  const hasErrors = errors.length > emptyArrayLength;
+  const hasErrors = errors.length > INDEX_FIRST;
 
   if (hasErrors || !hasAST) {
     throw new ParseException(
       errors.map((e) => e.message).join('\n'),
-      errors[0]?.message ? new Error(errors[0].message) : undefined
+      errors[INDEX_FIRST]?.message ? new Error(errors[INDEX_FIRST].message) : undefined
     );
   }
 
@@ -387,7 +389,7 @@ function parseMultipleFiles(
         ],
         isUsable: false,
         partialSuccess: false,
-        source: options.includeSource ? source : undefined,
+        source: options.includeSource === true ? source : undefined,
       };
     }
   });
@@ -453,11 +455,38 @@ function extractCommentsBatch(
   return asts.map((ast, index) => extractComments(ast, sources[index], options));
 }
 
+/** File path type for parseAndTranslate. Use when parsing from file. Matches upstream SummitAST.parseAndTranslate(path: Path). */
+/* eslint-disable-next-line @typescript-eslint/no-type-alias -- public API type for path overload. */
+type Path = string;
+
 /**
  * Parses and translates Apex from a file path. Type is determined from extension.
  * Matches summit-ast SummitAST.parseAndTranslate(path: Path).
  * @param path - File path (.cls or .trigger).
  * @returns The CompilationUnit AST.
+ * @throws {ParseException} On parse failure or translation failure.
+ */
+function parseAndTranslateFromPathInternal(path: string): ASTNode {
+  const ext = path.toLowerCase().endsWith('.cls')
+    ? '.cls'
+    : path.toLowerCase().endsWith('.trigger')
+      ? '.trigger'
+      : null;
+  if (!ext) {
+    throw new Error(`Unexpected file type: ${path}. Expected .cls or .trigger`);
+  }
+  const type = ext === '.cls' ? CompilationType.CLASS : CompilationType.TRIGGER;
+  const source = readFileSync(path, 'utf-8');
+  /* eslint-disable-next-line @typescript-eslint/no-use-before-define -- circular with parseAndTranslate. */
+  return parseAndTranslate(source, type);
+}
+
+/**
+ * Parses and translates Apex from a file path. Type is determined from extension.
+ * Matches summit-ast SummitAST.parseAndTranslate(path: Path).
+ * @param path - File path (.cls or .trigger).
+ * @returns The CompilationUnit AST.
+ * @throws {ParseException} On parse failure or translation failure.
  */
 function parseAndTranslate(path: Path): ASTNode;
 
@@ -472,8 +501,8 @@ function parseAndTranslate(path: Path): ASTNode;
  */
 function parseAndTranslate(source: string, type?: CompilationType | null): ASTNode;
 
-function parseAndTranslate(pathOrSource: Path | string, type?: CompilationType | null): ASTNode {
-  const s = pathOrSource as string;
+function parseAndTranslate(pathOrSource: Path, type?: CompilationType | null): ASTNode {
+  const s = pathOrSource;
   if (type === undefined || type === null) {
     if (s.toLowerCase().endsWith('.cls') || s.toLowerCase().endsWith('.trigger')) {
       return parseAndTranslateFromPathInternal(s);
@@ -483,39 +512,32 @@ function parseAndTranslate(pathOrSource: Path | string, type?: CompilationType |
     compilationType: type ?? undefined,
     includeLocation: true,
   });
-  return result.ast!;
+  const { ast } = result;
+  if (ast === undefined) {
+    throw new ParseException('Parse produced no AST');
+  }
+  return ast;
 }
 
 /**
- * File path type for parseAndTranslate. Use when parsing from file.
- * Matches upstream SummitAST.parseAndTranslate(path: Path).
+ * Parses and translates Apex from a file path. Deprecated: use parseAndTranslate(path) instead.
+ * @param path - File path (.cls or .trigger).
+ * @returns The CompilationUnit AST.
+ * @throws {ParseException} On parse failure or translation failure.
+ * @deprecated Use parseAndTranslate(path) instead. Kept for backward compatibility.
  */
-export type Path = string;
-
-function parseAndTranslateFromPathInternal(path: string): ASTNode {
-  const ext = path.toLowerCase().endsWith('.cls')
-    ? '.cls'
-    : path.toLowerCase().endsWith('.trigger')
-      ? '.trigger'
-      : null;
-  if (!ext) {
-    throw new Error(`Unexpected file type: ${path}. Expected .cls or .trigger`);
-  }
-  const type = ext === '.cls' ? CompilationType.CLASS : CompilationType.TRIGGER;
-  const source = readFileSync(path, 'utf-8');
-  return parseAndTranslate(source, type);
+function parseAndTranslateFromPath(path: string): ASTNode {
+  return parseAndTranslateFromPathInternal(path);
 }
 
-export type { ApexParseError, ApexParseOptions, ApexParseResult };
+export type { ApexParseError, ApexParseOptions, ApexParseResult, Path };
 export {
+  CompilationType,
+  ParseException,
   extractCommentsBatch,
   isUsableParseResult,
   parseAndTranslate,
+  parseAndTranslateFromPath,
   parseApexCode,
   parseMultipleFiles,
 };
-
-/** @deprecated Use parseAndTranslate(path) instead. Kept for backward compatibility. */
-export function parseAndTranslateFromPath(path: string): ASTNode {
-  return parseAndTranslateFromPathInternal(path);
-}

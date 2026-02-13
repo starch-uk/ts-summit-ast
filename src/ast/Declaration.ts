@@ -72,12 +72,15 @@ export enum TriggerCase {
   TRIGGER_BEFORE_UPDATE = 'TRIGGER_BEFORE_UPDATE',
 }
 
-/** Enclosing type for qualified name resolution (ClassDeclaration, InterfaceDeclaration, or EnumDeclaration). */
-export type TypeDeclaration = ClassDeclaration | InterfaceDeclaration | EnumDeclaration;
+/**
+ * Enclosing type for qualified name resolution (ClassDeclaration, InterfaceDeclaration, or EnumDeclaration).
+ */
+/* eslint-disable-next-line @typescript-eslint/no-type-alias -- public API type used for parent/qualifiedName. */
+type TypeDeclaration = ClassDeclaration | EnumDeclaration | InterfaceDeclaration;
 
 /**
  * Base interface for all declaration nodes.
- * qualifiedName and parent are populated by attachDeclarationMetadata().
+ * Qualified name and parent are populated by attachDeclarationMetadata().
  */
 interface Declaration extends ASTNode {
   readonly '@type':
@@ -93,13 +96,13 @@ interface Declaration extends ASTNode {
    * Enclosing type declaration (for nested types/methods).
    * Populated by attachDeclarationMetadata().
    */
-  parent?: TypeDeclaration | null;
+  readonly parent?: TypeDeclaration | null;
 
   /**
    * Fully qualified name (e.g. "Outer.Inner.method").
    * Populated by attachDeclarationMetadata().
    */
-  qualifiedName?: string;
+  readonly qualifiedName?: string;
 }
 
 /**
@@ -172,11 +175,11 @@ interface ClassDeclaration extends Declaration {
   readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
-    | InterfaceDeclaration
     | FieldDeclarationGroup
-    | VariableDeclaration
+    | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
+    | VariableDeclaration
   )[];
   readonly annotations?: readonly Annotation[];
 }
@@ -394,4 +397,5 @@ export type {
   AnnotationArgument,
   AnnotationMember,
   TriggerDeclaration,
+  TypeDeclaration,
 };

@@ -606,6 +606,18 @@ const ExpressionFactory = {
   },
 
   /**
+   * Creates an untranslated expression placeholder (used when translation fails).
+   * @param options - Optional factory options.
+   * @returns The created untranslated expression.
+   */
+  createUntranslatedExpression(options?: Readonly<NodeFactoryOptions>): UntranslatedExpression {
+    return {
+      '@type': 'UntranslatedExpression',
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+    };
+  },
+
+  /**
    * Creates a variable expression.
    * @param id - The identifier for the variable.
    * @param options - Optional factory options.
@@ -618,18 +630,6 @@ const ExpressionFactory = {
     return {
       '@type': 'VariableExpression',
       id,
-      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
-    };
-  },
-
-  /**
-   * Creates an untranslated expression placeholder (used when translation fails).
-   * @param options - Optional factory options.
-   * @returns The created untranslated expression.
-   */
-  createUntranslatedExpression(options?: Readonly<NodeFactoryOptions>): UntranslatedExpression {
-    return {
-      '@type': 'UntranslatedExpression',
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },

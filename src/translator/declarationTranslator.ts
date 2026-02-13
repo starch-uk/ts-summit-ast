@@ -53,13 +53,133 @@ interface SortedMemberWithIndex {
   readonly decl:
     | ClassDeclaration
     | EnumDeclaration
+    | FieldDeclarationGroup
     | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
-    | FieldDeclarationGroup
     | VariableDeclaration;
   readonly sourceIndex: number;
   readonly statementId?: number;
+}
+
+/**
+ * Extracts the identifier and optional initializer expression from a field_declaration parse node.
+ * @param ctx - The translation context used to read text and translate child expressions.
+ * @param node - The ParseTreeNode representing the field declarator.
+ * @returns An object containing the field identifier and optional initializer expression.
+ */
+function parseFieldDeclarator(
+  ctx: Readonly<TranslateContext>,
+  node: Readonly<ParseTreeNode>
+): { id: Identifier; initializer?: Expression } {
+  const nameNode = ctx.getChild(node, 'name');
+  const name = nameNode
+    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'unknown')
+    : 'unknown';
+  const id = NodeFactory.createIdentifier(name, ctx.getLocationOption(node));
+  let initializer: Expression | undefined = undefined;
+  const children = ctx.getChildren(node);
+  for (const child of children) {
+    const childType = child.type.toLowerCase();
+    if (
+      childType !== 'type' &&
+      childType !== 'name' &&
+      childType !== 'modifiers' &&
+      childType !== 'annotations' &&
+      childType !== 'modifier' &&
+      childType !== 'annotation' &&
+      childType !== 'base_type' &&
+      childType !== 'array_dimensions' &&
+      childType !== 'type_arguments'
+    ) {
+      const expr = ctx.tryTranslateExpression(child, childType);
+      if (expr) {
+        initializer = expr;
+        break;
+      }
+    }
+  }
+  return { id, initializer };
+}
+
+/**
+ * Translates a field_declaration_block (or block containing only field_declaration nodes)
+ * into a single FieldDeclarationGroup.
+ * @param ctx - The translation context used to translate child nodes.
+ * @param blockNode - The parse tree node representing the field declaration block.
+ * @returns A FieldDeclarationGroup that groups all field declarations in the block.
+ */
+function translateFieldDeclarationBlock(
+  ctx: Readonly<TranslateContext>,
+  blockNode: Readonly<ParseTreeNode>
+): FieldDeclarationGroup {
+  const fieldDeclNodes = ctx.getChildren(blockNode);
+  const lengthEmpty = 0;
+  if (fieldDeclNodes.length === lengthEmpty) {
+    return NodeFactory.createFieldDeclarationGroup({
+      declarations: [],
+      modifiers: [],
+      options: ctx.getLocationOption(blockNode),
+      type: NodeFactory.createSimpleTypeRef('Object'),
+    });
+  }
+  const [first] = fieldDeclNodes;
+  const modifiers = ctx.extractModifiers(first);
+  const fieldChildren = ctx.getChildren(first);
+  const typeChild = fieldChildren.find(
+    (c: ParseTreeNode) => c.type === 'type' || c.type === 'primitive_type' || c.type === 'base_type'
+  );
+  const type = typeChild
+    ? (ctx.tryTranslateType(typeChild) ?? NodeFactory.createSimpleTypeRef('Object'))
+    : NodeFactory.createSimpleTypeRef('Object');
+  const declarations = fieldDeclNodes.map((n) => parseFieldDeclarator(ctx, n));
+  return NodeFactory.createFieldDeclarationGroup({
+    declarations,
+    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : [],
+    options: ctx.getLocationOption(blockNode),
+    type,
+  });
+}
+
+/**
+ * Translates a single field_declaration node into a FieldDeclarationGroup.
+ * @param ctx - The translation context used to translate child nodes.
+ * @param node - The parse tree node representing the field declaration.
+ * @returns A FieldDeclarationGroup containing a single translated field declaration.
+ */
+function translateFieldDeclarationToGroup(
+  ctx: Readonly<TranslateContext>,
+  node: Readonly<ParseTreeNode>
+): FieldDeclarationGroup {
+  const modifiers = ctx.extractModifiers(node);
+  const fieldChildren = ctx.getChildren(node);
+  const typeChild = fieldChildren.find(
+    (c: ParseTreeNode) => c.type === 'type' || c.type === 'primitive_type' || c.type === 'base_type'
+  );
+  const type = typeChild
+    ? (ctx.tryTranslateType(typeChild) ?? NodeFactory.createSimpleTypeRef('Object'))
+    : NodeFactory.createSimpleTypeRef('Object');
+  const { id, initializer } = parseFieldDeclarator(ctx, node);
+  return NodeFactory.createFieldDeclarationGroup({
+    declarations: [{ id, initializer }],
+    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : [],
+    options: ctx.getLocationOption(node),
+    type,
+  });
+}
+
+/**
+ * Translates the given field_declaration node into a FieldDeclarationGroup.
+ * This is a thin wrapper around translateFieldDeclarationToGroup.
+ * @param ctx - The translation context used to translate child nodes.
+ * @param node - The parse tree node representing the field declaration.
+ * @returns A FieldDeclarationGroup containing the translated field.
+ */
+function translateFieldDeclaration(
+  ctx: Readonly<TranslateContext>,
+  node: Readonly<ParseTreeNode>
+): FieldDeclarationGroup {
+  return translateFieldDeclarationToGroup(ctx, node);
 }
 
 /**
@@ -84,10 +204,10 @@ function translateClassDeclaration(
   const members: (
     | ClassDeclaration
     | EnumDeclaration
+    | FieldDeclarationGroup
     | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
-    | FieldDeclarationGroup
     | VariableDeclaration
   )[] = [];
   const extendsClause = ctx.getChild(node, 'extends_clause', 'extendsClause');
@@ -101,6 +221,8 @@ function translateClassDeclaration(
     /**
      * Recursively collect member nodes. Blocks containing only field_declarations
      * are kept as single units (for FieldDeclarationGroup); other blocks are flattened.
+     * @param memberNode - Parse tree node (block, body, or member) to collect from.
+     * @returns Flattened array of member parse tree nodes.
      */
     const collectMemberNodes = (memberNode: ParseTreeNode): ParseTreeNode[] => {
       const memberChildrenNodes = ctx.getChildren(memberNode);
@@ -108,8 +230,9 @@ function translateClassDeclaration(
       for (const child of memberChildrenNodes) {
         if (child.type === 'block') {
           const blockChildren = ctx.getChildren(child);
+          const firstIndex = 0;
           const allFieldDecls =
-            blockChildren.length > 0 &&
+            blockChildren.length > firstIndex &&
             blockChildren.every((c: ParseTreeNode) => c.type === 'field_declaration');
           if (allFieldDecls) {
             collectedMembers.push(child);
@@ -124,14 +247,21 @@ function translateClassDeclaration(
     };
     const memberChildren = collectMemberNodes(membersNode);
     const membersWithIndex: {
+      /**
+       * The translated declaration for this member.
+       */
       decl:
         | ClassDeclaration
         | EnumDeclaration
+        | FieldDeclarationGroup
         | InterfaceDeclaration
         | MethodDeclaration
         | PropertyDeclaration
-        | FieldDeclarationGroup
         | VariableDeclaration;
+
+      /**
+       * The zero-based index of this member in the original members array.
+       */
       sourceIndex: number;
     }[] = [];
     for (let i = 0; i < memberChildren.length; i++) {
@@ -587,10 +717,10 @@ function translateClassDeclaration(
     ): d is
       | ClassDeclaration
       | EnumDeclaration
+      | FieldDeclarationGroup
       | InterfaceDeclaration
       | MethodDeclaration
       | PropertyDeclaration
-      | FieldDeclarationGroup
       | VariableDeclaration =>
       isClassDeclaration(d) ||
       isEnumDeclaration(d) ||
@@ -632,9 +762,9 @@ function translateClassDeclaration(
   ctx.setCurrentClassName(prevClassName);
   return NodeFactory.createClassDeclaration({
     annotations: annotations.length > MIN_NON_EMPTY_ARRAY_LENGTH ? annotations : undefined,
+    bodyDeclarations: members,
     extendsType,
     implementsTypes,
-    bodyDeclarations: members,
     modifiers,
     name,
     options: ctx.getLocationOption(node),
@@ -756,13 +886,13 @@ function translateInterfaceDeclaration(
   }
 
   return NodeFactory.createInterfaceDeclaration({
+    bodyDeclarations: members,
     extendsTypes: extendsClause
       ? ctx
           .getChildren(extendsClause)
           .map((c) => ctx.tryTranslateType(c))
           .filter((type): type is TypeRef => type !== null)
       : undefined,
-    bodyDeclarations: members,
     modifiers,
     name,
     options: ctx.getLocationOption(node),
@@ -900,110 +1030,10 @@ function translateInitializerBlock(
 }
 
 /**
- * Translate a field declaration from parse tree to AST.
- * @param ctx - The translation context.
- * @param node - The parse tree node to translate.
- * @returns The translated field declaration.
- */
-/** Extracts id and initializer from a field_declaration parse node. */
-function parseFieldDeclarator(
-  ctx: Readonly<TranslateContext>,
-  node: Readonly<ParseTreeNode>
-): { id: Identifier; initializer?: Expression } {
-  const nameNode = ctx.getChild(node, 'name');
-  const name = nameNode
-    ? (ctx.getText(nameNode) ?? ctx.getStringProperty(nameNode, 'name') ?? 'unknown')
-    : 'unknown';
-  const id = NodeFactory.createIdentifier(name, ctx.getLocationOption(node));
-  let initializer: Expression | undefined;
-  const children = ctx.getChildren(node);
-  for (const child of children) {
-    const childType = child.type.toLowerCase();
-    if (
-      childType !== 'type' &&
-      childType !== 'name' &&
-      childType !== 'modifiers' &&
-      childType !== 'annotations' &&
-      childType !== 'modifier' &&
-      childType !== 'annotation' &&
-      childType !== 'base_type' &&
-      childType !== 'array_dimensions' &&
-      childType !== 'type_arguments'
-    ) {
-      const expr = ctx.tryTranslateExpression(child, childType);
-      if (expr) {
-        initializer = expr;
-        break;
-      }
-    }
-  }
-  return { id, initializer };
-}
-
-function translateFieldDeclarationBlock(
-  ctx: Readonly<TranslateContext>,
-  blockNode: Readonly<ParseTreeNode>
-): FieldDeclarationGroup {
-  const fieldDeclNodes = ctx.getChildren(blockNode);
-  if (fieldDeclNodes.length === 0) {
-    return NodeFactory.createFieldDeclarationGroup({
-      type: NodeFactory.createSimpleTypeRef('Object'),
-      modifiers: [],
-      declarations: [],
-      options: ctx.getLocationOption(blockNode),
-    });
-  }
-  const first = fieldDeclNodes[0];
-  const modifiers = ctx.extractModifiers(first);
-  const fieldChildren = ctx.getChildren(first);
-  const typeChild = fieldChildren.find(
-    (c: ParseTreeNode) => c.type === 'type' || c.type === 'primitive_type' || c.type === 'base_type'
-  );
-  const type = typeChild
-    ? (ctx.tryTranslateType(typeChild) ?? NodeFactory.createSimpleTypeRef('Object'))
-    : NodeFactory.createSimpleTypeRef('Object');
-  const declarations = fieldDeclNodes.map((n) => parseFieldDeclarator(ctx, n));
-  return NodeFactory.createFieldDeclarationGroup({
-    type,
-    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : [],
-    declarations,
-    options: ctx.getLocationOption(blockNode),
-  });
-}
-
-function translateFieldDeclarationToGroup(
-  ctx: Readonly<TranslateContext>,
-  node: Readonly<ParseTreeNode>
-): FieldDeclarationGroup {
-  const modifiers = ctx.extractModifiers(node);
-  const fieldChildren = ctx.getChildren(node);
-  const typeChild = fieldChildren.find(
-    (c: ParseTreeNode) => c.type === 'type' || c.type === 'primitive_type' || c.type === 'base_type'
-  );
-  const type = typeChild
-    ? (ctx.tryTranslateType(typeChild) ?? NodeFactory.createSimpleTypeRef('Object'))
-    : NodeFactory.createSimpleTypeRef('Object');
-  const { id, initializer } = parseFieldDeclarator(ctx, node);
-  return NodeFactory.createFieldDeclarationGroup({
-    type,
-    modifiers: modifiers.length > MIN_NON_EMPTY_ARRAY_LENGTH ? modifiers : [],
-    declarations: [{ id, initializer }],
-    options: ctx.getLocationOption(node),
-  });
-}
-
-function translateFieldDeclaration(
-  ctx: Readonly<TranslateContext>,
-  node: Readonly<ParseTreeNode>
-): FieldDeclarationGroup {
-  return translateFieldDeclarationToGroup(ctx, node);
-}
-
-/**
- * Translate a property declaration from parse tree to AST.
- * @param ctx - The translation context.
- * @param node - The parse tree node to translate.
- * @returns The translated property declaration.
+ * Translates a property declaration from the parse tree into a PropertyDeclaration AST node.
+ * @param ctx - The translation context used to translate child nodes.
+ * @param node - The parse tree node representing the property declaration.
+ * @returns The translated PropertyDeclaration AST node.
  */
 function translatePropertyDeclaration(
   ctx: Readonly<TranslateContext>,
@@ -1038,11 +1068,11 @@ function translatePropertyDeclaration(
 }
 
 /**
- * Translate a variable declaration from parse tree to AST.
- * @param ctx - The translation context. - The translation context.
- * @param node - The parse tree node to translate. - The parse tree node representing the variable declaration.
+ * Translates a variable declaration from the parse tree into a VariableDeclaration AST node.
+ * @param ctx - The translation context used to translate child nodes and expressions.
+ * @param node - The parse tree node representing the variable declaration.
  * @returns The translated VariableDeclaration AST node.
- * @throws {Error} If the variable declaration is malformed.
+ * @throws {Error} If the variable declaration is malformed or missing a name.
  */
 function translateVariableDeclaration(
   ctx: Readonly<TranslateContext>,

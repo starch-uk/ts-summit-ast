@@ -67,14 +67,19 @@ function isExpression(node: ASTNode): node is Expression {
 }
 
 /**
- * Type guard for BinaryExpression nodes.
+ * Type guard for UntranslatedExpression nodes.
  * @param node - The AST node to check.
- * @returns True if the node is a BinaryExpression.
+ * @returns True if the node is an UntranslatedExpression.
  */
 function isUntranslatedExpression(node: ASTNode): node is UntranslatedExpression {
   return '@type' in node && node['@type'] === 'UntranslatedExpression';
 }
 
+/**
+ * Type guard for AssignExpression nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is an AssignExpression.
+ */
 function isAssignExpression(node: ASTNode): node is AssignExpression {
   return '@type' in node && node['@type'] === 'AssignExpression';
 }

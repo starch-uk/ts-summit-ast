@@ -32,7 +32,7 @@ interface CanonicalSourceLocation {
 
 /**
  * Base interface for all AST nodes. Uses canonical names: `@type`, sourceLocation.
- * parent is populated by attachParentLinks(root) for all nodes; matches upstream ASTNode.parent.
+ * Parent is populated by attachParentLinks(root) for all nodes; matches upstream ASTNode.parent.
  */
 interface ASTNode {
   readonly '@type': string;
@@ -42,7 +42,7 @@ interface ASTNode {
    * Parent node in the AST tree. Populated by attachParentLinks(root).
    * Matches upstream ASTNode.parent.
    */
-  parent?: ASTNode | null;
+  readonly parent?: ASTNode | null;
 }
 
 /**
@@ -165,18 +165,18 @@ function toSourceRange(sl: CanonicalSourceLocation | undefined): SourceRange | u
  * @param typeRef - The type reference to convert to a string.
  * @returns The string representation of the type reference.
  */
-function typeRefToCodeString(typeRef: Readonly<TypeRef>): string {
+function typeRefToCodeString(typeRef: TypeRef): string {
   const emptyArrayLength = 0;
   if (typeRef.components.length === emptyArrayLength) {
     return 'void';
   }
   const typeString = typeRef.components
-    .map((comp: Readonly<TypeRefComponent>) => {
+    .map((comp: TypeRefComponent) => {
       let result = comp.id.string;
       const emptyArgsLength = 0;
       if (comp.args.length > emptyArgsLength) {
         const readonlyArgs = comp.args;
-        result += `<${readonlyArgs.map((arg: Readonly<TypeRef>) => typeRefToCodeString(arg)).join(', ')}>`;
+        result += `<${readonlyArgs.map((arg: TypeRef) => typeRefToCodeString(arg)).join(', ')}>`;
       }
       return result;
     })

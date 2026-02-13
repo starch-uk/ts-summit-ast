@@ -10,7 +10,12 @@ import type { ASTNode } from '../ast/baseNode.js';
 import type { Statement } from '../ast/statement.js';
 import type { Expression } from '../ast/expression.js';
 import { TriggerCase } from '../ast/declaration.js';
-import type { Declaration, Annotation, TypeParameter } from '../ast/declaration.js';
+import type {
+  Declaration,
+  FieldDeclarationGroup,
+  Annotation,
+  TypeParameter,
+} from '../ast/declaration.js';
 
 /**
  * Maps trigger event text (e.g. "before update") to TriggerCase.
@@ -417,7 +422,7 @@ class ASTTranslator implements TranslateContext {
   public tryTranslateDeclaration(
     node: Readonly<ParseTreeNode>,
     nodeType: string
-  ): Declaration | import('../ast/declaration.js').FieldDeclarationGroup | null {
+  ): Declaration | FieldDeclarationGroup | null {
     switch (nodeType) {
       case 'class_declaration':
       case 'class':
@@ -789,7 +794,7 @@ class ASTTranslator implements TranslateContext {
 
   private translateFieldDeclaration(
     node: Readonly<ParseTreeNode>
-  ): Declaration | import('../ast/declaration.js').FieldDeclarationGroup {
+  ): Declaration | FieldDeclarationGroup {
     return memberTranslate.translateFieldDeclaration(this, node);
   }
 
@@ -811,7 +816,6 @@ class ASTTranslator implements TranslateContext {
      * Name, object_name, events, body.
      */
     const triggerBodyChildIndex = 3;
-    const bodyNode = children[triggerBodyChildIndex];
 
     const triggerName =
       nameNode != null
@@ -839,8 +843,10 @@ class ASTTranslator implements TranslateContext {
     }
 
     const body: (Declaration | Statement)[] = [];
-    if (bodyNode != null) {
-      const blockChildren = this.getChildren(bodyNode);
+    const blockNode = children[triggerBodyChildIndex];
+    /* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- children[index] may be undefined. */
+    if (blockNode != null) {
+      const blockChildren = this.getChildren(blockNode);
       for (const child of blockChildren) {
         try {
           const ast = this.translateNode(child);

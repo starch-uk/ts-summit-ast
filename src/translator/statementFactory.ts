@@ -360,6 +360,18 @@ export const StatementFactory = {
   },
 
   /**
+   * Creates an untranslated statement placeholder (used when translation fails).
+   * @param options - Optional factory options.
+   * @returns The created untranslated statement.
+   */
+  createUntranslatedStatement(options?: Readonly<NodeFactoryOptions>): UntranslatedStatement {
+    return {
+      '@type': 'UntranslatedStatement',
+      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
+    };
+  },
+
+  /**
    * Creates a variable declaration statement.
    * @param declaration - The variable declaration to wrap as a statement.
    * @param options - Optional factory options.
@@ -421,18 +433,6 @@ export const StatementFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): WhileLoopStatement {
     return StatementFactory.createWhileLoopStatement(condition, body, options);
-  },
-
-  /**
-   * Creates an untranslated statement placeholder (used when translation fails).
-   * @param options - Optional factory options.
-   * @returns The created untranslated statement.
-   */
-  createUntranslatedStatement(options?: Readonly<NodeFactoryOptions>): UntranslatedStatement {
-    return {
-      '@type': 'UntranslatedStatement',
-      ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
-    };
   },
 };
 

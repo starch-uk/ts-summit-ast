@@ -147,8 +147,8 @@ interface CreateClassDeclarationOptionsView {
   readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
-    | InterfaceDeclaration
     | FieldDeclarationGroup
+    | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -546,6 +546,23 @@ const NodeFactory = {
   },
 
   /**
+   * Creates a field declaration group (grouped field declarators sharing type/modifiers).
+   * @param opts - Options (type, modifiers, declarations with id/initializer, options).
+   * @returns The created field declaration group.
+   */
+  createFieldDeclarationGroup(
+    /* eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- opts is not mutated. */
+    opts: Readonly<{
+      type: Readonly<TypeRef>;
+      modifiers: readonly Modifier[];
+      declarations: readonly { id: Identifier; initializer?: Expression }[];
+      options?: NodeFactoryOptions;
+    }>
+  ): FieldDeclarationGroup {
+    return DeclarationFactory.createFieldDeclarationGroup(opts);
+  },
+
+  /**
    * Creates a field access expression.
    * @param fieldName - The name of the field to access.
    * @param target - The target expression to access the field on.
@@ -571,6 +588,7 @@ const NodeFactory = {
   ): EnhancedForLoopStatement {
     return NodeFactory.createEnhancedForLoopStatement(opts);
   },
+
   createForLoopStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
     return StatementFactory.createForLoopStatement(opts);
   },
@@ -581,7 +599,6 @@ const NodeFactory = {
    * @returns The created for loop statement.
    * @deprecated Use createForLoopStatement instead.
    */
-
   createForStatement(opts: Readonly<CreateForLoopStatementOptions>): ForLoopStatement {
     return NodeFactory.createForLoopStatement(opts);
   },
@@ -601,6 +618,7 @@ const NodeFactory = {
   createIfStatement(opts: Readonly<CreateIfStatementOptions>): IfStatement {
     return StatementFactory.createIfStatement(opts);
   },
+
   createInstanceOfExpression(
     expression: Readonly<Expression>,
     type: Readonly<TypeRef>,
@@ -666,7 +684,6 @@ const NodeFactory = {
    * @returns The created call expression.
    * @deprecated Use createCallExpression instead.
    */
-
   createMethodCallExpression(opts: Readonly<CreateCallExpressionOptions>): CallExpression {
     return this.createCallExpression(opts);
   },
@@ -679,6 +696,7 @@ const NodeFactory = {
   createMethodDeclaration(opts: Readonly<CreateMethodDeclarationOptions>): MethodDeclaration {
     return DeclarationFactory.createMethodDeclaration(opts);
   },
+
   createNewArrayExpression(
     type: Readonly<TypeRef>,
 
@@ -751,7 +769,6 @@ const NodeFactory = {
    * @param opts - Options (name, type, modifiers, getter, setter, annotations, options).
    * @returns The created property declaration.
    */
-
   createPropertyDeclaration(opts: Readonly<CreatePropertyDeclarationOptions>): PropertyDeclaration {
     return DeclarationFactory.createPropertyDeclaration(opts.name, opts.type, {
       annotations: opts.annotations,
@@ -768,6 +785,7 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created return statement.
    */
+
   createReturnStatement(
     expression?: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
@@ -793,7 +811,6 @@ const NodeFactory = {
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
   },
-
   createSizedArrayInitializer(
     type: Readonly<TypeRef>,
     size: Readonly<Expression>,
@@ -810,6 +827,7 @@ const NodeFactory = {
   ): SoqlExpression {
     return ExpressionFactory.createSoqlExpression(query, [...bindings], options);
   },
+
   createSoqlOrSoslBinding(
     expr: Readonly<Expression>,
     options?: Readonly<NodeFactoryOptions>
@@ -825,7 +843,6 @@ const NodeFactory = {
    * @returns The created SOQL expression.
    * @deprecated Use createSoqlExpression instead.
    */
-
   createSoqlQueryExpression(
     query: string,
 
@@ -908,10 +925,10 @@ const NodeFactory = {
   createSwitchStatement(opts: Readonly<CreateSwitchStatementOptions>): SwitchStatement {
     return StatementFactory.createSwitchStatement(opts);
   },
+
   createTernaryExpression(opts: Readonly<CreateTernaryExpressionOptions>): TernaryExpression {
     return ExpressionFactory.createTernaryExpression(opts);
   },
-
   createThisExpression(options?: Readonly<NodeFactoryOptions>): ThisExpression {
     return ExpressionFactory.createThisExpression(options);
   },
@@ -943,10 +960,10 @@ const NodeFactory = {
    * @param opts - Options (tryBlock, catchClauses, finallyBlock, options).
    * @returns The created try statement.
    */
+
   createTryStatement(opts: Readonly<CreateTryStatementOptions>): TryStatement {
     return StatementFactory.createTryStatement(opts);
   },
-
   createTypeParameter(
     name: string,
     extendsBound?: Readonly<TypeRef>,
@@ -993,6 +1010,12 @@ const NodeFactory = {
   ): UnaryExpression {
     return ExpressionFactory.createUnaryExpression(operator, options);
   },
+  createUntranslatedExpression(options?: Readonly<NodeFactoryOptions>): UntranslatedExpression {
+    return ExpressionFactory.createUntranslatedExpression(options);
+  },
+  createUntranslatedStatement(options?: Readonly<NodeFactoryOptions>): UntranslatedStatement {
+    return StatementFactory.createUntranslatedStatement(options);
+  },
   createValuesInitializer(
     type: Readonly<TypeRef>,
 
@@ -1001,22 +1024,6 @@ const NodeFactory = {
     options?: Readonly<NodeFactoryOptions>
   ): ValuesInitializer {
     return InitializerFactory.createValuesInitializer(type, [...values], options);
-  },
-
-  /**
-   * Creates a field declaration group (grouped field declarators sharing type/modifiers).
-   * @param opts - Options (type, modifiers, declarations with id/initializer, options).
-   * @returns The created field declaration group.
-   */
-  createFieldDeclarationGroup(
-    opts: Readonly<{
-      type: Readonly<TypeRef>;
-      modifiers: readonly Modifier[];
-      declarations: readonly { id: Identifier; initializer?: Expression }[];
-      options?: NodeFactoryOptions;
-    }>
-  ): FieldDeclarationGroup {
-    return DeclarationFactory.createFieldDeclarationGroup(opts);
   },
 
   /**
@@ -1043,6 +1050,7 @@ const NodeFactory = {
    * @param options - Optional factory options.
    * @returns The created variable declaration statement.
    */
+
   createVariableDeclarationStatement(
     declaration: Readonly<VariableDeclaration>,
     options?: Readonly<NodeFactoryOptions>
@@ -1072,20 +1080,13 @@ const NodeFactory = {
    * @returns The created while loop statement.
    * @deprecated Use createWhileLoopStatement instead.
    */
+
   createWhileStatement(
     condition: Readonly<Expression>,
     body: Readonly<Statement>,
     options?: Readonly<NodeFactoryOptions>
   ): WhileLoopStatement {
     return NodeFactory.createWhileLoopStatement(condition, body, options);
-  },
-
-  createUntranslatedStatement(options?: Readonly<NodeFactoryOptions>): UntranslatedStatement {
-    return StatementFactory.createUntranslatedStatement(options);
-  },
-
-  createUntranslatedExpression(options?: Readonly<NodeFactoryOptions>): UntranslatedExpression {
-    return ExpressionFactory.createUntranslatedExpression(options);
   },
 };
 

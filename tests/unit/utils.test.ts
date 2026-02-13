@@ -30,8 +30,6 @@ import {
 import type { Position } from '../../src/utils/sourceExtraction.js';
 import type { SourceRange } from '../../src/ast/baseNode.js';
 import type { ASTNode } from '../../src/ast/baseNode.js';
-import type { ApexParseError } from '../../src/utils/apexParser.js';
-import type { ParseTreeNode } from '../../src/parser/parseTree.js';
 import { walkAST } from '../../src/utils/traversal.js';
 import type { ASTWalkVisitor } from '../../src/utils/traversal.js';
 import {
@@ -2629,7 +2627,7 @@ describe('apex-parser batch functions', () => {
     it('should return false when parse fails (parseMultipleFiles catches)', () => {
       const results = parseMultipleFiles(['public class Test']);
       expect(results).toHaveLength(1);
-      expect(isUsableParseResult(results[0]!)).toBe(false);
+      expect(isUsableParseResult(results[0])).toBe(false);
     });
 
     it('should type-narrow correctly', () => {

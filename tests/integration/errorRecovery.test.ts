@@ -6,8 +6,7 @@
 import { parseApexCode, parseMultipleFiles, ParseException } from '../../src/utils/apexParser.js';
 import { validateAST } from '../../src/utils/astValidation.js';
 import { findFirstNodeOfType } from '../translateHelpers.js';
-import type { ClassDeclaration } from '../../src/ast/declaration.js';
-import { isClassDeclaration, isMethodDeclaration } from '../../src/guard/index.js';
+import { isClassDeclaration } from '../../src/guard/index.js';
 
 describe('Error Recovery and Partial Parsing', () => {
   describe('Syntax Errors', () => {
@@ -256,7 +255,7 @@ describe('Error Recovery and Partial Parsing', () => {
       const results = parseMultipleFiles(['']);
       expect(results).toHaveLength(1);
       expect(results[0]).toBeDefined();
-      expect(Array.isArray(results[0]!.errors)).toBe(true);
+      expect(Array.isArray(results[0].errors)).toBe(true);
     });
 
     it('should handle only whitespace', () => {
@@ -303,8 +302,8 @@ describe('Error Recovery and Partial Parsing', () => {
 
       expect(() => parseApexCode(apexCode)).toThrow(ParseException);
       const results = parseMultipleFiles([apexCode]);
-      expect(results[0]!.errors[0]!.message).toBeDefined();
-      expect(results[0]!.errors[0]!.message.length).toBeGreaterThan(0);
+      expect(results[0].errors[0].message).toBeDefined();
+      expect(results[0].errors[0].message.length).toBeGreaterThan(0);
     });
   });
 });

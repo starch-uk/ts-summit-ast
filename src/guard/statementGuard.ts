@@ -61,14 +61,19 @@ function isStatement(node: ASTNode): node is Statement {
 }
 
 /**
- * Type guard for IfStatement nodes.
+ * Type guard for UntranslatedStatement nodes.
  * @param node - The AST node to check.
- * @returns True if the node is an IfStatement.
+ * @returns True if the node is an UntranslatedStatement.
  */
 function isUntranslatedStatement(node: ASTNode): node is UntranslatedStatement {
   return '@type' in node && node['@type'] === 'UntranslatedStatement';
 }
 
+/**
+ * Type guard for IfStatement nodes.
+ * @param node - The AST node to check.
+ * @returns True if the node is an IfStatement.
+ */
 function isIfStatement(node: ASTNode): node is IfStatement {
   return '@type' in node && node['@type'] === 'IfStatement';
 }

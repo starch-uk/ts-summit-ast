@@ -18,7 +18,7 @@ import type {
 } from '../ast/initializer.js';
 import type { Expression } from '../ast/expression.js';
 import type { Statement } from '../ast/statement.js';
-import type { Declaration } from '../ast/declaration.js';
+import type { Declaration, FieldDeclarationGroup } from '../ast/declaration.js';
 import { LAST_ELEMENT_OFFSET, MIN_NON_EMPTY_ARRAY_LENGTH } from '../constants.js';
 import type { NodeFactoryOptions } from './nodeFactory.js';
 import { NodeFactory } from './nodeFactory.js';
@@ -69,7 +69,7 @@ export interface TranslateContext {
   tryTranslateDeclaration: (
     node: Readonly<ParseTreeNode>,
     nodeType: string
-  ) => Declaration | import('../ast/declaration.js').FieldDeclarationGroup | null;
+  ) => Declaration | FieldDeclarationGroup | null;
 
   /**
    * Try to translate node as a type reference.

@@ -7,12 +7,27 @@
 
 import { readFileSync, statSync, readdirSync } from 'fs';
 import { join, extname } from 'path';
+import type { CompilationUnit } from '../ast/declaration.js';
 import { ASTTranslator } from '../translator/astTranslator.js';
 import { JsonSerializer } from '../serialization/jsonSerializer.js';
 import type { ParseTreeNode } from '../parser/parseTree.js';
 import { parseApexSource } from '../parser/index.js';
 import { resolve } from '../symbols/index.js';
 import { attachDeclarationMetadata } from '../utils/declarationUtils.js';
+
+const LENGTH_EMPTY = 0;
+
+/**
+ * Type guard: true if the value is a CompilationUnit AST node.
+ * @param ast - Value to check.
+ * @returns True if ast has \@type 'CompilationUnit'.
+ */
+function isCompilationUnit(ast: unknown): ast is CompilationUnit {
+  if (ast === null || typeof ast !== 'object') return false;
+  const desc = Object.getOwnPropertyDescriptor(ast, '@type');
+  const t: unknown = desc?.value;
+  return t === 'CompilationUnit';
+}
 
 /**
  * Options for SummitTool.
@@ -118,13 +133,11 @@ class SummitTool {
       // Run symbol resolution on successful compilation units (matches upstream SummitResolver)
       const allAsts = results
         .filter(
-          (r) =>
-            r.success &&
-            r.ast != null &&
-            (r.ast as { '@type': string })['@type'] === 'CompilationUnit'
+          (r): r is ProcessResult & { ast: CompilationUnit } =>
+            r.success && r.ast != null && isCompilationUnit(r.ast)
         )
-        .map((r) => r.ast as import('../ast/declaration.js').CompilationUnit);
-      if (allAsts.length > 0) {
+        .map((r) => r.ast);
+      if (allAsts.length > LENGTH_EMPTY) {
         for (const ast of allAsts) {
           attachDeclarationMetadata(ast);
         }

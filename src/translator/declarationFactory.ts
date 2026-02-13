@@ -44,8 +44,8 @@ interface CreateClassDeclarationOptions {
   readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
-    | InterfaceDeclaration
     | FieldDeclarationGroup
+    | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -68,8 +68,8 @@ interface CreateClassDeclarationOptionsView {
   readonly bodyDeclarations: readonly (
     | ClassDeclaration
     | EnumDeclaration
-    | InterfaceDeclaration
     | FieldDeclarationGroup
+    | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -85,8 +85,8 @@ interface CreateEnumDeclarationOptions {
   readonly bodyDeclarations?: readonly (
     | ClassDeclaration
     | EnumDeclaration
-    | InterfaceDeclaration
     | FieldDeclarationGroup
+    | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -102,8 +102,8 @@ interface CreateEnumDeclarationOptionsView {
   readonly bodyDeclarations?: readonly (
     | ClassDeclaration
     | EnumDeclaration
-    | InterfaceDeclaration
     | FieldDeclarationGroup
+    | InterfaceDeclaration
     | MethodDeclaration
     | PropertyDeclaration
     | VariableDeclaration
@@ -195,18 +195,18 @@ const DeclarationFactory = {
         opts.annotations && opts.annotations.length > emptyArrayLength
           ? [...opts.annotations]
           : undefined,
+      bodyDeclarations,
       extendsType: opts.extendsType,
+      fieldDeclarations,
       implementsTypes: opts.implementsTypes ? [...opts.implementsTypes] : undefined,
       innerTypeDeclarations,
-      fieldDeclarations,
-      propertyDeclarations,
       methodDeclarations,
-      bodyDeclarations,
       modifiers:
         (opts.modifiers ?? EMPTY_MODIFIERS).length > emptyArrayLength
           ? [...(opts.modifiers ?? EMPTY_MODIFIERS)]
           : [],
       name: opts.name,
+      propertyDeclarations,
       typeParameters: opts.typeParameters ? [...opts.typeParameters] : undefined,
       ...(opts.options?.location && {
         sourceLocation: toCanonicalSourceLocation(opts.options.location),
@@ -234,6 +234,36 @@ const DeclarationFactory = {
     };
   },
 
+  createFieldDeclarationGroup(
+    /* eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- opts is not mutated. */
+    opts: Readonly<{
+      type: TypeRef;
+      modifiers: readonly Modifier[];
+      declarations: readonly { id: Identifier; initializer?: Expression }[];
+      options?: NodeFactoryOptions;
+    }>
+  ): FieldDeclarationGroup {
+    const declarations: FieldDeclaration[] = opts.declarations.map(
+      (
+        /* eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types -- d is not mutated. */
+        d: { id: Identifier; initializer?: Expression }
+      ) => ({
+        '@type': 'FieldDeclaration',
+        id: d.id,
+        ...(d.initializer && { initializer: d.initializer }),
+      })
+    );
+    return {
+      '@type': 'FieldDeclarationGroup',
+      declarations,
+      modifiers: [...opts.modifiers],
+      type: opts.type,
+      ...(opts.options?.location && {
+        sourceLocation: toCanonicalSourceLocation(opts.options.location),
+      }),
+    };
+  },
+
   createInterfaceDeclaration(opts: CreateInterfaceDeclarationOptionsView): InterfaceDeclaration {
     const {
       extendsTypes,
@@ -257,13 +287,13 @@ const DeclarationFactory = {
     );
     return {
       '@type': 'InterfaceDeclaration',
+      bodyDeclarations: bodyDeclarationsArr,
       extendsTypes: extendsTypes ? [...extendsTypes] : undefined,
       innerTypeDeclarations,
-      propertyDeclarations,
       methodDeclarations,
-      bodyDeclarations: bodyDeclarationsArr,
       modifiers: modifiers.length > emptyArrayLength ? [...modifiers] : [],
       name,
+      propertyDeclarations,
       typeParameters: typeParameters ? [...typeParameters] : undefined,
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
     };
@@ -350,30 +380,6 @@ const DeclarationFactory = {
       extendsBound,
       name,
       ...(options?.location && { sourceLocation: toCanonicalSourceLocation(options.location) }),
-    };
-  },
-
-  createFieldDeclarationGroup(
-    opts: Readonly<{
-      type: TypeRef;
-      modifiers: readonly Modifier[];
-      declarations: readonly { id: Identifier; initializer?: Expression }[];
-      options?: NodeFactoryOptions;
-    }>
-  ): FieldDeclarationGroup {
-    const declarations: FieldDeclaration[] = opts.declarations.map((d) => ({
-      '@type': 'FieldDeclaration',
-      id: d.id,
-      ...(d.initializer && { initializer: d.initializer }),
-    }));
-    return {
-      '@type': 'FieldDeclarationGroup',
-      type: opts.type,
-      modifiers: [...opts.modifiers],
-      declarations,
-      ...(opts.options?.location && {
-        sourceLocation: toCanonicalSourceLocation(opts.options.location),
-      }),
     };
   },
 
