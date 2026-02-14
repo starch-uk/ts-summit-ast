@@ -615,6 +615,16 @@ Run tests with coverage:
 npm run test:coverage
 ```
 
+Run mutation testing (Stryker with Vitest):
+
+```bash
+pnpm test:mutation
+```
+
+- Config: `stryker.config.json` (Vitest runner, mutates `src/**/*.ts`, per-test coverage).
+- Use `pnpm test:mutation --dryRunOnly` to verify the setup without running mutations.
+- HTML report: `reports/mutation/mutation.html`.
+
 **Test Status**: 675 tests passing across 14 test files
 
 ### Code Quality
@@ -686,36 +696,21 @@ All public APIs are fully documented with JSDoc comments, including:
 ```
 ts-summit-ast/
 ├── src/
-│   ├── ast/              # AST node type definitions
-│   │   ├── nodes/        # Individual node types
-│   │   ├── base.ts       # Base interfaces
-│   │   ├── visitor.ts    # Visitor pattern
-│   │   └── type-guards.ts
-│   ├── parser/           # Parser-agnostic interfaces
-│   │   └── ParseTreeTypes.ts
-│   ├── translator/       # Parse tree to AST translation
-│   │   ├── ASTTranslator.ts
-│   │   ├── NodeFactory.ts
-│   │   └── ParseTreeVisitor.ts
-│   ├── serialization/    # JSON serialization
-│   │   ├── JsonSerializer.ts
-│   │   └── JsonDeserializer.ts
-│   ├── tool/             # CLI tool
-│   │   ├── SummitTool.ts
-│   │   └── cli.ts
-│   ├── utils/            # Utility functions
-│   │   ├── apex-parser.ts
-│   │   ├── apexdoc-parser.ts
-│   │   ├── ast-validation.ts
-│   │   ├── comment-utils.ts
-│   │   ├── node-finder.ts
-│   │   ├── rule-matching.ts
-│   │   ├── source-extraction.ts
-│   │   └── traversal.ts
+│   ├── ast/              # AST node type definitions (baseNode, declaration, statement, expression, literal, apexDoc, initializer)
+│   ├── guard/            # Type guards (literalGuard, docGuard, initGuard, declarationGuard, statementGuard, expressionGuard)
+│   ├── parser/           # Parse tree types, lexer, Apex parser (parseTree, apexParser, apexLexer, *Parser modules)
+│   ├── translator/       # Parse tree to AST (astTranslator, nodeFactory, *Factory, *Translator modules)
+│   ├── serialization/    # JSON serialization (jsonSerializer, jsonDeserializer, ast/declaration/expression (de)serializers)
+│   ├── symbols/          # Symbol resolution (summitResolver, classResolver)
+│   ├── tool/             # CLI (summitTool, cli)
+│   ├── utils/            # Utility functions (apexParser, apexdocParser, astValidation, commentUtils, nodeFinder, ruleMatching, sourceExtraction, traversal, declarationUtils)
+│   ├── constants.ts
 │   └── index.ts          # Main entry point
 ├── tests/
 │   ├── unit/             # Unit tests
-│   └── integration/      # Integration tests
+│   ├── integration/      # Integration tests
+│   ├── fixtures/         # Test fixtures (e.g. fixtures/upstream/*.cls, *.json)
+│   └── translateHelpers.ts
 ├── docs/                 # Documentation
 │   └── json-schema.md    # JSON schema documentation
 └── README.md

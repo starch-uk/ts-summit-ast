@@ -13,7 +13,7 @@ export default defineConfig({
         '**/*.spec.ts',
         '**/index.ts',
       ],
-      provider: 'v8',
+      provider: 'istanbul',
       reporter: ['text', 'json', 'html'],
       thresholds: {
         branches: 100,
